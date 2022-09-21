@@ -38,5 +38,10 @@ class SignUpViewModel {
     }
     await authRepository.signUp(
         email: emailAddressController.text, password: passwordController.text);
+    userNameController.text = '';
+    emailAddressController.text = '';
+    dateOfBirthController.text = '';
+    passwordController.text = '';
+
   }
 }
