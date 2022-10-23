@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import './presentation/signup/signup.dart';
+import './presentation/signin/signin.dart';
 import './presentation/bottom_navigation/bottom_navigation.dart';
 
 void main() async {
@@ -38,6 +39,6 @@ class App extends StatelessWidget {
             bodyText2: TextStyle(fontSize: 14, fontFamily: 'Hind'),
           ),
         ),
-        home: BottomNavigationPage());
+        home: SignIn_page());
   }
 }
