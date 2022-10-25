@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import './signin_view_model.dart';
+import 'login_view_model.dart';
 
 class SignIn_page extends ConsumerWidget {
   const SignIn_page({Key? key}) : super(key: key);
@@ -96,7 +96,7 @@ class SignIn_page extends ConsumerWidget {
                       height: 50,
                       child: OutlinedButton(
                           onPressed: () {
-                            vm.signIn();
+                            vm.login(context);
                           },
                           onLongPress: () {},
                           child: const Text(

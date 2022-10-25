@@ -1,6 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../domain/interfaces/i_auth_repository.dart';
+
+import '../presentation/bottom_navigation/bottom_navigation.dart';
 
 final authRepositoryProvider =
     Provider<IauthRepository>((_) => AuthRepository());
@@ -9,7 +12,21 @@ class AuthRepository implements IauthRepository {
   final auth = FirebaseAuth.instance;
 
   @override
-  Future<void> logIn({required String email, required String password}) async {}
+  Future<void> login({required String email, required String password, required context}) async {
+    try {
+      await auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => BottomNavigationPage()),
+        (_) => false
+      );
+    } on FirebaseAuthException catch (e) {
+      throw convertAuthError(e.code);
+    }
+  }
 
   @override
   Future<void> signUp({required String email, required String password}) async {
