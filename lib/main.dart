@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import './presentation/signup/signup.dart';
-import './presentation/signin/signin.dart';
+import 'presentation/login/login.dart';
 import './presentation/bottom_navigation/bottom_navigation.dart';
 
 void main() async {
