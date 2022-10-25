@@ -23,15 +23,18 @@ class SignInViewModel {
   TextEditingController get passwordController =>
       ref.read(passwordControllerStateProvider.state).state;
 
-  Future<void> signIn() async {
+  Future<void> login(context) async {
     if (emailAddressController.text.isEmpty) {
       throw 'メールアドレスを入力してください';
     }
     if (passwordController.text.isEmpty) {
       throw 'パスワードを入力してください';
     }
-    await authRepository.signUp(
-        email: emailAddressController.text, password: passwordController.text);
+    await authRepository.login(
+      email: emailAddressController.text,
+      password: passwordController.text,
+      context: context,
+    );
     emailAddressController.text = '';
     passwordController.text = '';
 
