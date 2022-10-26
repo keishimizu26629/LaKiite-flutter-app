@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 
 import './signup_view_model.dart';
 
-class Signup_page extends ConsumerWidget {
-  const Signup_page({Key? key}) : super(key: key);
+class SignUp_page extends ConsumerWidget {
+  const SignUp_page({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -76,9 +77,14 @@ class Signup_page extends ConsumerWidget {
                             child: TextFormField(
                                 controller: vm.dateOfBirthController,
                                 textAlign: TextAlign.start,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(8),
+                                ],
                                 decoration: const InputDecoration(
                                     border: InputBorder.none,
-                                    hintText: 'xxxx/xx/xx',
+                                    hintText: '19900125',
                                     hintStyle: TextStyle(
                                       fontSize: 18,
                                       color: Color(0xFF888888),
@@ -107,6 +113,7 @@ class Signup_page extends ConsumerWidget {
                             child: TextFormField(
                                 controller: vm.emailAddressController,
                                 textAlign: TextAlign.start,
+                                keyboardType: TextInputType.emailAddress,
                                 decoration: const InputDecoration(
                                     border: InputBorder.none,
                                     hintText: 'xxxxxxxxxx@xxxxx.xxx',
