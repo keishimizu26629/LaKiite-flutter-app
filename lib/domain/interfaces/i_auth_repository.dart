@@ -5,4 +5,5 @@ abstract class IauthRepository {
     required context,
   });
   Future<void> signUp({required String email, required String password});
+  String? getUid();
 }

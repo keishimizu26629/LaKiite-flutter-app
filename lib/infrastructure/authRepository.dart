@@ -12,17 +12,19 @@ class AuthRepository implements IauthRepository {
   final auth = FirebaseAuth.instance;
 
   @override
-  Future<void> login({required String email, required String password, required context}) async {
+  Future<void> login(
+      {required String email,
+      required String password,
+      required context}) async {
     try {
       await auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => BottomNavigationPage()),
-        (_) => false
-      );
+          context,
+          MaterialPageRoute(builder: (context) => BottomNavigationPage()),
+          (_) => false);
     } on FirebaseAuthException catch (e) {
       throw convertAuthError(e.code);
     }
@@ -35,6 +37,15 @@ class AuthRepository implements IauthRepository {
           email: email, password: password);
     } on FirebaseAuthException catch (e) {
       throw convertAuthError(e.code);
+    }
+  }
+
+  @override
+  String? getUid() {
+    if (auth.currentUser == null) {
+      return null;
+    } else {
+      return auth.currentUser!.uid;
     }
   }
 
