@@ -39,6 +39,6 @@ class App extends StatelessWidget {
             bodyText2: TextStyle(fontSize: 14, fontFamily: 'Hind'),
           ),
         ),
-        home: SignUp_page());
+        home: SignIn_page());
   }
 }

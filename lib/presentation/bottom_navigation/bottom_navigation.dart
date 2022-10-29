@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import '../myPage/myPage.dart';
 
 final selectedIndex = StateProvider((ref) => 0);
 
@@ -9,7 +10,7 @@ class BottomNavigationPage extends ConsumerWidget {
   final List<Widget> _tabs = const [
     Center(child: Text('タイムライン')),
     Center(child: Text('カレンダー')),
-    Center(child: Text('マイページ')),
+    MyPage(),
   ];
   @override
   Widget build(BuildContext context, WidgetRef ref) {
