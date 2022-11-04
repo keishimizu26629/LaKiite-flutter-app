@@ -10,6 +10,7 @@ class MyPage extends ConsumerWidget {
     return Scaffold(
         appBar: AppBar(
             title: Text('マイページ'),
+            centerTitle: true,
             backgroundColor: Theme.of(context).primaryColor),
         body: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
