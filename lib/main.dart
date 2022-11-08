@@ -9,6 +9,7 @@ import './presentation/signup/signup.dart';
 import 'presentation/login/login.dart';
 import './presentation/bottom_navigation/bottom_navigation.dart';
 import './infrastructure/authRepository.dart';
+import './presentation/unauthorized/unauthorized.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +30,7 @@ class App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     const appName = 'アプリテーマ';
     final authState = ref.watch(authStateProvider);
+    final currentUser = FirebaseAuth.instance.currentUser;
 
     return MaterialApp(
         title: appName,
@@ -44,7 +46,13 @@ class App extends ConsumerWidget {
         home: authState.when(
             data: (data) {
               if (data != null) {
-                return const BottomNavigationPage();
+                currentUser?.reload();
+                if (currentUser!.emailVerified) {
+                  return const BottomNavigationPage();
+                } else {
+                  debugPrint('unauthorized');
+                  return const BottomNavigationPage();
+                }
               }
               return const SignIn_page();
             },
