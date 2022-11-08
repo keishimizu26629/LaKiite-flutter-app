@@ -12,8 +12,6 @@ class SignUp_page extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final vm = ref.watch(signUpViewModelProvider);
 
-    final FirebaseAuth auth = FirebaseAuth.instance;
-
     return Scaffold(
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
