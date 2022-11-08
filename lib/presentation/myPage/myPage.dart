@@ -120,20 +120,6 @@ class MyPage extends ConsumerWidget {
                             style: TextStyle(color: Color(0xFF1a0dab)),
                           )),
                     ),
-                    Container(
-                      margin: const EdgeInsets.only(top: 40),
-                      width: double.infinity,
-                      height: 50,
-                      child: OutlinedButton(
-                          onPressed: () {
-                            vm.test(auth);
-                          },
-                          onLongPress: () {},
-                          child: const Text(
-                            'test',
-                            style: TextStyle(color: Color(0xFF1a0dab)),
-                          )),
-                    ),
                   ],
                 ),
               ),

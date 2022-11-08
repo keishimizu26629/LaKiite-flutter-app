@@ -41,6 +41,7 @@ class AuthRepository implements IauthRepository {
     try {
       await auth.createUserWithEmailAndPassword(
           email: email, password: password);
+      debugPrint(auth.currentUser.toString());
       auth.currentUser!.sendEmailVerification();
     } on FirebaseAuthException catch (e) {
       throw convertAuthError(e.code);
