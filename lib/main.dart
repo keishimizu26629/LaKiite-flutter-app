@@ -8,6 +8,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import './presentation/signup/signup.dart';
 import 'presentation/login/login.dart';
 import './presentation/bottom_navigation/bottom_navigation.dart';
+import './infrastructure/authRepository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,12 +22,13 @@ void main() async {
   );
 }
 
-class App extends StatelessWidget {
+class App extends ConsumerWidget {
   const App({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     const appName = 'アプリテーマ';
+    final authState = ref.watch(authStateProvider);
 
     return MaterialApp(
         title: appName,
@@ -39,6 +41,14 @@ class App extends StatelessWidget {
             bodyText2: TextStyle(fontSize: 14, fontFamily: 'Hind'),
           ),
         ),
-        home: SignIn_page());
+        home: authState.when(
+            data: (data) {
+              if (data != null) {
+                return const BottomNavigationPage();
+              }
+              return const SignIn_page();
+            },
+            error: (Object error, StackTrace? stackTrace) {},
+            loading: () {}));
   }
 }
