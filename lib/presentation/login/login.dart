@@ -1,6 +1,8 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../infrastructure/authRepository.dart';
 
 import 'login_view_model.dart';
 
@@ -10,8 +12,6 @@ class SignIn_page extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final vm = ref.watch(signInViewModelProvider);
-
-    final FirebaseAuth auth = FirebaseAuth.instance;
 
     return Scaffold(
         resizeToAvoidBottomInset: false,
@@ -121,9 +121,9 @@ class SignIn_page extends ConsumerWidget {
                       width: double.infinity,
                     ),
                     Container(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
                           Container(
                             width: 100,
                             child: Divider(
@@ -141,15 +141,13 @@ class SignIn_page extends ConsumerWidget {
                               height: 0,
                             ),
                           ),
-                    ])),
+                        ])),
                     Container(
                       margin: const EdgeInsets.only(top: 40),
                       width: double.infinity,
                       height: 50,
                       child: OutlinedButton(
-                          onPressed: () {
-
-                          },
+                          onPressed: () {},
                           onLongPress: () {},
                           child: const Text(
                             'Googleでログイン',
@@ -161,9 +159,7 @@ class SignIn_page extends ConsumerWidget {
                       width: double.infinity,
                       height: 50,
                       child: OutlinedButton(
-                          onPressed: () {
-
-                          },
+                          onPressed: () {},
                           onLongPress: () {},
                           child: const Text(
                             'Facebookでログイン',
@@ -172,10 +168,15 @@ class SignIn_page extends ConsumerWidget {
                     ),
                     Container(
                       alignment: Alignment.center,
+                      // ignore: sort_child_properties_last
                       child: RichText(
                           text: TextSpan(children: [
                         TextSpan(
                             text: '新規登録の方はこちら',
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                vm.toSignUp(context: context);
+                              },
                             style: TextStyle(
                                 color: Color(0xFF1a0dab), fontSize: 12)),
                       ])),

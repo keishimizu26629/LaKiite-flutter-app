@@ -8,8 +8,14 @@ import '../presentation/bottom_navigation/bottom_navigation.dart';
 final authRepositoryProvider =
     Provider<IauthRepository>((_) => AuthRepository());
 
+final authStateProvider =
+    StreamProvider((ref) => ref.watch(authRepositoryProvider).authStateChange);
+
 class AuthRepository implements IauthRepository {
   final auth = FirebaseAuth.instance;
+
+  @override
+  Stream<User?> get authStateChange => auth.authStateChanges();
 
   @override
   Future<void> login(
@@ -21,10 +27,10 @@ class AuthRepository implements IauthRepository {
         email: email,
         password: password,
       );
-      Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => BottomNavigationPage()),
-          (_) => false);
+      // Navigator.pushAndRemoveUntil(
+      //     context,
+      //     MaterialPageRoute(builder: (context) => BottomNavigationPage()),
+      //     (_) => false);
     } on FirebaseAuthException catch (e) {
       throw convertAuthError(e.code);
     }
@@ -35,6 +41,7 @@ class AuthRepository implements IauthRepository {
     try {
       await auth.createUserWithEmailAndPassword(
           email: email, password: password);
+      auth.currentUser!.sendEmailVerification();
     } on FirebaseAuthException catch (e) {
       throw convertAuthError(e.code);
     }
@@ -47,6 +54,13 @@ class AuthRepository implements IauthRepository {
     } else {
       return auth.currentUser!.uid;
     }
+  }
+
+  @override
+  Future<void> logout() async {
+    try {
+      await auth.signOut();
+    } catch (e) {}
   }
 
   String convertAuthError(String errorCode) {
