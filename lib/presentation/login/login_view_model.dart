@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tarakite/infrastructure/authRepository.dart';
 import '../presentation_provider.dart';
 import '../../domain/interfaces/i_auth_repository.dart';
+import '../signup/signup.dart';
 
 final signInViewModelProvider = Provider<SignInViewModel>((ref) {
   return SignInViewModel(
@@ -37,6 +38,12 @@ class SignInViewModel {
     );
     emailAddressController.text = '';
     passwordController.text = '';
+  }
 
+  void toSignUp({required BuildContext context}) {
+    Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => SignUp_page()),
+        (_) => false);
   }
 }

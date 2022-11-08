@@ -1,12 +1,18 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+import './myPage_view_model.dart';
+import '../../infrastructure/authRepository.dart';
 
 class MyPage extends ConsumerWidget {
   const MyPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final vm = ref.watch(myPageViewModelProvider);
+    final auth = FirebaseAuth.instance;
     return Scaffold(
         appBar: AppBar(
             title: Text('マイページ'),
@@ -34,42 +40,36 @@ class MyPage extends ConsumerWidget {
                 margin: EdgeInsets.only(top: 14),
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          height: 40,
-                          width: 60,
-                          child: Divider(
-                            color: Colors.grey,
-                            thickness: 1,
-                          ),
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      SizedBox(
+                        height: 40,
+                        width: 60,
+                        child: Divider(
+                          color: Colors.grey,
+                          thickness: 1,
                         ),
-                        Text(
-                          '  Account Info.  ',
+                      ),
+                      Text('  Account Info.  ',
                           style: TextStyle(
                             color: Colors.grey,
                             fontSize: 24,
                             fontWeight: FontWeight.w600,
-                          )
+                          )),
+                      SizedBox(
+                        height: 40,
+                        width: 60,
+                        child: Divider(
+                          color: Colors.grey,
+                          thickness: 1,
                         ),
-                        SizedBox(
-                          height: 40,
-                          width: 60,
-                          child: Divider(
-                            color: Colors.grey,
-                            thickness: 1,
-                          ),
-                        ),
-                      ]
-                    ),
+                      ),
+                    ]),
                     Container(
-
-                      child: ListTile(
-                        title:
-                            Text('Email Address', style: TextStyle(fontSize: 20)),
-                        subtitle: Text('testtest@gmail.com',
-                            style: TextStyle(fontSize: 18))))
+                        child: ListTile(
+                            title: Text('Email Address',
+                                style: TextStyle(fontSize: 20)),
+                            subtitle: Text('testtest@gmail.com',
+                                style: TextStyle(fontSize: 18))))
                   ],
                 ),
               ),
@@ -77,40 +77,63 @@ class MyPage extends ConsumerWidget {
                 margin: EdgeInsets.only(top: 14),
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          height: 40,
-                          width: 60,
-                          child: Divider(
-                            color: Colors.grey,
-                            thickness: 1,
-                          ),
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      SizedBox(
+                        height: 40,
+                        width: 60,
+                        child: Divider(
+                          color: Colors.grey,
+                          thickness: 1,
                         ),
-                        Text(
-                          '  Group  ',
+                      ),
+                      Text('  Group  ',
                           style: TextStyle(
                             color: Colors.grey,
                             fontSize: 24,
                             fontWeight: FontWeight.w600,
-                          )
+                          )),
+                      SizedBox(
+                        height: 40,
+                        width: 60,
+                        child: Divider(
+                          color: Colors.grey,
+                          thickness: 1,
                         ),
-                        SizedBox(
-                          height: 40,
-                          width: 60,
-                          child: Divider(
-                            color: Colors.grey,
-                            thickness: 1,
-                          ),
-                        ),
-                      ]
+                      ),
+                    ]),
+                    Container(
+                        child: ListTile(
+                      title: Text('Not belonging to any group yet.',
+                          style: TextStyle(fontSize: 20)),
+                    )),
+                    Container(
+                      margin: const EdgeInsets.only(top: 40),
+                      width: double.infinity,
+                      height: 50,
+                      child: OutlinedButton(
+                          onPressed: () {
+                            vm.logout();
+                          },
+                          onLongPress: () {},
+                          child: const Text(
+                            'ログアウト',
+                            style: TextStyle(color: Color(0xFF1a0dab)),
+                          )),
                     ),
                     Container(
-                      child: ListTile(
-                        title:
-                            Text('Not belonging to any group yet.', style: TextStyle(fontSize: 20)),
-                      ))
+                      margin: const EdgeInsets.only(top: 40),
+                      width: double.infinity,
+                      height: 50,
+                      child: OutlinedButton(
+                          onPressed: () {
+                            vm.test(auth);
+                          },
+                          onLongPress: () {},
+                          child: const Text(
+                            'test',
+                            style: TextStyle(color: Color(0xFF1a0dab)),
+                          )),
+                    ),
                   ],
                 ),
               ),
