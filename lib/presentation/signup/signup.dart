@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 
 import './signup_view_model.dart';
@@ -27,7 +26,7 @@ class SignUp_page extends ConsumerWidget {
                 child: Column(
                   children: [
                     Column(children: <Widget>[
-                      Align(
+                      const Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'ニックネーム',
@@ -126,14 +125,14 @@ class SignUp_page extends ConsumerWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 12.0),
                       child: Column(children: <Widget>[
-                        Align(
+                        const Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
                             'パスワード',
                           ),
                         ),
                         Container(
-                          margin: EdgeInsets.only(top: 8),
+                          margin: const EdgeInsets.only(top: 8),
                           width: double.infinity,
                           height: 50,
                           decoration: BoxDecoration(
@@ -172,8 +171,11 @@ class SignUp_page extends ConsumerWidget {
                     ),
                     Container(
                       margin: const EdgeInsets.only(top: 24),
+                      height: 100,
+                      width: double.infinity,
                       child: RichText(
-                          text: TextSpan(children: [
+                          // ignore: prefer_const_literals_to_create_immutables
+                          text: const TextSpan(children: [
                         TextSpan(
                             text: '登録・ログインすることで、',
                             style: TextStyle(
@@ -195,8 +197,6 @@ class SignUp_page extends ConsumerWidget {
                             style: TextStyle(
                                 color: Color(0xFF333333), fontSize: 12)),
                       ])),
-                      height: 100,
-                      width: double.infinity,
                     ),
                   ],
                 ),

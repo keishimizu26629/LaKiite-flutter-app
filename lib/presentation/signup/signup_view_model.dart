@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+// ignore: depend_on_referenced_packages
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tarakite/infrastructure/authRepository.dart';
 import 'package:tarakite/infrastructure/userRepository.dart';
@@ -20,11 +21,10 @@ class SignUpViewModel {
   final UserRepository _userRepository;
 
   SignUpViewModel({
-    required ref,
+    required this.ref,
     required authRepository,
     required userRepository,
-  })  : ref = ref,
-        _authRepository = authRepository,
+  })  : _authRepository = authRepository,
         _userRepository = userRepository;
 
   TextEditingController get userNameController =>
