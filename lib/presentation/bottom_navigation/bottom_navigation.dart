@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../myPage/myPage.dart';
 
@@ -23,16 +22,17 @@ class BottomNavigationPage extends ConsumerWidget {
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
             selectedItemColor: Colors.black,
             currentIndex: _selectedIndex.state,
+            // ignore: prefer_const_literals_to_create_immutables
             items: [
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.history),
                 label: 'タイムライン',
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.calendar_month),
                 label: 'カレンダー',
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.person),
                 label: 'マイページ',
               ),
