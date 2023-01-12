@@ -21,14 +21,15 @@ class MyPage extends ConsumerWidget {
         body: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(children: [
+              // ignore: prefer_const_literals_to_create_immutables
               Row(children: [
-                CircleAvatar(
+                const CircleAvatar(
                   radius: 60,
                   backgroundColor: Colors.grey,
                 ),
-                Expanded(
+                const Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.only(left: 16),
+                    padding: EdgeInsets.only(left: 16),
                     child: ListTile(
                         title: Text('Musashi', style: TextStyle(fontSize: 24)),
                         subtitle:
