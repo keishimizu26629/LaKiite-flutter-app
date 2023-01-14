@@ -12,12 +12,10 @@ final myPageViewModelProvider = Provider<MyPageViewModel>((ref) {
 });
 
 class MyPageViewModel {
-  final ProviderRef _ref;
   final IauthRepository _authRepository;
 
   MyPageViewModel({required ref, required authRepository})
-      : _ref = ref,
-        _authRepository = authRepository;
+      : _authRepository = authRepository;
 
   Future<void> logout() async {
     try {

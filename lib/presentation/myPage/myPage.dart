@@ -1,10 +1,9 @@
+// ignore: file_names
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import './myPage_view_model.dart';
-import '../../infrastructure/authRepository.dart';
 
 class MyPage extends ConsumerWidget {
   const MyPage({Key? key}) : super(key: key);
@@ -15,7 +14,7 @@ class MyPage extends ConsumerWidget {
     final auth = FirebaseAuth.instance;
     return Scaffold(
         appBar: AppBar(
-            title: Text('マイページ'),
+            title: const Text('マイページ'),
             centerTitle: true,
             backgroundColor: Theme.of(context).primaryColor),
         body: SingleChildScrollView(
@@ -38,11 +37,12 @@ class MyPage extends ConsumerWidget {
                 )
               ]),
               Container(
-                margin: EdgeInsets.only(top: 14),
+                margin: const EdgeInsets.only(top: 14),
                 child: Column(
                   children: [
+                    // ignore: prefer_const_literals_to_create_immutables
                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      SizedBox(
+                      const SizedBox(
                         height: 40,
                         width: 60,
                         child: Divider(
@@ -50,13 +50,13 @@ class MyPage extends ConsumerWidget {
                           thickness: 1,
                         ),
                       ),
-                      Text('  Account Info.  ',
+                      const Text('  Account Info.  ',
                           style: TextStyle(
                             color: Colors.grey,
                             fontSize: 24,
                             fontWeight: FontWeight.w600,
                           )),
-                      SizedBox(
+                      const SizedBox(
                         height: 40,
                         width: 60,
                         child: Divider(
@@ -65,12 +65,11 @@ class MyPage extends ConsumerWidget {
                         ),
                       ),
                     ]),
-                    Container(
-                        child: ListTile(
-                            title: Text('Email Address',
-                                style: TextStyle(fontSize: 20)),
-                            subtitle: Text('testtest@gmail.com',
-                                style: TextStyle(fontSize: 18))))
+                    const ListTile(
+                        title: Text('Email Address',
+                            style: TextStyle(fontSize: 20)),
+                        subtitle: Text('testtest@gmail.com',
+                            style: TextStyle(fontSize: 18)))
                   ],
                 ),
               ),
@@ -78,8 +77,9 @@ class MyPage extends ConsumerWidget {
                 margin: EdgeInsets.only(top: 14),
                 child: Column(
                   children: [
+                    // ignore: prefer_const_literals_to_create_immutables
                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      SizedBox(
+                      const SizedBox(
                         height: 40,
                         width: 60,
                         child: Divider(
@@ -87,13 +87,13 @@ class MyPage extends ConsumerWidget {
                           thickness: 1,
                         ),
                       ),
-                      Text('  Group  ',
+                      const Text('  Group  ',
                           style: TextStyle(
                             color: Colors.grey,
                             fontSize: 24,
                             fontWeight: FontWeight.w600,
                           )),
-                      SizedBox(
+                      const SizedBox(
                         height: 40,
                         width: 60,
                         child: Divider(
@@ -102,11 +102,10 @@ class MyPage extends ConsumerWidget {
                         ),
                       ),
                     ]),
-                    Container(
-                        child: ListTile(
+                    const ListTile(
                       title: Text('Not belonging to any group yet.',
-                          style: TextStyle(fontSize: 20)),
-                    )),
+                      style: TextStyle(fontSize: 20)),
+                    ),
                     Container(
                       margin: const EdgeInsets.only(top: 40),
                       width: double.infinity,

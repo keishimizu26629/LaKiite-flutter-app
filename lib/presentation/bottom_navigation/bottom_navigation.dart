@@ -13,6 +13,7 @@ class BottomNavigationPage extends ConsumerWidget {
   ];
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // ignore: no_leading_underscores_for_local_identifiers
     final _selectedIndex = ref.watch(selectedIndex.state);
     return Scaffold(
         body: _tabs[_selectedIndex.state],
