@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import './signup_view_model.dart';
 
+// ignore: camel_case_types
 class SignUp_page extends ConsumerWidget {
   const SignUp_page({Key? key}) : super(key: key);
 
@@ -33,11 +34,11 @@ class SignUp_page extends ConsumerWidget {
                         ),
                       ),
                       Container(
-                        margin: EdgeInsets.only(top: 8),
+                        margin: const EdgeInsets.only(top: 8),
                         width: double.infinity,
                         height: 50,
                         decoration: BoxDecoration(
-                            border: Border.all(color: Color(0xFF555555))),
+                            border: Border.all(color: const Color(0xFF555555))),
                         child: Padding(
                           padding: const EdgeInsets.only(left: 16),
                           child: TextFormField(
@@ -57,18 +58,18 @@ class SignUp_page extends ConsumerWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 12.0),
                       child: Column(children: <Widget>[
-                        Align(
+                        const Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
                             '生年月日',
                           ),
                         ),
                         Container(
-                          margin: EdgeInsets.only(top: 8),
+                          margin: const EdgeInsets.only(top: 8),
                           width: double.infinity,
                           height: 50,
                           decoration: BoxDecoration(
-                              border: Border.all(color: Color(0xFF555555))),
+                              border: Border.all(color: const Color(0xFF555555))),
                           child: Padding(
                             padding: const EdgeInsets.only(left: 16.0),
                             child: TextFormField(
@@ -93,18 +94,18 @@ class SignUp_page extends ConsumerWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 12.0),
                       child: Column(children: <Widget>[
-                        Align(
+                        const Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
                             'メールアドレス',
                           ),
                         ),
                         Container(
-                          margin: EdgeInsets.only(top: 8),
+                          margin: const EdgeInsets.only(top: 8),
                           width: double.infinity,
                           height: 50,
                           decoration: BoxDecoration(
-                              border: Border.all(color: Color(0xFF555555))),
+                              border: Border.all(color: const Color(0xFF555555))),
                           child: Padding(
                             padding: const EdgeInsets.only(left: 16.0),
                             child: TextFormField(
@@ -136,7 +137,7 @@ class SignUp_page extends ConsumerWidget {
                           width: double.infinity,
                           height: 50,
                           decoration: BoxDecoration(
-                              border: Border.all(color: Color(0xFF555555))),
+                              border: Border.all(color: const Color(0xFF555555))),
                           child: Padding(
                             padding: const EdgeInsets.only(left: 16.0),
                             child: TextFormField(

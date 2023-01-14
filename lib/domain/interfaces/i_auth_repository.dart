@@ -1,4 +1,3 @@
-import '../entity/user.dart';
 
 abstract class IauthRepository {
   get authStateChange => null;

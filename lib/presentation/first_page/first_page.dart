@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// ignore: camel_case_types
 class First_page extends StatelessWidget {
   const First_page({Key? key}) : super(key: key);
 
@@ -11,27 +12,24 @@ class First_page extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
-            Container(
-              child: SizedBox(
-                height: 60,
-              ),
+            const SizedBox(
+              height: 60,
             ),
             Container(
-              child: Container(
-                child: Text(
-                  'ロゴ',
-                ),
-                height: 180,
-                width: 180,
-                alignment: Alignment.center,
-                color: Theme.of(context).primaryColor,
+              height: 180,
+              width: 180,
+              alignment: Alignment.center,
+              color: Theme.of(context).primaryColor,
+              child: const Text(
+                'ロゴ',
               ),
             ),
             Container(
               margin: const EdgeInsets.only(top: 30),
+              width: double.infinity,
               child: Column(
                 children: <Widget>[
-                  Text(
+                  const Text(
                     'アカウントをお持ちの方'
                   ),
                   Container(
@@ -46,13 +44,13 @@ class First_page extends StatelessWidget {
                   )
                 ]
               ),
-              width: double.infinity,
             ),
             Container(
               margin: const EdgeInsets.only(top: 20),
+              width: double.infinity,
               child: Column(
                 children: <Widget>[
-                  Text(
+                  const Text(
                     '初めてご利用の方'
                   ),
                   Container(
@@ -87,12 +85,14 @@ class First_page extends StatelessWidget {
                   ),
                 ]
               ),
-              width: double.infinity,
             ),
             Container(
               margin: const EdgeInsets.only(top: 20),
+              height: 100,
+              width: double.infinity,
               child: RichText(
-                text: TextSpan(
+                text: const TextSpan(
+                  // ignore: prefer_const_literals_to_create_immutables
                   children: [
                     TextSpan(
                       text: '登録・ログインすることで、',
@@ -117,8 +117,6 @@ class First_page extends StatelessWidget {
                   ]
                 )
               ),
-              height: 100,
-              width: double.infinity,
             ),
           ],
         ),
