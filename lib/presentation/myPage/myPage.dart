@@ -74,7 +74,7 @@ class MyPage extends ConsumerWidget {
                 ),
               ),
               Container(
-                margin: EdgeInsets.only(top: 14),
+                margin: const EdgeInsets.only(top: 14),
                 child: Column(
                   children: [
                     // ignore: prefer_const_literals_to_create_immutables
