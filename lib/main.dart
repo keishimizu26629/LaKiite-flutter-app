@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import './presentation/signup/signup.dart';
 import 'presentation/login/login.dart';
 import './presentation/bottom_navigation/bottom_navigation.dart';
 import './infrastructure/authRepository.dart';
-import './presentation/unauthorized/unauthorized.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,7 +14,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   runApp(
-    ProviderScope(
+    const ProviderScope(
       child: App(),
     ),
   );
@@ -36,7 +33,7 @@ class App extends ConsumerWidget {
         title: appName,
         theme: ThemeData(
           // brightness: Brightness.dark,
-          primaryColor: Color.fromARGB(255, 255, 125, 227),
+          primaryColor: const Color.fromARGB(255, 255, 125, 227),
           fontFamily: 'Quicksand',
           textTheme: const TextTheme(
             headline1: TextStyle(fontSize: 32, fontStyle: FontStyle.italic),
