@@ -6,18 +6,18 @@ import '../presentation_provider.dart';
 import '../../domain/interfaces/i_auth_repository.dart';
 import '../signup/signup.dart';
 
-final signInViewModelProvider = Provider<SignInViewModel>((ref) {
-  return SignInViewModel(
+final loginViewModelProvider = Provider<LoginViewModel>((ref) {
+  return LoginViewModel(
     ref: ref,
     authRepository: ref.watch(authRepositoryProvider),
   );
 });
 
-class SignInViewModel {
+class LoginViewModel {
   final ProviderRef ref;
   final IauthRepository authRepository;
 
-  SignInViewModel({required this.ref, required this.authRepository});
+  LoginViewModel({required this.ref, required this.authRepository});
 
   TextEditingController get emailAddressController =>
       ref.read(emailAddressControllerStateProvider.state).state;
@@ -44,7 +44,7 @@ class SignInViewModel {
   void toSignUp({required BuildContext context}) {
     Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => SignUp_page()),
+        MaterialPageRoute(builder: (context) => const SignUp_page()),
         (_) => false);
   }
 }
