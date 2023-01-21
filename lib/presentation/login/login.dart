@@ -4,12 +4,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'login_view_model.dart';
 
-class SignIn_page extends ConsumerWidget {
-  const SignIn_page({Key? key}) : super(key: key);
+class Login_page extends ConsumerWidget {
+  const Login_page({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final vm = ref.watch(signInViewModelProvider);
+    final vm = ref.watch(loginViewModelProvider);
 
     return Scaffold(
         resizeToAvoidBottomInset: false,

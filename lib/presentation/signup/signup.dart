@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -172,7 +173,7 @@ class SignUp_page extends ConsumerWidget {
                     ),
                     Container(
                       margin: const EdgeInsets.only(top: 24),
-                      height: 100,
+                      height: 50,
                       width: double.infinity,
                       child: RichText(
                           // ignore: prefer_const_literals_to_create_immutables
@@ -198,6 +199,23 @@ class SignUp_page extends ConsumerWidget {
                             style: TextStyle(
                                 color: Color(0xFF333333), fontSize: 12)),
                       ])),
+                    ),
+                    Container(
+                      alignment: Alignment.center,
+                      // ignore: sort_child_properties_last
+                      child: RichText(
+                          text: TextSpan(children: [
+                        TextSpan(
+                            text: 'ログインの方はこちら',
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                vm.toLogin(context: context);
+                              },
+                            style: const TextStyle(
+                                color: Color(0xFF1a0dab), fontSize: 12)),
+                      ])),
+                      height: 100,
+                      width: double.infinity,
                     ),
                   ],
                 ),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tarakite/infrastructure/authRepository.dart';
 import 'package:tarakite/infrastructure/userRepository.dart';
 import 'package:tarakite/domain/entity/user.dart';
+import '../login/login.dart';
 import '../presentation_provider.dart';
 import '../../domain/interfaces/i_auth_repository.dart';
 
@@ -50,16 +51,21 @@ class SignUpViewModel {
         email: emailAddressController.text, password: passwordController.text);
     final uid = _authRepository.getUid();
     await _userRepository.create(
-      user: User(
-        id: uid!,
-        email: emailAddressController.text,
-        name: userNameController.text,
-        dateOfBirth: dateOfBirthController.text
-      )
-    );
+        user: User(
+            id: uid!,
+            email: emailAddressController.text,
+            name: userNameController.text,
+            dateOfBirth: dateOfBirthController.text));
     userNameController.text = '';
     emailAddressController.text = '';
     dateOfBirthController.text = '';
     passwordController.text = '';
+  }
+
+  void toLogin({required BuildContext context}) {
+    Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const Login_page()),
+        (_) => false);
   }
 }
