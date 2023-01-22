@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -10,7 +12,6 @@ class MyPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final vm = ref.watch(myPageViewModelProvider);
-    final auth = FirebaseAuth.instance;
     return Scaffold(
         appBar: AppBar(
             title: const Text('マイページ'),
@@ -103,7 +104,7 @@ class MyPage extends ConsumerWidget {
                     ]),
                     const ListTile(
                       title: Text('Not belonging to any group yet.',
-                      style: TextStyle(fontSize: 20)),
+                          style: TextStyle(fontSize: 20)),
                     ),
                     Container(
                       margin: const EdgeInsets.only(top: 40),
