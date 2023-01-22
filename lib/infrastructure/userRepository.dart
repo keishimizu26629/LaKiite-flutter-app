@@ -12,7 +12,20 @@ class UserRepository {
     _usersRef = _db.collection('users');
   }
 
+  Future<User> findById({required String id}) async {
+    final doc = await _usersRef.doc(id).get();
+    return User.fromJson(_jsonFromSnapshot(doc));
+  }
+
   Future<void> create({required User user}) async {
     await _usersRef.doc(user.id).set(user.toJson());
+  }
+
+  Map<String, dynamic> _jsonFromSnapshot<T extends DocumentSnapshot>(T json) {
+    return {
+      'id': json.id,
+      'email': json['email'],
+      'name': json['name'],
+    };
   }
 }
