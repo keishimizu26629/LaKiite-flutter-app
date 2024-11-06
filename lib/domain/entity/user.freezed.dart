@@ -1,7 +1,7 @@
 // coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint
-// ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target
+// ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'user.dart';
 
@@ -12,44 +12,44 @@ part of 'user.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#custom-getters-and-methods');
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
-User _$UserFromJson(Map<String, dynamic> json) {
-  return _User.fromJson(json);
+AppUser _$AppUserFromJson(Map<String, dynamic> json) {
+  return _AppUser.fromJson(json);
 }
 
 /// @nodoc
-mixin _$User {
-  @JsonKey(name: 'id')
-  String get id => throw _privateConstructorUsedError;
-  @JsonKey(name: 'email')
-  String get email => throw _privateConstructorUsedError;
-  @JsonKey(name: 'name')
-  String get name => throw _privateConstructorUsedError;
-  @JsonKey(name: 'dateOfBirth')
-  String get dateOfBirth => throw _privateConstructorUsedError;
+mixin _$AppUser {
+  String get id =>
+      throw _privateConstructorUsedError; // ユーザーID（ユニークで、8文字以上の文字列）
+  Profile get profile => throw _privateConstructorUsedError; // プロフィール情報
+  List<String>? get friends =>
+      throw _privateConstructorUsedError; // フレンドリスト（ユーザーIDのリスト）
+  List<String>? get groups => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
-  $UserCopyWith<User> get copyWith => throw _privateConstructorUsedError;
+  $AppUserCopyWith<AppUser> get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $UserCopyWith<$Res> {
-  factory $UserCopyWith(User value, $Res Function(User) then) =
-      _$UserCopyWithImpl<$Res, User>;
+abstract class $AppUserCopyWith<$Res> {
+  factory $AppUserCopyWith(AppUser value, $Res Function(AppUser) then) =
+      _$AppUserCopyWithImpl<$Res, AppUser>;
   @useResult
   $Res call(
-      {@JsonKey(name: 'id') String id,
-      @JsonKey(name: 'email') String email,
-      @JsonKey(name: 'name') String name,
-      @JsonKey(name: 'dateOfBirth') String dateOfBirth});
+      {String id,
+      Profile profile,
+      List<String>? friends,
+      List<String>? groups});
+
+  $ProfileCopyWith<$Res> get profile;
 }
 
 /// @nodoc
-class _$UserCopyWithImpl<$Res, $Val extends User>
-    implements $UserCopyWith<$Res> {
-  _$UserCopyWithImpl(this._value, this._then);
+class _$AppUserCopyWithImpl<$Res, $Val extends AppUser>
+    implements $AppUserCopyWith<$Res> {
+  _$AppUserCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
@@ -60,74 +60,270 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
   @override
   $Res call({
     Object? id = null,
-    Object? email = null,
-    Object? name = null,
-    Object? dateOfBirth = null,
+    Object? profile = null,
+    Object? friends = freezed,
+    Object? groups = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
-      email: null == email
-          ? _value.email
-          : email // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      dateOfBirth: null == dateOfBirth
-          ? _value.dateOfBirth
-          : dateOfBirth // ignore: cast_nullable_to_non_nullable
-              as String,
+      profile: null == profile
+          ? _value.profile
+          : profile // ignore: cast_nullable_to_non_nullable
+              as Profile,
+      friends: freezed == friends
+          ? _value.friends
+          : friends // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      groups: freezed == groups
+          ? _value.groups
+          : groups // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
     ) as $Val);
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $ProfileCopyWith<$Res> get profile {
+    return $ProfileCopyWith<$Res>(_value.profile, (value) {
+      return _then(_value.copyWith(profile: value) as $Val);
+    });
   }
 }
 
 /// @nodoc
-abstract class _$$_UserCopyWith<$Res> implements $UserCopyWith<$Res> {
-  factory _$$_UserCopyWith(_$_User value, $Res Function(_$_User) then) =
-      __$$_UserCopyWithImpl<$Res>;
+abstract class _$$AppUserImplCopyWith<$Res> implements $AppUserCopyWith<$Res> {
+  factory _$$AppUserImplCopyWith(
+          _$AppUserImpl value, $Res Function(_$AppUserImpl) then) =
+      __$$AppUserImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
-      {@JsonKey(name: 'id') String id,
-      @JsonKey(name: 'email') String email,
-      @JsonKey(name: 'name') String name,
-      @JsonKey(name: 'dateOfBirth') String dateOfBirth});
+      {String id,
+      Profile profile,
+      List<String>? friends,
+      List<String>? groups});
+
+  @override
+  $ProfileCopyWith<$Res> get profile;
 }
 
 /// @nodoc
-class __$$_UserCopyWithImpl<$Res> extends _$UserCopyWithImpl<$Res, _$_User>
-    implements _$$_UserCopyWith<$Res> {
-  __$$_UserCopyWithImpl(_$_User _value, $Res Function(_$_User) _then)
+class __$$AppUserImplCopyWithImpl<$Res>
+    extends _$AppUserCopyWithImpl<$Res, _$AppUserImpl>
+    implements _$$AppUserImplCopyWith<$Res> {
+  __$$AppUserImplCopyWithImpl(
+      _$AppUserImpl _value, $Res Function(_$AppUserImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
   $Res call({
     Object? id = null,
-    Object? email = null,
-    Object? name = null,
-    Object? dateOfBirth = null,
+    Object? profile = null,
+    Object? friends = freezed,
+    Object? groups = freezed,
   }) {
-    return _then(_$_User(
+    return _then(_$AppUserImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
-      email: null == email
-          ? _value.email
-          : email // ignore: cast_nullable_to_non_nullable
-              as String,
+      profile: null == profile
+          ? _value.profile
+          : profile // ignore: cast_nullable_to_non_nullable
+              as Profile,
+      friends: freezed == friends
+          ? _value._friends
+          : friends // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      groups: freezed == groups
+          ? _value._groups
+          : groups // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$AppUserImpl implements _AppUser {
+  _$AppUserImpl(
+      {required this.id,
+      required this.profile,
+      final List<String>? friends,
+      final List<String>? groups})
+      : _friends = friends,
+        _groups = groups;
+
+  factory _$AppUserImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AppUserImplFromJson(json);
+
+  @override
+  final String id;
+// ユーザーID（ユニークで、8文字以上の文字列）
+  @override
+  final Profile profile;
+// プロフィール情報
+  final List<String>? _friends;
+// プロフィール情報
+  @override
+  List<String>? get friends {
+    final value = _friends;
+    if (value == null) return null;
+    if (_friends is EqualUnmodifiableListView) return _friends;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+// フレンドリスト（ユーザーIDのリスト）
+  final List<String>? _groups;
+// フレンドリスト（ユーザーIDのリスト）
+  @override
+  List<String>? get groups {
+    final value = _groups;
+    if (value == null) return null;
+    if (_groups is EqualUnmodifiableListView) return _groups;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  @override
+  String toString() {
+    return 'AppUser(id: $id, profile: $profile, friends: $friends, groups: $groups)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$AppUserImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.profile, profile) || other.profile == profile) &&
+            const DeepCollectionEquality().equals(other._friends, _friends) &&
+            const DeepCollectionEquality().equals(other._groups, _groups));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      profile,
+      const DeepCollectionEquality().hash(_friends),
+      const DeepCollectionEquality().hash(_groups));
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$AppUserImplCopyWith<_$AppUserImpl> get copyWith =>
+      __$$AppUserImplCopyWithImpl<_$AppUserImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$AppUserImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _AppUser implements AppUser {
+  factory _AppUser(
+      {required final String id,
+      required final Profile profile,
+      final List<String>? friends,
+      final List<String>? groups}) = _$AppUserImpl;
+
+  factory _AppUser.fromJson(Map<String, dynamic> json) = _$AppUserImpl.fromJson;
+
+  @override
+  String get id;
+  @override // ユーザーID（ユニークで、8文字以上の文字列）
+  Profile get profile;
+  @override // プロフィール情報
+  List<String>? get friends;
+  @override // フレンドリスト（ユーザーIDのリスト）
+  List<String>? get groups;
+  @override
+  @JsonKey(ignore: true)
+  _$$AppUserImplCopyWith<_$AppUserImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+Profile _$ProfileFromJson(Map<String, dynamic> json) {
+  return _Profile.fromJson(json);
+}
+
+/// @nodoc
+mixin _$Profile {
+  String get name => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $ProfileCopyWith<Profile> get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $ProfileCopyWith<$Res> {
+  factory $ProfileCopyWith(Profile value, $Res Function(Profile) then) =
+      _$ProfileCopyWithImpl<$Res, Profile>;
+  @useResult
+  $Res call({String name});
+}
+
+/// @nodoc
+class _$ProfileCopyWithImpl<$Res, $Val extends Profile>
+    implements $ProfileCopyWith<$Res> {
+  _$ProfileCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? name = null,
+  }) {
+    return _then(_value.copyWith(
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
-      dateOfBirth: null == dateOfBirth
-          ? _value.dateOfBirth
-          : dateOfBirth // ignore: cast_nullable_to_non_nullable
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$ProfileImplCopyWith<$Res> implements $ProfileCopyWith<$Res> {
+  factory _$$ProfileImplCopyWith(
+          _$ProfileImpl value, $Res Function(_$ProfileImpl) then) =
+      __$$ProfileImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String name});
+}
+
+/// @nodoc
+class __$$ProfileImplCopyWithImpl<$Res>
+    extends _$ProfileCopyWithImpl<$Res, _$ProfileImpl>
+    implements _$$ProfileImplCopyWith<$Res> {
+  __$$ProfileImplCopyWithImpl(
+      _$ProfileImpl _value, $Res Function(_$ProfileImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? name = null,
+  }) {
+    return _then(_$ProfileImpl(
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
               as String,
     ));
   }
@@ -135,86 +331,55 @@ class __$$_UserCopyWithImpl<$Res> extends _$UserCopyWithImpl<$Res, _$_User>
 
 /// @nodoc
 @JsonSerializable()
-class _$_User implements _User {
-  _$_User(
-      {@JsonKey(name: 'id') required this.id,
-      @JsonKey(name: 'email') required this.email,
-      @JsonKey(name: 'name') required this.name,
-      @JsonKey(name: 'dateOfBirth') required this.dateOfBirth});
+class _$ProfileImpl implements _Profile {
+  _$ProfileImpl({required this.name});
 
-  factory _$_User.fromJson(Map<String, dynamic> json) => _$$_UserFromJson(json);
+  factory _$ProfileImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ProfileImplFromJson(json);
 
   @override
-  @JsonKey(name: 'id')
-  final String id;
-  @override
-  @JsonKey(name: 'email')
-  final String email;
-  @override
-  @JsonKey(name: 'name')
   final String name;
-  @override
-  @JsonKey(name: 'dateOfBirth')
-  final String dateOfBirth;
 
   @override
   String toString() {
-    return 'User(id: $id, email: $email, name: $name, dateOfBirth: $dateOfBirth)';
+    return 'Profile(name: $name)';
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_User &&
-            (identical(other.id, id) || other.id == id) &&
-            (identical(other.email, email) || other.email == email) &&
-            (identical(other.name, name) || other.name == name) &&
-            (identical(other.dateOfBirth, dateOfBirth) ||
-                other.dateOfBirth == dateOfBirth));
+            other is _$ProfileImpl &&
+            (identical(other.name, name) || other.name == name));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, email, name, dateOfBirth);
+  int get hashCode => Object.hash(runtimeType, name);
 
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_UserCopyWith<_$_User> get copyWith =>
-      __$$_UserCopyWithImpl<_$_User>(this, _$identity);
+  _$$ProfileImplCopyWith<_$ProfileImpl> get copyWith =>
+      __$$ProfileImplCopyWithImpl<_$ProfileImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_UserToJson(
+    return _$$ProfileImplToJson(
       this,
     );
   }
 }
 
-abstract class _User implements User {
-  factory _User(
-          {@JsonKey(name: 'id') required final String id,
-          @JsonKey(name: 'email') required final String email,
-          @JsonKey(name: 'name') required final String name,
-          @JsonKey(name: 'dateOfBirth') required final String dateOfBirth}) =
-      _$_User;
+abstract class _Profile implements Profile {
+  factory _Profile({required final String name}) = _$ProfileImpl;
 
-  factory _User.fromJson(Map<String, dynamic> json) = _$_User.fromJson;
+  factory _Profile.fromJson(Map<String, dynamic> json) = _$ProfileImpl.fromJson;
 
   @override
-  @JsonKey(name: 'id')
-  String get id;
-  @override
-  @JsonKey(name: 'email')
-  String get email;
-  @override
-  @JsonKey(name: 'name')
   String get name;
   @override
-  @JsonKey(name: 'dateOfBirth')
-  String get dateOfBirth;
-  @override
   @JsonKey(ignore: true)
-  _$$_UserCopyWith<_$_User> get copyWith => throw _privateConstructorUsedError;
+  _$$ProfileImplCopyWith<_$ProfileImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }

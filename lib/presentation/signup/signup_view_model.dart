@@ -1,71 +1,26 @@
-import 'package:flutter/material.dart';
-// ignore: depend_on_referenced_packages
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tarakite/infrastructure/authRepository.dart';
-import 'package:tarakite/infrastructure/userRepository.dart';
-import 'package:tarakite/domain/entity/user.dart';
-import '../login/login.dart';
 import '../presentation_provider.dart';
-import '../../domain/interfaces/i_auth_repository.dart';
 
-final signUpViewModelProvider = Provider<SignUpViewModel>((ref) {
-  return SignUpViewModel(
-    ref: ref,
-    authRepository: ref.watch(authRepositoryProvider),
-    userRepository: ref.watch(userRepositoryProvider),
-  );
-});
+final signupViewModelProvider =
+    StateNotifierProvider<SignupViewModel, AsyncValue<void>>(
+  (ref) => SignupViewModel(ref),
+);
 
-class SignUpViewModel {
-  final ProviderRef ref;
-  final IauthRepository _authRepository;
-  final UserRepository _userRepository;
+class SignupViewModel extends StateNotifier<AsyncValue<void>> {
+  SignupViewModel(this.ref) : super(const AsyncData(null));
 
-  SignUpViewModel({
-    required this.ref,
-    required authRepository,
-    required userRepository,
-  })  : _authRepository = authRepository,
-        _userRepository = userRepository;
+  final Ref ref;
 
-  TextEditingController get userNameController =>
-      ref.read(userNameControllerStateProvider.state).state;
-
-  TextEditingController get emailAddressController =>
-      ref.read(emailAddressControllerStateProvider.state).state;
-
-  TextEditingController get dateOfBirthController =>
-      ref.read(dateOfBirthControllerStateProvider.state).state;
-
-  TextEditingController get passwordController =>
-      ref.read(passwordControllerStateProvider.state).state;
-
-  Future<void> signUp() async {
-    if (emailAddressController.text.isEmpty) {
-      throw 'メールアドレスを入力してください';
+  Future<void> signUp(String email, String password, String userId) async {
+    state = const AsyncLoading();
+    try {
+      if (userId.length < 8) {
+        throw Exception('ユーザーIDは8文字以上である必要があります');
+      }
+      await ref.read(authRepositoryProvider).signUp(email, password, userId);
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
     }
-    if (passwordController.text.isEmpty) {
-      throw 'パスワードを入力してください';
-    }
-    await _authRepository.signUp(
-        email: emailAddressController.text, password: passwordController.text);
-    final uid = _authRepository.getUid();
-    await _userRepository.create(
-        user: User(
-            id: uid!,
-            email: emailAddressController.text,
-            name: userNameController.text,
-            dateOfBirth: dateOfBirthController.text));
-    userNameController.text = '';
-    emailAddressController.text = '';
-    dateOfBirthController.text = '';
-    passwordController.text = '';
-  }
-
-  void toLogin({required BuildContext context}) {
-    Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const Login_page()),
-        (_) => false);
   }
 }

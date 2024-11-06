@@ -1,17 +1,15 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/interfaces/i_auth_repository.dart';
+import '../../infrastructure/auth_repository.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-final userNameControllerStateProvider = StateProvider<TextEditingController>(
-    (_) => TextEditingController(text: ''));
+// AuthRepositoryのプロバイダー
+final authRepositoryProvider = Provider<IAuthRepository>((ref) {
+  return AuthRepository(FirebaseAuth.instance, FirebaseFirestore.instance);
+});
 
-final emailAddressControllerStateProvider =
-    StateProvider<TextEditingController>(
-        (_) => TextEditingController(text: ''));
-
-final dateOfBirthControllerStateProvider = StateProvider<TextEditingController>(
-    (_) => TextEditingController(text: ''));
-
-final passwordControllerStateProvider = StateProvider<TextEditingController>(
-    (_) => TextEditingController(text: ''));
-
-final navigationBarSelectedIndexProvider = StateProvider<int>((_) => 0);
+// 認証状態のプロバイダー
+final authStateProvider = StreamProvider.autoDispose((ref) {
+  return ref.watch(authRepositoryProvider).authStateChanges();
+});
