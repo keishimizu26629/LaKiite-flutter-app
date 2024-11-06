@@ -6,18 +6,30 @@ part of 'user.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-// ignore: non_constant_identifier_names
-_$_User _$$_UserFromJson(Map<String, dynamic> json) => _$_User(
+_$AppUserImpl _$$AppUserImplFromJson(Map<String, dynamic> json) =>
+    _$AppUserImpl(
       id: json['id'] as String,
-      email: json['email'] as String,
-      name: json['name'] as String,
-      dateOfBirth: json['dateOfBirth'] as String,
+      profile: Profile.fromJson(json['profile'] as Map<String, dynamic>),
+      friends:
+          (json['friends'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      groups:
+          (json['groups'] as List<dynamic>?)?.map((e) => e as String).toList(),
     );
 
-// ignore: non_constant_identifier_names
-Map<String, dynamic> _$$_UserToJson(_$_User instance) => <String, dynamic>{
+Map<String, dynamic> _$$AppUserImplToJson(_$AppUserImpl instance) =>
+    <String, dynamic>{
       'id': instance.id,
-      'email': instance.email,
+      'profile': instance.profile,
+      'friends': instance.friends,
+      'groups': instance.groups,
+    };
+
+_$ProfileImpl _$$ProfileImplFromJson(Map<String, dynamic> json) =>
+    _$ProfileImpl(
+      name: json['name'] as String,
+    );
+
+Map<String, dynamic> _$$ProfileImplToJson(_$ProfileImpl instance) =>
+    <String, dynamic>{
       'name': instance.name,
-      'dateOfBirth': instance.dateOfBirth,
     };

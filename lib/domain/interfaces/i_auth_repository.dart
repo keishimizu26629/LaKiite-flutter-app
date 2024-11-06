@@ -1,13 +1,8 @@
+import 'package:tarakite/domain/entity/user.dart';
 
-abstract class IauthRepository {
-  get authStateChange => null;
-
-  Future<void> login({
-    required String email,
-    required String password,
-    required context,
-  });
-  Future<void> signUp({required String email, required String password});
-  Future<void> logout();
-  String? getUid();
+abstract class IAuthRepository {
+  Future<AppUser?> signIn(String email, String password);
+  Future<void> signOut();
+  Future<AppUser?> signUp(String email, String password, String userId);
+  Stream<AppUser?> authStateChanges();
 }

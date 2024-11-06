@@ -1,45 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '../myPage/myPage.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../group/group_page.dart';
+import '../timeline/timeline_page.dart';
+import '../myPage/my_page.dart';
 
-final selectedIndex = StateProvider((ref) => 0);
+class BottomNavigation extends ConsumerStatefulWidget {
+  const BottomNavigation({Key? key}) : super(key: key);
 
-class BottomNavigationPage extends ConsumerWidget {
-  const BottomNavigationPage({Key? key}) : super(key: key);
-  final List<Widget> _tabs = const [
-    Center(child: Text('タイムライン')),
-    Center(child: Text('カレンダー')),
-    MyPage(),
-  ];
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // ignore: no_leading_underscores_for_local_identifiers
-    final _selectedIndex = ref.watch(selectedIndex.state);
+  ConsumerState<ConsumerStatefulWidget> createState() => _BottomNavigationState();
+}
+
+class _BottomNavigationState extends ConsumerState<BottomNavigation> {
+  int _currentIndex = 0;
+  final List<Widget> _pages = [
+    const GroupPage(),
+    const TimelinePage(),
+    const MyPage(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-        body: _tabs[_selectedIndex.state],
-        bottomNavigationBar: BottomNavigationBar(
-            elevation: 0,
-            type: BottomNavigationBarType.fixed,
-            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
-            selectedItemColor: Colors.black,
-            currentIndex: _selectedIndex.state,
-            // ignore: prefer_const_literals_to_create_immutables
-            items: [
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.history),
-                label: 'タイムライン',
-              ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.calendar_month),
-                label: 'カレンダー',
-              ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'マイページ',
-              ),
-            ],
-            onTap: (int index) {
-              _selectedIndex.state = index;
-            }));
+      body: _pages[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'グループ'),
+          BottomNavigationBarItem(icon: Icon(Icons.timeline), label: 'タイムライン'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'マイページ'),
+        ],
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
+    );
   }
 }

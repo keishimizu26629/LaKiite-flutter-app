@@ -1,50 +1,23 @@
-import 'package:flutter/material.dart';
-// ignore: depend_on_referenced_packages
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tarakite/infrastructure/authRepository.dart';
 import '../presentation_provider.dart';
-import '../../domain/interfaces/i_auth_repository.dart';
-import '../signup/signup.dart';
 
-final loginViewModelProvider = Provider<LoginViewModel>((ref) {
-  return LoginViewModel(
-    ref: ref,
-    authRepository: ref.watch(authRepositoryProvider),
-  );
-});
+final loginViewModelProvider =
+    StateNotifierProvider<LoginViewModel, AsyncValue<void>>(
+  (ref) => LoginViewModel(ref),
+);
 
-class LoginViewModel {
-  final ProviderRef ref;
-  final IauthRepository authRepository;
+class LoginViewModel extends StateNotifier<AsyncValue<void>> {
+  LoginViewModel(this.ref) : super(const AsyncData(null));
 
-  LoginViewModel({required this.ref, required this.authRepository});
+  final Ref ref;
 
-  TextEditingController get emailAddressController =>
-      ref.read(emailAddressControllerStateProvider.state).state;
-
-  TextEditingController get passwordController =>
-      ref.read(passwordControllerStateProvider.state).state;
-
-  Future<void> login(context) async {
-    if (emailAddressController.text.isEmpty) {
-      throw 'メールアドレスを入力してください';
+  Future<void> signIn(String email, String password) async {
+    state = const AsyncLoading();
+    try {
+      await ref.read(authRepositoryProvider).signIn(email, password);
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
     }
-    if (passwordController.text.isEmpty) {
-      throw 'パスワードを入力してください';
-    }
-    await authRepository.login(
-      email: emailAddressController.text,
-      password: passwordController.text,
-      context: context,
-    );
-    emailAddressController.text = '';
-    passwordController.text = '';
-  }
-
-  void toSignUp({required BuildContext context}) {
-    Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const SignUp_page()),
-        (_) => false);
   }
 }

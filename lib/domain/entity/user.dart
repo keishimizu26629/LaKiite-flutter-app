@@ -1,19 +1,26 @@
-
-// ignore: depend_on_referenced_packages
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'user.freezed.dart';
 part 'user.g.dart';
 
 @freezed
-class User with _$User {
-  factory User({
-    @JsonKey(name: 'id') required String id,
-    @JsonKey(name: 'email') required String email,
-    @JsonKey(name: 'name') required String name,
-    @JsonKey(name: 'dateOfBirth') required String dateOfBirth,
-}) = _User;
+class AppUser with _$AppUser {
+  factory AppUser({
+    required String id, // ユーザーID（ユニークで、8文字以上の文字列）
+    required Profile profile, // プロフィール情報
+    List<String>? friends, // フレンドリスト（ユーザーIDのリスト）
+    List<String>? groups, // 所属グループリスト（グループIDのリスト）
+  }) = _AppUser;
 
-  factory User.fromJson(Map<String, dynamic> json) =>
-			_$UserFromJson(json);
+  factory AppUser.fromJson(Map<String, dynamic> json) => _$AppUserFromJson(json);
+}
+
+@freezed
+class Profile with _$Profile {
+  factory Profile({
+    required String name, // 表示名
+    // その他プロフィール情報を追加可能
+  }) = _Profile;
+
+  factory Profile.fromJson(Map<String, dynamic> json) => _$ProfileFromJson(json);
 }
