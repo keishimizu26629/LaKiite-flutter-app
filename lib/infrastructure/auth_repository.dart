@@ -1,64 +1,78 @@
-import 'package:firebase_auth/firebase_auth.dart' as firebase;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../domain/entity/user.dart';
-import '../../domain/interfaces/i_auth_repository.dart';
+import '../domain/interfaces/i_auth_repository.dart';
+import '../domain/entity/user.dart';
 
 class AuthRepository implements IAuthRepository {
-  final firebase.FirebaseAuth _firebaseAuth;
+  final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
 
-  AuthRepository(this._firebaseAuth, this._firestore);
+  AuthRepository(this._auth, this._firestore);
 
   @override
-  Future<AppUser?> signIn(String email, String password) async {
-    final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-    return _getUserFromFirestore(userCredential.user?.uid);
+  Stream<UserModel?> authStateChanges() async* {
+    await for (final user in _auth.authStateChanges()) {
+      if (user == null) {
+        yield null;
+      } else {
+        final doc = await _firestore.collection('users').doc(user.uid).get();
+        if (doc.exists) {
+          yield UserModel.fromFirestore(doc);
+        } else {
+          yield null;
+        }
+      }
+    }
   }
 
   @override
-  Future<AppUser?> signUp(String email, String password, String userId) async {
-    final userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+  Future<UserModel?> signIn(String email, String password) async {
+    try {
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      if (userCredential.user != null) {
+        final doc = await _firestore
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .get();
+        if (doc.exists) {
+          return UserModel.fromFirestore(doc);
+        }
+      }
+      return null;
+    } catch (e) {
+      rethrow;
+    }
+  }
 
-    final appUser = AppUser(
-      id: userCredential.user!.uid,
-      profile: Profile(name: '新しいユーザー'),
-      friends: [],
-      groups: [],
-    );
-
-    await _firestore.collection('users').doc(appUser.id).set(appUser.toJson());
-    return appUser;
+  @override
+  Future<UserModel?> signUp(String email, String password, String name) async {
+    try {
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      if (userCredential.user != null) {
+        final userModel = UserModel.create(
+          id: userCredential.user!.uid,
+          name: name,
+        );
+        await _firestore
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .set(userModel.toFirestore());
+        return userModel;
+      }
+      return null;
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override
   Future<void> signOut() async {
-    await _firebaseAuth.signOut();
-  }
-
-  @override
-  Stream<AppUser?> authStateChanges() {
-    return _firebaseAuth.authStateChanges().asyncMap((firebaseUser) {
-      if (firebaseUser != null) {
-        return _getUserFromFirestore(firebaseUser.uid);
-      } else {
-        return null;
-      }
-    });
-  }
-
-  Future<AppUser?> _getUserFromFirestore(String? uid) async {
-    if (uid == null) return null;
-    final doc = await _firestore.collection('users').doc(uid).get();
-    if (doc.exists) {
-      return AppUser.fromJson(doc.data()!);
-    } else {
-      return null;
-    }
+    await _auth.signOut();
   }
 }

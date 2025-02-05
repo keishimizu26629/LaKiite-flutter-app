@@ -14,7 +14,8 @@ class LoginViewModel extends StateNotifier<AsyncValue<void>> {
   Future<void> signIn(String email, String password) async {
     state = const AsyncLoading();
     try {
-      await ref.read(authRepositoryProvider).signIn(email, password);
+      // AuthNotifierを使用して認証処理を実行
+      await ref.read(authNotifierProvider.notifier).signIn(email, password);
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);

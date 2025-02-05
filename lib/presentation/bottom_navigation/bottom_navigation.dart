@@ -1,40 +1,51 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../group/group_page.dart';
-import '../timeline/timeline_page.dart';
+import '../home/home_page.dart';
+import '../calendar/calendar_page.dart';
 import '../myPage/my_page.dart';
 
-class BottomNavigation extends ConsumerStatefulWidget {
-  const BottomNavigation({Key? key}) : super(key: key);
+class BottomNavigationPage extends StatefulWidget {
+  const BottomNavigationPage({super.key});
 
   @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _BottomNavigationState();
+  State<BottomNavigationPage> createState() => _BottomNavigationPageState();
 }
 
-class _BottomNavigationState extends ConsumerState<BottomNavigation> {
-  int _currentIndex = 0;
-  final List<Widget> _pages = [
-    const GroupPage(),
-    const TimelinePage(),
-    const MyPage(),
+class _BottomNavigationPageState extends State<BottomNavigationPage> {
+  int _selectedIndex = 0;
+
+  static const List<Widget> _pages = [
+    HomePage(),
+    CalendarPage(),
+    MyPage(),
   ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_currentIndex],
+      body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'グループ'),
-          BottomNavigationBarItem(icon: Icon(Icons.timeline), label: 'タイムライン'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'マイページ'),
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'ホーム',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today),
+            label: 'カレンダー',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'マイページ',
+          ),
         ],
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
       ),
     );
   }
