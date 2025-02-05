@@ -1,26 +1,44 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../presentation_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../domain/entity/user.dart';
 
-final signupViewModelProvider =
-    StateNotifierProvider<SignupViewModel, AsyncValue<void>>(
-  (ref) => SignupViewModel(ref),
-);
+final signupViewModelProvider = Provider.autoDispose((ref) => SignupViewModel(ref));
 
-class SignupViewModel extends StateNotifier<AsyncValue<void>> {
-  SignupViewModel(this.ref) : super(const AsyncData(null));
+class SignupViewModel {
+  final Ref _ref;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  final Ref ref;
+  SignupViewModel(this._ref);
 
-  Future<void> signUp(String email, String password, String userId) async {
-    state = const AsyncLoading();
+  Future<void> signUp({
+    required String email,
+    required String password,
+    required String name,
+  }) async {
     try {
-      if (userId.length < 8) {
-        throw Exception('ユーザーIDは8文字以上である必要があります');
+      // Firebase Authenticationでユーザーを作成
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (userCredential.user != null) {
+        // UserModelを作成
+        final userModel = UserModel.create(
+          id: userCredential.user!.uid,
+          name: name,
+        );
+
+        // Firestoreにユーザーデータを保存
+        await _firestore
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .set(userModel.toFirestore());
       }
-      await ref.read(authRepositoryProvider).signUp(email, password, userId);
-      state = const AsyncData(null);
-    } catch (e, st) {
-      state = AsyncError(e, st);
+    } catch (e) {
+      rethrow;
     }
   }
 }
