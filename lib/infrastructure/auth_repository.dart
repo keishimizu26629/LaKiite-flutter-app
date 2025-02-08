@@ -1,13 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../domain/interfaces/i_auth_repository.dart';
+import '../domain/interfaces/i_user_repository.dart';
 import '../domain/entity/user.dart';
 
 class AuthRepository implements IAuthRepository {
   final FirebaseAuth _auth;
-  final FirebaseFirestore _firestore;
+  final IUserRepository _userRepository;
 
-  AuthRepository(this._auth, this._firestore);
+  AuthRepository(this._auth, this._userRepository);
 
   @override
   Stream<UserModel?> authStateChanges() async* {
@@ -15,12 +15,8 @@ class AuthRepository implements IAuthRepository {
       if (user == null) {
         yield null;
       } else {
-        final doc = await _firestore.collection('users').doc(user.uid).get();
-        if (doc.exists) {
-          yield UserModel.fromFirestore(doc);
-        } else {
-          yield null;
-        }
+        final userModel = await _userRepository.getUser(user.uid);
+        yield userModel;
       }
     }
   }
@@ -33,13 +29,7 @@ class AuthRepository implements IAuthRepository {
         password: password,
       );
       if (userCredential.user != null) {
-        final doc = await _firestore
-            .collection('users')
-            .doc(userCredential.user!.uid)
-            .get();
-        if (doc.exists) {
-          return UserModel.fromFirestore(doc);
-        }
+        return await _userRepository.getUser(userCredential.user!.uid);
       }
       return null;
     } catch (e) {
@@ -59,10 +49,7 @@ class AuthRepository implements IAuthRepository {
           id: userCredential.user!.uid,
           name: name,
         );
-        await _firestore
-            .collection('users')
-            .doc(userCredential.user!.uid)
-            .set(userModel.toFirestore());
+        await _userRepository.createUser(userModel);
         return userModel;
       }
       return null;

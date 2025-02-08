@@ -1,11 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:tarakite/domain/entity/schedule.dart';
-import 'package:tarakite/domain/interfaces/i_schedule_repository.dart';
+import '../domain/entity/schedule.dart';
+import '../domain/interfaces/i_schedule_repository.dart';
 
 class ScheduleRepository implements IScheduleRepository {
   final FirebaseFirestore _firestore;
 
-  ScheduleRepository(this._firestore);
+  ScheduleRepository() : _firestore = FirebaseFirestore.instance;
+
+  Map<String, dynamic> _toFirestore(Schedule schedule) {
+    final data = schedule.toJson();
+    data['updatedAt'] = FieldValue.serverTimestamp();
+    return data;
+  }
 
   @override
   Future<List<Schedule>> getSchedules(String groupId) async {
@@ -45,13 +51,10 @@ class ScheduleRepository implements IScheduleRepository {
 
   @override
   Future<void> updateSchedule(Schedule schedule) async {
-    final updateData = schedule.toJson();
-    updateData['updatedAt'] = FieldValue.serverTimestamp();
-
     await _firestore
         .collection('schedules')
         .doc(schedule.id)
-        .update(updateData);
+        .update(_toFirestore(schedule));
   }
 
   @override
