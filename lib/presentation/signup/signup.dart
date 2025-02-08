@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../providers.dart';
 import 'signup_view_model.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
@@ -75,7 +74,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               TextField(
                 controller: _nameController,
                 decoration: const InputDecoration(
-                  labelText: '名前(本名)',
+                  labelText: '名前(フルネーム)',
                   border: OutlineInputBorder(),
                 ),
                 textInputAction: TextInputAction.next,

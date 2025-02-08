@@ -1,14 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entity/user.dart';
+import '../../domain/interfaces/i_user_repository.dart';
+import '../../infrastructure/user_repository.dart';
 
-final signupViewModelProvider = Provider.autoDispose((ref) => SignupViewModel(ref));
+final userRepositoryProvider = Provider<IUserRepository>((ref) => UserRepository());
+
+final signupViewModelProvider =
+    Provider.autoDispose<SignupViewModel>((ref) => SignupViewModel(ref));
 
 class SignupViewModel {
   final Ref _ref;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   SignupViewModel(this._ref);
 
@@ -18,26 +21,28 @@ class SignupViewModel {
     required String name,
   }) async {
     try {
-      // Firebase Authenticationでユーザーを作成
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      if (userCredential.user != null) {
-        // UserModelを作成
-        final userModel = UserModel.create(
-          id: userCredential.user!.uid,
-          name: name,
-        );
-
-        // Firestoreにユーザーデータを保存
-        await _firestore
-            .collection('users')
-            .doc(userCredential.user!.uid)
-            .set(userModel.toFirestore());
+      if (userCredential.user == null) {
+        throw Exception('ユーザーの作成に失敗しました');
       }
+
+      final uid = userCredential.user!.uid;
+      final userRepository = _ref.read(userRepositoryProvider);
+
+      final userModel = UserModel.create(
+        id: uid,
+        name: name,
+      );
+
+      await userRepository.createUser(userModel);
+
+      print('User document created successfully');
     } catch (e) {
+      print('Error in signUp: $e');
       rethrow;
     }
   }

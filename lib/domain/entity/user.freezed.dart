@@ -23,8 +23,11 @@ mixin _$UserModel {
   String get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get displayName => throw _privateConstructorUsedError;
-  String get userId => throw _privateConstructorUsedError;
+  @JsonKey(
+      fromJson: UserModel._searchIdFromJson, toJson: UserModel._searchIdToJson)
+  UserId get searchId => throw _privateConstructorUsedError;
   List<String> get friends => throw _privateConstructorUsedError;
+  String? get iconUrl => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -41,8 +44,10 @@ abstract class $UserModelCopyWith<$Res> {
       {String id,
       String name,
       String displayName,
-      String userId,
-      List<String> friends});
+      @JsonKey(fromJson: UserModel._searchIdFromJson, toJson: UserModel._searchIdToJson)
+          UserId searchId,
+      List<String> friends,
+      String? iconUrl});
 }
 
 /// @nodoc
@@ -61,8 +66,9 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? id = null,
     Object? name = null,
     Object? displayName = null,
-    Object? userId = null,
+    Object? searchId = null,
     Object? friends = null,
+    Object? iconUrl = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -77,14 +83,18 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
           ? _value.displayName
           : displayName // ignore: cast_nullable_to_non_nullable
               as String,
-      userId: null == userId
-          ? _value.userId
-          : userId // ignore: cast_nullable_to_non_nullable
-              as String,
+      searchId: null == searchId
+          ? _value.searchId
+          : searchId // ignore: cast_nullable_to_non_nullable
+              as UserId,
       friends: null == friends
           ? _value.friends
           : friends // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      iconUrl: freezed == iconUrl
+          ? _value.iconUrl
+          : iconUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -101,8 +111,10 @@ abstract class _$$UserModelImplCopyWith<$Res>
       {String id,
       String name,
       String displayName,
-      String userId,
-      List<String> friends});
+      @JsonKey(fromJson: UserModel._searchIdFromJson, toJson: UserModel._searchIdToJson)
+          UserId searchId,
+      List<String> friends,
+      String? iconUrl});
 }
 
 /// @nodoc
@@ -119,8 +131,9 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? id = null,
     Object? name = null,
     Object? displayName = null,
-    Object? userId = null,
+    Object? searchId = null,
     Object? friends = null,
+    Object? iconUrl = freezed,
   }) {
     return _then(_$UserModelImpl(
       id: null == id
@@ -135,27 +148,34 @@ class __$$UserModelImplCopyWithImpl<$Res>
           ? _value.displayName
           : displayName // ignore: cast_nullable_to_non_nullable
               as String,
-      userId: null == userId
-          ? _value.userId
-          : userId // ignore: cast_nullable_to_non_nullable
-              as String,
+      searchId: null == searchId
+          ? _value.searchId
+          : searchId // ignore: cast_nullable_to_non_nullable
+              as UserId,
       friends: null == friends
           ? _value._friends
           : friends // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      iconUrl: freezed == iconUrl
+          ? _value.iconUrl
+          : iconUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(explicitToJson: true)
 class _$UserModelImpl extends _UserModel {
   const _$UserModelImpl(
       {required this.id,
       required this.name,
       required this.displayName,
-      required this.userId,
-      required final List<String> friends})
+      @JsonKey(fromJson: UserModel._searchIdFromJson, toJson: UserModel._searchIdToJson)
+          required this.searchId,
+      required final List<String> friends,
+      this.iconUrl})
       : _friends = friends,
         super._();
 
@@ -169,7 +189,9 @@ class _$UserModelImpl extends _UserModel {
   @override
   final String displayName;
   @override
-  final String userId;
+  @JsonKey(
+      fromJson: UserModel._searchIdFromJson, toJson: UserModel._searchIdToJson)
+  final UserId searchId;
   final List<String> _friends;
   @override
   List<String> get friends {
@@ -179,8 +201,11 @@ class _$UserModelImpl extends _UserModel {
   }
 
   @override
+  final String? iconUrl;
+
+  @override
   String toString() {
-    return 'UserModel(id: $id, name: $name, displayName: $displayName, userId: $userId, friends: $friends)';
+    return 'UserModel(id: $id, name: $name, displayName: $displayName, searchId: $searchId, friends: $friends, iconUrl: $iconUrl)';
   }
 
   @override
@@ -192,14 +217,16 @@ class _$UserModelImpl extends _UserModel {
             (identical(other.name, name) || other.name == name) &&
             (identical(other.displayName, displayName) ||
                 other.displayName == displayName) &&
-            (identical(other.userId, userId) || other.userId == userId) &&
-            const DeepCollectionEquality().equals(other._friends, _friends));
+            (identical(other.searchId, searchId) ||
+                other.searchId == searchId) &&
+            const DeepCollectionEquality().equals(other._friends, _friends) &&
+            (identical(other.iconUrl, iconUrl) || other.iconUrl == iconUrl));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, displayName, userId,
-      const DeepCollectionEquality().hash(_friends));
+  int get hashCode => Object.hash(runtimeType, id, name, displayName, searchId,
+      const DeepCollectionEquality().hash(_friends), iconUrl);
 
   @JsonKey(ignore: true)
   @override
@@ -220,8 +247,10 @@ abstract class _UserModel extends UserModel {
       {required final String id,
       required final String name,
       required final String displayName,
-      required final String userId,
-      required final List<String> friends}) = _$UserModelImpl;
+      @JsonKey(fromJson: UserModel._searchIdFromJson, toJson: UserModel._searchIdToJson)
+          required final UserId searchId,
+      required final List<String> friends,
+      final String? iconUrl}) = _$UserModelImpl;
   const _UserModel._() : super._();
 
   factory _UserModel.fromJson(Map<String, dynamic> json) =
@@ -234,9 +263,13 @@ abstract class _UserModel extends UserModel {
   @override
   String get displayName;
   @override
-  String get userId;
+  @JsonKey(
+      fromJson: UserModel._searchIdFromJson, toJson: UserModel._searchIdToJson)
+  UserId get searchId;
   @override
   List<String> get friends;
+  @override
+  String? get iconUrl;
   @override
   @JsonKey(ignore: true)
   _$$UserModelImplCopyWith<_$UserModelImpl> get copyWith =>

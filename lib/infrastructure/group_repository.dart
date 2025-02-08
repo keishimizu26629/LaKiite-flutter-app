@@ -1,11 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:tarakite/domain/entity/group.dart';
-import 'package:tarakite/domain/interfaces/i_group_repository.dart';
+import '../domain/entity/group.dart';
+import '../domain/interfaces/i_group_repository.dart';
 
 class GroupRepository implements IGroupRepository {
   final FirebaseFirestore _firestore;
 
-  GroupRepository(this._firestore);
+  GroupRepository() : _firestore = FirebaseFirestore.instance;
+
+  Map<String, dynamic> _toFirestore(Group group) {
+    return {
+      ...group.toJson(),
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+  }
 
   @override
   Future<List<Group>> getGroups() async {
@@ -39,7 +46,10 @@ class GroupRepository implements IGroupRepository {
 
   @override
   Future<void> updateGroup(Group group) async {
-    await _firestore.collection('groups').doc(group.id).update(group.toJson());
+    await _firestore
+        .collection('groups')
+        .doc(group.id)
+        .update(_toFirestore(group));
   }
 
   @override
@@ -53,7 +63,6 @@ class GroupRepository implements IGroupRepository {
       'memberIds': FieldValue.arrayUnion([userId]),
     });
 
-    // ユーザーのグループリストも更新
     await _firestore.collection('users').doc(userId).update({
       'groups': FieldValue.arrayUnion([groupId]),
     });
@@ -65,7 +74,6 @@ class GroupRepository implements IGroupRepository {
       'memberIds': FieldValue.arrayRemove([userId]),
     });
 
-    // ユーザーのグループリストからも削除
     await _firestore.collection('users').doc(userId).update({
       'groups': FieldValue.arrayRemove([groupId]),
     });

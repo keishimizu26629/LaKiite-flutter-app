@@ -11,9 +11,10 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       name: json['name'] as String,
       displayName: json['displayName'] as String,
-      userId: json['userId'] as String,
+      searchId: UserModel._searchIdFromJson(json['searchId'] as String),
       friends:
           (json['friends'] as List<dynamic>).map((e) => e as String).toList(),
+      iconUrl: json['iconUrl'] as String?,
     );
 
 Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
@@ -21,6 +22,7 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'id': instance.id,
       'name': instance.name,
       'displayName': instance.displayName,
-      'userId': instance.userId,
+      'searchId': UserModel._searchIdToJson(instance.searchId),
       'friends': instance.friends,
+      'iconUrl': instance.iconUrl,
     };

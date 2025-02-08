@@ -58,12 +58,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(authStateProvider, (previous, next) {
-      if (next.value != null) {
-        context.go('/');
-      }
-    });
-
     return Scaffold(
       appBar: AppBar(title: const Text('ログイン')),
       body: SingleChildScrollView(

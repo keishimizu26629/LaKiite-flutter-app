@@ -1,6 +1,6 @@
-import 'dart:math';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../value/user_id.dart';
+import '../service/user_id_generator.dart';
 
 part 'user.freezed.dart';
 part 'user.g.dart';
@@ -9,12 +9,15 @@ part 'user.g.dart';
 class UserModel with _$UserModel {
   const UserModel._();
 
+  @JsonSerializable(explicitToJson: true)
   const factory UserModel({
     required String id,
     required String name,
     required String displayName,
-    required String userId,
+    @JsonKey(fromJson: UserModel._searchIdFromJson, toJson: UserModel._searchIdToJson)
+    required UserId searchId,
     required List<String> friends,
+    String? iconUrl,
   }) = _UserModel;
 
   factory UserModel.fromJson(Map<String, dynamic> json) => _$UserModelFromJson(json);
@@ -23,36 +26,16 @@ class UserModel with _$UserModel {
     required String id,
     required String name,
   }) {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    final random = Random();
-    final userId = List.generate(8, (index) => chars[random.nextInt(chars.length)]).join();
-
     return UserModel(
       id: id,
       name: name,
       displayName: name,
-      userId: userId,
+      searchId: UserIdGenerator.generateUserId(),
       friends: const [],
+      iconUrl: null,
     );
   }
 
-  factory UserModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return UserModel(
-      id: doc.id,
-      name: data['name'] as String,
-      displayName: data['displayName'] as String,
-      userId: data['userId'] as String,
-      friends: List<String>.from(data['friends'] as List),
-    );
-  }
-
-  Map<String, dynamic> toFirestore() {
-    return {
-      'name': name,
-      'displayName': displayName,
-      'userId': userId,
-      'friends': friends,
-    };
-  }
+  static UserId _searchIdFromJson(String value) => UserId(value);
+  static String _searchIdToJson(UserId userId) => userId.toString();
 }
