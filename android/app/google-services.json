@@ -2,7 +2,7 @@
   "project_info": {
     "project_number": "472076922540",
     "project_id": "tarakite-flutter-app-dev",
-    "storage_bucket": "tarakite-flutter-app-dev.appspot.com"
+    "storage_bucket": "tarakite-flutter-app-dev.firebasestorage.app"
   },
   "client": [
     {
@@ -29,6 +29,13 @@
             {
               "client_id": "472076922540-ecm98ukcmvs1v0othdlq658cdour15fg.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "472076922540-2gm8snojea6djj4dn9ensup6e3466m9q.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.tarakite"
+              }
             }
           ]
         }
