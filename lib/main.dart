@@ -2,37 +2,69 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'presentation/login/login.dart';
+import 'presentation/login/login_page.dart';
 import 'presentation/signup/signup.dart';
 import 'presentation/bottom_navigation/bottom_navigation.dart';
-import 'presentation/providers.dart';
+import 'presentation/presentation_provider.dart';
+import 'application/auth/auth_state.dart';
 
+/// アプリケーションのエントリーポイント
+///
+/// 初期化処理:
+/// - Flutterウィジェットバインディングの初期化
+/// - Firebaseの初期化
+/// - アプリケーションの起動
 void main() async {
+  // Flutterウィジェットバインディングの初期化
   WidgetsFlutterBinding.ensureInitialized();
+  // Firebaseの初期化
   await Firebase.initializeApp();
+  // アプリケーションの起動
   runApp(const ProviderScope(child: MyApp()));
 }
 
+/// アプリケーションのルーティング設定を提供するプロバイダー
+///
+/// 機能:
+/// - 認証状態に基づいたリダイレクト処理
+/// - アプリケーションの主要なルート定義
+///
+/// パラメータ:
+/// - [ref] Riverpodのプロバイダー参照
+///
+/// 戻り値:
+/// - [GoRouter] 設定されたルーターインスタンス
 final routerProvider = Provider<GoRouter>((ref) {
+  // 認証状態の監視
   final authState = ref.watch(authNotifierProvider);
 
   return GoRouter(
     refreshListenable: ChangeNotifier(),
     redirect: (context, state) {
-      final isLoggedIn = authState.status == AuthStatus.authenticated;
-      final isLoggingIn = state.location == '/login';
-      final isSigningUp = state.location == '/signup';
+      return authState.when(
+        data: (authState) {
+          // 現在の認証状態とナビゲーション状態を確認
+          final isLoggedIn = authState.status == AuthStatus.authenticated;
+          final isLoggingIn = state.location == '/login';
+          final isSigningUp = state.location == '/signup';
 
-      if (!isLoggedIn && !isLoggingIn && !isSigningUp) {
-        return '/login';
-      }
+          // 未認証ユーザーのリダイレクト処理
+          if (!isLoggedIn && !isLoggingIn && !isSigningUp) {
+            return '/login';
+          }
 
-      if (isLoggedIn && (isLoggingIn || isSigningUp)) {
-        return '/';
-      }
+          // 認証済みユーザーのリダイレクト処理
+          if (isLoggedIn && (isLoggingIn || isSigningUp)) {
+            return '/';
+          }
 
-      return null;
+          return null;
+        },
+        loading: () => null,
+        error: (_, __) => '/login',
+      );
     },
+    // アプリケーションのルート定義
     routes: [
       GoRoute(
         path: '/',
@@ -50,11 +82,22 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
+/// アプリケーションのルートウィジェット
+///
+/// 設定:
+/// - アプリケーションタイトル
+/// - テーマ設定
+/// - ルーティング設定
+///
+/// 依存:
+/// - [ProviderScope]の子ウィジェットとして使用
+/// - [routerProvider]からルーティング設定を取得
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // ルーター設定の取得
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
