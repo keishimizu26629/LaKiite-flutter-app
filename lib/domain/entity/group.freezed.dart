@@ -22,8 +22,8 @@ Group _$GroupFromJson(Map<String, dynamic> json) {
 mixin _$Group {
   String get id => throw _privateConstructorUsedError;
   String get groupName => throw _privateConstructorUsedError;
+  String get ownerId => throw _privateConstructorUsedError;
   List<String> get memberIds => throw _privateConstructorUsedError;
-  String get createdBy => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -39,8 +39,8 @@ abstract class $GroupCopyWith<$Res> {
   $Res call(
       {String id,
       String groupName,
+      String ownerId,
       List<String> memberIds,
-      String createdBy,
       DateTime createdAt});
 }
 
@@ -59,8 +59,8 @@ class _$GroupCopyWithImpl<$Res, $Val extends Group>
   $Res call({
     Object? id = null,
     Object? groupName = null,
+    Object? ownerId = null,
     Object? memberIds = null,
-    Object? createdBy = null,
     Object? createdAt = null,
   }) {
     return _then(_value.copyWith(
@@ -72,14 +72,14 @@ class _$GroupCopyWithImpl<$Res, $Val extends Group>
           ? _value.groupName
           : groupName // ignore: cast_nullable_to_non_nullable
               as String,
+      ownerId: null == ownerId
+          ? _value.ownerId
+          : ownerId // ignore: cast_nullable_to_non_nullable
+              as String,
       memberIds: null == memberIds
           ? _value.memberIds
           : memberIds // ignore: cast_nullable_to_non_nullable
               as List<String>,
-      createdBy: null == createdBy
-          ? _value.createdBy
-          : createdBy // ignore: cast_nullable_to_non_nullable
-              as String,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -98,8 +98,8 @@ abstract class _$$GroupImplCopyWith<$Res> implements $GroupCopyWith<$Res> {
   $Res call(
       {String id,
       String groupName,
+      String ownerId,
       List<String> memberIds,
-      String createdBy,
       DateTime createdAt});
 }
 
@@ -116,8 +116,8 @@ class __$$GroupImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? groupName = null,
+    Object? ownerId = null,
     Object? memberIds = null,
-    Object? createdBy = null,
     Object? createdAt = null,
   }) {
     return _then(_$GroupImpl(
@@ -129,14 +129,14 @@ class __$$GroupImplCopyWithImpl<$Res>
           ? _value.groupName
           : groupName // ignore: cast_nullable_to_non_nullable
               as String,
+      ownerId: null == ownerId
+          ? _value.ownerId
+          : ownerId // ignore: cast_nullable_to_non_nullable
+              as String,
       memberIds: null == memberIds
           ? _value._memberIds
           : memberIds // ignore: cast_nullable_to_non_nullable
               as List<String>,
-      createdBy: null == createdBy
-          ? _value.createdBy
-          : createdBy // ignore: cast_nullable_to_non_nullable
-              as String,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -151,8 +151,8 @@ class _$GroupImpl implements _Group {
   _$GroupImpl(
       {required this.id,
       required this.groupName,
+      required this.ownerId,
       required final List<String> memberIds,
-      required this.createdBy,
       required this.createdAt})
       : _memberIds = memberIds;
 
@@ -163,6 +163,8 @@ class _$GroupImpl implements _Group {
   final String id;
   @override
   final String groupName;
+  @override
+  final String ownerId;
   final List<String> _memberIds;
   @override
   List<String> get memberIds {
@@ -172,13 +174,11 @@ class _$GroupImpl implements _Group {
   }
 
   @override
-  final String createdBy;
-  @override
   final DateTime createdAt;
 
   @override
   String toString() {
-    return 'Group(id: $id, groupName: $groupName, memberIds: $memberIds, createdBy: $createdBy, createdAt: $createdAt)';
+    return 'Group(id: $id, groupName: $groupName, ownerId: $ownerId, memberIds: $memberIds, createdAt: $createdAt)';
   }
 
   @override
@@ -189,18 +189,17 @@ class _$GroupImpl implements _Group {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.groupName, groupName) ||
                 other.groupName == groupName) &&
+            (identical(other.ownerId, ownerId) || other.ownerId == ownerId) &&
             const DeepCollectionEquality()
                 .equals(other._memberIds, _memberIds) &&
-            (identical(other.createdBy, createdBy) ||
-                other.createdBy == createdBy) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, groupName,
-      const DeepCollectionEquality().hash(_memberIds), createdBy, createdAt);
+  int get hashCode => Object.hash(runtimeType, id, groupName, ownerId,
+      const DeepCollectionEquality().hash(_memberIds), createdAt);
 
   @JsonKey(ignore: true)
   @override
@@ -220,8 +219,8 @@ abstract class _Group implements Group {
   factory _Group(
       {required final String id,
       required final String groupName,
+      required final String ownerId,
       required final List<String> memberIds,
-      required final String createdBy,
       required final DateTime createdAt}) = _$GroupImpl;
 
   factory _Group.fromJson(Map<String, dynamic> json) = _$GroupImpl.fromJson;
@@ -231,9 +230,9 @@ abstract class _Group implements Group {
   @override
   String get groupName;
   @override
-  List<String> get memberIds;
+  String get ownerId;
   @override
-  String get createdBy;
+  List<String> get memberIds;
   @override
   DateTime get createdAt;
   @override

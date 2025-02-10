@@ -13,103 +13,48 @@ class UserRepository implements IUserRepository {
       : _firestore = FirebaseFirestore.instance,
         _storage = FirebaseStorage.instance;
 
-  Map<String, dynamic> _toFirestore(UserModel user) {
-    return {
-      'id': user.id,
-      'name': user.name,
-      'displayName': user.displayName,
-      'searchId': user.searchId.toString(),
-      'friends': user.friends,
-      'iconUrl': user.iconUrl,
-      'createdAt': FieldValue.serverTimestamp(),
-    };
-  }
-
-  UserModel _fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return UserModel(
-      id: doc.id,
-      name: data['name'] as String,
-      displayName: data['displayName'] as String,
-      searchId: UserId(data['searchId'] as String),
-      friends: List<String>.from(data['friends'] as List),
-      iconUrl: data['iconUrl'] as String?,
-    );
-  }
-
   @override
   Future<UserModel?> getUser(String id) async {
     final doc = await _firestore.collection('users').doc(id).get();
     if (!doc.exists) return null;
-    return _fromFirestore(doc);
+    final data = doc.data()!;
+    data['id'] = doc.id;
+    return UserModel.fromJson(data);
   }
 
   @override
   Future<void> createUser(UserModel user) async {
-    await _firestore
-        .collection('users')
-        .doc(user.id)
-        .set(_toFirestore(user));
+    await _firestore.collection('users').doc(user.id).set(user.toJson());
   }
 
   @override
   Future<void> updateUser(UserModel user) async {
-    await _firestore
-        .collection('users')
-        .doc(user.id)
-        .update(_toFirestore(user));
+    await _firestore.collection('users').doc(user.id).update(user.toJson());
   }
 
   @override
   Future<void> deleteUser(String id) async {
-    final user = await getUser(id);
-    if (user?.iconUrl != null) {
-      await deleteUserIcon(id);
-    }
     await _firestore.collection('users').doc(id).delete();
   }
 
   @override
   Future<String?> uploadUserIcon(String userId, Uint8List imageBytes) async {
-    try {
-      final ref = _storage.ref().child('user_icons/$userId.jpg');
-      await ref.putData(
-        imageBytes,
-        SettableMetadata(contentType: 'image/jpeg'),
-      );
-
-      final iconUrl = await ref.getDownloadURL();
-
-      await _firestore.collection('users').doc(userId).update({
-        'iconUrl': iconUrl,
-      });
-
-      return iconUrl;
-    } catch (e) {
-      print('Error uploading user icon: $e');
-      return null;
-    }
+    final ref = _storage.ref().child('user_icons/$userId.jpg');
+    await ref.putData(imageBytes);
+    return await ref.getDownloadURL();
   }
 
   @override
   Future<void> deleteUserIcon(String userId) async {
-    try {
-      final ref = _storage.ref().child('user_icons/$userId.jpg');
-      await ref.delete();
-
-      await _firestore.collection('users').doc(userId).update({
-        'iconUrl': null,
-      });
-    } catch (e) {
-      print('Error deleting user icon: $e');
-    }
+    final ref = _storage.ref().child('user_icons/$userId.jpg');
+    await ref.delete();
   }
 
   @override
   Future<bool> isUserIdUnique(UserId userId) async {
     final snapshot = await _firestore
         .collection('users')
-        .where('searchId', isEqualTo: userId.toString())
+        .where('userId', isEqualTo: userId.value)
         .get();
     return snapshot.docs.isEmpty;
   }
@@ -118,10 +63,22 @@ class UserRepository implements IUserRepository {
   Future<UserModel?> findByUserId(UserId userId) async {
     final snapshot = await _firestore
         .collection('users')
-        .where('searchId', isEqualTo: userId.toString())
+        .where('userId', isEqualTo: userId.value)
         .get();
-
     if (snapshot.docs.isEmpty) return null;
-    return _fromFirestore(snapshot.docs.first);
+    final doc = snapshot.docs.first;
+    final data = doc.data();
+    data['id'] = doc.id;
+    return UserModel.fromJson(data);
+  }
+
+  @override
+  Stream<UserModel?> watchUser(String id) {
+    return _firestore.collection('users').doc(id).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      final data = doc.data()!;
+      data['id'] = doc.id;
+      return UserModel.fromJson(data);
+    });
   }
 }

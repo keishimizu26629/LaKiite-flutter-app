@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../home/home_page.dart';
 import '../calendar/calendar_page.dart';
-import '../myPage/my_page.dart';
+import '../my_page/my_page.dart';
 
 class BottomNavigationPage extends StatefulWidget {
   const BottomNavigationPage({super.key});

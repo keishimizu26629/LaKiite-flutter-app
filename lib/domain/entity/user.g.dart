@@ -14,6 +14,8 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       searchId: UserModel._searchIdFromJson(json['searchId'] as String),
       friends:
           (json['friends'] as List<dynamic>).map((e) => e as String).toList(),
+      groups:
+          (json['groups'] as List<dynamic>).map((e) => e as String).toList(),
       iconUrl: json['iconUrl'] as String?,
     );
 
@@ -24,5 +26,6 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'displayName': instance.displayName,
       'searchId': UserModel._searchIdToJson(instance.searchId),
       'friends': instance.friends,
+      'groups': instance.groups,
       'iconUrl': instance.iconUrl,
     };
