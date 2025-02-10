@@ -10,6 +10,8 @@ import 'package:tarakite/domain/interfaces/i_group_repository.dart';
 import 'package:tarakite/domain/interfaces/i_schedule_repository.dart';
 import 'package:tarakite/infrastructure/group_repository.dart';
 import 'package:tarakite/infrastructure/schedule_repository.dart';
+import 'package:tarakite/domain/entity/group.dart';
+import 'package:tarakite/domain/entity/user.dart';
 
 // Firebase instances
 final firebaseAuthProvider = Provider((ref) => FirebaseAuth.instance);
@@ -44,3 +46,43 @@ final groupNotifierProvider = AutoDisposeAsyncNotifierProvider<GroupNotifier, Gr
 final scheduleNotifierProvider = AutoDisposeAsyncNotifierProvider<ScheduleNotifier, ScheduleState>(
   ScheduleNotifier.new,
 );
+
+// リアルタイムグループストリーム
+final userGroupsStreamProvider = StreamProvider.autoDispose<List<Group>>((ref) {
+  final authState = ref.watch(authNotifierProvider);
+  return authState.when(
+    data: (state) {
+      if (state.status == AuthStatus.authenticated && state.user != null) {
+        return ref.watch(groupRepositoryProvider).watchUserGroups(state.user!.id);
+      }
+      return Stream.value([]);
+    },
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
+});
+
+// リアルタイムフレンドストリーム
+final userFriendsStreamProvider = StreamProvider.autoDispose<List<UserModel>>((ref) {
+  final authState = ref.watch(authNotifierProvider);
+  return authState.when(
+    data: (state) async* {
+      if (state.status == AuthStatus.authenticated && state.user != null) {
+        final userRepository = ref.watch(userRepositoryProvider);
+        await for (final user in userRepository.watchUser(state.user!.id)) {
+          if (user == null) {
+            yield [];
+          } else {
+            final friendsFutures = user.friends.map((friendId) => userRepository.getUser(friendId));
+            final friends = await Future.wait(friendsFutures);
+            yield friends.whereType<UserModel>().toList();
+          }
+        }
+      } else {
+        yield [];
+      }
+    },
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
+});

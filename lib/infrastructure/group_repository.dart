@@ -14,34 +14,47 @@ class GroupRepository implements IGroupRepository {
     };
   }
 
+  Group _fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final createdAt = data['createdAt'] as Timestamp?;
+    return Group(
+      id: doc.id,
+      groupName: data['groupName'] as String,
+      ownerId: data['ownerId'] as String,
+      memberIds: List<String>.from(data['memberIds'] as List),
+      createdAt: createdAt?.toDate() ?? DateTime.now(),
+    );
+  }
+
   @override
   Future<List<Group>> getGroups() async {
     final snapshot = await _firestore.collection('groups').get();
-    return snapshot.docs.map((doc) {
-      final data = doc.data();
-      data['id'] = doc.id;
-      return Group.fromJson(data);
-    }).toList();
+    return snapshot.docs.map(_fromFirestore).toList();
   }
 
   @override
   Future<Group> createGroup({
     required String groupName,
     required List<String> memberIds,
-    required String createdBy,
+    required String ownerId,
   }) async {
-    final groupData = {
-      'groupName': groupName,
-      'memberIds': memberIds,
-      'createdBy': createdBy,
-      'createdAt': FieldValue.serverTimestamp(),
-    };
+    final group = Group(
+      id: '',  // 一時的な空のID
+      groupName: groupName,
+      memberIds: memberIds,
+      ownerId: ownerId,
+      createdAt: DateTime.now(),
+    );
 
-    final docRef = await _firestore.collection('groups').add(groupData);
+    final docRef = await _firestore.collection('groups').add({
+      'groupName': group.groupName,
+      'memberIds': group.memberIds,
+      'ownerId': group.ownerId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
     final doc = await docRef.get();
-    final data = doc.data()!;
-    data['id'] = doc.id;
-    return Group.fromJson(data);
+    return _fromFirestore(doc);
   }
 
   @override
@@ -62,20 +75,12 @@ class GroupRepository implements IGroupRepository {
     await _firestore.collection('groups').doc(groupId).update({
       'memberIds': FieldValue.arrayUnion([userId]),
     });
-
-    await _firestore.collection('users').doc(userId).update({
-      'groups': FieldValue.arrayUnion([groupId]),
-    });
   }
 
   @override
   Future<void> removeMember(String groupId, String userId) async {
     await _firestore.collection('groups').doc(groupId).update({
       'memberIds': FieldValue.arrayRemove([userId]),
-    });
-
-    await _firestore.collection('users').doc(userId).update({
-      'groups': FieldValue.arrayRemove([groupId]),
     });
   }
 
@@ -85,10 +90,6 @@ class GroupRepository implements IGroupRepository {
         .collection('groups')
         .where('memberIds', arrayContains: userId)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) {
-              final data = doc.data();
-              data['id'] = doc.id;
-              return Group.fromJson(data);
-            }).toList());
+        .map((snapshot) => snapshot.docs.map(_fromFirestore).toList());
   }
 }
