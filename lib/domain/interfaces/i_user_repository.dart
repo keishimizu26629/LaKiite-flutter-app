@@ -60,8 +60,8 @@ abstract class IUserRepository {
   ///
   /// [userId] 検索するユーザーID
   ///
-  /// 返値: 該当するユーザーが存在する場合は[UserModel]、存在しない場合はnull
-  Future<UserModel?> findByUserId(UserId userId);
+  /// 返値: 該当するユーザーが存在する場合は[SearchUserModel]、存在しない場合はnull
+  Future<SearchUserModel?> findByUserId(UserId userId);
 
   /// ユーザー情報の変更を監視する
   ///
@@ -69,4 +69,12 @@ abstract class IUserRepository {
   ///
   /// 返値: ユーザー情報の変更を通知するStream
   Stream<UserModel?> watchUser(String id);
+
+  /// 検索用IDの文字列でユーザーを検索する
+  ///
+  /// [searchId] 検索するユーザーの検索用ID文字列
+  ///
+  /// 返値: 該当するユーザーが存在する場合は[SearchUserModel]、存在しない場合はnull
+  /// Note: 検索結果には公開情報のみが含まれます
+  Future<SearchUserModel?> findBySearchId(String searchId);
 }

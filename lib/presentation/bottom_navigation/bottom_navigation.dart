@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../home/home_page.dart';
 import '../calendar/calendar_page.dart';
 import '../my_page/my_page.dart';
 
-class BottomNavigationPage extends StatefulWidget {
+class BottomNavigationPage extends ConsumerStatefulWidget {
   const BottomNavigationPage({super.key});
 
   @override
-  State<BottomNavigationPage> createState() => _BottomNavigationPageState();
+  ConsumerState<BottomNavigationPage> createState() => _BottomNavigationPageState();
 }
 
-class _BottomNavigationPageState extends State<BottomNavigationPage> {
+class _BottomNavigationPageState extends ConsumerState<BottomNavigationPage> {
   int _selectedIndex = 0;
 
   static const List<Widget> _pages = [

@@ -6,9 +6,19 @@ part of 'group_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$groupNotifierHash() => r'1f9b692782ce0549fe07eed1495818fa964f2f9a';
+String _$groupNotifierHash() => r'fc97531d9e579b47ce34a2d550bda2304c45f603';
 
-/// See also [GroupNotifier].
+/// グループ状態を管理するNotifierクラス
+///
+/// アプリケーション内でのグループ操作に関する以下の機能を提供します:
+/// - グループの作成・更新・削除
+/// - グループメンバーの追加・削除
+/// - グループ情報の取得と監視
+///
+/// Riverpodの状態管理システムと統合され、
+/// アプリケーション全体でグループ状態を共有します。
+///
+/// Copied from [GroupNotifier].
 @ProviderFor(GroupNotifier)
 final groupNotifierProvider =
     AutoDisposeAsyncNotifierProvider<GroupNotifier, GroupState>.internal(

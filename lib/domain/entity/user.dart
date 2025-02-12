@@ -5,77 +5,145 @@ import '../service/user_id_generator.dart';
 part 'user.freezed.dart';
 part 'user.g.dart';
 
-/// ユーザー情報を表現するモデルクラス
-///
-/// アプリケーション内でのユーザー情報を管理します。
-/// [freezed]パッケージを使用して、イミュータブルなデータ構造を実現します。
-///
-/// 主な情報:
-/// - ユーザーID
-/// - 名前情報(基本名前と表示名)
-/// - 検索用ID
-/// - フレンド情報
-/// - 所属グループ情報
-/// - アイコン画像URL
-@freezed
-@JsonSerializable(explicitToJson: true)
-class UserModel with _$UserModel {
-  const UserModel._();
+/// UserIdのJSON変換を行うコンバーター
+class UserIdConverter implements JsonConverter<UserId, String> {
+  const UserIdConverter();
 
-  /// UserModelのコンストラクタ
-  ///
-  /// [id] ユーザーの一意識別子
-  /// [name] ユーザーの基本名
-  /// [displayName] ユーザーの表示名
-  /// [searchId] ユーザー検索用のID
-  /// [friends] フレンドのIDリスト
-  /// [groups] 所属グループのIDリスト
-  /// [iconUrl] プロフィール画像のURL(オプション)
-  const factory UserModel({
+  @override
+  UserId fromJson(String json) => UserId(json);
+
+  @override
+  String toJson(UserId userId) => userId.toString();
+}
+
+/// ユーザーの公開情報を表現するモデルクラス
+@freezed
+class PublicUserModel with _$PublicUserModel {
+  const factory PublicUserModel({
+    required String displayName,
+    @UserIdConverter()
+    required UserId searchId,
+    String? iconUrl,
+  }) = _PublicUserModel;
+
+  const PublicUserModel._();
+
+  factory PublicUserModel.fromJson(Map<String, dynamic> json) =>
+      _$PublicUserModelFromJson(json);
+}
+
+/// ユーザーの非公開情報を表現するモデルクラス
+@freezed
+class PrivateUserModel with _$PrivateUserModel {
+  const factory PrivateUserModel({
     required String id,
     required String name,
-    required String displayName,
-    required UserId searchId,
     required List<String> friends,
     required List<String> groups,
-    String? iconUrl,
+    required DateTime createdAt,
+  }) = _PrivateUserModel;
+
+  const PrivateUserModel._();
+
+  factory PrivateUserModel.fromJson(Map<String, dynamic> json) =>
+      _$PrivateUserModelFromJson(json);
+}
+
+/// ユーザー情報を表現するモデルクラス
+@freezed
+class UserModel with _$UserModel {
+  const factory UserModel({
+    required PublicUserModel publicProfile,
+    required PrivateUserModel privateProfile,
   }) = _UserModel;
 
-  /// JSONからUserModelを生成するファクトリーメソッド
-  ///
-  /// [json] ユーザー情報を含むJSON Map
-  factory UserModel.fromJson(Map<String, dynamic> json) => _$UserModelFromJson(json);
+  const UserModel._();
 
-  /// 新規ユーザーを作成するファクトリーメソッド
-  ///
-  /// 最小限の情報からユーザーモデルを作成します。
-  /// [id] ユーザーの一意識別子
-  /// [name] ユーザーの名前(基本名と表示名の初期値として使用)
-  ///
-  /// 以下のデフォルト値が設定されます:
-  /// - displayName: nameと同じ値
-  /// - searchId: 自動生成
-  /// - friends: 空リスト
-  /// - groups: 空リスト
-  /// - iconUrl: null
+  factory UserModel.fromJson(Map<String, dynamic> json) =>
+      _$UserModelFromJson(json);
+
   factory UserModel.create({
     required String id,
     required String name,
   }) {
+    final searchId = UserIdGenerator.generateUserId();
     return UserModel(
-      id: id,
-      name: name,
-      displayName: name,
-      searchId: UserIdGenerator.generateUserId(),
-      friends: const [],
-      groups: const [],
-      iconUrl: null,
+      publicProfile: PublicUserModel(
+        displayName: name,
+        searchId: searchId,
+        iconUrl: null,
+      ),
+      privateProfile: PrivateUserModel(
+        id: id,
+        name: name,
+        friends: const [],
+        groups: const [],
+        createdAt: DateTime.now(),
+      ),
     );
   }
 
-  /// 文字列からUserIdを生成するJSON変換ヘルパーメソッド
-  static UserId _searchIdFromJson(String value) => UserId(value);
+  String get id => privateProfile.id;
+  String get name => privateProfile.name;
+  String get displayName => publicProfile.displayName;
+  UserId get searchId => publicProfile.searchId;
+  List<String> get friends => privateProfile.friends;
+  List<String> get groups => privateProfile.groups;
+  String? get iconUrl => publicProfile.iconUrl;
+  DateTime get createdAt => privateProfile.createdAt;
 
-  /// UserIdを文字列に変換するJSON変換ヘルパーメソッド
-  static String _searchIdToJson(UserId userId) => userId.toString();
+  UserModel updateProfile({
+    String? name,
+    String? displayName,
+    UserId? searchId,
+    String? iconUrl,
+  }) {
+    return UserModel(
+      publicProfile: PublicUserModel(
+        displayName: displayName ?? this.displayName,
+        searchId: searchId ?? this.searchId,
+        iconUrl: iconUrl ?? this.iconUrl,
+      ),
+      privateProfile: PrivateUserModel(
+        id: this.id,
+        name: name ?? this.name,
+        friends: this.friends,
+        groups: this.groups,
+        createdAt: this.createdAt,
+      ),
+    );
+  }
+}
+
+/// ユーザー検索結果を表現するモデルクラス
+class SearchUserModel {
+  final String id;
+  final String displayName;
+  final String searchId;
+  final String? iconUrl;
+
+  const SearchUserModel({
+    required this.id,
+    required this.displayName,
+    required this.searchId,
+    this.iconUrl,
+  });
+
+  factory SearchUserModel.fromFirestore(String id, Map<String, dynamic> data) {
+    return SearchUserModel(
+      id: id,
+      displayName: data['displayName'] as String,
+      searchId: data['searchId'] as String,
+      iconUrl: data['iconUrl'] as String?,
+    );
+  }
+
+  factory SearchUserModel.fromUserModel(UserModel user) {
+    return SearchUserModel(
+      id: user.id,
+      displayName: user.displayName,
+      searchId: user.searchId.toString(),
+      iconUrl: user.iconUrl,
+    );
+  }
 }

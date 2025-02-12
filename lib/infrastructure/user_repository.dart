@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:rxdart/rxdart.dart';
 import '../domain/entity/user.dart';
 import '../domain/interfaces/i_user_repository.dart';
 import '../domain/value/user_id.dart';
@@ -13,28 +14,94 @@ class UserRepository implements IUserRepository {
       : _firestore = FirebaseFirestore.instance,
         _storage = FirebaseStorage.instance;
 
+  Map<String, dynamic> _toFirestorePublic(PublicUserModel publicProfile) {
+    final json = publicProfile.toJson();
+    // UserIdを文字列に変換
+    json['searchId'] = json['searchId'].toString();
+    return json;
+  }
+
+  Map<String, dynamic> _toFirestorePrivate(PrivateUserModel privateProfile) {
+    return privateProfile.toJson();
+  }
+
   @override
   Future<UserModel?> getUser(String id) async {
-    final doc = await _firestore.collection('users').doc(id).get();
-    if (!doc.exists) return null;
-    final data = doc.data()!;
-    data['id'] = doc.id;
-    return UserModel.fromJson(data);
+    final userDoc = await _firestore.collection('users').doc(id).get();
+    if (!userDoc.exists) return null;
+
+    final privateDoc = await _firestore
+        .collection('users')
+        .doc(id)
+        .collection('private')
+        .doc('profile')
+        .get();
+    if (!privateDoc.exists) return null;
+
+    return UserModel(
+      publicProfile: PublicUserModel.fromJson(userDoc.data()!),
+      privateProfile: PrivateUserModel.fromJson(privateDoc.data()!),
+    );
   }
 
   @override
   Future<void> createUser(UserModel user) async {
-    await _firestore.collection('users').doc(user.id).set(user.toJson());
+    try {
+      // searchIdの一意性をチェック
+      final isUnique = await isUserIdUnique(user.searchId);
+      if (!isUnique) {
+        throw Exception('このsearchIdは既に使用されています');
+      }
+
+      // ドキュメントの参照を取得
+      final userRef = _firestore.collection('users').doc(user.id);
+      final privateRef = userRef.collection('private').doc('profile');
+
+      // トランザクションでユーザーデータを作成
+      await _firestore.runTransaction((transaction) async {
+        // ドキュメントの存在チェック
+        final docSnapshot = await transaction.get(userRef);
+        if (docSnapshot.exists) {
+          throw Exception('ユーザーデータが既に存在します');
+        }
+
+        // 公開情報を親ドキュメントに保存
+        transaction.set(userRef, _toFirestorePublic(user.publicProfile));
+
+        // 非公開情報をprivateサブコレクションに保存
+        transaction.set(privateRef, _toFirestorePrivate(user.privateProfile));
+      });
+    } catch (e) {
+      print('Error creating user: $e');
+      rethrow;
+    }
   }
 
   @override
   Future<void> updateUser(UserModel user) async {
-    await _firestore.collection('users').doc(user.id).update(user.toJson());
+    final userRef = _firestore.collection('users').doc(user.id);
+    final privateRef = userRef.collection('private').doc('profile');
+
+    await _firestore.runTransaction((transaction) async {
+      // 公開情報を更新
+      transaction.update(userRef, _toFirestorePublic(user.publicProfile));
+
+      // 非公開情報を更新
+      transaction.update(privateRef, _toFirestorePrivate(user.privateProfile));
+    });
   }
 
   @override
   Future<void> deleteUser(String id) async {
-    await _firestore.collection('users').doc(id).delete();
+    final userRef = _firestore.collection('users').doc(id);
+    final privateRef = userRef.collection('private').doc('profile');
+
+    await _firestore.runTransaction((transaction) async {
+      // privateプロフィールを削除
+      transaction.delete(privateRef);
+      // ユーザードキュメントを削除
+      transaction.delete(userRef);
+    });
   }
 
   @override
@@ -54,31 +121,68 @@ class UserRepository implements IUserRepository {
   Future<bool> isUserIdUnique(UserId userId) async {
     final snapshot = await _firestore
         .collection('users')
-        .where('userId', isEqualTo: userId.value)
+        .where('searchId', isEqualTo: userId.value)
         .get();
     return snapshot.docs.isEmpty;
   }
 
   @override
-  Future<UserModel?> findByUserId(UserId userId) async {
-    final snapshot = await _firestore
-        .collection('users')
-        .where('userId', isEqualTo: userId.value)
-        .get();
-    if (snapshot.docs.isEmpty) return null;
-    final doc = snapshot.docs.first;
-    final data = doc.data();
-    data['id'] = doc.id;
-    return UserModel.fromJson(data);
+  Future<SearchUserModel?> findByUserId(UserId userId) async {
+    return findBySearchId(userId.value);
+  }
+
+  @override
+  Future<SearchUserModel?> findBySearchId(String searchId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .where('searchId', isEqualTo: searchId)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        print('User not found with searchId: $searchId');
+        return null;
+      }
+
+      final userDoc = snapshot.docs.first;
+      final data = userDoc.data();
+
+      print('Found user document:');
+      print('Document ID: ${userDoc.id}');
+      print('Data: $data');
+
+      return SearchUserModel.fromFirestore(userDoc.id, data);
+    } catch (e) {
+      print('Error searching user: $e');
+      return null;
+    }
   }
 
   @override
   Stream<UserModel?> watchUser(String id) {
-    return _firestore.collection('users').doc(id).snapshots().map((doc) {
-      if (!doc.exists) return null;
-      final data = doc.data()!;
-      data['id'] = doc.id;
-      return UserModel.fromJson(data);
-    });
+    final publicStream = _firestore
+        .collection('users')
+        .doc(id)
+        .snapshots();
+
+    final privateStream = _firestore
+        .collection('users')
+        .doc(id)
+        .collection('private')
+        .doc('profile')
+        .snapshots();
+
+    return Rx.combineLatest2(
+      publicStream,
+      privateStream,
+      (publicDoc, privateDoc) {
+        if (!publicDoc.exists || !privateDoc.exists) return null;
+        return UserModel(
+          publicProfile: PublicUserModel.fromJson(publicDoc.data()!),
+          privateProfile: PrivateUserModel.fromJson(privateDoc.data()!),
+        );
+      },
+    );
   }
 }
