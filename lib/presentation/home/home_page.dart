@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth/auth_state.dart';
 import '../group/create_group_page.dart';
 import '../presentation_provider.dart';
+import '../friend/friend_search_page.dart';
+import '../friend/friend_request_list_page.dart';
+import '../widgets/friend_request_badge.dart';
 
 /// アプリケーションのホーム画面を表示するウィジェット
 ///
@@ -38,7 +41,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     ref.listen(authNotifierProvider, (previous, next) {
       next.whenData((authState) {
         // ユーザーが認証済みの場合の処理
-        if (authState.status == AuthStatus.authenticated && authState.user != null) {
+        if (authState.status == AuthStatus.authenticated &&
+            authState.user != null) {
           // ユーザー認証状態の変更を監視
         }
       });
@@ -47,6 +51,31 @@ class _HomePageState extends ConsumerState<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('ホーム'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const FriendSearchPage(),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const FriendRequestBadge(
+              child: Icon(Icons.notifications),
+            ),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const FriendRequestListPage(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       // 新規グループ作成ボタン
       floatingActionButton: FloatingActionButton(
@@ -103,7 +132,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(child: Text('エラー: ${error.toString()}')),
+              error: (error, stack) =>
+                  Center(child: Text('エラー: ${error.toString()}')),
             ),
             const SizedBox(height: 24),
             Text(
@@ -142,7 +172,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(child: Text('エラー: ${error.toString()}')),
+              error: (error, stack) =>
+                  Center(child: Text('エラー: ${error.toString()}')),
             ),
           ],
         ),

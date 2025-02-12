@@ -66,21 +66,23 @@ final userGroupsStreamProvider = StreamProvider.autoDispose<List<Group>>((ref) {
 final userFriendsStreamProvider = StreamProvider.autoDispose<List<UserModel>>((ref) {
   final authState = ref.watch(authNotifierProvider);
   return authState.when(
-    data: (state) async* {
-      if (state.status == AuthStatus.authenticated && state.user != null) {
-        final userRepository = ref.watch(userRepositoryProvider);
-        await for (final user in userRepository.watchUser(state.user!.id)) {
-          if (user == null) {
-            yield [];
-          } else {
-            final friendsFutures = user.friends.map((friendId) => userRepository.getUser(friendId));
-            final friends = await Future.wait(friendsFutures);
-            yield friends.whereType<UserModel>().toList();
-          }
-        }
-      } else {
-        yield [];
+    data: (state) {
+      // 認証状態でない場合は即座に空配列を返す
+      if (state.status != AuthStatus.authenticated || state.user == null) {
+        return Stream.value([]);
       }
+
+      // 認証済みの場合のみユーザー情報の監視を開始
+      final userRepository = ref.watch(userRepositoryProvider);
+      return userRepository.watchUser(state.user!.id).asyncExpand((user) async* {
+        if (user == null) {
+          yield [];
+        } else {
+          final friendsFutures = user.friends.map((friendId) => userRepository.getUser(friendId));
+          final friends = await Future.wait(friendsFutures);
+          yield friends.whereType<UserModel>().toList();
+        }
+      });
     },
     loading: () => Stream.value([]),
     error: (_, __) => Stream.value([]),

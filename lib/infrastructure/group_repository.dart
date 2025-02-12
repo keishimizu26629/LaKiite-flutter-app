@@ -8,27 +8,27 @@ class GroupRepository implements IGroupRepository {
   GroupRepository() : _firestore = FirebaseFirestore.instance;
 
   Map<String, dynamic> _toFirestore(Group group) {
-    return {
-      ...group.toJson(),
-      'createdAt': FieldValue.serverTimestamp(),
-    };
+    final data = group.toJson();
+    if (data['createdAt'] != null) {
+      data['createdAt'] = Timestamp.fromDate(group.createdAt);
+    }
+    return data;
   }
 
   Group _fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    final createdAt = data['createdAt'] as Timestamp?;
-    return Group(
-      id: doc.id,
-      groupName: data['groupName'] as String,
-      ownerId: data['ownerId'] as String,
-      memberIds: List<String>.from(data['memberIds'] as List),
-      createdAt: createdAt?.toDate() ?? DateTime.now(),
-    );
+    final timestamp = data['createdAt'] as Timestamp?;
+    final modifiedData = Map<String, dynamic>.from(data);
+    modifiedData['id'] = doc.id;
+    modifiedData['createdAt'] = timestamp?.toDate().toIso8601String() ?? DateTime.now().toIso8601String();
+    return Group.fromJson(modifiedData);
   }
 
   @override
   Future<List<Group>> getGroups() async {
-    final snapshot = await _firestore.collection('groups').get();
+    final snapshot = await _firestore
+        .collectionGroup('items')
+        .get();
     return snapshot.docs.map(_fromFirestore).toList();
   }
 
@@ -46,12 +46,7 @@ class GroupRepository implements IGroupRepository {
       createdAt: DateTime.now(),
     );
 
-    final docRef = await _firestore.collection('groups').add({
-      'groupName': group.groupName,
-      'memberIds': group.memberIds,
-      'ownerId': group.ownerId,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    final docRef = await _firestore.collection('groups').add(_toFirestore(group));
 
     final doc = await docRef.get();
     return _fromFirestore(doc);

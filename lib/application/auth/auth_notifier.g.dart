@@ -8,7 +8,18 @@ part of 'auth_notifier.dart';
 
 String _$authNotifierHash() => r'acdad26f95172281578e5aeb5d58e16f56bd5eba';
 
-/// See also [AuthNotifier].
+/// 認証状態を管理するNotifierクラス
+///
+/// 機能:
+/// - 認証状態の監視と管理
+/// - サインイン処理
+/// - サインアップ処理
+/// - サインアウト処理
+///
+/// 依存:
+/// - [authRepositoryProvider] 認証操作用
+///
+/// Copied from [AuthNotifier].
 @ProviderFor(AuthNotifier)
 final authNotifierProvider =
     AutoDisposeAsyncNotifierProvider<AuthNotifier, AuthState>.internal(

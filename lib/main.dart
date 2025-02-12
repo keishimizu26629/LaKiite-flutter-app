@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'infrastructure/go_router_refresh_notifier.dart';
 import 'presentation/login/login_page.dart';
 import 'presentation/signup/signup.dart';
 import 'presentation/bottom_navigation/bottom_navigation.dart';
@@ -38,8 +39,11 @@ final routerProvider = Provider<GoRouter>((ref) {
   // 認証状態の監視
   final authState = ref.watch(authNotifierProvider);
 
+  // 認証状態の変更を監視するリフレッシュ通知
+  final refreshNotifier = ref.watch(goRouterRefreshProvider);
+
   return GoRouter(
-    refreshListenable: ChangeNotifier(),
+    refreshListenable: refreshNotifier,
     redirect: (context, state) {
       return authState.when(
         data: (authState) {

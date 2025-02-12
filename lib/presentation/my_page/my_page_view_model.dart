@@ -60,11 +60,12 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
 
     try {
       // searchIdのバリデーション
-      if (!UserId.isValid(searchIdStr)) {
+      UserId? newSearchId;
+      try {
+        newSearchId = UserId(searchIdStr);
+      } catch (e) {
         throw Exception('Invalid search ID format');
       }
-
-      final newSearchId = UserId(searchIdStr);
 
       // 現在のsearchIdと異なる場合のみユニーク性チェック
       if (state.value!.searchId.toString() != searchIdStr) {
@@ -79,7 +80,7 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
         iconUrl = await uploadImage(imageFile);
       }
 
-      final updatedUser = state.value!.copyWith(
+      final updatedUser = state.value!.updateProfile(
         name: name,
         displayName: displayName,
         searchId: newSearchId,
