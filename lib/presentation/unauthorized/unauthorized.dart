@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class Unauthorized extends StatelessWidget {
-  const Unauthorized({Key? key}) : super(key: key);
+  const Unauthorized({super.key});
 
   @override
   Widget build(BuildContext context) {
