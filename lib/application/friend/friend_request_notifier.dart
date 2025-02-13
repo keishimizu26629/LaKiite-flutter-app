@@ -11,28 +11,47 @@ final userRepositoryProvider = Provider((ref) => UserRepository());
 // 未読の友達申請数を監視するProvider
 final unreadRequestCountProvider = StreamProvider.autoDispose<int>((ref) {
   debugPrint('Initializing unreadRequestCountProvider');
-  final currentUser = ref.watch(authNotifierProvider).value?.user;
-  debugPrint('UnreadRequestCount - Current user state: ${currentUser?.toJson()}');
 
-  if (currentUser == null) {
-    debugPrint('UnreadRequestCount - No user logged in');
-    return Stream.value(0);
-  }
+  // authStateStreamProviderを監視
+  return ref.watch(authStateStreamProvider).when(
+    data: (authState) {
+      final currentUser = authState.user;
+      debugPrint('UnreadRequestCount - Auth state received');
+      debugPrint('UnreadRequestCount - Current user state: ${currentUser?.toJson()}');
 
-  final repository = ref.watch(friendRequestRepositoryProvider);
-  debugPrint('UnreadRequestCount - Starting stream for user: ${currentUser.id}');
-
-  return repository.watchReceivedRequests(currentUser.id).map(
-    (requests) {
-      final unreadCount = requests.where((request) => !request.isRead).length;
-      debugPrint('UnreadRequestCount - Processing ${requests.length} requests');
-      debugPrint('UnreadRequestCount - Found $unreadCount unread requests');
-      for (final request in requests) {
-        debugPrint('UnreadRequestCount - Request ${request.id}: isRead=${request.isRead}');
+      if (currentUser == null) {
+        debugPrint('UnreadRequestCount - No user logged in');
+        return Stream.value(0);
       }
-      return unreadCount;
+
+      final repository = ref.watch(friendRequestRepositoryProvider);
+      debugPrint('UnreadRequestCount - Starting stream for user: ${currentUser.id}');
+
+      return repository.watchReceivedRequests(currentUser.id)
+        .map((requests) {
+          final unreadCount = requests.where((request) => !request.isRead).length;
+          debugPrint('UnreadRequestCount - Processing ${requests.length} requests');
+          debugPrint('UnreadRequestCount - Found $unreadCount unread requests');
+          for (final request in requests) {
+            debugPrint('UnreadRequestCount - Request ${request.id}: isRead=${request.isRead}');
+          }
+          return unreadCount;
+        })
+        .handleError((error) {
+          debugPrint('UnreadRequestCount - Error: $error');
+          return 0;
+        })
+        .distinct();
     },
-  ).distinct();
+    loading: () {
+      debugPrint('UnreadRequestCount - Auth state is loading');
+      return Stream.value(0);
+    },
+    error: (_, __) {
+      debugPrint('UnreadRequestCount - Auth state error');
+      return Stream.value(0);
+    },
+  );
 });
 
 // 友達申請を表示用に拡張したモデル
@@ -54,32 +73,59 @@ class FriendRequestDisplay {
 // 友達申請一覧を監視するProvider
 final friendRequestStreamProvider = StreamProvider.autoDispose<List<FriendRequestDisplay>>((ref) {
   debugPrint('Initializing friendRequestStreamProvider');
-  final currentUser = ref.watch(authNotifierProvider).value?.user;
-  debugPrint('FriendRequestStream - Current user state: ${currentUser?.toJson()}');
 
-  if (currentUser == null) {
-    debugPrint('FriendRequestStream - No user logged in');
-    return Stream.value([]);
-  }
+  // authStateStreamProviderを監視
+  return ref.watch(authStateStreamProvider).when(
+    data: (authState) {
+      final currentUser = authState.user;
+      debugPrint('FriendRequestStream - Auth state received');
+      debugPrint('FriendRequestStream - Current user state: ${currentUser?.toJson()}');
 
-  final repository = ref.watch(friendRequestRepositoryProvider);
-  debugPrint('FriendRequestStream - Starting stream for user: ${currentUser.id}');
+      if (currentUser == null) {
+        debugPrint('FriendRequestStream - No user logged in');
+        return Stream.value([]);
+      }
 
-  return repository.watchReceivedRequests(currentUser.id).map(
-    (requests) {
-      debugPrint('FriendRequestStream - Processing ${requests.length} requests');
-      final displayRequests = requests.map((request) => FriendRequestDisplay(request: request)).toList();
-      debugPrint('FriendRequestStream - Display requests: ${displayRequests.join(', ')}');
-      return displayRequests;
+      final repository = ref.watch(friendRequestRepositoryProvider);
+      debugPrint('FriendRequestStream - Starting stream for user: ${currentUser.id}');
+
+      return repository.watchReceivedRequests(currentUser.id)
+        .map((requests) {
+          debugPrint('FriendRequestStream - Processing ${requests.length} requests');
+          final displayRequests = requests.map((request) => FriendRequestDisplay(request: request)).toList();
+          debugPrint('FriendRequestStream - Display requests: ${displayRequests.join(', ')}');
+          return displayRequests;
+        })
+        .handleError((error) {
+          debugPrint('FriendRequestStream - Error: $error');
+          return <FriendRequestDisplay>[];
+        })
+        .distinct();
     },
-  ).distinct();
+    loading: () {
+      debugPrint('FriendRequestStream - Auth state is loading');
+      return Stream.value([]);
+    },
+    error: (_, __) {
+      debugPrint('FriendRequestStream - Auth state error');
+      return Stream.value([]);
+    },
+  );
 });
 
 final friendRequestNotifierProvider =
     StateNotifierProvider<FriendRequestNotifier, AsyncValue<void>>((ref) {
-  final currentUser = ref.watch(authNotifierProvider).value?.user;
+  final authState = ref.watch(authNotifierProvider);
   final repository = ref.watch(friendRequestRepositoryProvider);
-  return FriendRequestNotifier(repository, currentUser?.id ?? '');
+
+  return authState.when(
+    data: (state) {
+      final currentUser = state.user;
+      return FriendRequestNotifier(repository, currentUser?.id ?? '');
+    },
+    loading: () => FriendRequestNotifier(repository, ''),
+    error: (_, __) => FriendRequestNotifier(repository, ''),
+  );
 });
 
 class FriendRequestNotifier extends StateNotifier<AsyncValue<void>> {

@@ -38,6 +38,17 @@ final authRepositoryProvider = Provider<IAuthRepository>((ref) {
   );
 });
 
+/// 認証状態のストリームを提供するプロバイダー
+final authStateStreamProvider = StreamProvider.autoDispose<AuthState>((ref) {
+  final authRepository = ref.watch(authRepositoryProvider);
+  return authRepository.authStateChanges().map((user) {
+    if (user != null) {
+      return AuthState.authenticated(user);
+    }
+    return AuthState.unauthenticated();
+  });
+});
+
 /// 認証状態を管理するNotifierクラス
 ///
 /// 機能:
@@ -52,15 +63,9 @@ final authRepositoryProvider = Provider<IAuthRepository>((ref) {
 class AuthNotifier extends _$AuthNotifier {
   @override
   FutureOr<AuthState> build() async {
-    // 認証状態の変更を監視
-    final userStream = _authRepository.authStateChanges();
-    final currentUser = await userStream.first;
-
-    // 現在のユーザー状態に基づいて初期状態を設定
-    if (currentUser != null) {
-      return AuthState.authenticated(currentUser);
-    }
-    return AuthState.unauthenticated();
+    // authStateStreamProviderの最新の値を監視
+    final authState = await ref.watch(authStateStreamProvider.future);
+    return authState;
   }
 
   /// 認証リポジトリへの参照を取得
