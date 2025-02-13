@@ -74,6 +74,24 @@ abstract class IUserRepository {
   ///
   /// [id] 監視対象のユーザーID
   ///
+  /// ユーザーの公開プロフィール情報の変更を監視する
+  ///
+  /// [id] 監視対象のユーザーID
+  ///
+  /// 返値: 公開プロフィール情報の変更を通知するStream
+  Stream<PublicUserModel?> watchPublicProfile(String id);
+
+  /// ユーザーの非公開プロフィール情報の変更を監視する
+  ///
+  /// [id] 監視対象のユーザーID
+  ///
+  /// 返値: 非公開プロフィール情報の変更を通知するStream
+  Stream<PrivateUserModel?> watchPrivateProfile(String id);
+
+  /// ユーザー情報の変更を監視する
+  ///
+  /// [id] 監視対象のユーザーID
+  ///
   /// 返値: ユーザー情報の変更を通知するStream
   Stream<UserModel?> watchUser(String id);
 

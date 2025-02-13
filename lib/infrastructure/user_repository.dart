@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:rxdart/rxdart.dart';
 import '../domain/entity/user.dart';
 import '../domain/interfaces/i_user_repository.dart';
 import '../domain/value/user_id.dart';
@@ -167,29 +166,55 @@ class UserRepository implements IUserRepository {
   }
 
   @override
-  Stream<UserModel?> watchUser(String id) {
-    final publicStream = _firestore
+  Stream<PublicUserModel?> watchPublicProfile(String id) {
+    return _firestore
         .collection('users')
         .doc(id)
-        .snapshots();
+        .snapshots()
+        .map((doc) {
+          if (!doc.exists) return null;
+          return PublicUserModel.fromJson(doc.data()!);
+        });
+  }
 
-    final privateStream = _firestore
+  @override
+  Stream<PrivateUserModel?> watchPrivateProfile(String id) {
+    return _firestore
         .collection('users')
         .doc(id)
         .collection('private')
         .doc('profile')
-        .snapshots();
+        .snapshots()
+        .map((doc) {
+          if (!doc.exists) return null;
+          return PrivateUserModel.fromJson(doc.data()!);
+        });
+  }
 
-    return Rx.combineLatest2(
-      publicStream,
-      privateStream,
-      (publicDoc, privateDoc) {
-        if (!publicDoc.exists || !privateDoc.exists) return null;
-        return UserModel(
-          publicProfile: PublicUserModel.fromJson(publicDoc.data()!),
-          privateProfile: PrivateUserModel.fromJson(privateDoc.data()!),
-        );
-      },
-    );
+  @override
+  Stream<UserModel?> watchUser(String id) async* {
+    await for (final _ in Stream.periodic(const Duration(milliseconds: 100))) {
+      final publicDoc = await _firestore
+          .collection('users')
+          .doc(id)
+          .get();
+
+      final privateDoc = await _firestore
+          .collection('users')
+          .doc(id)
+          .collection('private')
+          .doc('profile')
+          .get();
+
+      if (!publicDoc.exists || !privateDoc.exists) {
+        yield null;
+        continue;
+      }
+
+      yield UserModel(
+        publicProfile: PublicUserModel.fromJson(publicDoc.data()!),
+        privateProfile: PrivateUserModel.fromJson(privateDoc.data()!),
+      );
+    }
   }
 }
