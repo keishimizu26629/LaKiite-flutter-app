@@ -12,43 +12,57 @@ class FriendRequestBadge extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final requestsAsyncValue = ref.watch(friendRequestStreamProvider);
+    debugPrint('Building FriendRequestBadge');
+    final unreadCountAsyncValue = ref.watch(unreadRequestCountProvider);
+    debugPrint('FriendRequestBadge - AsyncValue state: $unreadCountAsyncValue');
 
     return Stack(
-      alignment: Alignment.center,
+      clipBehavior: Clip.none,
       children: [
         child,
-        requestsAsyncValue.when(
-          data: (requests) {
-            final hasUnread = requests.any((request) => !request.isRead);
-            if (!hasUnread) return const SizedBox.shrink();
+        unreadCountAsyncValue.when(
+          data: (count) {
+            debugPrint('FriendRequestBadge - Unread count: $count');
+            if (count == 0) {
+              debugPrint('FriendRequestBadge - No unread requests');
+              return const SizedBox.shrink();
+            }
 
             return Positioned(
-              top: 0,
-              right: 0,
+              top: -5,
+              right: -5,
               child: Container(
-                padding: const EdgeInsets.all(2),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.red,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 constraints: const BoxConstraints(
-                  minWidth: 12,
-                  minHeight: 12,
+                  minWidth: 18,
+                  minHeight: 18,
                 ),
-                child: Text(
-                  requests.where((request) => !request.isRead).length.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 8,
+                child: Center(
+                  child: Text(
+                    count.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
             );
           },
-          loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
+          loading: () {
+            debugPrint('FriendRequestBadge - Loading state');
+            return const SizedBox.shrink();
+          },
+          error: (error, stack) {
+            debugPrint('FriendRequestBadge - Error: $error\n$stack');
+            return const SizedBox.shrink();
+          },
         ),
       ],
     );

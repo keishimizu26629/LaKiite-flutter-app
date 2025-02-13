@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/friend/friend_request_notifier.dart';
-import '../../domain/entity/friend_request.dart';
 
 class FriendRequestListPage extends ConsumerWidget {
   const FriendRequestListPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    debugPrint('Building FriendRequestListPage');
     final requestsAsyncValue = ref.watch(friendRequestStreamProvider);
     final notifier = ref.watch(friendRequestNotifierProvider.notifier);
 
@@ -17,43 +17,68 @@ class FriendRequestListPage extends ConsumerWidget {
       ),
       body: requestsAsyncValue.when(
         data: (requests) {
+          debugPrint('FriendRequestListPage - Received ${requests.length} requests');
+
           if (requests.isEmpty) {
+            debugPrint('FriendRequestListPage - No requests available');
             return const Center(
               child: Text('友達申請はありません'),
             );
           }
 
+          // 未読リクエストを一度だけ既読にする
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            for (final request in requests.where((r) => !r.isRead)) {
+              debugPrint('FriendRequestListPage - Marking request ${request.id} as read');
+              notifier.markAsRead(request.id);
+            }
+          });
+
+          debugPrint('FriendRequestListPage - Building ListView with ${requests.length} items');
           return ListView.builder(
             itemCount: requests.length,
             itemBuilder: (context, index) {
-              final request = requests[index];
+              final requestDisplay = requests[index];
+              debugPrint('FriendRequestListPage - Building card for request ${requestDisplay.id}');
               return FriendRequestCard(
-                request: request,
-                onAccept: () => notifier.acceptRequest(request.id),
-                onReject: () => notifier.rejectRequest(request.id),
+                requestDisplay: requestDisplay,
+                onAccept: () {
+                  debugPrint('FriendRequestListPage - Accepting request ${requestDisplay.id}');
+                  notifier.acceptRequest(requestDisplay.id);
+                },
+                onReject: () {
+                  debugPrint('FriendRequestListPage - Rejecting request ${requestDisplay.id}');
+                  notifier.rejectRequest(requestDisplay.id);
+                },
               );
             },
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
-        error: (error, _) => Center(
-          child: Text('エラーが発生しました: $error'),
-        ),
+        loading: () {
+          debugPrint('FriendRequestListPage - Loading state');
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+        error: (error, stack) {
+          debugPrint('FriendRequestListPage - Error: $error\n$stack');
+          return Center(
+            child: Text('エラーが発生しました: $error'),
+          );
+        },
       ),
     );
   }
 }
 
 class FriendRequestCard extends StatelessWidget {
-  final FriendRequest request;
+  final FriendRequestDisplay requestDisplay;
   final VoidCallback onAccept;
   final VoidCallback onReject;
 
   const FriendRequestCard({
     super.key,
-    required this.request,
+    required this.requestDisplay,
     required this.onAccept,
     required this.onReject,
   });
@@ -68,7 +93,7 @@ class FriendRequestCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '友達申請が届いています',
+              '${requestDisplay.senderName}さんから友達申請が届いています',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
