@@ -8,7 +8,10 @@ enum FriendRequestStatus {
 
 class FriendRequest {
   final String id;
-  final List<String> participants;
+  final String sendUserId;
+  final String receiveUserId;
+  final String? sendUserDisplayName;    // nullable に変更
+  final String? receiveUserDisplayName; // nullable に変更
   final FriendRequestStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -17,7 +20,10 @@ class FriendRequest {
 
   const FriendRequest({
     required this.id,
-    required this.participants,
+    required this.sendUserId,
+    required this.receiveUserId,
+    this.sendUserDisplayName,           // required 削除
+    this.receiveUserDisplayName,        // required 削除
     required this.status,
     required this.createdAt,
     required this.updatedAt,
@@ -28,11 +34,16 @@ class FriendRequest {
   factory FriendRequest.create({
     required String fromUserId,
     required String toUserId,
+    String? fromUserDisplayName,       // nullable に変更
+    String? toUserDisplayName,         // nullable に変更
   }) {
     final now = DateTime.now();
     return FriendRequest(
       id: '', // Firestoreで自動生成
-      participants: [fromUserId, toUserId],
+      sendUserId: fromUserId,
+      receiveUserId: toUserId,
+      sendUserDisplayName: fromUserDisplayName,
+      receiveUserDisplayName: toUserDisplayName,
       status: FriendRequestStatus.pending,
       createdAt: now,
       updatedAt: now,
@@ -44,9 +55,12 @@ class FriendRequest {
   factory FriendRequest.fromJson(Map<String, dynamic> json) {
     return FriendRequest(
       id: json['id'] as String,
-      participants: (json['participants'] as List<dynamic>).cast<String>(),
+      sendUserId: json['sendUserId'] as String,
+      receiveUserId: json['receiveUserId'] as String,
+      sendUserDisplayName: json['sendUserDisplayName'] as String?,    // nullable キャスト
+      receiveUserDisplayName: json['receiveUserDisplayName'] as String?, // nullable キャスト
       status: FriendRequestStatus.values.firstWhere(
-        (e) => e.name == json['status'] as String,
+        (e) => e.name == (json['status'] as String? ?? FriendRequestStatus.pending.name),
       ),
       createdAt: (json['createdAt'] as Timestamp).toDate(),
       updatedAt: (json['updatedAt'] as Timestamp).toDate(),
@@ -57,7 +71,10 @@ class FriendRequest {
 
   Map<String, dynamic> toJson() => {
         'id': id,
-        'participants': participants,
+        'sendUserId': sendUserId,
+        'receiveUserId': receiveUserId,
+        'sendUserDisplayName': sendUserDisplayName,
+        'receiveUserDisplayName': receiveUserDisplayName,
         'status': status.name,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
@@ -81,8 +98,8 @@ class FriendRequest {
       other is FriendRequest &&
           runtimeType == other.runtimeType &&
           id == other.id &&
-          participants.length == other.participants.length &&
-          participants.every((e) => other.participants.contains(e)) &&
+          sendUserId == other.sendUserId &&
+          receiveUserId == other.receiveUserId &&
           status == other.status &&
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt &&
@@ -92,7 +109,8 @@ class FriendRequest {
   @override
   int get hashCode =>
       id.hashCode ^
-      participants.hashCode ^
+      sendUserId.hashCode ^
+      receiveUserId.hashCode ^
       status.hashCode ^
       createdAt.hashCode ^
       updatedAt.hashCode ^
@@ -101,5 +119,5 @@ class FriendRequest {
 
   @override
   String toString() =>
-      'FriendRequest(id: $id, participants: $participants, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, rejectionCount: $rejectionCount, isRead: $isRead)';
+      'FriendRequest(id: $id, sendUserId: $sendUserId, receiveUserId: $receiveUserId, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, rejectionCount: $rejectionCount, isRead: $isRead)';
 }

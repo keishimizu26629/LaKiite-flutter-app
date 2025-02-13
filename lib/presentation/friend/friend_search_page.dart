@@ -84,7 +84,7 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     showDialog(
                       context: context,
-                      barrierDismissible: false,
+                      barrierDismissible: true,
                       builder: (context) => AlertDialog(
                         content: SizedBox(
                           width: 250,
@@ -111,31 +111,53 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
                                 ),
                               ),
                               const SizedBox(height: 24),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  TextButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        isDialogShowing = false;
-                                      });
-                                      viewModel.resetState();
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: const Text('キャンセル'),
+                              if (state.value!.hasPendingRequest)
+                                ElevatedButton(
+                                  onPressed: null, // 無効化
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.grey,
                                   ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      viewModel.sendFriendRequest(state.value!.id);
-                                      setState(() {
-                                        isDialogShowing = false;
-                                      });
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: const Text('申請する'),
-                                  ),
-                                ],
-                              ),
+                                  child: const Text('申請済み'),
+                                )
+                              else
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    TextButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          isDialogShowing = false;
+                                        });
+                                        viewModel.resetState();
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: const Text('キャンセル'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () async {
+                                        await viewModel.sendFriendRequest(state.value!.id);
+                                        if (mounted) {
+                                          setState(() {
+                                            isDialogShowing = false;
+                                          });
+                                          Navigator.of(context).pop();
+                                          // 検索入力欄をクリア
+                                          searchController.clear();
+                                          // 申請完了メッセージを表示
+                                          if (viewModel.message != null) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(viewModel.message!),
+                                                duration: const Duration(seconds: 2),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
+                                      child: const Text('申請する'),
+                                    ),
+                                  ],
+                                ),
                             ],
                           ),
                         ),
