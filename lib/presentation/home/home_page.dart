@@ -126,7 +126,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                             : null,
                       ),
                       title: Text(friend.displayName),
-                      subtitle: Text(friend.name),
+                      // nameプロパティは存在しないため、displayNameを使用
+                      subtitle: Text(friend.searchId.toString()),
                     );
                   },
                 );
