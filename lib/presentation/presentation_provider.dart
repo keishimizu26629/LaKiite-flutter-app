@@ -62,6 +62,35 @@ final userGroupsStreamProvider = StreamProvider.autoDispose<List<Group>>((ref) {
   );
 });
 
+// ユーザーの公開プロフィールストリーム
+final publicUserStreamProvider = StreamProvider.family<PublicUserModel?, String>((ref, userId) {
+  final userRepository = ref.watch(userRepositoryProvider);
+  return userRepository.watchPublicProfile(userId);
+});
+
+// ユーザーの非公開プロフィールストリーム
+final privateUserStreamProvider = StreamProvider.family<PrivateUserModel?, String>((ref, userId) {
+  final userRepository = ref.watch(userRepositoryProvider);
+  return userRepository.watchPrivateProfile(userId);
+});
+
+// 統合されたユーザー情報ストリーム
+final userStreamProvider = StreamProvider.family<UserModel?, String>((ref, userId) async* {
+  await for (final _ in Stream.periodic(const Duration(milliseconds: 100))) {
+    final publicProfile = await ref.watch(publicUserStreamProvider(userId).future);
+    final privateProfile = await ref.watch(privateUserStreamProvider(userId).future);
+
+    if (publicProfile != null && privateProfile != null) {
+      yield UserModel(
+        publicProfile: publicProfile,
+        privateProfile: privateProfile,
+      );
+    } else {
+      yield null;
+    }
+  }
+});
+
 // リアルタイムフレンドストリーム
 final userFriendsStreamProvider = StreamProvider.autoDispose<List<PublicUserModel>>((ref) {
   final authState = ref.watch(authNotifierProvider);
