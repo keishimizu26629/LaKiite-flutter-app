@@ -21,6 +21,13 @@ abstract class IUserRepository {
   /// 返値: ユーザーが存在する場合は[UserModel]、存在しない場合はnull
   Future<UserModel?> getUser(String id);
 
+  /// 友達の公開プロフィール情報のみを取得する
+  ///
+  /// [id] 取得する友達のユーザーID
+  ///
+  /// 返値: ユーザーが存在する場合は[PublicUserModel]、存在しない場合はnull
+  Future<PublicUserModel?> getFriendPublicProfile(String id);
+
   /// 新規ユーザーを作成する
   ///
   /// [user] 作成するユーザー情報

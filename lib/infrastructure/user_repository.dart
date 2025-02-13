@@ -44,6 +44,13 @@ class UserRepository implements IUserRepository {
     );
   }
 
+  // 友達の公開情報のみを取得するメソッド
+  Future<PublicUserModel?> getFriendPublicProfile(String id) async {
+    final userDoc = await _firestore.collection('users').doc(id).get();
+    if (!userDoc.exists) return null;
+    return PublicUserModel.fromJson(userDoc.data()!);
+  }
+
   @override
   Future<void> createUser(UserModel user) async {
     try {

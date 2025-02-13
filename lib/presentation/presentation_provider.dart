@@ -63,7 +63,7 @@ final userGroupsStreamProvider = StreamProvider.autoDispose<List<Group>>((ref) {
 });
 
 // リアルタイムフレンドストリーム
-final userFriendsStreamProvider = StreamProvider.autoDispose<List<UserModel>>((ref) {
+final userFriendsStreamProvider = StreamProvider.autoDispose<List<PublicUserModel>>((ref) {
   final authState = ref.watch(authNotifierProvider);
   return authState.when(
     data: (state) {
@@ -78,9 +78,12 @@ final userFriendsStreamProvider = StreamProvider.autoDispose<List<UserModel>>((r
         if (user == null) {
           yield [];
         } else {
-          final friendsFutures = user.friends.map((friendId) => userRepository.getUser(friendId));
+          // 友達の公開プロフィールのみを取得
+          final friendsFutures = user.friends.map((friendId) =>
+            userRepository.getFriendPublicProfile(friendId)
+          );
           final friends = await Future.wait(friendsFutures);
-          yield friends.whereType<UserModel>().toList();
+          yield friends.whereType<PublicUserModel>().toList();
         }
       });
     },
