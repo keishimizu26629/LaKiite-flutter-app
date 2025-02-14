@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:tarakite/application/group/group_state.dart';
-import 'package:tarakite/domain/entity/group.dart';
-import 'package:tarakite/presentation/presentation_provider.dart';
+import 'package:lakiite/application/group/group_state.dart';
+import 'package:lakiite/domain/entity/group.dart';
+import 'package:lakiite/presentation/presentation_provider.dart';
 
 part 'group_notifier.g.dart';
 

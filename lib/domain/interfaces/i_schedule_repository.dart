@@ -1,4 +1,4 @@
-import 'package:tarakite/domain/entity/schedule.dart';
+import 'package:lakiite/domain/entity/schedule.dart';
 
 /// スケジュール管理機能を提供するリポジトリのインターフェース
 ///

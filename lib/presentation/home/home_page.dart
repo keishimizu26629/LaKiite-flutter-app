@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth/auth_state.dart';
-import '../../domain/entity/notification.dart' as domain;
 import '../group/create_group_page.dart';
 import '../group/group_detail_page.dart';
 import '../presentation_provider.dart';

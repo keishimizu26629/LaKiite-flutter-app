@@ -60,7 +60,7 @@ class _GroupDetailPageState extends ConsumerState<GroupDetailPage>
                           ? const Icon(Icons.person, color: Colors.white)
                           : null,
                     ),
-                    title: Text(owner.displayName ?? '不明なユーザー'),
+                    title: Text(owner.displayName),
                     subtitle: const Text('管理者'),
                   ),
                 )
@@ -87,7 +87,7 @@ class _GroupDetailPageState extends ConsumerState<GroupDetailPage>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.group.groupName),
+        title: const Text('グループの詳細'),
       ),
       body: Column(
         children: [
