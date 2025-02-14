@@ -1,4 +1,4 @@
-import 'package:tarakite/domain/entity/group.dart';
+import 'package:lakiite/domain/entity/group.dart';
 
 /// グループ管理機能を提供するリポジトリのインターフェース
 ///

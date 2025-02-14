@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../application/friend/friend_request_notifier.dart';
+import '../../application/notification/notification_notifier.dart';
+import '../../domain/entity/notification.dart' as domain;
 
 class FriendRequestListPage extends ConsumerWidget {
   const FriendRequestListPage({super.key});
@@ -8,8 +9,10 @@ class FriendRequestListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     debugPrint('Building FriendRequestListPage');
-    final requestsAsyncValue = ref.watch(friendRequestStreamProvider);
-    final notifier = ref.watch(friendRequestNotifierProvider.notifier);
+    final requestsAsyncValue = ref.watch(
+      receivedNotificationsByTypeProvider(domain.NotificationType.friend),
+    );
+    final notifier = ref.watch(notificationNotifierProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
@@ -38,17 +41,17 @@ class FriendRequestListPage extends ConsumerWidget {
           return ListView.builder(
             itemCount: requests.length,
             itemBuilder: (context, index) {
-              final requestDisplay = requests[index];
-              debugPrint('FriendRequestListPage - Building card for request ${requestDisplay.id}');
+              final request = requests[index];
+              debugPrint('FriendRequestListPage - Building card for request ${request.id}');
               return FriendRequestCard(
-                requestDisplay: requestDisplay,
+                request: request,
                 onAccept: () {
-                  debugPrint('FriendRequestListPage - Accepting request ${requestDisplay.id}');
-                  notifier.acceptRequest(requestDisplay.id);
+                  debugPrint('FriendRequestListPage - Accepting request ${request.id}');
+                  notifier.acceptNotification(request.id);
                 },
                 onReject: () {
-                  debugPrint('FriendRequestListPage - Rejecting request ${requestDisplay.id}');
-                  notifier.rejectRequest(requestDisplay.id);
+                  debugPrint('FriendRequestListPage - Rejecting request ${request.id}');
+                  notifier.rejectNotification(request.id);
                 },
               );
             },
@@ -72,19 +75,21 @@ class FriendRequestListPage extends ConsumerWidget {
 }
 
 class FriendRequestCard extends StatelessWidget {
-  final FriendRequestDisplay requestDisplay;
+  final domain.Notification request;
   final VoidCallback onAccept;
   final VoidCallback onReject;
 
   const FriendRequestCard({
     super.key,
-    required this.requestDisplay,
+    required this.request,
     required this.onAccept,
     required this.onReject,
   });
 
   @override
   Widget build(BuildContext context) {
+    final senderName = request.sendUserDisplayName ?? request.sendUserId;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
@@ -93,24 +98,40 @@ class FriendRequestCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${requestDisplay.senderName}さんから友達申請が届いています',
-              style: Theme.of(context).textTheme.titleMedium,
+              '$senderNameさんから友達申請が届いています',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: request.isRead ? Colors.black87 : Colors.black,
+                fontWeight: request.isRead ? FontWeight.normal : FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: onReject,
-                  child: const Text('拒否'),
+            if (request.status == domain.NotificationStatus.pending)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: onReject,
+                    child: const Text('拒否'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: onAccept,
+                    child: const Text('承認'),
+                  ),
+                ],
+              )
+            else
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  request.status == domain.NotificationStatus.accepted ? '承認済み' : '拒否済み',
+                  style: TextStyle(
+                    color: request.status == domain.NotificationStatus.accepted
+                        ? Colors.green
+                        : Colors.red,
+                  ),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: onAccept,
-                  child: const Text('承認'),
-                ),
-              ],
-            ),
+              ),
           ],
         ),
       ),

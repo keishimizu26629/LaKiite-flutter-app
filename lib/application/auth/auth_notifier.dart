@@ -2,23 +2,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/interfaces/i_auth_repository.dart';
-import '../../domain/interfaces/i_user_repository.dart';
 import '../../infrastructure/auth_repository.dart';
-import '../../infrastructure/user_repository.dart';
+import '../../presentation/presentation_provider.dart';
 import 'auth_state.dart';
 
 part 'auth_notifier.g.dart';
-
-/// ユーザーリポジトリのグローバルプロバイダー
-///
-/// パラメータ:
-/// - [ref] Riverpodのプロバイダー参照
-///
-/// 戻り値:
-/// - [IUserRepository] ユーザー操作用のリポジトリインスタンス
-final userRepositoryProvider = Provider<IUserRepository>((ref) {
-  return UserRepository();
-});
 
 /// 認証リポジトリのグローバルプロバイダー
 ///
@@ -26,7 +14,7 @@ final userRepositoryProvider = Provider<IUserRepository>((ref) {
 /// - [ref] Riverpodのプロバイダー参照
 ///
 /// 依存:
-/// - [userRepositoryProvider] ユーザー情報管理用
+/// - [userRepositoryProvider] ユーザー情報管理用（presentation_provider.dartで定義）
 /// - [FirebaseAuth] 認証基盤
 ///
 /// 戻り値:
