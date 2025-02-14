@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/notification/notification_notifier.dart';
-import '../../domain/entity/notification.dart';
+import '../../domain/entity/notification.dart' as domain;
 
+typedef NotificationType = domain.NotificationType;
+
+/// 通知の未読カウントを表示するバッジウィジェット
+///
+/// [child] バッジを表示する対象のウィジェット
+/// [type] 通知タイプ。nullの場合は全ての未読通知をカウント
+/// [badgeColor] バッジの背景色
+/// [textColor] バッジ内のテキスト色
+/// [badgeSize] バッジの最小サイズ
+/// [fontSize] バッジ内のテキストサイズ
+/// [padding] バッジ内のパディング
 class NotificationBadge extends ConsumerWidget {
   final Widget child;
   final NotificationType? type;
@@ -25,12 +36,14 @@ class NotificationBadge extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // ウィジェットのビルド開始をログ
     debugPrint('Building NotificationBadge');
 
     final unreadCountAsyncValue = type != null
         ? ref.watch(unreadNotificationCountByTypeProvider(type!))
         : ref.watch(unreadNotificationCountProvider);
 
+    // 非同期値の状態をログ
     debugPrint('NotificationBadge - AsyncValue state: $unreadCountAsyncValue');
 
     return Stack(
@@ -39,12 +52,14 @@ class NotificationBadge extends ConsumerWidget {
         child,
         unreadCountAsyncValue.when(
           data: (count) {
+            // 未読カウントをログ
             debugPrint('NotificationBadge - Unread count: $count');
             if (count == 0) {
               debugPrint('NotificationBadge - No unread notifications');
               return const SizedBox.shrink();
             }
 
+            // バッジを表示するPositionedウィジェットを返す
             return Positioned(
               top: -5,
               right: -5,
@@ -73,10 +88,12 @@ class NotificationBadge extends ConsumerWidget {
             );
           },
           loading: () {
+            // ローディング状態をログ
             debugPrint('NotificationBadge - Loading state');
             return const SizedBox.shrink();
           },
           error: (error, stack) {
+            // エラー状態をログ
             debugPrint('NotificationBadge - Error: $error\n$stack');
             return const SizedBox.shrink();
           },
@@ -86,7 +103,9 @@ class NotificationBadge extends ConsumerWidget {
   }
 }
 
-/// フレンド申請専用のバッジウィジェット
+/// フレンド申請の未読通知を表示するバッジウィジェット
+///
+/// [child] バッジを表示する対象のウィジェット
 class FriendRequestBadge extends ConsumerWidget {
   final Widget child;
 
@@ -104,7 +123,9 @@ class FriendRequestBadge extends ConsumerWidget {
   }
 }
 
-/// グループ招待専用のバッジウィジェット
+/// グループ招待の未読通知を表示するバッジウィジェット
+///
+/// [child] バッジを表示する対象のウィジェット
 class GroupInvitationBadge extends ConsumerWidget {
   final Widget child;
 
