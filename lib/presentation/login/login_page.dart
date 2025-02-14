@@ -103,9 +103,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Icon(Icons.g_mobiledata),
                     SizedBox(width: 8),
                     Text('Googleでログイン'),
