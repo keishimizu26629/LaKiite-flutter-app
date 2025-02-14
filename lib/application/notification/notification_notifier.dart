@@ -1,9 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entity/notification.dart';
+import '../../domain/entity/notification.dart' as domain;
 import '../../domain/interfaces/i_notification_repository.dart';
 import '../../infrastructure/notification_repository.dart';
 import '../auth/auth_notifier.dart';
 
+typedef Notification = domain.Notification;
+typedef NotificationType = domain.NotificationType;
+
+/// 通知リポジトリのインスタンスを提供する
 final notificationRepositoryProvider = Provider<INotificationRepository>((ref) {
   return NotificationRepository();
 });
@@ -15,6 +19,9 @@ final currentUserIdProvider = Provider<String?>((ref) {
 });
 
 /// 未読の通知数を監視するプロバイダー
+///
+/// ログインユーザーの全ての未読通知数のストリームを提供する
+/// 未ログイン時は0を返す
 final unreadNotificationCountProvider = StreamProvider<int>((ref) {
   final repository = ref.watch(notificationRepositoryProvider);
   final userId = ref.watch(currentUserIdProvider);
@@ -23,6 +30,10 @@ final unreadNotificationCountProvider = StreamProvider<int>((ref) {
 });
 
 /// タイプ別の未読通知数を監視するプロバイダー
+///
+/// [type] 監視対象の通知タイプ
+/// ログインユーザーの指定タイプの未読通知数のストリームを提供する
+/// 未ログイン時は0を返す
 final unreadNotificationCountByTypeProvider = StreamProvider.family<int, NotificationType>((ref, type) {
   final repository = ref.watch(notificationRepositoryProvider);
   final userId = ref.watch(currentUserIdProvider);
@@ -31,6 +42,9 @@ final unreadNotificationCountByTypeProvider = StreamProvider.family<int, Notific
 });
 
 /// 受信した通知一覧を監視するプロバイダー
+///
+/// ログインユーザーが受信した全ての通知のストリームを提供する
+/// 未ログイン時は空配列を返す
 final receivedNotificationsProvider = StreamProvider<List<Notification>>((ref) {
   final repository = ref.watch(notificationRepositoryProvider);
   final userId = ref.watch(currentUserIdProvider);
@@ -39,6 +53,10 @@ final receivedNotificationsProvider = StreamProvider<List<Notification>>((ref) {
 });
 
 /// タイプ別の受信通知一覧を監視するプロバイダー
+///
+/// [type] 監視対象の通知タイプ
+/// ログインユーザーが受信した指定タイプの通知のストリームを提供する
+/// 未ログイン時は空配列を返す
 final receivedNotificationsByTypeProvider = StreamProvider.family<List<Notification>, NotificationType>((ref, type) {
   final repository = ref.watch(notificationRepositoryProvider);
   final userId = ref.watch(currentUserIdProvider);
@@ -47,6 +65,9 @@ final receivedNotificationsByTypeProvider = StreamProvider.family<List<Notificat
 });
 
 /// 送信した通知一覧を監視するプロバイダー
+///
+/// ログインユーザーが送信した全ての通知のストリームを提供する
+/// 未ログイン時は空配列を返す
 final sentNotificationsProvider = StreamProvider<List<Notification>>((ref) {
   final repository = ref.watch(notificationRepositoryProvider);
   final userId = ref.watch(currentUserIdProvider);
@@ -55,6 +76,10 @@ final sentNotificationsProvider = StreamProvider<List<Notification>>((ref) {
 });
 
 /// タイプ別の送信通知一覧を監視するプロバイダー
+///
+/// [type] 監視対象の通知タイプ
+/// ログインユーザーが送信した指定タイプの通知のストリームを提供する
+/// 未ログイン時は空配列を返す
 final sentNotificationsByTypeProvider = StreamProvider.family<List<Notification>, NotificationType>((ref, type) {
   final repository = ref.watch(notificationRepositoryProvider);
   final userId = ref.watch(currentUserIdProvider);
@@ -63,11 +88,20 @@ final sentNotificationsByTypeProvider = StreamProvider.family<List<Notification>
 });
 
 /// 通知の作成、更新、承認などの操作を提供するNotifier
+///
+/// 各操作の実行中はローディング状態を提供し、
+/// エラーが発生した場合はエラー状態を提供する
 class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
   final INotificationRepository _repository;
 
   NotificationNotifier(this._repository) : super(const AsyncValue.data(null));
 
+  /// フレンド申請通知を作成する
+  ///
+  /// [toUserId] 送信先のユーザーID
+  /// [fromUserId] 送信元のユーザーID
+  /// [fromUserDisplayName] 送信元のユーザー表示名（オプション）
+  /// [toUserDisplayName] 送信先のユーザー表示名（オプション）
   Future<void> createFriendRequest({
     required String toUserId,
     required String fromUserId,
@@ -89,6 +123,13 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  /// グループ招待通知を作成する
+  ///
+  /// [toUserId] 送信先のユーザーID
+  /// [fromUserId] 送信元のユーザーID
+  /// [groupId] 招待するグループのID
+  /// [fromUserDisplayName] 送信元のユーザー表示名（オプション）
+  /// [toUserDisplayName] 送信先のユーザー表示名（オプション）
   Future<void> createGroupInvitation({
     required String toUserId,
     required String fromUserId,
@@ -112,6 +153,9 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  /// 通知を承認する
+  ///
+  /// [notificationId] 承認する通知のID
   Future<void> acceptNotification(String notificationId) async {
     state = const AsyncValue.loading();
     try {
@@ -122,6 +166,9 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  /// 通知を拒否する
+  ///
+  /// [notificationId] 拒否する通知のID
   Future<void> rejectNotification(String notificationId) async {
     state = const AsyncValue.loading();
     try {
@@ -132,6 +179,9 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  /// 通知を既読にする
+  ///
+  /// [notificationId] 既読にする通知のID
   Future<void> markAsRead(String notificationId) async {
     state = const AsyncValue.loading();
     try {
@@ -143,6 +193,7 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
+/// 通知操作を提供するNotifierのプロバイダー
 final notificationNotifierProvider = StateNotifierProvider<NotificationNotifier, AsyncValue<void>>((ref) {
   final repository = ref.watch(notificationRepositoryProvider);
   return NotificationNotifier(repository);
