@@ -102,4 +102,23 @@ abstract class IUserRepository {
   /// 返値: 該当するユーザーが存在する場合は[SearchUserModel]、存在しない場合はnull
   /// Note: 検索結果には公開情報のみが含まれます
   Future<SearchUserModel?> findBySearchId(String searchId);
+
+  /// ユーザーのプライベートプロフィールのリストにメンバーを追加する
+  ///
+  /// [userId] リストに追加するユーザーのID
+  /// [memberId] 追加するメンバーのID
+  Future<void> addToList(String userId, String memberId);
+
+  /// ユーザーのプライベートプロフィールのリストからメンバーを削除する
+  ///
+  /// [userId] リストから削除するユーザーのID
+  /// [memberId] 削除するメンバーのID
+  Future<void> removeFromList(String userId, String memberId);
+
+  /// 複数のユーザーの公開情報を一度に取得する
+  ///
+  /// [userIds] 取得するユーザーのIDリスト
+  ///
+  /// 返値: 公開プロフィール情報のリスト
+  Future<List<PublicUserModel>> getPublicProfiles(List<String> userIds);
 }

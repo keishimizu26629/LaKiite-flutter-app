@@ -5,7 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import '../../domain/entity/user.dart';
 import '../../domain/value/user_id.dart';
 import '../../domain/interfaces/i_user_repository.dart';
-import '../../application/auth/auth_notifier.dart';
+import '../../presentation/presentation_provider.dart';
 
 final selectedImageProvider = StateProvider<File?>((ref) => null);
 
