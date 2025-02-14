@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth/auth_state.dart';
-import '../group/create_group_page.dart';
-import '../group/group_detail_page.dart';
+import '../list/create_list_page.dart';
+import '../list/list_detail_page.dart';
 import '../presentation_provider.dart';
 import '../friend/friend_search_page.dart';
 import '../notification/notification_list_page.dart';
@@ -34,9 +34,9 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
-    // フレンドとグループの状態を監視
+    // フレンドとリストの状態を監視
     final friendsAsync = ref.watch(userFriendsStreamProvider);
-    final groupsAsync = ref.watch(userGroupsStreamProvider);
+    final listsAsync = ref.watch(userListsStreamProvider);
 
     // 認証状態の変更を監視
     ref.listen(authNotifierProvider, (previous, next) {
@@ -78,113 +78,110 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ],
       ),
-      // 新規グループ作成ボタン
+      // 新規リスト作成ボタン
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // グループ作成画面への遷移
+          // リスト作成画面への遷移
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => const CreateGroupPage(),
+              builder: (context) => const CreateListPage(),
             ),
           );
         },
         child: const Icon(Icons.add),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      body: DefaultTabController(
+        length: 2,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'フレンド',
-              style: Theme.of(context).textTheme.titleLarge,
+            const TabBar(
+              tabs: [
+                Tab(text: 'フレンド'),
+                Tab(text: 'リスト'),
+              ],
             ),
-            const SizedBox(height: 8),
-            // フレンドリストの状態に応じた表示を切り替え
-            friendsAsync.when(
-              data: (friends) {
-                // フレンドが存在しない場合のメッセージを表示
-                if (friends.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text('フレンドはいません'),
-                  );
-                }
-                // フレンドリストを表示
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: friends.length,
-                  itemBuilder: (context, index) {
-                    final friend = friends[index];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage: friend.iconUrl != null
-                            ? NetworkImage(friend.iconUrl!)
-                            : null,
-                        child: friend.iconUrl == null
-                            ? const Icon(Icons.person)
-                            : null,
-                      ),
-                      title: Text(friend.displayName),
-                      // nameプロパティは存在しないため、displayNameを使用
-                      subtitle: Text(friend.searchId.toString()),
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) =>
-                  Center(child: Text('エラー: ${error.toString()}')),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'グループ',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            // グループリストの状態に応じた表示を切り替え
-            groupsAsync.when(
-              data: (groups) {
-                // グループが存在しない場合のメッセージを表示
-                if (groups.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text('所属しているグループはありません'),
-                  );
-                }
-                // グループリストを表示
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: groups.length,
-                  itemBuilder: (context, index) {
-                    final group = groups[index];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage: group.iconUrl != null
-                            ? NetworkImage(group.iconUrl!)
-                            : null,
-                        child: group.iconUrl == null
-                            ? const Icon(Icons.group)
-                            : null,
-                      ),
-                      title: Text(group.groupName),
-                      subtitle: Text('${group.memberIds.length}人のメンバー'),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => GroupDetailPage(group: group),
-                          ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  // フレンドタブ
+                  friendsAsync.when(
+                    data: (friends) {
+                      if (friends.isEmpty) {
+                        return const Center(
+                          child: Text('フレンドはいません'),
                         );
-                      },
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) =>
-                  Center(child: Text('エラー: ${error.toString()}')),
+                      }
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: friends.length,
+                        itemBuilder: (context, index) {
+                          final friend = friends[index];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage: friend.iconUrl != null
+                                  ? NetworkImage(friend.iconUrl!)
+                                  : null,
+                              child: friend.iconUrl == null
+                                  ? const Icon(Icons.person)
+                                  : null,
+                            ),
+                            title: Text(friend.displayName),
+                            subtitle: Text(friend.searchId.toString()),
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (error, stack) =>
+                        Center(child: Text('エラー: ${error.toString()}')),
+                  ),
+                  // リストタブ
+                  listsAsync.when(
+                    data: (lists) {
+                      if (lists.isEmpty) {
+                        return const Center(
+                          child: Text('作成したリストはありません'),
+                        );
+                      }
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: lists.length,
+                        itemBuilder: (context, index) {
+                          final list = lists[index];
+                          final currentUser = ref.watch(authNotifierProvider).value?.user;
+                          // 自分以外のメンバー数を計算
+                          final otherMemberCount = currentUser != null
+                              ? list.memberIds.where((id) => id != currentUser.id).length
+                              : 0;
+
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage: list.iconUrl != null
+                                  ? NetworkImage(list.iconUrl!)
+                                  : null,
+                              child: list.iconUrl == null
+                                  ? const Icon(Icons.list)
+                                  : null,
+                            ),
+                            title: Text(list.listName),
+                            subtitle: Text('${otherMemberCount}人のメンバー'),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => ListDetailPage(list: list),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (error, stack) =>
+                        Center(child: Text('エラー: ${error.toString()}')),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

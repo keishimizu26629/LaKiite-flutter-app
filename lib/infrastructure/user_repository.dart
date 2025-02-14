@@ -21,7 +21,10 @@ class UserRepository implements IUserRepository {
   }
 
   Map<String, dynamic> _toFirestorePrivate(PrivateUserModel privateProfile) {
-    return privateProfile.toJson();
+    final json = privateProfile.toJson();
+    // listsフィールドがnullの場合は空のリストを設定
+    json['lists'] = json['lists'] ?? [];
+    return json;
   }
 
   @override
@@ -37,9 +40,15 @@ class UserRepository implements IUserRepository {
         .get();
     if (!privateDoc.exists) return null;
 
+    final publicData = userDoc.data()!;
+    publicData['id'] = userDoc.id;
+
+    final privateData = privateDoc.data()!;
+    privateData['lists'] = privateData['lists'] ?? [];
+
     return UserModel(
-      publicProfile: PublicUserModel.fromJson(userDoc.data()!),
-      privateProfile: PrivateUserModel.fromJson(privateDoc.data()!),
+      publicProfile: PublicUserModel.fromJson(publicData),
+      privateProfile: PrivateUserModel.fromJson(privateData),
     );
   }
 
@@ -47,7 +56,9 @@ class UserRepository implements IUserRepository {
   Future<PublicUserModel?> getFriendPublicProfile(String id) async {
     final userDoc = await _firestore.collection('users').doc(id).get();
     if (!userDoc.exists) return null;
-    return PublicUserModel.fromJson(userDoc.data()!);
+    final data = userDoc.data()!;
+    data['id'] = userDoc.id;
+    return PublicUserModel.fromJson(data);
   }
 
   @override
@@ -173,7 +184,9 @@ class UserRepository implements IUserRepository {
         .snapshots()
         .map((doc) {
           if (!doc.exists) return null;
-          return PublicUserModel.fromJson(doc.data()!);
+          final data = doc.data()!;
+          data['id'] = doc.id;
+          return PublicUserModel.fromJson(data);
         });
   }
 
@@ -187,17 +200,20 @@ class UserRepository implements IUserRepository {
         .snapshots()
         .map((doc) {
           if (!doc.exists) return null;
-          return PrivateUserModel.fromJson(doc.data()!);
+          final data = doc.data()!;
+          data['lists'] = data['lists'] ?? [];
+          return PrivateUserModel.fromJson(data);
         });
   }
 
   @override
-  Stream<UserModel?> watchUser(String id) async* {
-    await for (final _ in Stream.periodic(const Duration(milliseconds: 100))) {
-      final publicDoc = await _firestore
-          .collection('users')
-          .doc(id)
-          .get();
+  Stream<UserModel?> watchUser(String id) {
+    return _firestore
+        .collection('users')
+        .doc(id)
+        .snapshots()
+        .asyncMap((publicDoc) async {
+      if (!publicDoc.exists) return null;
 
       final privateDoc = await _firestore
           .collection('users')
@@ -206,15 +222,61 @@ class UserRepository implements IUserRepository {
           .doc('profile')
           .get();
 
-      if (!publicDoc.exists || !privateDoc.exists) {
-        yield null;
-        continue;
-      }
+      if (!privateDoc.exists) return null;
 
-      yield UserModel(
-        publicProfile: PublicUserModel.fromJson(publicDoc.data()!),
-        privateProfile: PrivateUserModel.fromJson(privateDoc.data()!),
+      final publicData = publicDoc.data()!;
+      publicData['id'] = publicDoc.id;
+
+      final privateData = privateDoc.data()!;
+      privateData['lists'] = privateData['lists'] ?? [];
+
+      return UserModel(
+        publicProfile: PublicUserModel.fromJson(publicData),
+        privateProfile: PrivateUserModel.fromJson(privateData),
       );
-    }
+    });
+  }
+
+  @override
+  Future<void> addToList(String userId, String memberId) async {
+    final privateRef = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('private')
+        .doc('profile');
+
+    await privateRef.update({
+      'lists': FieldValue.arrayUnion([memberId]),
+    });
+  }
+
+  @override
+  Future<void> removeFromList(String userId, String memberId) async {
+    final privateRef = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('private')
+        .doc('profile');
+
+    await privateRef.update({
+      'lists': FieldValue.arrayRemove([memberId]),
+    });
+  }
+
+  // 複数のユーザーの公開情報を一度に取得
+  Future<List<PublicUserModel>> getPublicProfiles(List<String> userIds) async {
+    final futures = userIds.map((id) => _firestore
+        .collection('users')
+        .doc(id)
+        .get()
+        .then((doc) {
+          if (!doc.exists) return null;
+          final data = doc.data()!;
+          data['id'] = doc.id;
+          return PublicUserModel.fromJson(data);
+        }));
+
+    final results = await Future.wait(futures);
+    return results.where((user) => user != null).cast<PublicUserModel>().toList();
   }
 }

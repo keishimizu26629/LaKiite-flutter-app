@@ -5,13 +5,14 @@ import '../../domain/entity/user.dart';
 import '../../domain/interfaces/i_user_repository.dart';
 import '../../infrastructure/notification_repository.dart';
 import '../../application/auth/auth_notifier.dart' as auth;
+import '../../presentation/presentation_provider.dart';
 import '../../presentation/group/models/group_member_invite_state.dart';
 import '../../presentation/group/models/search_user_model.dart' as search;
 
 /// グループメンバー招待画面のViewModel Provider
 final groupMemberInviteViewModelProvider = StateNotifierProvider.family<
     GroupMemberInviteNotifier, GroupMemberInviteState, Group>((ref, group) {
-  final userRepository = ref.watch(auth.userRepositoryProvider);
+  final userRepository = ref.watch(userRepositoryProvider);
   final notificationRepository = NotificationRepository();
   final currentUser = ref.watch(auth.authNotifierProvider).value?.user;
   return GroupMemberInviteNotifier(
@@ -65,8 +66,8 @@ class GroupMemberInviteNotifier extends StateNotifier<GroupMemberInviteState> {
   /// 招待状態の読み込み
   Future<void> _loadPendingInvitations(List<String> friendIds) async {
     try {
-      final snapshot = await _notificationRepository
-          .getPendingGroupInvitations(_group.id, friendIds);
+      final snapshot = await _notificationRepository.getPendingGroupInvitations(
+          _group.id, friendIds);
       state = state.copyWith(
         pendingInvitations: Set<String>.from(snapshot),
       );
@@ -82,7 +83,8 @@ class GroupMemberInviteNotifier extends StateNotifier<GroupMemberInviteState> {
       if (currentUser == null) return;
 
       final friendProfiles = await Future.wait(
-        currentUser.friends.map((friendId) => _userRepository.getUser(friendId)),
+        currentUser.friends
+            .map((friendId) => _userRepository.getUser(friendId)),
       );
 
       state = state.copyWith(
@@ -129,7 +131,8 @@ class GroupMemberInviteNotifier extends StateNotifier<GroupMemberInviteState> {
       bool hasPending = false;
       try {
         // 送信済みの招待を確認
-        final hasSentPending = await _notificationRepository.hasPendingGroupInvitation(
+        final hasSentPending =
+            await _notificationRepository.hasPendingGroupInvitation(
           _currentUserId,
           user.id,
           _group.id,

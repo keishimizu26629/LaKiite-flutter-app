@@ -3,6 +3,7 @@ import '../../domain/entity/notification.dart' as domain;
 import '../../domain/interfaces/i_user_repository.dart';
 import '../../infrastructure/notification_repository.dart';
 import '../../application/auth/auth_notifier.dart' as auth;
+import '../../presentation/presentation_provider.dart';
 
 class SearchUserModel {
   final String id;
@@ -22,7 +23,7 @@ class SearchUserModel {
 
 final friendSearchViewModelProvider =
     StateNotifierProvider<FriendSearchViewModel, AsyncValue<SearchUserModel?>>((ref) {
-  final userRepository = ref.watch(auth.userRepositoryProvider);
+  final userRepository = ref.watch(userRepositoryProvider);
   final notificationRepository = NotificationRepository();
   final currentUser = ref.watch(auth.authNotifierProvider).value?.user;
   return FriendSearchViewModel(

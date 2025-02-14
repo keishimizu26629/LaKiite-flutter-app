@@ -20,6 +20,7 @@ class UserIdConverter implements JsonConverter<UserId, String> {
 @freezed
 class PublicUserModel with _$PublicUserModel {
   const factory PublicUserModel({
+    required String id,
     required String displayName,
     @UserIdConverter()
     required UserId searchId,
@@ -40,6 +41,7 @@ class PrivateUserModel with _$PrivateUserModel {
     required String name,
     required List<String> friends,
     required List<String> groups,
+    required List<String> lists,
     required DateTime createdAt,
   }) = _PrivateUserModel;
 
@@ -69,6 +71,7 @@ class UserModel with _$UserModel {
     final searchId = UserIdGenerator.generateUserId();
     return UserModel(
       publicProfile: PublicUserModel(
+        id: id,
         displayName: name,
         searchId: searchId,
         iconUrl: null,
@@ -78,6 +81,7 @@ class UserModel with _$UserModel {
         name: name,
         friends: const [],
         groups: const [],
+        lists: const [],
         createdAt: DateTime.now(),
       ),
     );
@@ -100,6 +104,7 @@ class UserModel with _$UserModel {
   }) {
     return UserModel(
       publicProfile: PublicUserModel(
+        id: this.id,
         displayName: displayName ?? this.displayName,
         searchId: searchId ?? this.searchId,
         iconUrl: iconUrl ?? this.iconUrl,
@@ -109,6 +114,7 @@ class UserModel with _$UserModel {
         name: name ?? this.name,
         friends: this.friends,
         groups: this.groups,
+        lists: this.privateProfile.lists,
         createdAt: this.createdAt,
       ),
     );
