@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:tarakite/domain/entity/schedule.dart';
+import 'package:lakiite/domain/entity/schedule.dart';
 
 part 'schedule_state.freezed.dart';
 

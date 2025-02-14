@@ -1,22 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:tarakite/application/auth/auth_notifier.dart';
-import 'package:tarakite/application/auth/auth_state.dart';
-import 'package:tarakite/application/group/group_notifier.dart';
-import 'package:tarakite/application/group/group_state.dart';
-import 'package:tarakite/application/schedule/schedule_notifier.dart';
-import 'package:tarakite/application/schedule/schedule_state.dart';
-import 'package:tarakite/application/notification/notification_notifier.dart';
-export 'package:tarakite/application/notification/notification_notifier.dart' show currentUserIdProvider;
-import 'package:tarakite/domain/interfaces/i_group_repository.dart';
-import 'package:tarakite/domain/interfaces/i_schedule_repository.dart';
-import 'package:tarakite/domain/interfaces/i_notification_repository.dart';
-import 'package:tarakite/infrastructure/group_repository.dart';
-import 'package:tarakite/infrastructure/schedule_repository.dart';
-import 'package:tarakite/infrastructure/notification_repository.dart';
-import 'package:tarakite/domain/entity/group.dart';
-import 'package:tarakite/domain/entity/user.dart';
-import 'package:tarakite/domain/entity/notification.dart' as domain;
+import 'package:lakiite/application/auth/auth_notifier.dart';
+import 'package:lakiite/application/auth/auth_state.dart';
+import 'package:lakiite/application/group/group_notifier.dart';
+import 'package:lakiite/application/group/group_state.dart';
+import 'package:lakiite/application/schedule/schedule_notifier.dart';
+import 'package:lakiite/application/schedule/schedule_state.dart';
+export 'package:lakiite/application/notification/notification_notifier.dart' show currentUserIdProvider;
+import 'package:lakiite/domain/interfaces/i_group_repository.dart';
+import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
+import 'package:lakiite/domain/interfaces/i_notification_repository.dart';
+import 'package:lakiite/infrastructure/group_repository.dart';
+import 'package:lakiite/infrastructure/schedule_repository.dart';
+import 'package:lakiite/infrastructure/notification_repository.dart';
+import 'package:lakiite/domain/entity/group.dart';
+import 'package:lakiite/domain/entity/user.dart';
 
 // Firebase instances
 final firebaseAuthProvider = Provider((ref) => FirebaseAuth.instance);
