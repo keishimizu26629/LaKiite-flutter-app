@@ -13,6 +13,7 @@ _$GroupImpl _$$GroupImplFromJson(Map<String, dynamic> json) => _$GroupImpl(
       memberIds:
           (json['memberIds'] as List<dynamic>).map((e) => e as String).toList(),
       createdAt: DateTime.parse(json['createdAt'] as String),
+      iconUrl: json['iconUrl'] as String?,
     );
 
 Map<String, dynamic> _$$GroupImplToJson(_$GroupImpl instance) =>
@@ -22,4 +23,5 @@ Map<String, dynamic> _$$GroupImplToJson(_$GroupImpl instance) =>
       'ownerId': instance.ownerId,
       'memberIds': instance.memberIds,
       'createdAt': instance.createdAt.toIso8601String(),
+      'iconUrl': instance.iconUrl,
     };
