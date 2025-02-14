@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth/auth_state.dart';
 import '../group/create_group_page.dart';
+import '../group/group_detail_page.dart';
 import '../presentation_provider.dart';
 import '../friend/friend_search_page.dart';
 import '../friend/friend_request_list_page.dart';
@@ -160,13 +161,22 @@ class _HomePageState extends ConsumerState<HomePage> {
                   itemBuilder: (context, index) {
                     final group = groups[index];
                     return ListTile(
-                      leading: const CircleAvatar(
-                        child: Icon(Icons.group),
+                      leading: CircleAvatar(
+                        backgroundImage: group.iconUrl != null
+                            ? NetworkImage(group.iconUrl!)
+                            : null,
+                        child: group.iconUrl == null
+                            ? const Icon(Icons.group)
+                            : null,
                       ),
                       title: Text(group.groupName),
                       subtitle: Text('${group.memberIds.length}人のメンバー'),
                       onTap: () {
-                        // TODO: グループ詳細画面への遷移を実装
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => GroupDetailPage(group: group),
+                          ),
+                        );
                       },
                     );
                   },

@@ -76,9 +76,12 @@ final privateUserStreamProvider = StreamProvider.family<PrivateUserModel?, Strin
 
 // 統合されたユーザー情報ストリーム
 final userStreamProvider = StreamProvider.family<UserModel?, String>((ref, userId) async* {
-  await for (final _ in Stream.periodic(const Duration(milliseconds: 100))) {
-    final publicProfile = await ref.watch(publicUserStreamProvider(userId).future);
-    final privateProfile = await ref.watch(privateUserStreamProvider(userId).future);
+  final publicProfileAsync = ref.watch(publicUserStreamProvider(userId));
+  final privateProfileAsync = ref.watch(privateUserStreamProvider(userId));
+
+  if (publicProfileAsync is AsyncData && privateProfileAsync is AsyncData) {
+    final publicProfile = publicProfileAsync.value;
+    final privateProfile = privateProfileAsync.value;
 
     if (publicProfile != null && privateProfile != null) {
       yield UserModel(
@@ -88,6 +91,8 @@ final userStreamProvider = StreamProvider.family<UserModel?, String>((ref, userI
     } else {
       yield null;
     }
+  } else {
+    yield null;
   }
 });
 
