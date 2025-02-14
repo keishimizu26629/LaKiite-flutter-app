@@ -1,32 +1,52 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:tarakite/application/auth/auth_notifier.dart';
-import 'package:tarakite/application/auth/auth_state.dart';
-import 'package:tarakite/application/group/group_notifier.dart';
-import 'package:tarakite/application/group/group_state.dart';
-import 'package:tarakite/application/schedule/schedule_notifier.dart';
-import 'package:tarakite/application/schedule/schedule_state.dart';
-import 'package:tarakite/domain/interfaces/i_group_repository.dart';
-import 'package:tarakite/domain/interfaces/i_schedule_repository.dart';
-import 'package:tarakite/infrastructure/group_repository.dart';
-import 'package:tarakite/infrastructure/schedule_repository.dart';
-import 'package:tarakite/domain/entity/group.dart';
-import 'package:tarakite/domain/entity/user.dart';
+import 'package:lakiite/application/auth/auth_notifier.dart';
+import 'package:lakiite/application/auth/auth_state.dart';
+import 'package:lakiite/application/group/group_notifier.dart';
+import 'package:lakiite/application/group/group_state.dart';
+import 'package:lakiite/application/list/list_notifier.dart';
+import 'package:lakiite/application/list/list_state.dart';
+import 'package:lakiite/application/schedule/schedule_notifier.dart';
+import 'package:lakiite/application/schedule/schedule_state.dart';
+import 'package:lakiite/domain/interfaces/i_group_repository.dart';
+import 'package:lakiite/domain/interfaces/i_list_repository.dart';
+import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
+import 'package:lakiite/domain/interfaces/i_notification_repository.dart';
+import 'package:lakiite/domain/interfaces/i_user_repository.dart';
+import 'package:lakiite/infrastructure/group_repository.dart';
+import 'package:lakiite/infrastructure/list_repository.dart';
+import 'package:lakiite/infrastructure/schedule_repository.dart';
+import 'package:lakiite/infrastructure/notification_repository.dart';
+import 'package:lakiite/infrastructure/user_repository.dart';
+import 'package:lakiite/domain/entity/group.dart';
+import 'package:lakiite/domain/entity/list.dart';
+import 'package:lakiite/domain/entity/user.dart';
+
+export 'package:lakiite/application/notification/notification_notifier.dart' show currentUserIdProvider;
 
 // Firebase instances
 final firebaseAuthProvider = Provider((ref) => FirebaseAuth.instance);
 
 // Repository providers
-// Note: authRepositoryProvider and userRepositoryProvider are now defined in auth_notifier.dart
+final userRepositoryProvider = Provider<IUserRepository>((ref) {
+  return UserRepository();
+});
 
 final groupRepositoryProvider = Provider<IGroupRepository>((ref) {
   return GroupRepository();
+});
+
+final listRepositoryProvider = Provider<IListRepository>((ref) {
+  return ListRepository();
 });
 
 final scheduleRepositoryProvider = Provider<IScheduleRepository>((ref) {
   return ScheduleRepository();
 });
 
+final notificationRepositoryProvider = Provider<INotificationRepository>((ref) {
+  return NotificationRepository();
+});
 // Auth state providers
 final authStateProvider = StreamProvider.autoDispose((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
@@ -46,6 +66,26 @@ final groupNotifierProvider = AutoDisposeAsyncNotifierProvider<GroupNotifier, Gr
 final scheduleNotifierProvider = AutoDisposeAsyncNotifierProvider<ScheduleNotifier, ScheduleState>(
   ScheduleNotifier.new,
 );
+
+// List state providers
+final listNotifierProvider = AutoDisposeAsyncNotifierProvider<ListNotifier, ListState>(
+  ListNotifier.new,
+);
+
+// リアルタイムリストストリーム
+final userListsStreamProvider = StreamProvider.autoDispose<List<UserList>>((ref) {
+  final authState = ref.watch(authNotifierProvider);
+  return authState.when(
+    data: (state) {
+      if (state.status == AuthStatus.authenticated && state.user != null) {
+        return ref.watch(listRepositoryProvider).watchUserLists(state.user!.id);
+      }
+      return Stream.value([]);
+    },
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
+});
 
 // リアルタイムグループストリーム
 final userGroupsStreamProvider = StreamProvider.autoDispose<List<Group>>((ref) {
@@ -97,6 +137,12 @@ final userStreamProvider = StreamProvider.family<UserModel?, String>((ref, userI
 });
 
 // リアルタイムフレンドストリーム
+// 特定のリストをリアルタイムで監視するプロバイダー
+final listStreamProvider = StreamProvider.family<UserList?, String>((ref, listId) {
+  final listRepository = ref.watch(listRepositoryProvider);
+  return listRepository.watchList(listId);
+});
+
 final userFriendsStreamProvider = StreamProvider.autoDispose<List<PublicUserModel>>((ref) {
   final authState = ref.watch(authNotifierProvider);
   return authState.when(
@@ -112,12 +158,24 @@ final userFriendsStreamProvider = StreamProvider.autoDispose<List<PublicUserMode
         if (user == null) {
           yield [];
         } else {
-          // 友達の公開プロフィールのみを取得
-          final friendsFutures = user.friends.map((friendId) =>
-            userRepository.getFriendPublicProfile(friendId)
+          // 友達の公開プロフィールをリアルタイムで監視
+          if (user.friends.isEmpty) {
+            yield [];
+            return;
+          }
+
+          // 各友達のプロフィールストリームを作成
+          final friendStreams = user.friends.map(
+            (friendId) => userRepository.watchPublicProfile(friendId)
           );
-          final friends = await Future.wait(friendsFutures);
-          yield friends.whereType<PublicUserModel>().toList();
+
+          // 全てのストリームを1つのストリームにマージ
+          yield* Stream.periodic(const Duration(seconds: 1)).asyncMap((_) async {
+            final profiles = await Future.wait(
+              friendStreams.map((stream) => stream.first)
+            );
+            return profiles.whereType<PublicUserModel>().toList();
+          });
         }
       });
     },

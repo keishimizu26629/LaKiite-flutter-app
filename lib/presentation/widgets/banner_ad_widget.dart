@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:tarakite/infrastructure/admob_service.dart';
+import 'package:lakiite/infrastructure/admob_service.dart';
 
 final bannerAdProvider = Provider.autoDispose((ref) {
   final bannerAd = AdMobService.createBannerAd();

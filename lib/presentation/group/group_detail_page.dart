@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entity/group.dart';
-import '../../domain/entity/user.dart';
 import '../presentation_provider.dart';
+import 'group_member_invite_page.dart';
 
+/// グループの詳細情報を表示するページ
+///
+/// グループのメンバー一覧や予定を表示し、メンバーの招待や
+/// グループ情報の編集機能を提供する
 class GroupDetailPage extends ConsumerStatefulWidget {
   final Group group;
 
   const GroupDetailPage({
-    Key? key,
+    super.key,
     required this.group,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<GroupDetailPage> createState() => _GroupDetailPageState();
@@ -18,12 +22,18 @@ class GroupDetailPage extends ConsumerStatefulWidget {
 
 class _GroupDetailPageState extends ConsumerState<GroupDetailPage>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+  late final TabController _tabController;
+
+  // タブの定義を定数として切り出し
+  static const _tabs = [
+    Tab(text: 'メンバー'),
+    Tab(text: '予定'),
+  ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: _tabs.length, vsync: this);
   }
 
   @override
@@ -36,17 +46,11 @@ class _GroupDetailPageState extends ConsumerState<GroupDetailPage>
   Widget build(BuildContext context) {
     // 管理者のユーザー情報を取得
     final ownerUserAsync = ref.watch(userStreamProvider(widget.group.ownerId));
+    final theme = Theme.of(context);
 
-    // タブの定義
-    final _tabs = [
-      const Tab(text: 'メンバー'),
-      const Tab(text: '予定'),
-    ];
-
-    // タブの内容
-    final _tabViews = [
-      // メンバータブ
-      Padding(
+    /// メンバータブの内容を構築
+    Widget buildMemberTab() {
+      return Padding(
         padding: const EdgeInsets.all(16.0),
         child: ownerUserAsync.when(
           data: (owner) => owner != null
@@ -61,7 +65,7 @@ class _GroupDetailPageState extends ConsumerState<GroupDetailPage>
                           ? const Icon(Icons.person, color: Colors.white)
                           : null,
                     ),
-                    title: Text(owner.displayName ?? '不明なユーザー'),
+                    title: Text(owner.displayName),
                     subtitle: const Text('管理者'),
                   ),
                 )
@@ -79,21 +83,30 @@ class _GroupDetailPageState extends ConsumerState<GroupDetailPage>
           error: (error, stack) =>
               Center(child: Text('エラー: ${error.toString()}')),
         ),
-      ),
-      // 予定タブ
-      const Center(
+      );
+    }
+
+    /// 予定タブの内容を構築
+    Widget buildScheduleTab() {
+      return const Center(
         child: Text('予定はありません'),
-      ),
+      );
+    }
+
+    // タブの内容を定義
+    final tabViews = [
+      buildMemberTab(),
+      buildScheduleTab(),
     ];
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.group.groupName),
+        title: const Text('グループの詳細'),
       ),
       body: Column(
         children: [
           // グループ情報セクション
-          Container(
+          Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,7 +128,7 @@ class _GroupDetailPageState extends ConsumerState<GroupDetailPage>
                     children: [
                       Text(
                         widget.group.groupName,
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: theme.textTheme.headlineSmall,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
@@ -139,15 +152,15 @@ class _GroupDetailPageState extends ConsumerState<GroupDetailPage>
           TabBar(
             controller: _tabController,
             tabs: _tabs,
-            labelColor: Theme.of(context).primaryColor,
+            labelColor: theme.primaryColor,
             unselectedLabelColor: Colors.grey,
-            indicatorColor: Theme.of(context).primaryColor,
+            indicatorColor: theme.primaryColor,
           ),
           // タブの内容
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: _tabViews,
+              children: tabViews,
             ),
           ),
         ],
@@ -155,11 +168,13 @@ class _GroupDetailPageState extends ConsumerState<GroupDetailPage>
       // メンバー追加ボタン
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // TODO: メンバー追加機能の実装
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('メンバー追加機能は現在開発中です')),
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => GroupMemberInvitePage(group: widget.group),
+            ),
           );
         },
+        tooltip: 'メンバーを招待',  // ツールチップを追加
         child: const Icon(Icons.person_add),
       ),
     );
