@@ -29,6 +29,7 @@ class Group with _$Group {
     required String ownerId,
     required List<String> memberIds,
     required DateTime createdAt,
+    String? iconUrl,
   }) = _Group;
 
   /// JSONからGroupを生成するファクトリーメソッド
