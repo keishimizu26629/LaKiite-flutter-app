@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/auth/auth_state.dart';
+import '../../domain/entity/notification.dart' as domain;
 import '../group/create_group_page.dart';
 import '../group/group_detail_page.dart';
 import '../presentation_provider.dart';
 import '../friend/friend_search_page.dart';
-import '../friend/friend_request_list_page.dart';
-import '../widgets/friend_request_badge.dart';
+import '../notification/notification_list_page.dart';
+import '../widgets/notification_badge.dart';
 
 /// アプリケーションのホーム画面を表示するウィジェット
 ///
@@ -65,13 +66,13 @@ class _HomePageState extends ConsumerState<HomePage> {
             },
           ),
           IconButton(
-            icon: const FriendRequestBadge(
+            icon: const NotificationBadge(
               child: Icon(Icons.notifications),
             ),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => const FriendRequestListPage(),
+                  builder: (context) => const NotificationListPage(),
                 ),
               );
             },

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entity/group.dart';
-import '../../domain/entity/user.dart';
 import '../presentation_provider.dart';
 
 class GroupDetailPage extends ConsumerStatefulWidget {
