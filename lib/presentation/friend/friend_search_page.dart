@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../widgets/friend_request_badge.dart';
-import 'friend_request_list_page.dart';
+import '../widgets/notification_badge.dart';
+import '../notification/notification_list_page.dart';
 import 'friend_search_view_model.dart';
 
 class FriendSearchPage extends ConsumerStatefulWidget {
@@ -37,7 +37,7 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => const FriendRequestListPage(),
+                  builder: (context) => const NotificationListPage(),
                 ),
               );
             },

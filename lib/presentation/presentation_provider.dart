@@ -6,12 +6,17 @@ import 'package:tarakite/application/group/group_notifier.dart';
 import 'package:tarakite/application/group/group_state.dart';
 import 'package:tarakite/application/schedule/schedule_notifier.dart';
 import 'package:tarakite/application/schedule/schedule_state.dart';
+import 'package:tarakite/application/notification/notification_notifier.dart';
+export 'package:tarakite/application/notification/notification_notifier.dart' show currentUserIdProvider;
 import 'package:tarakite/domain/interfaces/i_group_repository.dart';
 import 'package:tarakite/domain/interfaces/i_schedule_repository.dart';
+import 'package:tarakite/domain/interfaces/i_notification_repository.dart';
 import 'package:tarakite/infrastructure/group_repository.dart';
 import 'package:tarakite/infrastructure/schedule_repository.dart';
+import 'package:tarakite/infrastructure/notification_repository.dart';
 import 'package:tarakite/domain/entity/group.dart';
 import 'package:tarakite/domain/entity/user.dart';
+import 'package:tarakite/domain/entity/notification.dart' as domain;
 
 // Firebase instances
 final firebaseAuthProvider = Provider((ref) => FirebaseAuth.instance);
@@ -25,6 +30,10 @@ final groupRepositoryProvider = Provider<IGroupRepository>((ref) {
 
 final scheduleRepositoryProvider = Provider<IScheduleRepository>((ref) {
   return ScheduleRepository();
+});
+
+final notificationRepositoryProvider = Provider<INotificationRepository>((ref) {
+  return NotificationRepository();
 });
 
 // Auth state providers

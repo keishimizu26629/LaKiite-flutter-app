@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entity/friend_request.dart';
+import '../../domain/entity/notification.dart' as domain;
 import '../../domain/interfaces/i_user_repository.dart';
-import '../../infrastructure/friend_request_repository.dart';
+import '../../infrastructure/notification_repository.dart';
 import '../../application/auth/auth_notifier.dart' as auth;
 
 class SearchUserModel {
@@ -23,11 +23,11 @@ class SearchUserModel {
 final friendSearchViewModelProvider =
     StateNotifierProvider<FriendSearchViewModel, AsyncValue<SearchUserModel?>>((ref) {
   final userRepository = ref.watch(auth.userRepositoryProvider);
-  final friendRequestRepository = FriendRequestRepository();
+  final notificationRepository = NotificationRepository();
   final currentUser = ref.watch(auth.authNotifierProvider).value?.user;
   return FriendSearchViewModel(
     userRepository,
-    friendRequestRepository,
+    notificationRepository,
     currentUser?.id ?? '',
     currentUser?.publicProfile.displayName ?? '',
   );
@@ -37,13 +37,13 @@ class FriendSearchViewModel extends StateNotifier<AsyncValue<SearchUserModel?>> 
   String? _message;
   String? get message => _message;
   final IUserRepository _userRepository;
-  final FriendRequestRepository _friendRequestRepository;
+  final NotificationRepository _notificationRepository;
   final String _currentUserId;
   final String _currentUserDisplayName;
 
   FriendSearchViewModel(
     this._userRepository,
-    this._friendRequestRepository,
+    this._notificationRepository,
     this._currentUserId,
     this._currentUserDisplayName,
   ) : super(const AsyncValue.data(null));
@@ -71,13 +71,13 @@ class FriendSearchViewModel extends StateNotifier<AsyncValue<SearchUserModel?>> 
       bool hasPending = false;
       try {
         // 自分が送信した申請を確認
-        final hasSentPending = await _friendRequestRepository.hasPendingRequest(
+        final hasSentPending = await _notificationRepository.hasPendingFriendRequest(
           _currentUserId,
           user.id,
         );
 
         // 相手から受信した申請を確認
-        final hasReceivedPending = await _friendRequestRepository.hasPendingRequest(
+        final hasReceivedPending = await _notificationRepository.hasPendingFriendRequest(
           user.id,
           _currentUserId,
         );
@@ -112,14 +112,14 @@ class FriendSearchViewModel extends StateNotifier<AsyncValue<SearchUserModel?>> 
         throw Exception('ユーザー情報が見つかりません');
       }
 
-      final request = FriendRequest.create(
+      final notification = domain.Notification.createFriendRequest(
         fromUserId: _currentUserId,
         toUserId: toUserId,
         fromUserDisplayName: _currentUserDisplayName,
         toUserDisplayName: state.value!.displayName,
       );
 
-      await _friendRequestRepository.createFriendRequest(request);
+      await _notificationRepository.createNotification(notification);
       _message = '友達申請を送信しました';
       state = const AsyncValue.data(null); // 検索結果をクリア
     } catch (e) {
