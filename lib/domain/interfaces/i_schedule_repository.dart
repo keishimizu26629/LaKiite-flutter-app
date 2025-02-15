@@ -4,34 +4,33 @@ import 'package:lakiite/domain/entity/schedule.dart';
 ///
 /// アプリケーションのスケジュールに関する以下の機能を定義します:
 /// - スケジュールの取得・作成・更新・削除
-/// - グループ別のスケジュール監視
+/// - リスト別のスケジュール監視
 /// - ユーザー別のスケジュール監視
 ///
 /// このインターフェースの実装クラスは、
 /// データストア(例:Firestore)とアプリケーションを
 /// 橋渡しする役割を果たします。
 abstract class IScheduleRepository {
-  /// 指定されたグループのスケジュールを取得する
+  /// 指定されたリストのスケジュールを取得する
   ///
-  /// [groupId] スケジュールを取得するグループのID
+  /// [listId] スケジュールを取得するリストのID
   ///
   /// 返値: スケジュールのリスト
-  Future<List<Schedule>> getSchedules(String groupId);
+  Future<List<Schedule>> getListSchedules(String listId);
+
+  /// 特定のユーザーのスケジュールを取得する
+  ///
+  /// [userId] スケジュールを取得するユーザーのID
+  ///
+  /// 返値: スケジュールのリスト
+  Future<List<Schedule>> getUserSchedules(String userId);
 
   /// 新しいスケジュールを作成する
   ///
-  /// [title] スケジュールのタイトル
-  /// [dateTime] スケジュールの日時
-  /// [ownerId] スケジュール作成者のユーザーID
-  /// [groupId] スケジュールが属するグループのID
+  /// [schedule] 作成するスケジュール情報
   ///
   /// 返値: 作成されたスケジュール情報
-  Future<Schedule> createSchedule({
-    required String title,
-    required DateTime dateTime,
-    required String ownerId,
-    required String groupId,
-  });
+  Future<Schedule> createSchedule(Schedule schedule);
 
   /// スケジュール情報を更新する
   ///
@@ -43,12 +42,12 @@ abstract class IScheduleRepository {
   /// [scheduleId] 削除するスケジュールのID
   Future<void> deleteSchedule(String scheduleId);
 
-  /// 特定のグループのスケジュールを監視する
+  /// 特定のリストのスケジュールを監視する
   ///
-  /// [groupId] 監視対象のグループID
+  /// [listId] 監視対象のリストID
   ///
-  /// 返値: グループのスケジュールリストの変更を通知するStream
-  Stream<List<Schedule>> watchGroupSchedules(String groupId);
+  /// 返値: リストのスケジュールリストの変更を通知するStream
+  Stream<List<Schedule>> watchListSchedules(String listId);
 
   /// 特定のユーザーに関連するスケジュールを監視する
   ///

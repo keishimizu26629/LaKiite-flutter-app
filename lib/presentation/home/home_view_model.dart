@@ -3,7 +3,6 @@ import '../../domain/entity/user.dart';
 import '../../domain/entity/group.dart';
 import '../../domain/interfaces/i_user_repository.dart';
 import '../../domain/interfaces/i_group_repository.dart';
-import '../../application/auth/auth_notifier.dart';
 import '../presentation_provider.dart';
 
 /// ホーム画面のビューモデルを提供するプロバイダー

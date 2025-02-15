@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'infrastructure/go_router_refresh_notifier.dart';
 import 'presentation/login/login_page.dart';
 import 'presentation/signup/signup.dart';
@@ -18,6 +19,8 @@ import 'application/auth/auth_state.dart';
 void main() async {
   // Flutterウィジェットバインディングの初期化
   WidgetsFlutterBinding.ensureInitialized();
+  // 日本語ロケールの初期化
+  await initializeDateFormatting('ja_JP', null);
   // Firebaseの初期化
   await Firebase.initializeApp();
   // アプリケーションの起動
