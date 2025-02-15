@@ -6,17 +6,9 @@ part of 'schedule_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$scheduleNotifierHash() => r'7bc9b7af8c0b58843ead911fa97d719f7bbbfb61';
+String _$scheduleNotifierHash() => r'900667dd29cb43d0cba2c2782b4a6370b60b00d4';
 
 /// スケジュール状態を管理するNotifierクラス
-///
-/// アプリケーション内でのスケジュール操作に関する以下の機能を提供します:
-/// - スケジュールの作成・更新・削除
-/// - グループ別のスケジュール取得
-/// - ユーザー別のスケジュール監視
-///
-/// Riverpodの状態管理システムと統合され、
-/// アプリケーション全体でスケジュール状態を共有します。
 ///
 /// Copied from [ScheduleNotifier].
 @ProviderFor(ScheduleNotifier)
