@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'infrastructure/go_router_refresh_notifier.dart';
+import 'presentation/theme/app_theme.dart';
 import 'presentation/login/login_page.dart';
 import 'presentation/signup/signup.dart';
 import 'presentation/bottom_navigation/bottom_navigation.dart';
@@ -108,11 +109,8 @@ class MyApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'タラカイト',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
+      title: 'LaKiite',
+      theme: AppTheme.theme,
       routerConfig: router,
     );
   }

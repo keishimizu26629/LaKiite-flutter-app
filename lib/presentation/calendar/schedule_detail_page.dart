@@ -6,6 +6,7 @@ import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
+import 'package:lakiite/presentation/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 
 class ScheduleDetailPage extends HookConsumerWidget {
@@ -98,7 +99,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
                           ? Icons.favorite
                           : Icons.favorite_border,
                       color: interactions.isLikedByUser(state.user!.id)
-                          ? Colors.red
+                          ? AppTheme.primaryColor
                           : null,
                     ),
                     onPressed: () {
@@ -190,7 +191,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
       children: [
         Row(
           children: [
-            const Icon(Icons.favorite, size: 20, color: Colors.red),
+            const Icon(Icons.favorite, size: 20, color: AppTheme.primaryColor),
             const SizedBox(width: 8),
             Text(
               'いいね ${interactions.likeCount}件',
@@ -208,7 +209,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
             children: interactions.likes.map((like) {
               return Chip(
                 label: Text(like.userId),
-                backgroundColor: Colors.blue.shade100,
+                backgroundColor: AppTheme.backgroundColor,
               );
             }).toList(),
           ),

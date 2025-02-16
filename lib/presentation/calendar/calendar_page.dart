@@ -9,6 +9,7 @@ import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/presentation/calendar/widgets/calendar_page_view.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
+import 'package:lakiite/presentation/theme/app_theme.dart';
 
 class CalendarPage extends HookConsumerWidget {
   const CalendarPage({super.key});
@@ -57,12 +58,22 @@ class CalendarPage extends HookConsumerWidget {
           initialIndex: 1, // タイムラインを最初に表示
           child: Scaffold(
             appBar: AppBar(
-              title: const Text('スケジュール'),
-              bottom: const TabBar(
-                tabs: [
-                  Tab(text: 'カレンダー'),
-                  Tab(text: 'タイムライン'),
-                ],
+              title: const Text(
+                'スケジュール',
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: AppTheme.primaryColor,
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(48),
+                child: Container(
+                  color: Colors.white,
+                  child: const TabBar(
+                    tabs: [
+                      Tab(text: 'カレンダー'),
+                      Tab(text: 'タイムライン'),
+                    ],
+                  ),
+                ),
               ),
             ),
             body: TabBarView(
@@ -150,7 +161,7 @@ class CalendarPage extends HookConsumerWidget {
             vertical: 8,
           ),
           color: schedule.ownerId == currentUser.id
-              ? Colors.blue.shade50
+              ? const Color(0xFFfff5e6) // プライマリカラーの最も薄い色
               : null,
           child: InkWell(
             onTap: () {
@@ -179,7 +190,7 @@ class CalendarPage extends HookConsumerWidget {
                     ),
                     const Chip(
                       label: Text('作成者'),
-                      backgroundColor: Colors.blue,
+                      backgroundColor: const Color(0xFFffa600),
                       labelStyle: TextStyle(color: Colors.white),
                     ),
                   ],
