@@ -1,12 +1,12 @@
-import 'package:lakiite/domain/entity/schedule_like.dart';
+import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/schedule_comment.dart';
 
 abstract class IScheduleInteractionRepository {
-  // いいね関連
-  Future<List<ScheduleLike>> getLikes(String scheduleId);
-  Future<void> addLike(String scheduleId, String userId);
-  Future<void> removeLike(String scheduleId, String userId);
-  Stream<List<ScheduleLike>> watchLikes(String scheduleId);
+  // リアクション関連
+  Future<List<ScheduleReaction>> getReactions(String scheduleId);
+  Future<void> addReaction(String scheduleId, String userId, ReactionType type);
+  Future<void> removeReaction(String scheduleId, String userId);
+  Stream<List<ScheduleReaction>> watchReactions(String scheduleId);
 
   // コメント関連
   Future<List<ScheduleComment>> getComments(String scheduleId);

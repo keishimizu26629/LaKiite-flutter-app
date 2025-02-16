@@ -6,6 +6,7 @@ import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:intl/intl.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
+import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/presentation/calendar/widgets/calendar_page_view.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
@@ -175,7 +176,7 @@ class CalendarPage extends HookConsumerWidget {
               title: Row(
                 children: [
                   Expanded(child: Text(schedule.title)),
-                  if (schedule.ownerId == currentUser.id) ...[
+                  if (schedule.ownerId == currentUser.id)
                     IconButton(
                       icon: const Icon(Icons.edit),
                       onPressed: () {
@@ -188,12 +189,6 @@ class CalendarPage extends HookConsumerWidget {
                         );
                       },
                     ),
-                    const Chip(
-                      label: Text('作成者'),
-                      backgroundColor: const Color(0xFFffa600),
-                      labelStyle: TextStyle(color: Colors.white),
-                    ),
-                  ],
                 ],
               ),
               subtitle: FutureBuilder<UserModel?>(
@@ -211,7 +206,39 @@ class CalendarPage extends HookConsumerWidget {
                       Text(
                         '日時: ${DateFormat('yyyy/MM/dd HH:mm').format(schedule.dateTime)}',
                       ),
-                      Text('作成者: $ownerName'),
+                      Text('作成者: ${schedule.ownerId == currentUser.id ? '自分' : ownerName}'),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final interactionState = ref.watch(
+                                scheduleInteractionNotifierProvider(schedule.id),
+                              );
+                              if (interactionState.isLoading) {
+                                return const SizedBox();
+                              }
+                              if (interactionState.error != null) {
+                                return const SizedBox();
+                              }
+                              final reactionCounts = interactionState.reactionCounts;
+                              final totalReactions = reactionCounts.values.fold(0, (sum, count) => sum + count);
+                              return Row(
+                                children: [
+                                  const Icon(Icons.people, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text('$totalReactions'),
+                                  const SizedBox(width: 16),
+                                  const Icon(Icons.comment, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text('${interactionState.commentCount}'),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ],
                   );
                 },
