@@ -34,9 +34,9 @@ class AppTheme {
           ),
         ),
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: primaryColor,
-          selectedItemColor: secondaryColor,
-          unselectedItemColor: Colors.white,
+          backgroundColor: Colors.white,
+          selectedItemColor: primaryColor,
+          unselectedItemColor: Color(0xFF663d00),
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           backgroundColor: primaryColor,

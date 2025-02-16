@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lakiite/domain/entity/schedule_like.dart';
+import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/schedule_comment.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
@@ -21,7 +21,7 @@ final scheduleInteractionNotifierProvider = StateNotifierProvider.family<
 class ScheduleInteractionNotifier extends StateNotifier<ScheduleInteractionState> {
   final IScheduleInteractionRepository _repository;
   final String _scheduleId;
-  StreamSubscription<List<ScheduleLike>>? _likesSubscription;
+  StreamSubscription<List<ScheduleReaction>>? _reactionsSubscription;
   StreamSubscription<List<ScheduleComment>>? _commentsSubscription;
 
   ScheduleInteractionNotifier(this._repository, this._scheduleId)
@@ -30,15 +30,18 @@ class ScheduleInteractionNotifier extends StateNotifier<ScheduleInteractionState
   }
 
   void _initialize() {
-    _watchLikes();
+    _watchReactions();
     _watchComments();
   }
 
-  void _watchLikes() {
-    _likesSubscription?.cancel();
-    _likesSubscription = _repository.watchLikes(_scheduleId).listen(
-      (likes) {
-        state = state.copyWith(likes: likes);
+  void _watchReactions() {
+    _reactionsSubscription?.cancel();
+    _reactionsSubscription = _repository.watchReactions(_scheduleId).listen(
+      (reactions) {
+        print('Updating state with reactions: $reactions');
+        print('Current state reactions count: ${state.reactions.length}');
+        state = state.copyWith(reactions: reactions);
+        print('New state reactions count: ${state.reactions.length}');
       },
       onError: (error) {
         state = state.copyWith(error: error.toString());
@@ -58,17 +61,31 @@ class ScheduleInteractionNotifier extends StateNotifier<ScheduleInteractionState
     );
   }
 
-  Future<void> toggleLike(String userId) async {
+  Future<void> toggleReaction(String userId, ReactionType type) async {
     try {
+      print('toggleReaction called - userId: $userId, type: $type');
       state = state.copyWith(isLoading: true, error: null);
       
-      if (state.isLikedByUser(userId)) {
-        await _repository.removeLike(_scheduleId, userId);
+      final currentReaction = state.getUserReaction(userId);
+      print('Current reaction: $currentReaction');
+      
+      if (currentReaction != null) {
+        if (currentReaction.type == type) {
+          print('Removing same reaction');
+          await _repository.removeReaction(_scheduleId, userId);
+        } else {
+          print('Updating to different reaction');
+          await _repository.removeReaction(_scheduleId, userId);
+          await _repository.addReaction(_scheduleId, userId, type);
+        }
       } else {
-        await _repository.addLike(_scheduleId, userId);
+        print('Adding new reaction');
+        await _repository.addReaction(_scheduleId, userId, type);
       }
       
+      print('Current state reactions: ${state.reactions}');
       state = state.copyWith(isLoading: false);
+      print('Updated state reactions: ${state.reactions}');
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -96,7 +113,7 @@ class ScheduleInteractionNotifier extends StateNotifier<ScheduleInteractionState
 
   @override
   void dispose() {
-    _likesSubscription?.cancel();
+    _reactionsSubscription?.cancel();
     _commentsSubscription?.cancel();
     super.dispose();
   }
