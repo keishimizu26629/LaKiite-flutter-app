@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:intl/intl.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
+import 'package:lakiite/presentation/theme/app_theme.dart';
 
 class DailyScheduleView extends StatelessWidget {
   const DailyScheduleView({
@@ -91,7 +92,7 @@ class DailyScheduleView extends StatelessWidget {
                                   margin: const EdgeInsets.symmetric(vertical: 2),
                                   padding: const EdgeInsets.all(4),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.shade100,
+                                    color: AppTheme.backgroundColor,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Column(

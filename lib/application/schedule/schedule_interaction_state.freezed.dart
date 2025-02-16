@@ -16,7 +16,7 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$ScheduleInteractionState {
-  List<ScheduleLike> get likes => throw _privateConstructorUsedError;
+  List<ScheduleReaction> get reactions => throw _privateConstructorUsedError;
   List<ScheduleComment> get comments => throw _privateConstructorUsedError;
   bool get isLoading => throw _privateConstructorUsedError;
   String? get error => throw _privateConstructorUsedError;
@@ -33,7 +33,7 @@ abstract class $ScheduleInteractionStateCopyWith<$Res> {
       _$ScheduleInteractionStateCopyWithImpl<$Res, ScheduleInteractionState>;
   @useResult
   $Res call(
-      {List<ScheduleLike> likes,
+      {List<ScheduleReaction> reactions,
       List<ScheduleComment> comments,
       bool isLoading,
       String? error});
@@ -53,16 +53,16 @@ class _$ScheduleInteractionStateCopyWithImpl<$Res,
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? likes = null,
+    Object? reactions = null,
     Object? comments = null,
     Object? isLoading = null,
     Object? error = freezed,
   }) {
     return _then(_value.copyWith(
-      likes: null == likes
-          ? _value.likes
-          : likes // ignore: cast_nullable_to_non_nullable
-              as List<ScheduleLike>,
+      reactions: null == reactions
+          ? _value.reactions
+          : reactions // ignore: cast_nullable_to_non_nullable
+              as List<ScheduleReaction>,
       comments: null == comments
           ? _value.comments
           : comments // ignore: cast_nullable_to_non_nullable
@@ -89,7 +89,7 @@ abstract class _$$ScheduleInteractionStateImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {List<ScheduleLike> likes,
+      {List<ScheduleReaction> reactions,
       List<ScheduleComment> comments,
       bool isLoading,
       String? error});
@@ -108,16 +108,16 @@ class __$$ScheduleInteractionStateImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? likes = null,
+    Object? reactions = null,
     Object? comments = null,
     Object? isLoading = null,
     Object? error = freezed,
   }) {
     return _then(_$ScheduleInteractionStateImpl(
-      likes: null == likes
-          ? _value._likes
-          : likes // ignore: cast_nullable_to_non_nullable
-              as List<ScheduleLike>,
+      reactions: null == reactions
+          ? _value._reactions
+          : reactions // ignore: cast_nullable_to_non_nullable
+              as List<ScheduleReaction>,
       comments: null == comments
           ? _value._comments
           : comments // ignore: cast_nullable_to_non_nullable
@@ -138,21 +138,21 @@ class __$$ScheduleInteractionStateImplCopyWithImpl<$Res>
 
 class _$ScheduleInteractionStateImpl extends _ScheduleInteractionState {
   const _$ScheduleInteractionStateImpl(
-      {final List<ScheduleLike> likes = const [],
+      {final List<ScheduleReaction> reactions = const [],
       final List<ScheduleComment> comments = const [],
       this.isLoading = false,
       this.error})
-      : _likes = likes,
+      : _reactions = reactions,
         _comments = comments,
         super._();
 
-  final List<ScheduleLike> _likes;
+  final List<ScheduleReaction> _reactions;
   @override
   @JsonKey()
-  List<ScheduleLike> get likes {
-    if (_likes is EqualUnmodifiableListView) return _likes;
+  List<ScheduleReaction> get reactions {
+    if (_reactions is EqualUnmodifiableListView) return _reactions;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_likes);
+    return EqualUnmodifiableListView(_reactions);
   }
 
   final List<ScheduleComment> _comments;
@@ -172,7 +172,7 @@ class _$ScheduleInteractionStateImpl extends _ScheduleInteractionState {
 
   @override
   String toString() {
-    return 'ScheduleInteractionState(likes: $likes, comments: $comments, isLoading: $isLoading, error: $error)';
+    return 'ScheduleInteractionState(reactions: $reactions, comments: $comments, isLoading: $isLoading, error: $error)';
   }
 
   @override
@@ -180,7 +180,8 @@ class _$ScheduleInteractionStateImpl extends _ScheduleInteractionState {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$ScheduleInteractionStateImpl &&
-            const DeepCollectionEquality().equals(other._likes, _likes) &&
+            const DeepCollectionEquality()
+                .equals(other._reactions, _reactions) &&
             const DeepCollectionEquality().equals(other._comments, _comments) &&
             (identical(other.isLoading, isLoading) ||
                 other.isLoading == isLoading) &&
@@ -190,7 +191,7 @@ class _$ScheduleInteractionStateImpl extends _ScheduleInteractionState {
   @override
   int get hashCode => Object.hash(
       runtimeType,
-      const DeepCollectionEquality().hash(_likes),
+      const DeepCollectionEquality().hash(_reactions),
       const DeepCollectionEquality().hash(_comments),
       isLoading,
       error);
@@ -205,14 +206,14 @@ class _$ScheduleInteractionStateImpl extends _ScheduleInteractionState {
 
 abstract class _ScheduleInteractionState extends ScheduleInteractionState {
   const factory _ScheduleInteractionState(
-      {final List<ScheduleLike> likes,
+      {final List<ScheduleReaction> reactions,
       final List<ScheduleComment> comments,
       final bool isLoading,
       final String? error}) = _$ScheduleInteractionStateImpl;
   const _ScheduleInteractionState._() : super._();
 
   @override
-  List<ScheduleLike> get likes;
+  List<ScheduleReaction> get reactions;
   @override
   List<ScheduleComment> get comments;
   @override

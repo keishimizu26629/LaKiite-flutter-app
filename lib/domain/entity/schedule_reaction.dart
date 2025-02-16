@@ -2,24 +2,31 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-part 'schedule_comment.freezed.dart';
-part 'schedule_comment.g.dart';
+part 'schedule_reaction.freezed.dart';
+part 'schedule_reaction.g.dart';
+
+enum ReactionType {
+  @JsonValue('going')
+  going, // 行きます！🙋
+  @JsonValue('thinking')
+  thinking, // 考え中！🤔
+}
 
 @freezed
 @JsonSerializable()
-class ScheduleComment with _$ScheduleComment {
-  const factory ScheduleComment({
+class ScheduleReaction with _$ScheduleReaction {
+  const factory ScheduleReaction({
     required String id,
     required String userId,
-    required String content,
+    required ReactionType type,
     required DateTime createdAt,
     String? userDisplayName,
     String? userPhotoUrl,
-  }) = _ScheduleComment;
+  }) = _ScheduleReaction;
 
-  factory ScheduleComment.fromJson(Map<String, dynamic> json) {
+  factory ScheduleReaction.fromJson(Map<String, dynamic> json) {
     final createdAt = json['createdAt'];
-    return _$ScheduleCommentFromJson({
+    return _$ScheduleReactionFromJson({
       ...json,
       'createdAt': createdAt is DateTime
           ? createdAt.toIso8601String()
