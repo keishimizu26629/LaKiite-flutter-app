@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/calendar/widgets/daily_schedule_view.dart';
+import 'package:lakiite/presentation/theme/app_theme.dart';
 
 class CalendarPageView extends HookConsumerWidget {
   const CalendarPageView({super.key});
@@ -168,7 +169,7 @@ class DaysOfTheWeek extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: day == '日' ? Colors.red : null,
+                color: day == '日' ? AppTheme.weekendColor : null,
               ),
             ),
           ),
@@ -246,7 +247,7 @@ class DateCell extends StatelessWidget {
               top: BorderSide(color: Theme.of(context).dividerColor, width: 1),
               right: BorderSide(color: Theme.of(context).dividerColor, width: 1),
             ),
-            color: isToday ? Colors.blue.withOpacity(0.1) : null,
+            color: isToday ? AppTheme.backgroundColor : null,
             borderRadius: isToday ? BorderRadius.circular(4) : null,
           ),
           padding: const EdgeInsets.all(4),
@@ -256,7 +257,7 @@ class DateCell extends StatelessWidget {
               Text(
                 date.day.toString(),
                 style: TextStyle(
-                  color: isWeekend ? Colors.red : null,
+                  color: isWeekend ? AppTheme.weekendColor : null,
                   fontWeight: isToday ? FontWeight.bold : null,
                 ),
               ),
