@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:lakiite/domain/entity/schedule_like.dart';
+import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/schedule_comment.dart';
 
 part 'schedule_interaction_state.freezed.dart';
@@ -7,7 +7,7 @@ part 'schedule_interaction_state.freezed.dart';
 @freezed
 class ScheduleInteractionState with _$ScheduleInteractionState {
   const factory ScheduleInteractionState({
-    @Default([]) List<ScheduleLike> likes,
+    @Default([]) List<ScheduleReaction> reactions,
     @Default([]) List<ScheduleComment> comments,
     @Default(false) bool isLoading,
     String? error,
@@ -15,10 +15,23 @@ class ScheduleInteractionState with _$ScheduleInteractionState {
 
   const ScheduleInteractionState._();
 
-  bool isLikedByUser(String userId) {
-    return likes.any((like) => like.userId == userId);
+  ScheduleReaction? getUserReaction(String userId) {
+    return reactions.cast<ScheduleReaction?>().firstWhere(
+          (reaction) => reaction?.userId == userId,
+          orElse: () => null,
+        );
   }
 
-  int get likeCount => likes.length;
+  Map<ReactionType, int> get reactionCounts {
+    final counts = <ReactionType, int>{
+      ReactionType.going: 0,
+      ReactionType.thinking: 0,
+    };
+    for (final reaction in reactions) {
+      counts[reaction.type] = (counts[reaction.type] ?? 0) + 1;
+    }
+    return counts;
+  }
+
   int get commentCount => comments.length;
 }
