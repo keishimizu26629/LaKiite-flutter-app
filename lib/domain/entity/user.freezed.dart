@@ -25,6 +25,7 @@ mixin _$PublicUserModel {
   @UserIdConverter()
   UserId get searchId => throw _privateConstructorUsedError;
   String? get iconUrl => throw _privateConstructorUsedError;
+  String? get shortBio => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -42,7 +43,8 @@ abstract class $PublicUserModelCopyWith<$Res> {
       {String id,
       String displayName,
       @UserIdConverter() UserId searchId,
-      String? iconUrl});
+      String? iconUrl,
+      String? shortBio});
 }
 
 /// @nodoc
@@ -62,6 +64,7 @@ class _$PublicUserModelCopyWithImpl<$Res, $Val extends PublicUserModel>
     Object? displayName = null,
     Object? searchId = null,
     Object? iconUrl = freezed,
+    Object? shortBio = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -80,6 +83,10 @@ class _$PublicUserModelCopyWithImpl<$Res, $Val extends PublicUserModel>
           ? _value.iconUrl
           : iconUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      shortBio: freezed == shortBio
+          ? _value.shortBio
+          : shortBio // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -96,7 +103,8 @@ abstract class _$$PublicUserModelImplCopyWith<$Res>
       {String id,
       String displayName,
       @UserIdConverter() UserId searchId,
-      String? iconUrl});
+      String? iconUrl,
+      String? shortBio});
 }
 
 /// @nodoc
@@ -114,6 +122,7 @@ class __$$PublicUserModelImplCopyWithImpl<$Res>
     Object? displayName = null,
     Object? searchId = null,
     Object? iconUrl = freezed,
+    Object? shortBio = freezed,
   }) {
     return _then(_$PublicUserModelImpl(
       id: null == id
@@ -132,6 +141,10 @@ class __$$PublicUserModelImplCopyWithImpl<$Res>
           ? _value.iconUrl
           : iconUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      shortBio: freezed == shortBio
+          ? _value.shortBio
+          : shortBio // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -143,7 +156,8 @@ class _$PublicUserModelImpl extends _PublicUserModel {
       {required this.id,
       required this.displayName,
       @UserIdConverter() required this.searchId,
-      this.iconUrl})
+      this.iconUrl,
+      this.shortBio})
       : super._();
 
   factory _$PublicUserModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -158,10 +172,12 @@ class _$PublicUserModelImpl extends _PublicUserModel {
   final UserId searchId;
   @override
   final String? iconUrl;
+  @override
+  final String? shortBio;
 
   @override
   String toString() {
-    return 'PublicUserModel(id: $id, displayName: $displayName, searchId: $searchId, iconUrl: $iconUrl)';
+    return 'PublicUserModel(id: $id, displayName: $displayName, searchId: $searchId, iconUrl: $iconUrl, shortBio: $shortBio)';
   }
 
   @override
@@ -174,13 +190,15 @@ class _$PublicUserModelImpl extends _PublicUserModel {
                 other.displayName == displayName) &&
             (identical(other.searchId, searchId) ||
                 other.searchId == searchId) &&
-            (identical(other.iconUrl, iconUrl) || other.iconUrl == iconUrl));
+            (identical(other.iconUrl, iconUrl) || other.iconUrl == iconUrl) &&
+            (identical(other.shortBio, shortBio) ||
+                other.shortBio == shortBio));
   }
 
   @JsonKey(ignore: true)
   @override
   int get hashCode =>
-      Object.hash(runtimeType, id, displayName, searchId, iconUrl);
+      Object.hash(runtimeType, id, displayName, searchId, iconUrl, shortBio);
 
   @JsonKey(ignore: true)
   @override
@@ -202,7 +220,8 @@ abstract class _PublicUserModel extends PublicUserModel {
       {required final String id,
       required final String displayName,
       @UserIdConverter() required final UserId searchId,
-      final String? iconUrl}) = _$PublicUserModelImpl;
+      final String? iconUrl,
+      final String? shortBio}) = _$PublicUserModelImpl;
   const _PublicUserModel._() : super._();
 
   factory _PublicUserModel.fromJson(Map<String, dynamic> json) =
@@ -217,6 +236,8 @@ abstract class _PublicUserModel extends PublicUserModel {
   UserId get searchId;
   @override
   String? get iconUrl;
+  @override
+  String? get shortBio;
   @override
   @JsonKey(ignore: true)
   _$$PublicUserModelImplCopyWith<_$PublicUserModelImpl> get copyWith =>
