@@ -54,6 +54,7 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
     required String name,
     required String displayName,
     required String searchIdStr,
+    String? shortBio,
     File? imageFile,
   }) async {
     if (!state.hasValue || state.value == null) return;

@@ -39,7 +39,7 @@ class _BottomNavigationPageState extends ConsumerState<BottomNavigationPage> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_today),
-            label: 'カレンダー',
+            label: '予定',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),

@@ -2,8 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 import '../presentation_provider.dart';
 import 'my_page_view_model.dart';
+import '../../domain/entity/user.dart';
 
 class MyPage extends ConsumerStatefulWidget {
   const MyPage({super.key});
@@ -29,226 +31,285 @@ class _MyPageState extends ConsumerState<MyPage> {
   @override
   Widget build(BuildContext context) {
     final userState = ref.watch(myPageViewModelProvider);
-    final isEditing = ref.watch(myPageEditingProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('マイページ'),
         actions: [
-          if (!isEditing)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => ref.read(myPageEditingProvider.notifier).state = true,
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => ref.read(myPageEditingProvider.notifier).state = false,
-            ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              context.push('/settings');
+            },
+          ),
         ],
       ),
       body: userState.when(
         data: (user) {
           if (user == null) return const Center(child: Text('ユーザー情報が見つかりません'));
 
-          final nameController = TextEditingController(text: user.name);
-          final displayNameController = TextEditingController(text: user.displayName);
-          final searchIdController = TextEditingController(text: user.searchId.toString());
-
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.grey[200],
-                        child: Builder(
-                          builder: (context) {
-                            final selectedImage = ref.watch(selectedImageProvider);
-                            if (selectedImage != null) {
-                              return ClipOval(
-                                child: Image.file(
-                                  selectedImage,
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundColor: Colors.grey[200],
+                      child: Builder(
+                        builder: (context) {
+                          final selectedImage =
+                              ref.watch(selectedImageProvider);
+                          if (selectedImage != null) {
+                            return ClipOval(
+                              child: Image.file(
+                                selectedImage,
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                              ),
+                            );
+                          }
+                          return user.iconUrl != null
+                              ? ClipOval(
+                                  child: Image.network(
+                                    user.iconUrl!,
+                                    width: 80,
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : const Icon(Icons.person,
+                                  size: 40, color: Colors.grey);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.displayName,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              // プロフィール編集ダイアログを表示
+                              showDialog(
+                                context: context,
+                                builder: (context) => _ProfileEditDialog(
+                                  user: user,
+                                  onImageEdit: () async {
+                                    final picker = ImagePicker();
+                                    final pickedFile = await picker.pickImage(
+                                      source: ImageSource.gallery,
+                                    );
+                                    if (pickedFile != null) {
+                                      ref
+                                          .read(selectedImageProvider.notifier)
+                                          .state = File(pickedFile.path);
+                                      try {
+                                        await ref
+                                            .read(myPageViewModelProvider
+                                                .notifier)
+                                            .updateProfile(
+                                              name: user.name,
+                                              displayName: user.displayName,
+                                              searchIdStr:
+                                                  user.searchId.toString(),
+                                              shortBio:
+                                                  user.publicProfile.shortBio,
+                                              imageFile: File(pickedFile.path),
+                                            );
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                                content:
+                                                    Text('プロフィール画像を更新しました')),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                                content: Text(
+                                                    'エラー: ${e.toString()}')),
+                                          );
+                                        }
+                                      }
+                                    }
+                                  },
                                 ),
                               );
-                            }
-                            return user.iconUrl != null
-                                ? ClipOval(
-                                    child: Image.network(
-                                      user.iconUrl!,
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  )
-                                : const Icon(Icons.person, size: 50, color: Colors.grey);
-                          },
-                        ),
-                      ),
-                      if (isEditing)
-                        Positioned.fill(
-                          child: GestureDetector(
-                            onTap: () async {
-                              final picker = ImagePicker();
-                              final pickedFile = await picker.pickImage(
-                                source: ImageSource.gallery,
-                              );
-                              if (pickedFile != null) {
-                                ref.read(selectedImageProvider.notifier).state = File(pickedFile.path);
-                              }
                             },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.black.withOpacity(0.5),
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt,
-                                color: Colors.white,
-                                size: 30,
-                              ),
-                            ),
+                            icon: const Icon(Icons.edit),
+                            label: const Text('プロフィールを編集'),
                           ),
-                        ),
-                    ],
-                  ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
-                if (!isEditing) ...[
-                  _ProfileField(label: '名前', value: user.name),
-                  _ProfileField(label: '表示名', value: user.displayName),
-                  _ProfileField(label: '検索ID', value: user.searchId.toString()),
-                ] else ...[
-                  _ProfileTextField(
-                    label: '名前',
-                    controller: nameController,
-                  ),
-                  _ProfileTextField(
-                    label: '表示名',
-                    controller: displayNameController,
-                  ),
-                  _ProfileTextField(
-                    label: '検索ID',
-                    controller: searchIdController,
-                    helperText: '8文字の半角英数字',
-                  ),
-                  const SizedBox(height: 24),
-                  Center(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        try {
-                          final selectedImage = ref.read(selectedImageProvider);
-                          await ref.read(myPageViewModelProvider.notifier).updateProfile(
-                                name: nameController.text,
-                                displayName: displayNameController.text,
-                                searchIdStr: searchIdController.text,
-                                imageFile: selectedImage,
-                              );
-                          ref.read(selectedImageProvider.notifier).state = null;
-                          ref.read(myPageEditingProvider.notifier).state = false;
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('プロフィールを更新しました')),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('エラー: ${e.toString()}')),
-                            );
-                          }
-                        }
-                      },
-                      child: const Text('保存'),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                Center(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      try {
-                        await ref.read(authNotifierProvider.notifier).signOut();
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('ログアウトに失敗しました')),
-                          );
-                        }
-                      }
-                    },
-                    child: const Text('ログアウト'),
-                  ),
+                Text(
+                  '一言コメント',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  user.publicProfile.shortBio ?? '',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                const SizedBox(height: 32),
+                Text(
+                  '予定一覧',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 16),
+                // TODO: 予定一覧の表示を実装
+                const Center(
+                  child: Text('予定一覧は実装予定です'),
                 ),
               ],
             ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('エラー: ${error.toString()}')),
+        error: (error, stack) =>
+            Center(child: Text('エラー: ${error.toString()}')),
       ),
     );
   }
 }
 
-class _ProfileField extends StatelessWidget {
-  final String label;
-  final String value;
+class _ProfileEditDialog extends ConsumerStatefulWidget {
+  final UserModel user;
+  final VoidCallback onImageEdit;
 
-  const _ProfileField({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelLarge,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProfileTextField extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final String? helperText;
-
-  const _ProfileTextField({
-    required this.label,
-    required this.controller,
-    this.helperText,
+  const _ProfileEditDialog({
+    required this.user,
+    required this.onImageEdit,
   });
 
   @override
+  ConsumerState<_ProfileEditDialog> createState() => _ProfileEditDialogState();
+}
+
+class _ProfileEditDialogState extends ConsumerState<_ProfileEditDialog> {
+  late TextEditingController _displayNameController;
+  late TextEditingController _shortBioController;
+
+  @override
+  void initState() {
+    super.initState();
+    _displayNameController =
+        TextEditingController(text: widget.user.displayName);
+    _shortBioController =
+        TextEditingController(text: widget.user.publicProfile.shortBio ?? '');
+  }
+
+  @override
+  void dispose() {
+    _displayNameController.dispose();
+    _shortBioController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          helperText: helperText,
-          border: const OutlineInputBorder(),
-        ),
+    return AlertDialog(
+      title: const Text('プロフィール編集'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: widget.onImageEdit,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Colors.grey[200],
+                  backgroundImage: widget.user.iconUrl != null
+                      ? NetworkImage(widget.user.iconUrl!)
+                      : null,
+                  child: widget.user.iconUrl == null
+                      ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                      : null,
+                ),
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withOpacity(0.5),
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _displayNameController,
+            decoration: const InputDecoration(
+              labelText: '表示名',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _shortBioController,
+            decoration: const InputDecoration(
+              labelText: '一言コメント',
+              border: OutlineInputBorder(),
+            ),
+            maxLines: 3,
+          ),
+        ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('キャンセル'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            try {
+              await ref.read(myPageViewModelProvider.notifier).updateProfile(
+                    name: widget.user.name,
+                    displayName: _displayNameController.text,
+                    searchIdStr: widget.user.searchId.toString(),
+                    shortBio: _shortBioController.text,
+                  );
+              if (mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('プロフィールを更新しました')),
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('エラー: ${e.toString()}')),
+                );
+              }
+            }
+          },
+          child: const Text('保存'),
+        ),
+      ],
     );
   }
 }

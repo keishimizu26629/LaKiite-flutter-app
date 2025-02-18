@@ -8,6 +8,10 @@ import 'presentation/theme/app_theme.dart';
 import 'presentation/login/login_page.dart';
 import 'presentation/signup/signup.dart';
 import 'presentation/bottom_navigation/bottom_navigation.dart';
+import 'presentation/settings/settings_page.dart';
+import 'presentation/settings/edit_name_page.dart';
+import 'presentation/settings/edit_email_page.dart';
+import 'presentation/settings/edit_search_id_page.dart';
 import 'presentation/presentation_provider.dart';
 import 'application/auth/auth_state.dart';
 
@@ -85,6 +89,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/signup',
         builder: (context, state) => const SignupPage(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsPage(),
+        routes: [
+          GoRoute(
+            path: 'name',
+            builder: (context, state) => const EditNamePage(),
+          ),
+          GoRoute(
+            path: 'email',
+            builder: (context, state) => const EditEmailPage(),
+          ),
+          GoRoute(
+            path: 'search-id',
+            builder: (context, state) => const EditSearchIdPage(),
+          ),
+        ],
       ),
     ],
   );

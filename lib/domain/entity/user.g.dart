@@ -13,6 +13,7 @@ _$PublicUserModelImpl _$$PublicUserModelImplFromJson(
       displayName: json['displayName'] as String,
       searchId: const UserIdConverter().fromJson(json['searchId'] as String),
       iconUrl: json['iconUrl'] as String?,
+      shortBio: json['shortBio'] as String?,
     );
 
 Map<String, dynamic> _$$PublicUserModelImplToJson(
@@ -22,6 +23,7 @@ Map<String, dynamic> _$$PublicUserModelImplToJson(
       'displayName': instance.displayName,
       'searchId': const UserIdConverter().toJson(instance.searchId),
       'iconUrl': instance.iconUrl,
+      'shortBio': instance.shortBio,
     };
 
 _$PrivateUserModelImpl _$$PrivateUserModelImplFromJson(
