@@ -29,7 +29,12 @@ final firebaseAuthProvider = Provider((ref) => FirebaseAuth.instance);
 
 // Repository providers
 final userRepositoryProvider = Provider<IUserRepository>((ref) {
-  return UserRepository();
+  final repository = UserRepository();
+  ref.onDispose(() {
+    // キャッシュをクリア
+    (repository).clearCache();
+  });
+  return repository;
 });
 
 final groupRepositoryProvider = Provider<IGroupRepository>((ref) {
@@ -145,38 +150,24 @@ final listStreamProvider = StreamProvider.family<UserList?, String>((ref, listId
 
 final userFriendsStreamProvider = StreamProvider.autoDispose<List<PublicUserModel>>((ref) {
   final authState = ref.watch(authNotifierProvider);
+  
   return authState.when(
     data: (state) {
-      // 認証状態でない場合は即座に空配列を返す
       if (state.status != AuthStatus.authenticated || state.user == null) {
         return Stream.value([]);
       }
 
-      // 認証済みの場合のみユーザー情報の監視を開始
       final userRepository = ref.watch(userRepositoryProvider);
-      return userRepository.watchUser(state.user!.id).asyncExpand((user) async* {
-        if (user == null) {
-          yield [];
-        } else {
-          // 友達の公開プロフィールをリアルタイムで監視
-          if (user.friends.isEmpty) {
-            yield [];
-            return;
-          }
-
-          // 各友達のプロフィールストリームを作成
-          final friendStreams = user.friends.map(
-            (friendId) => userRepository.watchPublicProfile(friendId)
-          );
-
-          // 全てのストリームを1つのストリームにマージ
-          yield* Stream.periodic(const Duration(seconds: 1)).asyncMap((_) async {
-            final profiles = await Future.wait(
-              friendStreams.map((stream) => stream.first)
-            );
-            return profiles.whereType<PublicUserModel>().toList();
-          });
+      
+      // ユーザー情報のストリームを監視
+      return userRepository.watchUser(state.user!.id).asyncMap((user) async {
+        if (user == null || user.friends.isEmpty) {
+          return [];
         }
+
+        // 一度に全フレンドのプロフィールを取得
+        final profiles = await userRepository.getPublicProfiles(user.friends);
+        return profiles;
       });
     },
     loading: () => Stream.value([]),

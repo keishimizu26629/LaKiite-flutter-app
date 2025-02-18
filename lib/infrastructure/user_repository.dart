@@ -9,9 +9,21 @@ class UserRepository implements IUserRepository {
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
 
+  // キャッシュ用のMap
+  final Map<String, UserModel> _userCache = {};
+  final Map<String, PublicUserModel> _publicProfileCache = {};
+  final Map<String, PrivateUserModel> _privateProfileCache = {};
+
   UserRepository()
       : _firestore = FirebaseFirestore.instance,
         _storage = FirebaseStorage.instance;
+
+  // キャッシュをクリアするメソッド
+  void clearCache() {
+    _userCache.clear();
+    _publicProfileCache.clear();
+    _privateProfileCache.clear();
+  }
 
   Map<String, dynamic> _toFirestorePublic(PublicUserModel publicProfile) {
     final json = publicProfile.toJson();
@@ -53,6 +65,7 @@ class UserRepository implements IUserRepository {
   }
 
   // 友達の公開情報のみを取得するメソッド
+  @override
   Future<PublicUserModel?> getFriendPublicProfile(String id) async {
     final userDoc = await _firestore.collection('users').doc(id).get();
     if (!userDoc.exists) return null;
@@ -177,8 +190,13 @@ class UserRepository implements IUserRepository {
   }
 
   @override
-  Stream<PublicUserModel?> watchPublicProfile(String id) {
-    return _firestore
+  Stream<PublicUserModel?> watchPublicProfile(String id) async* {
+    // キャッシュがあれば即座に返す
+    if (_publicProfileCache.containsKey(id)) {
+      yield _publicProfileCache[id];
+    }
+
+    yield* _firestore
         .collection('users')
         .doc(id)
         .snapshots()
@@ -186,13 +204,23 @@ class UserRepository implements IUserRepository {
           if (!doc.exists) return null;
           final data = doc.data()!;
           data['id'] = doc.id;
-          return PublicUserModel.fromJson(data);
+          final publicModel = PublicUserModel.fromJson(data);
+          
+          // キャッシュを更新
+          _publicProfileCache[id] = publicModel;
+          
+          return publicModel;
         });
   }
 
   @override
-  Stream<PrivateUserModel?> watchPrivateProfile(String id) {
-    return _firestore
+  Stream<PrivateUserModel?> watchPrivateProfile(String id) async* {
+    // キャッシュがあれば即座に返す
+    if (_privateProfileCache.containsKey(id)) {
+      yield _privateProfileCache[id];
+    }
+
+    yield* _firestore
         .collection('users')
         .doc(id)
         .collection('private')
@@ -202,13 +230,23 @@ class UserRepository implements IUserRepository {
           if (!doc.exists) return null;
           final data = doc.data()!;
           data['lists'] = data['lists'] ?? [];
-          return PrivateUserModel.fromJson(data);
+          final privateModel = PrivateUserModel.fromJson(data);
+          
+          // キャッシュを更新
+          _privateProfileCache[id] = privateModel;
+          
+          return privateModel;
         });
   }
 
   @override
-  Stream<UserModel?> watchUser(String id) {
-    return _firestore
+  Stream<UserModel?> watchUser(String id) async* {
+    // キャッシュがあれば即座に返す
+    if (_userCache.containsKey(id)) {
+      yield _userCache[id];
+    }
+
+    yield* _firestore
         .collection('users')
         .doc(id)
         .snapshots()
@@ -230,10 +268,15 @@ class UserRepository implements IUserRepository {
       final privateData = privateDoc.data()!;
       privateData['lists'] = privateData['lists'] ?? [];
 
-      return UserModel(
+      final userModel = UserModel(
         publicProfile: PublicUserModel.fromJson(publicData),
         privateProfile: PrivateUserModel.fromJson(privateData),
       );
+
+      // キャッシュを更新
+      _userCache[id] = userModel;
+
+      return userModel;
     });
   }
 
@@ -264,6 +307,7 @@ class UserRepository implements IUserRepository {
   }
 
   // 複数のユーザーの公開情報を一度に取得
+  @override
   Future<List<PublicUserModel>> getPublicProfiles(List<String> userIds) async {
     final futures = userIds.map((id) => _firestore
         .collection('users')
