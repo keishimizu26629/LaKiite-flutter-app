@@ -6,6 +6,7 @@ import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:intl/intl.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
+import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/presentation/calendar/widgets/calendar_page_view.dart';
@@ -146,25 +147,8 @@ class CalendarPage extends HookConsumerWidget {
                               ref,
                             );
                           },
-                          orElse: () => Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.event_busy,
-                                  size: 64,
-                                  color: Colors.grey[400],
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  '予定がありません',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
+                          orElse: () => const Center(
+                            child: CircularProgressIndicator(),
                           ),
                         ),
                         error: (error, _) =>
@@ -276,7 +260,7 @@ class CalendarPage extends HookConsumerWidget {
                           onPressed: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => CreateSchedulePage(
+                                builder: (context) => EditSchedulePage(
                                   schedule: schedule,
                                 ),
                               ),

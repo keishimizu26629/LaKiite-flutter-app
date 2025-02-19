@@ -111,7 +111,32 @@ class ScheduleRepository implements IScheduleRepository {
     print('VisibleTo: ${schedule.visibleTo}');
 
     try {
-      final data = _toFirestore(schedule);
+      // visibleToリストを構築
+      List<String> newVisibleTo = [schedule.ownerId];
+
+      // 選択されているリストのメンバーを追加
+      for (String listId in schedule.sharedLists) {
+        print('Processing list: $listId');
+        final listDoc = await _firestore
+            .collection('lists')
+            .doc(listId)
+            .get();
+
+        if (listDoc.exists) {
+          final listData = listDoc.data() as Map<String, dynamic>;
+          final memberIds = List<String>.from(listData['memberIds'] as List? ?? []);
+          print('Adding members from list $listId: $memberIds');
+          newVisibleTo.addAll(memberIds);
+        }
+      }
+
+      // 重複を除去
+      newVisibleTo = newVisibleTo.toSet().toList();
+      print('Final visibleTo list: $newVisibleTo');
+
+      // スケジュールを更新
+      final updatedSchedule = schedule.copyWith(visibleTo: newVisibleTo);
+      final data = _toFirestore(updatedSchedule);
       print('ScheduleRepository: Converted to Firestore data:');
       print(data);
 
@@ -189,7 +214,7 @@ class ScheduleRepository implements IScheduleRepository {
     final query = _firestore
         .collection('schedules')
         .where('visibleTo', arrayContains: userId)
-        .orderBy('startDateTime', descending: false);
+        .orderBy('startDateTime', descending: true);
 
     print('ScheduleRepository: Query: ${query.parameters}');
 

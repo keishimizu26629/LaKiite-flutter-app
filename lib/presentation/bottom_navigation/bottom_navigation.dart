@@ -15,10 +15,10 @@ class BottomNavigationPage extends ConsumerStatefulWidget {
 class _BottomNavigationPageState extends ConsumerState<BottomNavigationPage> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _pages = [
-    HomePage(),
-    CalendarPage(),
-    MyPage(),
+  static final List<Widget> _pages = [
+    const HomePage(),
+    const CalendarPage(),
+    const MyPage(),
   ];
 
   void _onItemTapped(int index) {

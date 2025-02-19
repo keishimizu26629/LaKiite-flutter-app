@@ -140,21 +140,21 @@ class _HomePageState extends ConsumerState<HomePage>
                 friendsAsync.when(
                   data: (friends) {
                     if (friends.isEmpty) {
-                      return Center(
+                      return const Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.people_outline,
                               size: 64,
-                              color: Colors.grey[400],
+                              color: Colors.grey,
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             Text(
-                              'フレンドはいません',
+                              'フレンドがいません',
                               style: TextStyle(
+                                color: Colors.grey,
                                 fontSize: 16,
-                                color: Colors.grey[600],
                               ),
                             ),
                           ],
@@ -205,45 +205,28 @@ class _HomePageState extends ConsumerState<HomePage>
                     child: CircularProgressIndicator(),
                   ),
                   error: (error, stack) => Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Colors.red[300],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'エラーが発生しました',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: Text('エラーが発生しました: $error'),
                   ),
                 ),
                 // リストタブ
                 listsAsync.when(
                   data: (lists) {
                     if (lists.isEmpty) {
-                      return Center(
+                      return const Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.list_alt,
                               size: 64,
-                              color: Colors.grey[400],
+                              color: Colors.grey,
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             Text(
-                              '作成したリストはありません',
+                              'リストがありません',
                               style: TextStyle(
+                                color: Colors.grey,
                                 fontSize: 16,
-                                color: Colors.grey[600],
                               ),
                             ),
                           ],
@@ -310,24 +293,7 @@ class _HomePageState extends ConsumerState<HomePage>
                     child: CircularProgressIndicator(),
                   ),
                   error: (error, stack) => Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Colors.red[300],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'エラーが発生しました',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: Text('エラーが発生しました: $error'),
                   ),
                 ),
               ],
