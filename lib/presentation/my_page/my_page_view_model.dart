@@ -13,22 +13,34 @@ final selectedImageProvider = StateProvider<File?>((ref) => null);
 
 final myPageEditingProvider = StateProvider<bool>((ref) => false);
 
-// ユーザーの予定を監視するプロバイダー
-final userSchedulesStreamProvider =
-    StreamProvider.family<List<Schedule>, String>((ref, userId) {
+// タイムラインの予定を監視するプロバイダー
+final timelineSchedulesProvider = StreamProvider<List<Schedule>>((ref) {
   final scheduleRepository = ref.watch(scheduleRepositoryProvider);
-  return scheduleRepository.watchUserSchedules(userId).map((schedules) {
-    // 自分が作成した予定のみをフィルタリング
-    return schedules.where((schedule) => schedule.ownerId == userId).toList();
-  });
+  final currentUserId = ref.watch(currentUserIdProvider);
+  if (currentUserId == null) return Stream.value([]);
+
+  return scheduleRepository.watchUserSchedules(currentUserId);
+});
+
+// マイページの予定一覧（タイムラインから自分の予定のみをフィルタリング）
+final userSchedulesStreamProvider = StreamProvider.family<List<Schedule>, String>((ref, userId) {
+  final timelineSchedules = ref.watch(timelineSchedulesProvider);
+
+  return timelineSchedules.when(
+    data: (schedules) {
+      // 自分が作成した予定のみをフィルタリング
+      final filteredSchedules = schedules.where((schedule) => schedule.ownerId == userId).toList();
+      return Stream.value(filteredSchedules);
+    },
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
 });
 
 // キャッシュされたユーザー情報を提供するプロバイダー
-final cachedUserProvider =
-    StateProvider.family<UserModel?, String>((ref, userId) => null);
+final cachedUserProvider = StateProvider.family<UserModel?, String>((ref, userId) => null);
 
-final myPageViewModelProvider =
-    StateNotifierProvider<MyPageViewModel, AsyncValue<UserModel?>>((ref) {
+final myPageViewModelProvider = StateNotifierProvider<MyPageViewModel, AsyncValue<UserModel?>>((ref) {
   final userRepository = ref.watch(userRepositoryProvider);
   final scheduleRepository = ref.watch(scheduleRepositoryProvider);
   return MyPageViewModel(userRepository, scheduleRepository, ref);

@@ -15,7 +15,8 @@ class HomePage extends ConsumerStatefulWidget {
   ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderStateMixin {
+class _HomePageState extends ConsumerState<HomePage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -69,7 +70,8 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
 
     ref.listen(authNotifierProvider, (previous, next) {
       next.whenData((authState) {
-        if (authState.status == AuthStatus.authenticated && authState.user != null) {
+        if (authState.status == AuthStatus.authenticated &&
+            authState.user != null) {
           ref.invalidate(userFriendsStreamProvider);
         }
       });
@@ -84,7 +86,7 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
             padding: const EdgeInsets.only(right: 24.0),
             child: IconButton(
               icon: const NotificationBadge(
-                child: Icon(Icons.notifications),
+                child: Icon(Icons.notifications_outlined),
               ),
               onPressed: () {
                 Navigator.of(context).push(
@@ -100,24 +102,30 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
       floatingActionButton: _buildFloatingActionButton(context),
       body: Column(
         children: [
-          Theme(
-            data: Theme.of(context).copyWith(
-              tabBarTheme: TabBarTheme(
-                labelColor: Theme.of(context).primaryColor,
-                unselectedLabelColor: Colors.grey,
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicator: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Theme.of(context).primaryColor,
-                      width: 2.0,
-                    ),
-                  ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
-              ),
+              ],
             ),
             child: TabBar(
               controller: _tabController,
+              labelColor: Theme.of(context).primaryColor,
+              unselectedLabelColor: Colors.grey[600],
+              indicatorColor: Theme.of(context).primaryColor,
+              indicatorWeight: 3,
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 16,
+              ),
               tabs: const [
                 Tab(text: 'フレンド'),
                 Tab(text: 'リスト'),
@@ -132,8 +140,25 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
                 friendsAsync.when(
                   data: (friends) {
                     if (friends.isEmpty) {
-                      return const Center(
-                        child: Text('フレンドはいません'),
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.people_outline,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'フレンドはいません',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
                       );
                     }
                     return ListView.builder(
@@ -141,31 +166,88 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
                       itemCount: friends.length,
                       itemBuilder: (context, index) {
                         final friend = friends[index];
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundImage: friend.iconUrl != null
-                                ? NetworkImage(friend.iconUrl!)
-                                : null,
-                            child: friend.iconUrl == null
-                                ? const Icon(Icons.person)
-                                : null,
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            leading: CircleAvatar(
+                              radius: 24,
+                              backgroundImage: friend.iconUrl != null
+                                  ? NetworkImage(friend.iconUrl!)
+                                  : null,
+                              child: friend.iconUrl == null
+                                  ? const Icon(Icons.person, size: 32)
+                                  : null,
+                            ),
+                            title: Text(
+                              friend.displayName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            subtitle: Text(
+                              friend.shortBio ?? '一言コメントはありません',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
-                          title: Text(friend.displayName),
-                          subtitle: Text(friend.searchId.toString()),
                         );
                       },
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, stack) =>
-                      Center(child: Text('エラー: ${error.toString()}')),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  error: (error, stack) => Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red[300],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'エラーが発生しました',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 // リストタブ
                 listsAsync.when(
                   data: (lists) {
                     if (lists.isEmpty) {
-                      return const Center(
-                        child: Text('作成したリストはありません'),
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.list_alt,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              '作成したリストはありません',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
                       );
                     }
                     return ListView.builder(
@@ -173,36 +255,80 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
                       itemCount: lists.length,
                       itemBuilder: (context, index) {
                         final list = lists[index];
-                        final currentUser = ref.watch(authNotifierProvider).value?.user;
+                        final currentUser =
+                            ref.watch(authNotifierProvider).value?.user;
                         final otherMemberCount = currentUser != null
-                            ? list.memberIds.where((id) => id != currentUser.id).length
+                            ? list.memberIds
+                                .where((id) => id != currentUser.id)
+                                .length
                             : 0;
 
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundImage: list.iconUrl != null
-                                ? NetworkImage(list.iconUrl!)
-                                : null,
-                            child: list.iconUrl == null
-                                ? const Icon(Icons.list)
-                                : null,
-                          ),
-                          title: Text(list.listName),
-                          subtitle: Text('${otherMemberCount}人のメンバー'),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => ListDetailPage(list: list),
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            leading: CircleAvatar(
+                              radius: 24,
+                              backgroundImage: list.iconUrl != null
+                                  ? NetworkImage(list.iconUrl!)
+                                  : null,
+                              child: list.iconUrl == null
+                                  ? const Icon(Icons.list, size: 32)
+                                  : null,
+                            ),
+                            title: Text(
+                              list.listName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
                               ),
-                            );
-                          },
+                            ),
+                            subtitle: Text(
+                              '${otherMemberCount}人のメンバー',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            ),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ListDetailPage(list: list),
+                                ),
+                              );
+                            },
+                          ),
                         );
                       },
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, stack) =>
-                      Center(child: Text('エラー: ${error.toString()}')),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  error: (error, stack) => Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red[300],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'エラーが発生しました',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),

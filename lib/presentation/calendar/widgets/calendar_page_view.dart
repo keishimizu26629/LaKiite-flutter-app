@@ -271,7 +271,7 @@ class DateCell extends StatelessWidget {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => DailyScheduleView(
-                date: date,
+                initialDate: date,
                 schedules: schedules,
               ),
             ),
