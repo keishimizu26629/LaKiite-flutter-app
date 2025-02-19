@@ -13,7 +13,8 @@ class CalendarPageView extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scheduleState = ref.watch(scheduleNotifierProvider);
     final currentIndex = useState(1200);
-    final visibleMonth = _getMonthName(_getVisibleDateTime(currentIndex.value).month);
+    final visibleMonth =
+        _getMonthName(_getVisibleDateTime(currentIndex.value).month);
     final visibleYear = _getVisibleDateTime(currentIndex.value).year.toString();
 
     return Column(
@@ -54,8 +55,18 @@ class CalendarPageView extends HookConsumerWidget {
 
   String _getMonthName(int month) {
     final monthNames = [
-      "1月", "2月", "3月", "4月", "5月", "6月",
-      "7月", "8月", "9月", "10月", "11月", "12月"
+      "1月",
+      "2月",
+      "3月",
+      "4月",
+      "5月",
+      "6月",
+      "7月",
+      "8月",
+      "9月",
+      "10月",
+      "11月",
+      "12月"
     ];
     return monthNames[month - 1];
   }
@@ -122,17 +133,25 @@ class CalendarPage extends StatelessWidget {
 
   List<Schedule> _getSchedulesForDate(DateTime date) {
     return schedules.where((schedule) {
-      final scheduleDate = DateTime(
-        schedule.dateTime.year,
-        schedule.dateTime.month,
-        schedule.dateTime.day,
+      final scheduleStartDate = DateTime(
+        schedule.startDateTime.year,
+        schedule.startDateTime.month,
+        schedule.startDateTime.day,
+      );
+      final scheduleEndDate = DateTime(
+        schedule.endDateTime.year,
+        schedule.endDateTime.month,
+        schedule.endDateTime.day,
       );
       final targetDate = DateTime(
         date.year,
         date.month,
         date.day,
       );
-      return scheduleDate.isAtSameMomentAs(targetDate);
+
+      // 開始日から終了日までの期間に含まれる場合に表示
+      return !targetDate.isBefore(scheduleStartDate) &&
+          !targetDate.isAfter(scheduleEndDate);
     }).toList();
   }
 
@@ -142,12 +161,22 @@ class CalendarPage extends StatelessWidget {
     return Column(
       children: [
         const DaysOfTheWeek(),
-        DatesRow(dates: currentDates.getRange(0, 7).toList(), schedules: schedules),
-        DatesRow(dates: currentDates.getRange(7, 14).toList(), schedules: schedules),
-        DatesRow(dates: currentDates.getRange(14, 21).toList(), schedules: schedules),
-        DatesRow(dates: currentDates.getRange(21, 28).toList(), schedules: schedules),
-        DatesRow(dates: currentDates.getRange(28, 35).toList(), schedules: schedules),
-        DatesRow(dates: currentDates.getRange(35, 42).toList(), schedules: schedules),
+        DatesRow(
+            dates: currentDates.getRange(0, 7).toList(), schedules: schedules),
+        DatesRow(
+            dates: currentDates.getRange(7, 14).toList(), schedules: schedules),
+        DatesRow(
+            dates: currentDates.getRange(14, 21).toList(),
+            schedules: schedules),
+        DatesRow(
+            dates: currentDates.getRange(21, 28).toList(),
+            schedules: schedules),
+        DatesRow(
+            dates: currentDates.getRange(28, 35).toList(),
+            schedules: schedules),
+        DatesRow(
+            dates: currentDates.getRange(35, 42).toList(),
+            schedules: schedules),
       ],
     );
   }
@@ -195,17 +224,23 @@ class DatesRow extends StatelessWidget {
       child: Row(
         children: dates.map((date) {
           final dateSchedules = schedules.where((schedule) {
-            final scheduleDate = DateTime(
-              schedule.dateTime.year,
-              schedule.dateTime.month,
-              schedule.dateTime.day,
+            final scheduleStartDate = DateTime(
+              schedule.startDateTime.year,
+              schedule.startDateTime.month,
+              schedule.startDateTime.day,
+            );
+            final scheduleEndDate = DateTime(
+              schedule.endDateTime.year,
+              schedule.endDateTime.month,
+              schedule.endDateTime.day,
             );
             final targetDate = DateTime(
               date.year,
               date.month,
               date.day,
             );
-            return scheduleDate.isAtSameMomentAs(targetDate);
+            return !targetDate.isBefore(scheduleStartDate) &&
+                !targetDate.isAfter(scheduleEndDate);
           }).toList();
           return DateCell(date: date, schedules: dateSchedules);
         }).toList(),
@@ -227,7 +262,8 @@ class DateCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isToday = _isToday(date);
-    final isWeekend = date.weekday == DateTime.sunday || date.weekday == DateTime.saturday;
+    final isWeekend =
+        date.weekday == DateTime.sunday || date.weekday == DateTime.saturday;
 
     return Expanded(
       child: InkWell(
@@ -245,7 +281,8 @@ class DateCell extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border(
               top: BorderSide(color: Theme.of(context).dividerColor, width: 1),
-              right: BorderSide(color: Theme.of(context).dividerColor, width: 1),
+              right:
+                  BorderSide(color: Theme.of(context).dividerColor, width: 1),
             ),
             color: isToday ? AppTheme.backgroundColor : null,
             borderRadius: isToday ? BorderRadius.circular(4) : null,
@@ -283,6 +320,8 @@ class DateCell extends StatelessWidget {
 
   bool _isToday(DateTime date) {
     final now = DateTime.now();
-    return date.year == now.year && date.month == now.month && date.day == now.day;
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 }

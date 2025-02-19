@@ -31,7 +31,8 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
   /// [userId] 監視対象のユーザーID
   void watchUserSchedules(String userId) {
     if (_isDisposed) {
-      print('ScheduleNotifier: Notifier is disposed, ignoring watchUserSchedules');
+      print(
+          'ScheduleNotifier: Notifier is disposed, ignoring watchUserSchedules');
       return;
     }
 
@@ -49,8 +50,9 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
 
     try {
       print('ScheduleNotifier: Starting new subscription for user: $userId');
-      final stream = ref.read(scheduleRepositoryProvider).watchUserSchedules(userId);
-      
+      final stream =
+          ref.read(scheduleRepositoryProvider).watchUserSchedules(userId);
+
       _scheduleSubscription = stream.listen(
         (schedules) {
           if (_isDisposed) return;
@@ -75,13 +77,14 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
     required String title,
     required String description,
     String? location,
-    required DateTime dateTime,
+    required DateTime startDateTime,
+    required DateTime endDateTime,
     required String ownerId,
     required List<String> sharedLists,
     required List<String> visibleTo,
   }) async {
     if (_isDisposed) return;
-    
+
     state = const AsyncValue.loading();
     try {
       final schedule = Schedule(
@@ -89,7 +92,8 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
         title: title,
         description: description,
         location: location,
-        dateTime: dateTime,
+        startDateTime: startDateTime,
+        endDateTime: endDateTime,
         ownerId: ownerId,
         sharedLists: sharedLists,
         visibleTo: visibleTo,
@@ -106,7 +110,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
   /// スケジュール情報を更新する
   Future<void> updateSchedule(Schedule schedule) async {
     if (_isDisposed) return;
-    
+
     state = const AsyncValue.loading();
     try {
       await ref.read(scheduleRepositoryProvider).updateSchedule(schedule);
@@ -119,7 +123,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
   /// スケジュールを削除する
   Future<void> deleteSchedule(String scheduleId) async {
     if (_isDisposed) return;
-    
+
     state = const AsyncValue.loading();
     try {
       await ref.read(scheduleRepositoryProvider).deleteSchedule(scheduleId);

@@ -47,7 +47,7 @@ class _CreateListPageState extends ConsumerState<CreateListPage> {
 
         await ref.read(listNotifierProvider.notifier).createList(
               listName: _listNameController.text,
-              memberIds: [], // 作成者は初期メンバーとして追加しない
+              memberIds: [], // 作成者は追加しない（友達リストのため）
               ownerId: authState!.user!.id,
               iconUrl: null, // 初期値はnull
               description: description.isNotEmpty ? description : null,

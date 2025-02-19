@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
@@ -13,18 +12,42 @@ class CreateSchedulePage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final titleController = useTextEditingController(text: schedule?.title);
-    final descriptionController = useTextEditingController(text: schedule?.description);
-    final locationController = useTextEditingController(text: schedule?.location);
-    final selectedDate = useState<DateTime>(schedule?.dateTime ?? DateTime.now());
-    final selectedTime = useState<TimeOfDay>(
-      schedule != null
-          ? TimeOfDay(hour: schedule!.dateTime.hour, minute: schedule!.dateTime.minute)
-          : TimeOfDay.now()
-    );
-    final selectedLists = useState<List<UserList>>([]);
+    final descriptionController =
+        useTextEditingController(text: schedule?.description);
+    final locationController =
+        useTextEditingController(text: schedule?.location);
 
+    final selectedStartDate =
+        useState<DateTime>(schedule?.startDateTime ?? DateTime.now());
+    final selectedStartTime = useState<TimeOfDay>(schedule != null
+        ? TimeOfDay(
+            hour: schedule!.startDateTime.hour,
+            minute: schedule!.startDateTime.minute)
+        : TimeOfDay.now());
+
+    final selectedEndDate = useState<DateTime>(schedule?.endDateTime ??
+        (schedule?.startDateTime ?? DateTime.now())
+            .add(const Duration(hours: 1)));
+    final selectedEndTime = useState<TimeOfDay>(schedule != null
+        ? TimeOfDay(
+            hour: schedule!.endDateTime.hour,
+            minute: schedule!.endDateTime.minute)
+        : TimeOfDay.fromDateTime(DateTime.now().add(const Duration(hours: 1))));
+
+    final selectedLists = useState<List<UserList>>([]);
     final listsAsync = ref.watch(userListsStreamProvider);
     final authState = ref.watch(authNotifierProvider);
+
+    // 編集時の初期値設定
+    useEffect(() {
+      if (schedule != null && listsAsync.hasValue) {
+      final existingLists = listsAsync.value!.where(
+        (list) => schedule!.sharedLists.contains(list.id)
+      ).toList();
+      selectedLists.value = existingLists;
+    }
+      return null;
+    }, [listsAsync]);
 
     return Scaffold(
       appBar: AppBar(
@@ -60,39 +83,130 @@ class CreateSchedulePage extends HookConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            ListTile(
-              title: const Text('日付'),
-              subtitle: Text(
-                '${selectedDate.value.year}年${selectedDate.value.month}月${selectedDate.value.day}日',
-              ),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: selectedDate.value,
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-                );
-                if (picked != null) {
-                  selectedDate.value = picked;
-                }
-              },
+            const Text('開始日時',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ListTile(
+                    title: const Text('日付'),
+                    subtitle: Text(
+                      '${selectedStartDate.value.year}年${selectedStartDate.value.month}月${selectedStartDate.value.day}日',
+                    ),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedStartDate.value,
+                        firstDate: DateTime.now(),
+                        lastDate:
+                            DateTime.now().add(const Duration(days: 365 * 2)),
+                      );
+                      if (picked != null) {
+                        selectedStartDate.value = picked;
+                        // 終了日が開始日より前の場合、終了日を開始日に合わせる
+                        if (selectedEndDate.value.isBefore(picked)) {
+                          selectedEndDate.value = picked;
+                        }
+                      }
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: ListTile(
+                    title: const Text('時間'),
+                    subtitle: Text(
+                      '${selectedStartTime.value.hour.toString().padLeft(2, '0')}:${(selectedStartTime.value.minute - selectedStartTime.value.minute % 15).toString().padLeft(2, '0')}',
+                    ),
+                    trailing: const Icon(Icons.access_time),
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: selectedStartTime.value,
+                        builder: (context, child) {
+                          return MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                              alwaysUse24HourFormat: true,
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        // 15分単位に調整
+                        final adjustedMinute =
+                            picked.minute - picked.minute % 15;
+                        selectedStartTime.value = TimeOfDay(
+                          hour: picked.hour,
+                          minute: adjustedMinute,
+                        );
+                      }
+                    },
+                  ),
+                ),
+              ],
             ),
-            ListTile(
-              title: const Text('時間'),
-              subtitle: Text(
-                '${selectedTime.value.hour}:${selectedTime.value.minute.toString().padLeft(2, '0')}',
-              ),
-              trailing: const Icon(Icons.access_time),
-              onTap: () async {
-                final picked = await showTimePicker(
-                  context: context,
-                  initialTime: selectedTime.value,
-                );
-                if (picked != null) {
-                  selectedTime.value = picked;
-                }
-              },
+            const SizedBox(height: 16),
+            const Text('終了日時',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ListTile(
+                    title: const Text('日付'),
+                    subtitle: Text(
+                      '${selectedEndDate.value.year}年${selectedEndDate.value.month}月${selectedEndDate.value.day}日',
+                    ),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedEndDate.value,
+                        firstDate: selectedStartDate.value,
+                        lastDate:
+                            DateTime.now().add(const Duration(days: 365 * 2)),
+                      );
+                      if (picked != null) {
+                        selectedEndDate.value = picked;
+                      }
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: ListTile(
+                    title: const Text('時間'),
+                    subtitle: Text(
+                      '${selectedEndTime.value.hour.toString().padLeft(2, '0')}:${(selectedEndTime.value.minute - selectedEndTime.value.minute % 15).toString().padLeft(2, '0')}',
+                    ),
+                    trailing: const Icon(Icons.access_time),
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: selectedEndTime.value,
+                        builder: (context, child) {
+                          return MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                              alwaysUse24HourFormat: true,
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        // 15分単位に調整
+                        final adjustedMinute =
+                            picked.minute - picked.minute % 15;
+                        selectedEndTime.value = TimeOfDay(
+                          hour: picked.hour,
+                          minute: adjustedMinute,
+                        );
+                      }
+                    },
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             const Text('公開するリスト', style: TextStyle(fontSize: 16)),
@@ -113,19 +227,17 @@ class CreateSchedulePage extends HookConsumerWidget {
                     ),
                   );
                 }
-                return Wrap(
-                  spacing: 8,
+                return Column(
                   children: lists.map((list) {
-                    final isSelected = selectedLists.value.contains(list);
-                    return FilterChip(
-                      label: Text(list.listName),
-                      selected: isSelected,
-                      onSelected: (value) {
-                        if (value) {
+                    return CheckboxListTile(
+                      title: Text(list.listName),
+                      value: selectedLists.value.contains(list),
+                      onChanged: (bool? value) {
+                        if (value == true) {
                           selectedLists.value = [...selectedLists.value, list];
                         } else {
                           selectedLists.value = selectedLists.value
-                              .where((l) => l != list)
+                              .where((l) => l.id != list.id)
                               .toList();
                         }
                       },
@@ -134,16 +246,7 @@ class CreateSchedulePage extends HookConsumerWidget {
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text('エラーが発生しました: $error'),
-                  ],
-                ),
-              ),
+              error: (error, stack) => Center(child: Text('エラー: $error')),
             ),
           ],
         ),
@@ -164,63 +267,81 @@ class CreateSchedulePage extends HookConsumerWidget {
             return;
           }
 
-          final dateTime = DateTime(
-            selectedDate.value.year,
-            selectedDate.value.month,
-            selectedDate.value.day,
-            selectedTime.value.hour,
-            selectedTime.value.minute,
+          final startDateTime = DateTime(
+            selectedStartDate.value.year,
+            selectedStartDate.value.month,
+            selectedStartDate.value.day,
+            selectedStartTime.value.hour,
+            selectedStartTime.value.minute,
           );
 
-          authState.whenData((state) async {
-            if (state.status == AuthStatus.authenticated && state.user != null) {
-              final currentUserId = state.user!.id;
+          final endDateTime = DateTime(
+            selectedEndDate.value.year,
+            selectedEndDate.value.month,
+            selectedEndDate.value.day,
+            selectedEndTime.value.hour,
+            selectedEndTime.value.minute,
+          );
 
-              // 選択されたリストのメンバーを集める（自分のIDを必ず含める）
-              final visibleTo = {currentUserId}; // Setを使用して重複を防ぐ
-              for (final list in selectedLists.value) {
-                visibleTo.addAll(list.memberIds);
-              }
+          if (endDateTime.isBefore(startDateTime)) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('終了日時は開始日時より後に設定してください')),
+            );
+            return;
+          }
 
-              if (schedule != null) {
-                // 更新処理
-                final updatedSchedule = Schedule(
-                  id: schedule!.id,
-                  title: titleController.text,
-                  description: descriptionController.text,
-                  location: locationController.text.isEmpty ? null : locationController.text,
-                  dateTime: dateTime,
-                  ownerId: schedule!.ownerId,
-                  sharedLists: selectedLists.value.map((list) => list.id).toList(),
-                  visibleTo: visibleTo.toList(),
-                  createdAt: schedule!.createdAt,
-                  updatedAt: DateTime.now(),
-                );
-                await ref.read(scheduleNotifierProvider.notifier).updateSchedule(updatedSchedule);
-              } else {
-                // 新規作成処理
-                await ref.read(scheduleNotifierProvider.notifier).createSchedule(
-                      title: titleController.text,
-                      description: descriptionController.text,
-                      location: locationController.text.isEmpty
-                          ? null
-                          : locationController.text,
-                      dateTime: dateTime,
-                      ownerId: currentUserId,
-                      sharedLists:
-                          selectedLists.value.map((list) => list.id).toList(),
-                      visibleTo: visibleTo.toList(),
-                    );
-              }
+          final scheduleNotifier = ref.read(scheduleNotifierProvider.notifier);
+          final currentUser = authState.when(
+            data: (state) => state.user,
+            loading: () => null,
+            error: (_, __) => null,
+          );
 
-              if (context.mounted) {
-                Navigator.of(context).pop();
-              }
-            }
-          });
+          if (currentUser == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('ユーザー情報の取得に失敗しました')),
+            );
+            return;
+          }
+
+          if (schedule != null) {
+            // 更新
+            await scheduleNotifier.updateSchedule(
+              schedule!.copyWith(
+                title: titleController.text,
+                description: descriptionController.text,
+                location: locationController.text.isEmpty
+                    ? null
+                    : locationController.text,
+                startDateTime: startDateTime,
+                endDateTime: endDateTime,
+                sharedLists: selectedLists.value.map((l) => l.id).toList(),
+                visibleTo: [currentUser.id],
+                updatedAt: DateTime.now(),
+              ),
+            );
+          } else {
+            // 新規作成
+            await scheduleNotifier.createSchedule(
+              title: titleController.text,
+              description: descriptionController.text,
+              location: locationController.text.isEmpty
+                  ? null
+                  : locationController.text,
+              startDateTime: startDateTime,
+              endDateTime: endDateTime,
+              ownerId: currentUser.id,
+              sharedLists: selectedLists.value.map((l) => l.id).toList(),
+              visibleTo: [currentUser.id],
+            );
+          }
+
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
         },
-        label: const Text('保存'),
         icon: const Icon(Icons.save),
+        label: const Text('保存'),
       ),
     );
   }

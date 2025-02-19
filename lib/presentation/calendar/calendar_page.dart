@@ -28,11 +28,11 @@ class CalendarPage extends HookConsumerWidget {
       authState.whenData((state) {
         if (state.status == AuthStatus.authenticated && state.user != null) {
           final currentUserId = state.user!.id;
-          
+
           if (!initialized.value || userId.value != currentUserId) {
             initialized.value = true;
             userId.value = currentUserId;
-            
+
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ref.read(scheduleNotifierProvider.notifier).watchUserSchedules(currentUserId);
               ref.read(listNotifierProvider.notifier).watchUserLists(currentUserId);
@@ -150,7 +150,7 @@ class CalendarPage extends HookConsumerWidget {
     WidgetRef ref,
   ) {
     final sortedSchedules = List<Schedule>.from(schedules)
-      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
 
     return ListView.builder(
       itemCount: sortedSchedules.length,
@@ -204,7 +204,8 @@ class CalendarPage extends HookConsumerWidget {
                       if (schedule.location != null)
                         Text('場所: ${schedule.location}'),
                       Text(
-                        '日時: ${DateFormat('yyyy/MM/dd HH:mm').format(schedule.dateTime)}',
+                        '開始: ${DateFormat('yyyy/MM/dd HH:mm').format(schedule.startDateTime)}\n'
+                        '終了: ${DateFormat('yyyy/MM/dd HH:mm').format(schedule.endDateTime)}',
                       ),
                       Text('作成者: ${schedule.ownerId == currentUser.id ? '自分' : ownerName}'),
                       const SizedBox(height: 4),

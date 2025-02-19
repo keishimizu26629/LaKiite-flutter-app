@@ -17,7 +17,7 @@ class DailyScheduleView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sortedSchedules = List<Schedule>.from(schedules)
-      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
 
     return Scaffold(
       appBar: AppBar(
@@ -27,100 +27,115 @@ class DailyScheduleView extends StatelessWidget {
         itemCount: 24,
         itemBuilder: (context, hour) {
           final timeSlotSchedules = sortedSchedules.where((schedule) {
-            return schedule.dateTime.hour == hour &&
-                   schedule.dateTime.year == date.year &&
-                   schedule.dateTime.month == date.month &&
-                   schedule.dateTime.day == date.day;
+            final scheduleStartHour = schedule.startDateTime.hour;
+            final scheduleEndHour = schedule.endDateTime.hour;
+            final isStartDay = schedule.startDateTime.year == date.year &&
+                schedule.startDateTime.month == date.month &&
+                schedule.startDateTime.day == date.day;
+            final isEndDay = schedule.endDateTime.year == date.year &&
+                schedule.endDateTime.month == date.month &&
+                schedule.endDateTime.day == date.day;
+
+            // 開始日の場合は開始時間以降、終了日の場合は終了時間以前の時間帯に表示
+            if (isStartDay && isEndDay) {
+              return scheduleStartHour <= hour && hour <= scheduleEndHour;
+            } else if (isStartDay) {
+              return scheduleStartHour <= hour;
+            } else if (isEndDay) {
+              return hour <= scheduleEndHour;
+            } else {
+              return true; // 開始日と終了日の間の日付の場合は全時間帯に表示
+            }
           }).toList();
 
-          return Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                height: 60,
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.grey.withOpacity(0.3),
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            height: 60,
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey.withOpacity(0.3),
+                ),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 60,
+                  child: Text(
+                    '$hour:00',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 60,
-                      child: Text(
-                        '$hour:00',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    const VerticalDivider(),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: timeSlotSchedules.isEmpty
-                            ? MainAxisAlignment.center
-                            : MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (timeSlotSchedules.isEmpty)
-                            Container(
-                              height: 24,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: Colors.grey.withOpacity(0.3),
-                                ),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            )
-                          else
-                            ...timeSlotSchedules.map((schedule) {
-                              return InkWell(
-                                onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) => ScheduleDetailPage(
-                                        schedule: schedule,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  margin: const EdgeInsets.symmetric(vertical: 2),
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.backgroundColor,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        schedule.title,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      if (schedule.location != null)
-                                        Text(
-                                          '📍 ${schedule.location}',
-                                          style: const TextStyle(fontSize: 12),
-                                        ),
-                                    ],
+                const VerticalDivider(),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: timeSlotSchedules.isEmpty
+                        ? MainAxisAlignment.center
+                        : MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (timeSlotSchedules.isEmpty)
+                        Container(
+                          height: 24,
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: Colors.grey.withOpacity(0.3),
+                            ),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        )
+                      else
+                        ...timeSlotSchedules.map((schedule) {
+                          return InkWell(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => ScheduleDetailPage(
+                                    schedule: schedule,
                                   ),
                                 ),
                               );
-                            }),
-                        ],
-                      ),
-                    ),
-                  ],
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 2),
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: AppTheme.backgroundColor,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    schedule.title,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${_formatTime(schedule.startDateTime)} - ${_formatTime(schedule.endDateTime)}',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  if (schedule.location != null)
+                                    Text(
+                                      '📍 ${schedule.location}',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),
@@ -132,5 +147,9 @@ class DailyScheduleView extends StatelessWidget {
     final weekDay = weekDays[date.weekday % 7];
     final formatter = DateFormat('yyyy年M月d日');
     return '${formatter.format(date)}（$weekDay）';
+  }
+
+  String _formatTime(DateTime dateTime) {
+    return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 }

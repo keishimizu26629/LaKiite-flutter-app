@@ -12,7 +12,8 @@ class ScheduleRepository implements IScheduleRepository {
       'title': schedule.title,
       'description': schedule.description,
       'location': schedule.location,
-      'dateTime': Timestamp.fromDate(schedule.dateTime),
+      'startDateTime': Timestamp.fromDate(schedule.startDateTime),
+      'endDateTime': Timestamp.fromDate(schedule.endDateTime),
       'ownerId': schedule.ownerId,
       'sharedLists': schedule.sharedLists,
       'visibleTo': schedule.visibleTo,
@@ -28,7 +29,8 @@ class ScheduleRepository implements IScheduleRepository {
       title: data['title'] as String,
       description: data['description'] as String,
       location: data['location'] as String?,
-      dateTime: (data['dateTime'] as Timestamp).toDate(),
+      startDateTime: (data['startDateTime'] as Timestamp).toDate(),
+      endDateTime: (data['endDateTime'] as Timestamp).toDate(),
       ownerId: data['ownerId'] as String,
       sharedLists: List<String>.from(data['sharedLists'] as List),
       visibleTo: List<String>.from(data['visibleTo'] as List),
@@ -42,7 +44,7 @@ class ScheduleRepository implements IScheduleRepository {
     final snapshot = await _firestore
         .collection('schedules')
         .where('sharedLists', arrayContains: listId)
-        .orderBy('dateTime', descending: false)
+        .orderBy('startDateTime', descending: false)
         .get();
     return snapshot.docs.map(_fromFirestore).toList();
   }
@@ -52,16 +54,15 @@ class ScheduleRepository implements IScheduleRepository {
     final snapshot = await _firestore
         .collection('schedules')
         .where('visibleTo', arrayContains: userId)
-        .orderBy('dateTime', descending: false)
+        .orderBy('startDateTime', descending: false)
         .get();
     return snapshot.docs.map(_fromFirestore).toList();
   }
 
   @override
   Future<Schedule> createSchedule(Schedule schedule) async {
-    final docRef = await _firestore
-        .collection('schedules')
-        .add(_toFirestore(schedule));
+    final docRef =
+        await _firestore.collection('schedules').add(_toFirestore(schedule));
     final doc = await docRef.get();
     return _fromFirestore(doc);
   }
@@ -84,7 +85,7 @@ class ScheduleRepository implements IScheduleRepository {
     return _firestore
         .collection('schedules')
         .where('sharedLists', arrayContains: listId)
-        .orderBy('dateTime', descending: false)
+        .orderBy('startDateTime', descending: false)
         .snapshots()
         .map((snapshot) => snapshot.docs.map(_fromFirestore).toList());
   }
@@ -95,15 +96,14 @@ class ScheduleRepository implements IScheduleRepository {
     final query = _firestore
         .collection('schedules')
         .where('visibleTo', arrayContains: userId)
-        .orderBy('dateTime', descending: false);
-    
+        .orderBy('startDateTime', descending: false);
+
     print('ScheduleRepository: Query: ${query.parameters}');
-    
-    return query
-        .snapshots()
-        .map((snapshot) {
-          print('ScheduleRepository: Received snapshot with ${snapshot.docs.length} documents');
-          return snapshot.docs.map(_fromFirestore).toList();
-        });
+
+    return query.snapshots().map((snapshot) {
+      print(
+          'ScheduleRepository: Received snapshot with ${snapshot.docs.length} documents');
+      return snapshot.docs.map(_fromFirestore).toList();
+    });
   }
 }
