@@ -174,10 +174,11 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       final userData = userDoc.data();
       print('User data fetched: $userData');
 
+      final now = Timestamp.now();
       final commentData = {
         'userId': userId,
         'content': content,
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': now,
         'userDisplayName': userData?['displayName'],
         'userPhotoUrl': userData?['photoUrl'],
       };

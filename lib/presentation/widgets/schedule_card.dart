@@ -38,11 +38,6 @@ class ScheduleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isSameDay =
-        schedule.startDateTime.year == schedule.endDateTime.year &&
-            schedule.startDateTime.month == schedule.endDateTime.month &&
-            schedule.startDateTime.day == schedule.endDateTime.day;
-
     return Card(
       elevation: 1,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

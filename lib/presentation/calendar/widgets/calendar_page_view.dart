@@ -266,54 +266,82 @@ class DateCell extends StatelessWidget {
         date.weekday == DateTime.sunday || date.weekday == DateTime.saturday;
 
     return Expanded(
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => DailyScheduleView(
-                initialDate: date,
-                schedules: schedules,
+      child: Consumer(
+        builder: (context, ref, child) {
+          final currentUserId = ref.watch(currentUserIdProvider);
+          return InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => DailyScheduleView(
+                    initialDate: date,
+                    schedules: schedules,
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                      color: Theme.of(context).dividerColor, width: 1),
+                  right: BorderSide(
+                      color: Theme.of(context).dividerColor, width: 1),
+                ),
+                color: isToday ? AppTheme.backgroundColor : null,
+                borderRadius: isToday ? BorderRadius.circular(4) : null,
+              ),
+              padding: const EdgeInsets.all(4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    date.day.toString(),
+                    style: TextStyle(
+                      color: isWeekend ? AppTheme.weekendColor : null,
+                      fontWeight: isToday ? FontWeight.bold : null,
+                    ),
+                  ),
+                  if (schedules.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    ...schedules.take(2).map((schedule) {
+                      final isOwner = schedule.ownerId == currentUserId;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 1),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 2, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: isOwner
+                              ? Colors.grey.withOpacity(0.1)
+                              : Theme.of(context).primaryColor.withOpacity(0.1),
+                          border: Border.all(
+                            color: isOwner
+                                ? Colors.grey.withOpacity(0.8)
+                                : Theme.of(context)
+                                    .primaryColor
+                                    .withOpacity(0.8),
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        child: Text(
+                          schedule.title,
+                          style: const TextStyle(fontSize: 9),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }),
+                    if (schedules.length > 2)
+                      Text(
+                        '+${schedules.length - 2}',
+                        style: const TextStyle(fontSize: 9, color: Colors.grey),
+                      ),
+                  ],
+                ],
               ),
             ),
           );
         },
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: Theme.of(context).dividerColor, width: 1),
-              right:
-                  BorderSide(color: Theme.of(context).dividerColor, width: 1),
-            ),
-            color: isToday ? AppTheme.backgroundColor : null,
-            borderRadius: isToday ? BorderRadius.circular(4) : null,
-          ),
-          padding: const EdgeInsets.all(4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                date.day.toString(),
-                style: TextStyle(
-                  color: isWeekend ? AppTheme.weekendColor : null,
-                  fontWeight: isToday ? FontWeight.bold : null,
-                ),
-              ),
-              if (schedules.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                ...schedules.take(3).map((schedule) => Text(
-                      schedule.title,
-                      style: const TextStyle(fontSize: 10),
-                      overflow: TextOverflow.ellipsis,
-                    )),
-                if (schedules.length > 3)
-                  Text(
-                    '+${schedules.length - 3}',
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
-              ],
-            ],
-          ),
-        ),
       ),
     );
   }

@@ -118,6 +118,7 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
         name: name,
         displayName: displayName,
         searchId: newSearchId,
+        shortBio: shortBio,
         iconUrl: iconUrl ?? state.value!.iconUrl,
       );
 

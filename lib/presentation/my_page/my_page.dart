@@ -7,6 +7,7 @@ import '../presentation_provider.dart';
 import 'my_page_view_model.dart';
 import '../calendar/schedule_detail_page.dart';
 import 'package:intl/intl.dart';
+import '../../domain/entity/user.dart';
 
 class MyPage extends ConsumerStatefulWidget {
   const MyPage({super.key});
@@ -35,7 +36,8 @@ class _MyPageState extends ConsumerState<MyPage> {
     return schedulesAsync.when(
       data: (schedules) {
         // 自分の予定のみをフィルタリング
-        final mySchedules = schedules.where((s) => s.ownerId == userId).toList();
+        final mySchedules =
+            schedules.where((s) => s.ownerId == userId).toList();
 
         if (mySchedules.isEmpty) {
           return Center(
@@ -49,10 +51,10 @@ class _MyPageState extends ConsumerState<MyPage> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  '予定はありません',
+                  '予定がありません',
                   style: TextStyle(
-                    fontSize: 16,
                     color: Colors.grey[600],
+                    fontSize: 16,
                   ),
                 ),
               ],
@@ -75,7 +77,8 @@ class _MyPageState extends ConsumerState<MyPage> {
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => ScheduleDetailPage(schedule: schedule),
+                      builder: (context) =>
+                          ScheduleDetailPage(schedule: schedule),
                     ),
                   );
                 },
@@ -175,8 +178,12 @@ class _MyPageState extends ConsumerState<MyPage> {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('エラー: ${error.toString()}')),
+      loading: () => const Center(
+        child: CircularProgressIndicator(),
+      ),
+      error: (error, stack) => Center(
+        child: Text('エラーが発生しました: $error'),
+      ),
     );
   }
 
@@ -248,9 +255,8 @@ class _MyPageState extends ConsumerState<MyPage> {
                         children: [
                           CircleAvatar(
                             radius: 40,
-                            backgroundColor: Theme.of(context)
-                                .primaryColor
-                                .withOpacity(0.1),
+                            backgroundColor:
+                                Theme.of(context).primaryColor.withOpacity(0.1),
                             child: Builder(
                               builder: (context) {
                                 final selectedImage =
@@ -277,8 +283,7 @@ class _MyPageState extends ConsumerState<MyPage> {
                                     : Icon(
                                         Icons.person,
                                         size: 40,
-                                        color: Theme.of(context)
-                                            .primaryColor,
+                                        color: Theme.of(context).primaryColor,
                                       );
                               },
                             ),
@@ -307,59 +312,65 @@ class _MyPageState extends ConsumerState<MyPage> {
                                 ),
                                 const SizedBox(height: 12),
                                 OutlinedButton.icon(
-                                  onPressed: () async {
-                                    final picker = ImagePicker();
-                                    final pickedFile =
-                                        await picker.pickImage(
-                                      source: ImageSource.gallery,
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => _ProfileEditDialog(
+                                        user: user,
+                                        onImageEdit: () async {
+                                          final picker = ImagePicker();
+                                          final pickedFile =
+                                              await picker.pickImage(
+                                            source: ImageSource.gallery,
+                                          );
+                                          if (pickedFile != null) {
+                                            ref
+                                                .read(selectedImageProvider
+                                                    .notifier)
+                                                .state = File(pickedFile.path);
+                                            try {
+                                              await ref
+                                                  .read(myPageViewModelProvider
+                                                      .notifier)
+                                                  .updateProfile(
+                                                    name: user.name,
+                                                    displayName:
+                                                        user.displayName,
+                                                    searchIdStr: user.searchId
+                                                        .toString(),
+                                                    shortBio: user
+                                                        .publicProfile.shortBio,
+                                                    imageFile:
+                                                        File(pickedFile.path),
+                                                  );
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                      content: Text(
+                                                          'プロフィール画像を更新しました')),
+                                                );
+                                              }
+                                            } catch (e) {
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  SnackBar(
+                                                      content: Text(
+                                                          'エラー: ${e.toString()}')),
+                                                );
+                                              }
+                                            }
+                                          }
+                                        },
+                                      ),
                                     );
-                                    if (pickedFile != null) {
-                                      ref
-                                          .read(selectedImageProvider
-                                              .notifier)
-                                          .state =
-                                          File(pickedFile.path);
-                                      try {
-                                        await ref
-                                            .read(myPageViewModelProvider
-                                                .notifier)
-                                            .updateProfile(
-                                              name: user.name,
-                                              displayName:
-                                                  user.displayName,
-                                              searchIdStr: user.searchId
-                                                  .toString(),
-                                              shortBio: user.publicProfile
-                                                  .shortBio,
-                                              imageFile:
-                                                  File(pickedFile.path),
-                                            );
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                                content: Text(
-                                                    'プロフィール画像を更新しました')),
-                                          );
-                                        }
-                                      } catch (e) {
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                                content: Text(
-                                                    'エラー: ${e.toString()}')),
-                                          );
-                                        }
-                                      }
-                                    }
                                   },
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor:
                                         Theme.of(context).primaryColor,
                                     side: BorderSide(
-                                      color:
-                                          Theme.of(context).primaryColor,
+                                      color: Theme.of(context).primaryColor,
                                     ),
                                   ),
                                   icon: const Icon(Icons.edit),
@@ -461,6 +472,131 @@ class _MyPageState extends ConsumerState<MyPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ProfileEditDialog extends ConsumerStatefulWidget {
+  final UserModel user;
+  final VoidCallback onImageEdit;
+
+  const _ProfileEditDialog({
+    required this.user,
+    required this.onImageEdit,
+  });
+
+  @override
+  ConsumerState<_ProfileEditDialog> createState() => _ProfileEditDialogState();
+}
+
+class _ProfileEditDialogState extends ConsumerState<_ProfileEditDialog> {
+  late TextEditingController _displayNameController;
+  late TextEditingController _shortBioController;
+
+  @override
+  void initState() {
+    super.initState();
+    _displayNameController =
+        TextEditingController(text: widget.user.displayName);
+    _shortBioController =
+        TextEditingController(text: widget.user.publicProfile.shortBio ?? '');
+  }
+
+  @override
+  void dispose() {
+    _displayNameController.dispose();
+    _shortBioController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('プロフィール編集'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: widget.onImageEdit,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Colors.grey[200],
+                  backgroundImage: widget.user.iconUrl != null
+                      ? NetworkImage(widget.user.iconUrl!)
+                      : null,
+                  child: widget.user.iconUrl == null
+                      ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                      : null,
+                ),
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withOpacity(0.5),
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _displayNameController,
+            decoration: const InputDecoration(
+              labelText: '表示名',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _shortBioController,
+            decoration: const InputDecoration(
+              labelText: '一言コメント',
+              border: OutlineInputBorder(),
+            ),
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('キャンセル'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            try {
+              await ref.read(myPageViewModelProvider.notifier).updateProfile(
+                    name: widget.user.name,
+                    displayName: _displayNameController.text,
+                    searchIdStr: widget.user.searchId.toString(),
+                    shortBio: _shortBioController.text,
+                  );
+              if (mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('プロフィールを更新しました')),
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('エラー: ${e.toString()}')),
+                );
+              }
+            }
+          },
+          child: const Text('保存'),
+        ),
+      ],
     );
   }
 }
