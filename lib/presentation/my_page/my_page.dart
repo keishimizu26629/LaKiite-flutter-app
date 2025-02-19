@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../presentation_provider.dart';
 import 'my_page_view_model.dart';
 import '../../domain/entity/user.dart';
+import '../widgets/schedule_card.dart';
 
 class MyPage extends ConsumerStatefulWidget {
   const MyPage({super.key});
@@ -45,36 +46,9 @@ class _MyPageState extends ConsumerState<MyPage> {
           itemCount: schedules.length,
           itemBuilder: (context, index) {
             final schedule = schedules[index];
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 4),
-              child: ListTile(
-                title: Text(schedule.title),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      schedule.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '開始: ${_formatDateTime(schedule.startDateTime)}\n終了: ${_formatDateTime(schedule.endDateTime)}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    if (schedule.location != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        '場所: ${schedule.location}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ],
-                ),
-                onTap: () {
-                  // TODO: 予定の詳細画面に遷移
-                },
-              ),
+            return ScheduleCard(
+              schedule: schedule,
+              isOwner: schedule.ownerId == userId,
             );
           },
         );
@@ -82,10 +56,6 @@ class _MyPageState extends ConsumerState<MyPage> {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(child: Text('エラー: ${error.toString()}')),
     );
-  }
-
-  String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.year}/${dateTime.month}/${dateTime.day} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
   @override

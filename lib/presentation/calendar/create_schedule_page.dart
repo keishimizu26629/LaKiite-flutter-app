@@ -304,10 +304,34 @@ class CreateSchedulePage extends HookConsumerWidget {
             return;
           }
 
-          if (schedule != null) {
-            // 更新
-            await scheduleNotifier.updateSchedule(
-              schedule!.copyWith(
+          try {
+            if (schedule != null) {
+              print('CreateSchedulePage: Updating schedule ${schedule!.id}');
+              // 更新
+              await scheduleNotifier.updateSchedule(
+                schedule!.copyWith(
+                  title: titleController.text,
+                  description: descriptionController.text,
+                  location: locationController.text.isEmpty
+                      ? null
+                      : locationController.text,
+                  startDateTime: startDateTime,
+                  endDateTime: endDateTime,
+                  sharedLists: selectedLists.value.map((l) => l.id).toList(),
+                  visibleTo: [currentUser.id],
+                  updatedAt: DateTime.now(),
+                ),
+              );
+              print('CreateSchedulePage: Schedule updated successfully');
+            } else {
+              print('CreateSchedulePage: Creating new schedule');
+              print('Title: ${titleController.text}');
+              print('StartDateTime: $startDateTime');
+              print('EndDateTime: $endDateTime');
+              print('SharedLists: ${selectedLists.value.map((l) => l.id).toList()}');
+
+              // 新規作成
+              await scheduleNotifier.createSchedule(
                 title: titleController.text,
                 description: descriptionController.text,
                 location: locationController.text.isEmpty
@@ -315,29 +339,23 @@ class CreateSchedulePage extends HookConsumerWidget {
                     : locationController.text,
                 startDateTime: startDateTime,
                 endDateTime: endDateTime,
+                ownerId: currentUser.id,
                 sharedLists: selectedLists.value.map((l) => l.id).toList(),
                 visibleTo: [currentUser.id],
-                updatedAt: DateTime.now(),
-              ),
-            );
-          } else {
-            // 新規作成
-            await scheduleNotifier.createSchedule(
-              title: titleController.text,
-              description: descriptionController.text,
-              location: locationController.text.isEmpty
-                  ? null
-                  : locationController.text,
-              startDateTime: startDateTime,
-              endDateTime: endDateTime,
-              ownerId: currentUser.id,
-              sharedLists: selectedLists.value.map((l) => l.id).toList(),
-              visibleTo: [currentUser.id],
-            );
-          }
+              );
+              print('CreateSchedulePage: Schedule created successfully');
+            }
 
-          if (context.mounted) {
-            Navigator.of(context).pop();
+            if (context.mounted) {
+              Navigator.of(context).pop();
+            }
+          } catch (e) {
+            print('CreateSchedulePage: Error saving schedule: $e');
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('スケジュールの保存に失敗しました: $e')),
+              );
+            }
           }
         },
         icon: const Icon(Icons.save),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/user.dart';
@@ -55,6 +56,15 @@ class ScheduleDetailPage extends HookConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('予定の詳細'),
+        actions: [
+          if (schedule.ownerId == ref.watch(authNotifierProvider).value?.user?.id)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () {
+                context.push('/schedule/edit/${schedule.id}');
+              },
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(

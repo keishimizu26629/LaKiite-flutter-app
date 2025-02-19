@@ -62,7 +62,8 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
         onError: (error) {
           if (_isDisposed) return;
           print('ScheduleNotifier: Error watching schedules: $error');
-          state = AsyncValue.data(ScheduleState.error(error.toString()));
+          // エラーが発生しても既存のスケジュールは保持
+          state = state.whenData((currentState) => currentState);
         },
       );
     } catch (e) {
@@ -85,23 +86,51 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
   }) async {
     if (_isDisposed) return;
 
+    print('ScheduleNotifier: Creating new schedule...');
+    print('Title: $title');
+    print('Description: $description');
+    print('StartDateTime: $startDateTime');
+    print('EndDateTime: $endDateTime');
+    print('OwnerId: $ownerId');
+    print('SharedLists: $sharedLists');
+    print('VisibleTo: $visibleTo');
+
     state = const AsyncValue.loading();
     try {
+      // 作成者情報を取得
+      final userDoc = await ref.read(userRepositoryProvider).getUser(ownerId);
+      if (userDoc == null) {
+        throw Exception('User not found');
+      }
+
       final schedule = Schedule(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: '', // Firestoreが自動生成
         title: title,
         description: description,
         location: location,
         startDateTime: startDateTime,
         endDateTime: endDateTime,
         ownerId: ownerId,
+        ownerDisplayName: userDoc.displayName,
+        ownerPhotoUrl: userDoc.iconUrl,
         sharedLists: sharedLists,
         visibleTo: visibleTo,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        reactionCount: 0,
+        commentCount: 0,
+        createdAt: DateTime.now(), // リポジトリでサーバータイムスタンプに変換
+        updatedAt: DateTime.now(), // リポジトリでサーバータイムスタンプに変換
       );
-      await ref.read(scheduleRepositoryProvider).createSchedule(schedule);
+      print('ScheduleNotifier: Schedule object created, sending to repository...');
+
+      final createdSchedule = await ref.read(scheduleRepositoryProvider).createSchedule(schedule);
+      print('ScheduleNotifier: Schedule created successfully with ID: ${createdSchedule.id}');
+
+      // 作成後にスケジュールを再読み込み
+      if (_currentUserId != null) {
+        watchUserSchedules(_currentUserId!);
+      }
     } catch (e) {
+      print('ScheduleNotifier: Error creating schedule: $e');
       if (_isDisposed) return;
       state = AsyncValue.data(ScheduleState.error(e.toString()));
     }
@@ -114,6 +143,11 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
     state = const AsyncValue.loading();
     try {
       await ref.read(scheduleRepositoryProvider).updateSchedule(schedule);
+
+      // 更新後にスケジュールを再読み込み
+      if (_currentUserId != null) {
+        watchUserSchedules(_currentUserId!);
+      }
     } catch (e) {
       if (_isDisposed) return;
       state = AsyncValue.data(ScheduleState.error(e.toString()));
@@ -127,9 +161,19 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
     state = const AsyncValue.loading();
     try {
       await ref.read(scheduleRepositoryProvider).deleteSchedule(scheduleId);
+
+      // 削除後にスケジュールを再読み込み
+      if (_currentUserId != null) {
+        watchUserSchedules(_currentUserId!);
+      }
     } catch (e) {
       if (_isDisposed) return;
       state = AsyncValue.data(ScheduleState.error(e.toString()));
     }
+  }
+
+  /// 特定のスケジュールを監視する
+  Stream<Schedule?> watchSchedule(String scheduleId) {
+    return ref.read(scheduleRepositoryProvider).watchSchedule(scheduleId);
   }
 }
