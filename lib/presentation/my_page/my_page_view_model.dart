@@ -3,23 +3,44 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../../domain/entity/user.dart';
+import '../../domain/entity/schedule.dart';
 import '../../domain/value/user_id.dart';
 import '../../domain/interfaces/i_user_repository.dart';
+import '../../domain/interfaces/i_schedule_repository.dart';
 import '../../presentation/presentation_provider.dart';
 
 final selectedImageProvider = StateProvider<File?>((ref) => null);
 
 final myPageEditingProvider = StateProvider<bool>((ref) => false);
 
-final myPageViewModelProvider = StateNotifierProvider<MyPageViewModel, AsyncValue<UserModel?>>((ref) {
+// ユーザーの予定を監視するプロバイダー
+final userSchedulesStreamProvider =
+    StreamProvider.family<List<Schedule>, String>((ref, userId) {
+  final scheduleRepository = ref.watch(scheduleRepositoryProvider);
+  return scheduleRepository.watchUserSchedules(userId).map((schedules) {
+    // 自分が作成した予定のみをフィルタリング
+    return schedules.where((schedule) => schedule.ownerId == userId).toList();
+  });
+});
+
+// キャッシュされたユーザー情報を提供するプロバイダー
+final cachedUserProvider =
+    StateProvider.family<UserModel?, String>((ref, userId) => null);
+
+final myPageViewModelProvider =
+    StateNotifierProvider<MyPageViewModel, AsyncValue<UserModel?>>((ref) {
   final userRepository = ref.watch(userRepositoryProvider);
-  return MyPageViewModel(userRepository);
+  final scheduleRepository = ref.watch(scheduleRepositoryProvider);
+  return MyPageViewModel(userRepository, scheduleRepository, ref);
 });
 
 class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
   final IUserRepository _userRepository;
+  final IScheduleRepository _scheduleRepository;
+  final Ref _ref;
 
-  MyPageViewModel(this._userRepository) : super(const AsyncValue.loading());
+  MyPageViewModel(this._userRepository, this._scheduleRepository, this._ref)
+      : super(const AsyncValue.loading());
 
   Future<void> pickImage() async {
     final picker = ImagePicker();
@@ -98,11 +119,30 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
 
   Future<void> loadUser(String userId) async {
     try {
+      // キャッシュされたデータがあればそれを使用
+      final cachedUser = _ref.read(cachedUserProvider(userId));
+      if (cachedUser != null) {
+        state = AsyncValue.data(cachedUser);
+      }
+
       state = const AsyncValue.loading();
       final user = await _userRepository.getUser(userId);
+
+      // キャッシュを更新
+      _ref.read(cachedUserProvider(userId).notifier).state = user;
+
       state = AsyncValue.data(user);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
+    }
+  }
+
+  // ユーザーの予定を取得
+  Future<List<Schedule>> getUserSchedules(String userId) async {
+    try {
+      return await _scheduleRepository.getUserSchedules(userId);
+    } catch (e) {
+      throw Exception('Failed to load user schedules: $e');
     }
   }
 }

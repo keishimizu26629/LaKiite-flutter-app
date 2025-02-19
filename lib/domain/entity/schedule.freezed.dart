@@ -24,7 +24,8 @@ mixin _$Schedule {
   String get title => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
   String? get location => throw _privateConstructorUsedError;
-  DateTime get dateTime => throw _privateConstructorUsedError;
+  DateTime get startDateTime => throw _privateConstructorUsedError;
+  DateTime get endDateTime => throw _privateConstructorUsedError;
   String get ownerId => throw _privateConstructorUsedError;
   List<String> get sharedLists => throw _privateConstructorUsedError;
   List<String> get visibleTo => throw _privateConstructorUsedError;
@@ -47,7 +48,8 @@ abstract class $ScheduleCopyWith<$Res> {
       String title,
       String description,
       String? location,
-      DateTime dateTime,
+      DateTime startDateTime,
+      DateTime endDateTime,
       String ownerId,
       List<String> sharedLists,
       List<String> visibleTo,
@@ -72,7 +74,8 @@ class _$ScheduleCopyWithImpl<$Res, $Val extends Schedule>
     Object? title = null,
     Object? description = null,
     Object? location = freezed,
-    Object? dateTime = null,
+    Object? startDateTime = null,
+    Object? endDateTime = null,
     Object? ownerId = null,
     Object? sharedLists = null,
     Object? visibleTo = null,
@@ -96,9 +99,13 @@ class _$ScheduleCopyWithImpl<$Res, $Val extends Schedule>
           ? _value.location
           : location // ignore: cast_nullable_to_non_nullable
               as String?,
-      dateTime: null == dateTime
-          ? _value.dateTime
-          : dateTime // ignore: cast_nullable_to_non_nullable
+      startDateTime: null == startDateTime
+          ? _value.startDateTime
+          : startDateTime // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      endDateTime: null == endDateTime
+          ? _value.endDateTime
+          : endDateTime // ignore: cast_nullable_to_non_nullable
               as DateTime,
       ownerId: null == ownerId
           ? _value.ownerId
@@ -137,7 +144,8 @@ abstract class _$$ScheduleImplCopyWith<$Res>
       String title,
       String description,
       String? location,
-      DateTime dateTime,
+      DateTime startDateTime,
+      DateTime endDateTime,
       String ownerId,
       List<String> sharedLists,
       List<String> visibleTo,
@@ -160,7 +168,8 @@ class __$$ScheduleImplCopyWithImpl<$Res>
     Object? title = null,
     Object? description = null,
     Object? location = freezed,
-    Object? dateTime = null,
+    Object? startDateTime = null,
+    Object? endDateTime = null,
     Object? ownerId = null,
     Object? sharedLists = null,
     Object? visibleTo = null,
@@ -184,9 +193,13 @@ class __$$ScheduleImplCopyWithImpl<$Res>
           ? _value.location
           : location // ignore: cast_nullable_to_non_nullable
               as String?,
-      dateTime: null == dateTime
-          ? _value.dateTime
-          : dateTime // ignore: cast_nullable_to_non_nullable
+      startDateTime: null == startDateTime
+          ? _value.startDateTime
+          : startDateTime // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      endDateTime: null == endDateTime
+          ? _value.endDateTime
+          : endDateTime // ignore: cast_nullable_to_non_nullable
               as DateTime,
       ownerId: null == ownerId
           ? _value.ownerId
@@ -220,7 +233,8 @@ class _$ScheduleImpl implements _Schedule {
       required this.title,
       required this.description,
       this.location,
-      required this.dateTime,
+      required this.startDateTime,
+      required this.endDateTime,
       required this.ownerId,
       required final List<String> sharedLists,
       required final List<String> visibleTo,
@@ -241,7 +255,9 @@ class _$ScheduleImpl implements _Schedule {
   @override
   final String? location;
   @override
-  final DateTime dateTime;
+  final DateTime startDateTime;
+  @override
+  final DateTime endDateTime;
   @override
   final String ownerId;
   final List<String> _sharedLists;
@@ -267,7 +283,7 @@ class _$ScheduleImpl implements _Schedule {
 
   @override
   String toString() {
-    return 'Schedule(id: $id, title: $title, description: $description, location: $location, dateTime: $dateTime, ownerId: $ownerId, sharedLists: $sharedLists, visibleTo: $visibleTo, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Schedule(id: $id, title: $title, description: $description, location: $location, startDateTime: $startDateTime, endDateTime: $endDateTime, ownerId: $ownerId, sharedLists: $sharedLists, visibleTo: $visibleTo, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -281,8 +297,10 @@ class _$ScheduleImpl implements _Schedule {
                 other.description == description) &&
             (identical(other.location, location) ||
                 other.location == location) &&
-            (identical(other.dateTime, dateTime) ||
-                other.dateTime == dateTime) &&
+            (identical(other.startDateTime, startDateTime) ||
+                other.startDateTime == startDateTime) &&
+            (identical(other.endDateTime, endDateTime) ||
+                other.endDateTime == endDateTime) &&
             (identical(other.ownerId, ownerId) || other.ownerId == ownerId) &&
             const DeepCollectionEquality()
                 .equals(other._sharedLists, _sharedLists) &&
@@ -302,7 +320,8 @@ class _$ScheduleImpl implements _Schedule {
       title,
       description,
       location,
-      dateTime,
+      startDateTime,
+      endDateTime,
       ownerId,
       const DeepCollectionEquality().hash(_sharedLists),
       const DeepCollectionEquality().hash(_visibleTo),
@@ -329,7 +348,8 @@ abstract class _Schedule implements Schedule {
       required final String title,
       required final String description,
       final String? location,
-      required final DateTime dateTime,
+      required final DateTime startDateTime,
+      required final DateTime endDateTime,
       required final String ownerId,
       required final List<String> sharedLists,
       required final List<String> visibleTo,
@@ -348,7 +368,9 @@ abstract class _Schedule implements Schedule {
   @override
   String? get location;
   @override
-  DateTime get dateTime;
+  DateTime get startDateTime;
+  @override
+  DateTime get endDateTime;
   @override
   String get ownerId;
   @override

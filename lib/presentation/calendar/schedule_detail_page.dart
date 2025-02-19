@@ -70,32 +70,30 @@ class ScheduleDetailPage extends HookConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
-
               _buildInfoSection(
                 icon: Icons.calendar_today,
                 title: '日時',
-                content: DateFormat('yyyy年M月d日（E） HH:mm', 'ja_JP')
-                    .format(schedule.dateTime),
+                content:
+                    '${DateFormat('yyyy年M月d日（E） HH:mm', 'ja_JP').format(schedule.startDateTime)} - ${DateFormat('HH:mm', 'ja_JP').format(schedule.endDateTime)}',
               ),
-
               if (schedule.location != null)
                 _buildInfoSection(
                   icon: Icons.location_on,
                   title: '場所',
                   content: schedule.location!,
                 ),
-
               _buildInfoSection(
                 icon: Icons.description,
                 title: '説明',
                 content: schedule.description,
               ),
-
               Consumer(
                 builder: (context, ref, _) {
                   final authState = ref.watch(authNotifierProvider);
                   return FutureBuilder<UserModel?>(
-                    future: ref.read(userRepositoryProvider).getUser(schedule.ownerId),
+                    future: ref
+                        .read(userRepositoryProvider)
+                        .getUser(schedule.ownerId),
                     builder: (context, snapshot) {
                       final ownerName = snapshot.hasData
                           ? snapshot.data!.displayName
@@ -111,7 +109,6 @@ class ScheduleDetailPage extends HookConsumerWidget {
                   );
                 },
               ),
-
               const Divider(height: 32),
               _buildReactionsSection(context, interactions),
               const Divider(height: 32),
@@ -130,13 +127,15 @@ class ScheduleDetailPage extends HookConsumerWidget {
 
           return BottomAppBar(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
               child: Row(
                 children: [
                   PopupMenuButton<ReactionType>(
                     icon: Icon(
                       _getReactionIcon(userReaction?.type),
-                      color: userReaction != null ? AppTheme.primaryColor : null,
+                      color:
+                          userReaction != null ? AppTheme.primaryColor : null,
                     ),
                     onSelected: (ReactionType type) {
                       ref
@@ -153,7 +152,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
                             const Text('行きます！'),
                             const Spacer(),
                             if (userReaction?.type == ReactionType.going)
-                              const Icon(Icons.check, color: AppTheme.primaryColor),
+                              const Icon(Icons.check,
+                                  color: AppTheme.primaryColor),
                           ],
                         ),
                       ),
@@ -165,7 +165,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
                             const Text('考え中！'),
                             const Spacer(),
                             if (userReaction?.type == ReactionType.thinking)
-                              const Icon(Icons.check, color: AppTheme.primaryColor),
+                              const Icon(Icons.check,
+                                  color: AppTheme.primaryColor),
                           ],
                         ),
                       ),
@@ -188,8 +189,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
                     onPressed: () {
                       if (commentController.text.isNotEmpty) {
                         ref
-                            .read(scheduleInteractionNotifierProvider(schedule.id)
-                                .notifier)
+                            .read(
+                                scheduleInteractionNotifierProvider(schedule.id)
+                                    .notifier)
                             .addComment(state.user!.id, commentController.text);
                         commentController.clear();
                       }
@@ -255,7 +257,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
     ScheduleInteractionState interactions,
   ) {
     final reactionCounts = interactions.reactionCounts;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -304,7 +306,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
     required int count,
   }) {
     if (count == 0) return const SizedBox.shrink();
-    
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -369,7 +371,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
                           children: [
                             Text(
                               comment.userDisplayName ?? 'ユーザー',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             Text(
                               DateFormat('yyyy/MM/dd HH:mm')

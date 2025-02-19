@@ -12,7 +12,8 @@ _$ScheduleImpl _$$ScheduleImplFromJson(Map<String, dynamic> json) =>
       title: json['title'] as String,
       description: json['description'] as String,
       location: json['location'] as String?,
-      dateTime: DateTime.parse(json['dateTime'] as String),
+      startDateTime: DateTime.parse(json['startDateTime'] as String),
+      endDateTime: DateTime.parse(json['endDateTime'] as String),
       ownerId: json['ownerId'] as String,
       sharedLists: (json['sharedLists'] as List<dynamic>)
           .map((e) => e as String)
@@ -29,7 +30,8 @@ Map<String, dynamic> _$$ScheduleImplToJson(_$ScheduleImpl instance) =>
       'title': instance.title,
       'description': instance.description,
       'location': instance.location,
-      'dateTime': instance.dateTime.toIso8601String(),
+      'startDateTime': instance.startDateTime.toIso8601String(),
+      'endDateTime': instance.endDateTime.toIso8601String(),
       'ownerId': instance.ownerId,
       'sharedLists': instance.sharedLists,
       'visibleTo': instance.visibleTo,
