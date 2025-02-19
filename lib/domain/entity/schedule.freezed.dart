@@ -27,8 +27,12 @@ mixin _$Schedule {
   DateTime get startDateTime => throw _privateConstructorUsedError;
   DateTime get endDateTime => throw _privateConstructorUsedError;
   String get ownerId => throw _privateConstructorUsedError;
+  String get ownerDisplayName => throw _privateConstructorUsedError;
+  String? get ownerPhotoUrl => throw _privateConstructorUsedError;
   List<String> get sharedLists => throw _privateConstructorUsedError;
   List<String> get visibleTo => throw _privateConstructorUsedError;
+  int get reactionCount => throw _privateConstructorUsedError;
+  int get commentCount => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
 
@@ -51,8 +55,12 @@ abstract class $ScheduleCopyWith<$Res> {
       DateTime startDateTime,
       DateTime endDateTime,
       String ownerId,
+      String ownerDisplayName,
+      String? ownerPhotoUrl,
       List<String> sharedLists,
       List<String> visibleTo,
+      int reactionCount,
+      int commentCount,
       DateTime createdAt,
       DateTime updatedAt});
 }
@@ -77,8 +85,12 @@ class _$ScheduleCopyWithImpl<$Res, $Val extends Schedule>
     Object? startDateTime = null,
     Object? endDateTime = null,
     Object? ownerId = null,
+    Object? ownerDisplayName = null,
+    Object? ownerPhotoUrl = freezed,
     Object? sharedLists = null,
     Object? visibleTo = null,
+    Object? reactionCount = null,
+    Object? commentCount = null,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -111,6 +123,14 @@ class _$ScheduleCopyWithImpl<$Res, $Val extends Schedule>
           ? _value.ownerId
           : ownerId // ignore: cast_nullable_to_non_nullable
               as String,
+      ownerDisplayName: null == ownerDisplayName
+          ? _value.ownerDisplayName
+          : ownerDisplayName // ignore: cast_nullable_to_non_nullable
+              as String,
+      ownerPhotoUrl: freezed == ownerPhotoUrl
+          ? _value.ownerPhotoUrl
+          : ownerPhotoUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
       sharedLists: null == sharedLists
           ? _value.sharedLists
           : sharedLists // ignore: cast_nullable_to_non_nullable
@@ -119,6 +139,14 @@ class _$ScheduleCopyWithImpl<$Res, $Val extends Schedule>
           ? _value.visibleTo
           : visibleTo // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      reactionCount: null == reactionCount
+          ? _value.reactionCount
+          : reactionCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      commentCount: null == commentCount
+          ? _value.commentCount
+          : commentCount // ignore: cast_nullable_to_non_nullable
+              as int,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -147,8 +175,12 @@ abstract class _$$ScheduleImplCopyWith<$Res>
       DateTime startDateTime,
       DateTime endDateTime,
       String ownerId,
+      String ownerDisplayName,
+      String? ownerPhotoUrl,
       List<String> sharedLists,
       List<String> visibleTo,
+      int reactionCount,
+      int commentCount,
       DateTime createdAt,
       DateTime updatedAt});
 }
@@ -171,8 +203,12 @@ class __$$ScheduleImplCopyWithImpl<$Res>
     Object? startDateTime = null,
     Object? endDateTime = null,
     Object? ownerId = null,
+    Object? ownerDisplayName = null,
+    Object? ownerPhotoUrl = freezed,
     Object? sharedLists = null,
     Object? visibleTo = null,
+    Object? reactionCount = null,
+    Object? commentCount = null,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -205,6 +241,14 @@ class __$$ScheduleImplCopyWithImpl<$Res>
           ? _value.ownerId
           : ownerId // ignore: cast_nullable_to_non_nullable
               as String,
+      ownerDisplayName: null == ownerDisplayName
+          ? _value.ownerDisplayName
+          : ownerDisplayName // ignore: cast_nullable_to_non_nullable
+              as String,
+      ownerPhotoUrl: freezed == ownerPhotoUrl
+          ? _value.ownerPhotoUrl
+          : ownerPhotoUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
       sharedLists: null == sharedLists
           ? _value._sharedLists
           : sharedLists // ignore: cast_nullable_to_non_nullable
@@ -213,6 +257,14 @@ class __$$ScheduleImplCopyWithImpl<$Res>
           ? _value._visibleTo
           : visibleTo // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      reactionCount: null == reactionCount
+          ? _value.reactionCount
+          : reactionCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      commentCount: null == commentCount
+          ? _value.commentCount
+          : commentCount // ignore: cast_nullable_to_non_nullable
+              as int,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -236,8 +288,12 @@ class _$ScheduleImpl implements _Schedule {
       required this.startDateTime,
       required this.endDateTime,
       required this.ownerId,
+      required this.ownerDisplayName,
+      this.ownerPhotoUrl,
       required final List<String> sharedLists,
       required final List<String> visibleTo,
+      this.reactionCount = 0,
+      this.commentCount = 0,
       required this.createdAt,
       required this.updatedAt})
       : _sharedLists = sharedLists,
@@ -260,6 +316,10 @@ class _$ScheduleImpl implements _Schedule {
   final DateTime endDateTime;
   @override
   final String ownerId;
+  @override
+  final String ownerDisplayName;
+  @override
+  final String? ownerPhotoUrl;
   final List<String> _sharedLists;
   @override
   List<String> get sharedLists {
@@ -277,13 +337,19 @@ class _$ScheduleImpl implements _Schedule {
   }
 
   @override
+  @JsonKey()
+  final int reactionCount;
+  @override
+  @JsonKey()
+  final int commentCount;
+  @override
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
 
   @override
   String toString() {
-    return 'Schedule(id: $id, title: $title, description: $description, location: $location, startDateTime: $startDateTime, endDateTime: $endDateTime, ownerId: $ownerId, sharedLists: $sharedLists, visibleTo: $visibleTo, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Schedule(id: $id, title: $title, description: $description, location: $location, startDateTime: $startDateTime, endDateTime: $endDateTime, ownerId: $ownerId, ownerDisplayName: $ownerDisplayName, ownerPhotoUrl: $ownerPhotoUrl, sharedLists: $sharedLists, visibleTo: $visibleTo, reactionCount: $reactionCount, commentCount: $commentCount, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -302,10 +368,18 @@ class _$ScheduleImpl implements _Schedule {
             (identical(other.endDateTime, endDateTime) ||
                 other.endDateTime == endDateTime) &&
             (identical(other.ownerId, ownerId) || other.ownerId == ownerId) &&
+            (identical(other.ownerDisplayName, ownerDisplayName) ||
+                other.ownerDisplayName == ownerDisplayName) &&
+            (identical(other.ownerPhotoUrl, ownerPhotoUrl) ||
+                other.ownerPhotoUrl == ownerPhotoUrl) &&
             const DeepCollectionEquality()
                 .equals(other._sharedLists, _sharedLists) &&
             const DeepCollectionEquality()
                 .equals(other._visibleTo, _visibleTo) &&
+            (identical(other.reactionCount, reactionCount) ||
+                other.reactionCount == reactionCount) &&
+            (identical(other.commentCount, commentCount) ||
+                other.commentCount == commentCount) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -323,8 +397,12 @@ class _$ScheduleImpl implements _Schedule {
       startDateTime,
       endDateTime,
       ownerId,
+      ownerDisplayName,
+      ownerPhotoUrl,
       const DeepCollectionEquality().hash(_sharedLists),
       const DeepCollectionEquality().hash(_visibleTo),
+      reactionCount,
+      commentCount,
       createdAt,
       updatedAt);
 
@@ -351,8 +429,12 @@ abstract class _Schedule implements Schedule {
       required final DateTime startDateTime,
       required final DateTime endDateTime,
       required final String ownerId,
+      required final String ownerDisplayName,
+      final String? ownerPhotoUrl,
       required final List<String> sharedLists,
       required final List<String> visibleTo,
+      final int reactionCount,
+      final int commentCount,
       required final DateTime createdAt,
       required final DateTime updatedAt}) = _$ScheduleImpl;
 
@@ -374,9 +456,17 @@ abstract class _Schedule implements Schedule {
   @override
   String get ownerId;
   @override
+  String get ownerDisplayName;
+  @override
+  String? get ownerPhotoUrl;
+  @override
   List<String> get sharedLists;
   @override
   List<String> get visibleTo;
+  @override
+  int get reactionCount;
+  @override
+  int get commentCount;
   @override
   DateTime get createdAt;
   @override

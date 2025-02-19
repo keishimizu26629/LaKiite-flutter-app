@@ -55,4 +55,11 @@ abstract class IScheduleRepository {
   ///
   /// 返値: ユーザーに関連するスケジュールリストの変更を通知するStream
   Stream<List<Schedule>> watchUserSchedules(String userId);
+
+  /// 特定のスケジュールを監視する
+  ///
+  /// [scheduleId] 監視対象のスケジュールID
+  ///
+  /// 返値: スケジュールの変更を通知するStream
+  Stream<Schedule?> watchSchedule(String scheduleId);
 }
