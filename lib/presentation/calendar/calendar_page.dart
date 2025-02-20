@@ -21,6 +21,7 @@ class CalendarPage extends HookConsumerWidget {
     final scheduleState = ref.watch(scheduleNotifierProvider);
     final initialized = useState(false);
     final userId = useState<String?>(null);
+    final hideOwnSchedules = useState(false);
 
     useEffect(() {
       if (!authState.hasValue) return null;
@@ -60,7 +61,6 @@ class CalendarPage extends HookConsumerWidget {
 
         return DefaultTabController(
           length: 2,
-          initialIndex: 1, // タイムラインを最初に表示
           child: Scaffold(
             appBar: AppBar(
               title: const Text(
@@ -118,7 +118,13 @@ class CalendarPage extends HookConsumerWidget {
                       scheduleState.when(
                         data: (scheduleState) => scheduleState.maybeMap(
                           loaded: (loaded) {
-                            if (loaded.schedules.isEmpty) {
+                            final filteredSchedules = hideOwnSchedules.value
+                                ? loaded.schedules
+                                    .where((s) => s.ownerId != state.user!.id)
+                                    .toList()
+                                : loaded.schedules;
+
+                            if (filteredSchedules.isEmpty) {
                               return Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -140,11 +146,82 @@ class CalendarPage extends HookConsumerWidget {
                                 ),
                               );
                             }
-                            return _buildTimelineList(
-                              context,
-                              loaded.schedules,
-                              state.user!,
-                              ref,
+                            return ListView(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .scaffoldBackgroundColor,
+                                    border: Border(
+                                      bottom: BorderSide(
+                                        color: Colors.grey[300]!,
+                                        width: 1,
+                                      ),
+                                    ),
+                                  ),
+                                  padding: const EdgeInsets.only(
+                                      top: 8.0, left: 16.0, right: 16.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Text(
+                                        '自分の予定を非表示',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Switch(
+                                        value: hideOwnSchedules.value,
+                                        onChanged: (value) {
+                                          hideOwnSchedules.value = value;
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                ...filteredSchedules
+                                    .map((schedule) => Card(
+                                          margin: const EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 6),
+                                          child: InkWell(
+                                            onTap: () {
+                                              Navigator.of(context).push(
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      ScheduleDetailPage(
+                                                          schedule: schedule),
+                                                ),
+                                              );
+                                            },
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(16),
+                                              decoration: BoxDecoration(
+                                                border: schedule.ownerId ==
+                                                        state.user!.id
+                                                    ? Border.all(
+                                                        color: Theme.of(context)
+                                                            .primaryColor
+                                                            .withOpacity(0.3),
+                                                        width: 1,
+                                                      )
+                                                    : null,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                color: schedule.ownerId ==
+                                                        state.user!.id
+                                                    ? Theme.of(context)
+                                                        .primaryColor
+                                                        .withOpacity(0.05)
+                                                    : null,
+                                              ),
+                                              child: _buildScheduleItem(context,
+                                                  schedule, state.user!, ref),
+                                            ),
+                                          ),
+                                        ))
+                                    .toList(),
+                              ],
                             );
                           },
                           orElse: () => const Center(
@@ -452,6 +529,180 @@ class CalendarPage extends HookConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildScheduleItem(
+    BuildContext context,
+    Schedule schedule,
+    UserModel currentUser,
+    WidgetRef ref,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                schedule.title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            if (schedule.ownerId == currentUser.id)
+              IconButton(
+                icon: Icon(
+                  Icons.edit,
+                  color: Theme.of(context).primaryColor,
+                ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => EditSchedulePage(
+                        schedule: schedule,
+                      ),
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        FutureBuilder<UserModel?>(
+          future: ref.read(userRepositoryProvider).getUser(schedule.ownerId),
+          builder: (context, snapshot) {
+            final ownerName =
+                snapshot.hasData ? snapshot.data!.displayName : '読み込み中...';
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (schedule.description.isNotEmpty) ...[
+                  Text(
+                    schedule.description,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 16,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${DateFormat('yyyy/MM/dd HH:mm').format(schedule.startDateTime)} - '
+                        '${DateFormat('yyyy/MM/dd HH:mm').format(schedule.endDateTime)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (schedule.location != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          schedule.location!,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.person,
+                      size: 16,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '作成者: ${schedule.ownerId == currentUser.id ? '自分' : ownerName}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: 24),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final interactionState = ref.watch(
+                      scheduleInteractionNotifierProvider(schedule.id),
+                    );
+                    if (interactionState.isLoading) {
+                      return const SizedBox();
+                    }
+                    if (interactionState.error != null) {
+                      return const SizedBox();
+                    }
+                    final reactionCounts = interactionState.reactionCounts;
+                    final totalReactions = reactionCounts.values
+                        .fold(0, (sum, count) => sum + count);
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Icon(
+                          Icons.people,
+                          size: 16,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$totalReactions',
+                          style: TextStyle(
+                            color: Theme.of(context).primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Icon(
+                          Icons.comment,
+                          size: 16,
+                          color: Colors.blue[400],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${interactionState.commentCount}',
+                          style: TextStyle(
+                            color: Colors.blue[400],
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }

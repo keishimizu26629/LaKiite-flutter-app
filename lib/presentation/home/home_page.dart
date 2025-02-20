@@ -190,7 +190,7 @@ class _HomePageState extends ConsumerState<HomePage>
                               ),
                             ),
                             subtitle: Text(
-                              friend.shortBio ?? '一言コメントはありません',
+                              friend.shortBio ?? '',
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 14,

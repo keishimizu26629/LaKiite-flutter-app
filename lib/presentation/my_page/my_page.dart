@@ -8,6 +8,9 @@ import 'my_page_view_model.dart';
 import '../calendar/schedule_detail_page.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entity/user.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import '../theme/app_theme.dart';
 
 class MyPage extends ConsumerStatefulWidget {
   const MyPage({super.key});
@@ -170,6 +173,39 @@ class _MyPageState extends ConsumerState<MyPage> {
                           ],
                         ),
                       ],
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Icon(
+                            Icons.people,
+                            size: 16,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${schedule.reactionCount}',
+                            style: TextStyle(
+                              color: Theme.of(context).primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Icon(
+                            Icons.comment,
+                            size: 16,
+                            color: Colors.blue[400],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${schedule.commentCount}',
+                            style: TextStyle(
+                              color: Colors.blue[400],
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -301,13 +337,40 @@ class _MyPageState extends ConsumerState<MyPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  '@${user.searchId}',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Theme.of(context)
-                                        .primaryColor
-                                        .withOpacity(0.8),
+                                GestureDetector(
+                                  onTap: () async {
+                                    await Clipboard.setData(
+                                      ClipboardData(
+                                          text: user.searchId.toString()),
+                                    );
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text('検索IDをコピーしました'),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        '@${user.searchId}',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Theme.of(context)
+                                              .primaryColor
+                                              .withOpacity(0.8),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Icon(
+                                        Icons.copy,
+                                        size: 14,
+                                        color: AppTheme.primaryColor,
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 const SizedBox(height: 12),
@@ -384,7 +447,7 @@ class _MyPageState extends ConsumerState<MyPage> {
                     ),
                   ),
                   if (user.publicProfile.shortBio != null &&
-                      user.publicProfile.shortBio!.isNotEmpty) ...[
+                      user.publicProfile.shortBio!.trim().isNotEmpty) ...[
                     const SizedBox(height: 16),
                     Card(
                       elevation: 1,
