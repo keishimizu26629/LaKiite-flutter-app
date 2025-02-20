@@ -47,12 +47,11 @@ class ScheduleDetailPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final commentController = useTextEditingController();
     final authState = ref.watch(authNotifierProvider);
     final interactions = ref.watch(
       scheduleInteractionNotifierProvider(schedule.id),
     );
-    final focusNode = useFocusNode();
+    useFocusNode();
 
     return Scaffold(
       appBar: AppBar(
@@ -138,6 +137,21 @@ class ScheduleDetailPage extends HookConsumerWidget {
           ),
         ],
       ),
+      floatingActionButton: authState.when(
+        data: (state) {
+          if (state.status != AuthStatus.authenticated || state.user == null) {
+            return null;
+          }
+          return FloatingActionButton(
+            onPressed: () {
+              _showCommentDialog(context, ref, state.user!.id);
+            },
+            child: const Icon(Icons.comment),
+          );
+        },
+        loading: () => null,
+        error: (_, __) => null,
+      ),
       bottomNavigationBar: authState.when(
         data: (state) {
           if (state.status != AuthStatus.authenticated || state.user == null) {
@@ -206,53 +220,6 @@ class ScheduleDetailPage extends HookConsumerWidget {
                         ),
                       ],
                     ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: TextField(
-                          controller: commentController,
-                          focusNode: focusNode,
-                          decoration: InputDecoration(
-                            hintText: 'コメントを追加...',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                          ),
-                          maxLines: null,
-                          textInputAction: TextInputAction.send,
-                          onSubmitted: (text) {
-                            if (text.isNotEmpty) {
-                              ref
-                                  .read(scheduleInteractionNotifierProvider(
-                                          schedule.id)
-                                      .notifier)
-                                  .addComment(state.user!.id, text);
-                              commentController.clear();
-                              focusNode.requestFocus();
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.send),
-                      onPressed: () {
-                        if (commentController.text.isNotEmpty) {
-                          ref
-                              .read(scheduleInteractionNotifierProvider(
-                                      schedule.id)
-                                  .notifier)
-                              .addComment(
-                                  state.user!.id, commentController.text);
-                          commentController.clear();
-                          focusNode.requestFocus();
-                        }
-                      },
-                    ),
                   ],
                 ),
               ),
@@ -262,6 +229,81 @@ class ScheduleDetailPage extends HookConsumerWidget {
         loading: () => const SizedBox.shrink(),
         error: (_, __) => const SizedBox.shrink(),
       ),
+    );
+  }
+
+  void _showCommentDialog(BuildContext context, WidgetRef ref, String userId) {
+    final commentController = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'コメントを追加',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: commentController,
+                  decoration: InputDecoration(
+                    hintText: 'コメントを入力...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.all(16),
+                  ),
+                  maxLines: 3,
+                  autofocus: true,
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (commentController.text.isNotEmpty) {
+                        ref
+                            .read(
+                                scheduleInteractionNotifierProvider(schedule.id)
+                                    .notifier)
+                            .addComment(userId, commentController.text);
+                        Navigator.pop(context);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('送信'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

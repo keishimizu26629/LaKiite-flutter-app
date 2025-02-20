@@ -22,19 +22,10 @@ final timelineSchedulesProvider = StreamProvider<List<Schedule>>((ref) {
   return scheduleRepository.watchUserSchedules(currentUserId);
 });
 
-// マイページの予定一覧（タイムラインから自分の予定のみをフィルタリング）
+// マイページの予定一覧
 final userSchedulesStreamProvider = StreamProvider.family<List<Schedule>, String>((ref, userId) {
-  final timelineSchedules = ref.watch(timelineSchedulesProvider);
-
-  return timelineSchedules.when(
-    data: (schedules) {
-      // 自分が作成した予定のみをフィルタリング
-      final filteredSchedules = schedules.where((schedule) => schedule.ownerId == userId).toList();
-      return Stream.value(filteredSchedules);
-    },
-    loading: () => Stream.value([]),
-    error: (_, __) => Stream.value([]),
-  );
+  final scheduleRepository = ref.watch(scheduleRepositoryProvider);
+  return scheduleRepository.watchUserSchedules(userId);
 });
 
 // キャッシュされたユーザー情報を提供するプロバイダー
