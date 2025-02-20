@@ -11,6 +11,7 @@ import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart'
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/presentation/calendar/widgets/calendar_page_view.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
+import 'package:lakiite/presentation/widgets/ad_banner_widget.dart';
 
 class CalendarPage extends HookConsumerWidget {
   const CalendarPage({super.key});
@@ -72,181 +73,249 @@ class CalendarPage extends HookConsumerWidget {
               ),
               centerTitle: true,
             ),
-            body: Column(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: TabBar(
-                    labelColor: Theme.of(context).primaryColor,
-                    unselectedLabelColor: Colors.grey[600],
-                    indicatorColor: Theme.of(context).primaryColor,
-                    indicatorWeight: 3,
-                    labelStyle: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+            body: SafeArea(
+              child: Column(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontSize: 16,
-                    ),
-                    tabs: const [
-                      Tab(text: 'カレンダー'),
-                      Tab(text: 'タイムライン'),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      // カレンダー表示タブ
-                      scheduleState.when(
-                        data: (_) => const CalendarPageView(),
-                        error: (error, _) =>
-                            _buildErrorWidget(context, ref, state, error),
-                        loading: () =>
-                            const Center(child: CircularProgressIndicator()),
+                    child: TabBar(
+                      labelColor: Theme.of(context).primaryColor,
+                      unselectedLabelColor: Colors.grey[600],
+                      indicatorColor: Theme.of(context).primaryColor,
+                      indicatorWeight: 3,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
-                      // タイムライン表示タブ
-                      scheduleState.when(
-                        data: (scheduleState) => scheduleState.maybeMap(
-                          loaded: (loaded) {
-                            final filteredSchedules = hideOwnSchedules.value
-                                ? loaded.schedules
-                                    .where((s) => s.ownerId != state.user!.id)
-                                    .toList()
-                                : loaded.schedules;
-
-                            if (filteredSchedules.isEmpty) {
-                              return Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                      unselectedLabelStyle: const TextStyle(
+                        fontSize: 16,
+                      ),
+                      tabs: const [
+                        Tab(text: 'カレンダー'),
+                        Tab(text: 'タイムライン'),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: TabBarView(
+                            children: [
+                              // カレンダー表示タブ
+                              scheduleState.when(
+                                data: (_) => Column(
                                   children: [
-                                    Icon(
-                                      Icons.event_busy,
-                                      size: 64,
-                                      color: Colors.grey[400],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      '予定がありません',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
+                                    const Expanded(child: CalendarPageView()),
                                   ],
                                 ),
-                              );
-                            }
-                            return ListView(
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .scaffoldBackgroundColor,
-                                    border: Border(
-                                      bottom: BorderSide(
-                                        color: Colors.grey[300]!,
-                                        width: 1,
-                                      ),
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.only(
-                                      top: 8.0, left: 16.0, right: 16.0),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Text(
-                                        '自分の予定を非表示',
-                                        style: TextStyle(fontSize: 14),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Switch(
-                                        value: hideOwnSchedules.value,
-                                        onChanged: (value) {
-                                          hideOwnSchedules.value = value;
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                ...filteredSchedules
-                                    .map((schedule) => Card(
-                                          margin: const EdgeInsets.symmetric(
-                                              horizontal: 16, vertical: 6),
-                                          child: InkWell(
-                                            onTap: () {
-                                              Navigator.of(context).push(
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      ScheduleDetailPage(
-                                                          schedule: schedule),
-                                                ),
-                                              );
-                                            },
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            child: Container(
-                                              padding: const EdgeInsets.all(16),
-                                              decoration: BoxDecoration(
-                                                border: schedule.ownerId ==
-                                                        state.user!.id
-                                                    ? Border.all(
-                                                        color: Theme.of(context)
-                                                            .primaryColor
-                                                            .withOpacity(0.3),
-                                                        width: 1,
-                                                      )
-                                                    : null,
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                color: schedule.ownerId ==
-                                                        state.user!.id
-                                                    ? Theme.of(context)
-                                                        .primaryColor
-                                                        .withOpacity(0.05)
-                                                    : null,
+                                error: (error, _) => _buildErrorWidget(
+                                    context, ref, state, error),
+                                loading: () => const Center(
+                                    child: CircularProgressIndicator()),
+                              ),
+                              // タイムライン表示タブ
+                              scheduleState.when(
+                                data: (scheduleState) => scheduleState.maybeMap(
+                                  loaded: (loaded) {
+                                    final filteredSchedules = hideOwnSchedules
+                                            .value
+                                        ? loaded.schedules
+                                            .where((s) =>
+                                                s.ownerId != state.user!.id)
+                                            .toList()
+                                        : loaded.schedules;
+
+                                    return Column(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  const Text(
+                                                    '自分の予定を非表示',
+                                                    style:
+                                                        TextStyle(fontSize: 14),
+                                                  ),
+                                                  Switch(
+                                                    value:
+                                                        hideOwnSchedules.value,
+                                                    onChanged: (value) {
+                                                      hideOwnSchedules.value =
+                                                          value;
+                                                    },
+                                                  ),
+                                                ],
                                               ),
-                                              child: _buildScheduleItem(context,
-                                                  schedule, state.user!, ref),
+                                              ElevatedButton.icon(
+                                                onPressed: () {
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          const CreateSchedulePage(),
+                                                    ),
+                                                  );
+                                                },
+                                                icon: const Icon(Icons.add,
+                                                    size: 20),
+                                                label: const Text(
+                                                  '予定を作成',
+                                                  style:
+                                                      TextStyle(fontSize: 14),
+                                                ),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      Theme.of(context)
+                                                          .primaryColor,
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 8,
+                                                  ),
+                                                  minimumSize: Size.zero,
+                                                  tapTargetSize:
+                                                      MaterialTapTargetSize
+                                                          .shrinkWrap,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (filteredSchedules.isEmpty)
+                                          Expanded(
+                                            child: Center(
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.event_busy,
+                                                    size: 64,
+                                                    color: Colors.grey[400],
+                                                  ),
+                                                  const SizedBox(height: 16),
+                                                  Text(
+                                                    '予定がありません',
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      color: Colors.grey[600],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          )
+                                        else
+                                          Expanded(
+                                            child: ListView.builder(
+                                              padding: const EdgeInsets.only(
+                                                  top: 4, bottom: 4),
+                                              itemCount:
+                                                  filteredSchedules.length,
+                                              itemBuilder: (context, index) {
+                                                final schedule =
+                                                    filteredSchedules[index];
+                                                return Card(
+                                                  margin: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 6),
+                                                  child: InkWell(
+                                                    onTap: () {
+                                                      Navigator.of(context)
+                                                          .push(
+                                                        MaterialPageRoute(
+                                                          builder: (context) =>
+                                                              ScheduleDetailPage(
+                                                                  schedule:
+                                                                      schedule),
+                                                        ),
+                                                      );
+                                                    },
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    child: Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              16),
+                                                      decoration: BoxDecoration(
+                                                        border: schedule
+                                                                    .ownerId ==
+                                                                state.user!.id
+                                                            ? Border.all(
+                                                                color: Theme.of(
+                                                                        context)
+                                                                    .primaryColor
+                                                                    .withOpacity(
+                                                                        0.3),
+                                                                width: 1,
+                                                              )
+                                                            : null,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(8),
+                                                        color: schedule
+                                                                    .ownerId ==
+                                                                state.user!.id
+                                                            ? Theme.of(context)
+                                                                .primaryColor
+                                                                .withOpacity(
+                                                                    0.05)
+                                                            : null,
+                                                      ),
+                                                      child: _buildScheduleItem(
+                                                          context,
+                                                          schedule,
+                                                          state.user!,
+                                                          ref),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
                                             ),
                                           ),
-                                        ))
-                                    .toList(),
-                              ],
-                            );
-                          },
-                          orElse: () => const Center(
-                            child: CircularProgressIndicator(),
+                                      ],
+                                    );
+                                  },
+                                  orElse: () => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                ),
+                                error: (error, _) => _buildErrorWidget(
+                                    context, ref, state, error),
+                                loading: () => const Center(
+                                    child: CircularProgressIndicator()),
+                              ),
+                            ],
                           ),
                         ),
-                        error: (error, _) =>
-                            _buildErrorWidget(context, ref, state, error),
-                        loading: () =>
-                            const Center(child: CircularProgressIndicator()),
-                      ),
-                    ],
+                        Container(
+                          height: 50,
+                          child: const AdBannerWidget(),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-            floatingActionButton: FloatingActionButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const CreateSchedulePage(),
-                  ),
-                );
-              },
-              child: const Icon(Icons.add),
+                ],
+              ),
             ),
           ),
         );

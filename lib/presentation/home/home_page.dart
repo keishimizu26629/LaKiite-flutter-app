@@ -7,6 +7,7 @@ import '../presentation_provider.dart';
 import '../friend/friend_search_page.dart';
 import '../notification/notification_list_page.dart';
 import '../widgets/notification_badge.dart';
+import '../widgets/ad_banner_widget.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -99,7 +100,11 @@ class _HomePageState extends ConsumerState<HomePage>
           ),
         ],
       ),
-      floatingActionButton: _buildFloatingActionButton(context),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 58),
+        child: _buildFloatingActionButton(context),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: Column(
         children: [
           Container(
@@ -162,16 +167,21 @@ class _HomePageState extends ConsumerState<HomePage>
                       );
                     }
                     return ListView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        top: 8,
+                        bottom: 58,
+                      ),
                       itemCount: friends.length,
                       itemBuilder: (context, index) {
                         final friend = friends[index];
                         return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
+                          margin: const EdgeInsets.only(bottom: 4),
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
-                              vertical: 8,
+                              vertical: 4,
                             ),
                             leading: CircleAvatar(
                               radius: 24,
@@ -234,7 +244,12 @@ class _HomePageState extends ConsumerState<HomePage>
                       );
                     }
                     return ListView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        top: 8,
+                        bottom: 58,
+                      ),
                       itemCount: lists.length,
                       itemBuilder: (context, index) {
                         final list = lists[index];
@@ -247,11 +262,11 @@ class _HomePageState extends ConsumerState<HomePage>
                             : 0;
 
                         return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
+                          margin: const EdgeInsets.only(bottom: 4),
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
-                              vertical: 8,
+                              vertical: 4,
                             ),
                             leading: CircleAvatar(
                               radius: 24,
@@ -298,6 +313,10 @@ class _HomePageState extends ConsumerState<HomePage>
                 ),
               ],
             ),
+          ),
+          Container(
+            height: 50,
+            child: const AdBannerWidget(),
           ),
         ],
       ),
