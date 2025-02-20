@@ -5,6 +5,7 @@ import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/calendar/widgets/daily_schedule_view.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
+import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
 
 class CalendarPageView extends HookConsumerWidget {
   const CalendarPageView({super.key});
@@ -17,39 +18,72 @@ class CalendarPageView extends HookConsumerWidget {
         _getMonthName(_getVisibleDateTime(currentIndex.value).month);
     final visibleYear = _getVisibleDateTime(currentIndex.value).year.toString();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-          child: Text(
-            "$visibleYear年$visibleMonth",
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-        Expanded(
-          child: PageView.builder(
-            controller: PageController(initialPage: 1200),
-            itemBuilder: (context, index) {
-              final dateTime = _getVisibleDateTime(index);
-              return CalendarPage(
-                visiblePageDate: dateTime,
-                schedules: scheduleState.when(
-                  data: (state) => state.maybeMap(
-                    loaded: (loaded) => loaded.schedules,
-                    orElse: () => <Schedule>[],
-                  ),
-                  loading: () => <Schedule>[],
-                  error: (_, __) => <Schedule>[],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "$visibleYear年$visibleMonth",
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-              );
-            },
-            onPageChanged: (index) {
-              currentIndex.value = index;
-            },
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const CreateSchedulePage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.add, size: 20),
+                  label: const Text(
+                    '予定を作成',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+          Expanded(
+            child: PageView.builder(
+              controller: PageController(initialPage: 1200),
+              itemBuilder: (context, index) {
+                final dateTime = _getVisibleDateTime(index);
+                return CalendarPage(
+                  visiblePageDate: dateTime,
+                  schedules: scheduleState.when(
+                    data: (state) => state.maybeMap(
+                      loaded: (loaded) => loaded.schedules,
+                      orElse: () => <Schedule>[],
+                    ),
+                    loading: () => <Schedule>[],
+                    error: (_, __) => <Schedule>[],
+                  ),
+                );
+              },
+              onPageChanged: (index) {
+                currentIndex.value = index;
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -192,12 +226,13 @@ class DaysOfTheWeek extends StatelessWidget {
       children: daysOfTheWeek.map((day) {
         return Expanded(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: 4),
             child: Text(
               day,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
+                fontSize: 12,
                 color: day == '日' ? AppTheme.weekendColor : null,
               ),
             ),
@@ -288,10 +323,19 @@ class DateCell extends StatelessWidget {
                   right: BorderSide(
                       color: Theme.of(context).dividerColor, width: 1),
                 ),
-                color: isToday ? AppTheme.backgroundColor : null,
+                color: isToday ? Colors.blue.shade50 : null,
+                boxShadow: isToday
+                    ? [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 2,
+                        ),
+                      ]
+                    : null,
                 borderRadius: isToday ? BorderRadius.circular(4) : null,
               ),
-              padding: const EdgeInsets.all(4),
+              padding: const EdgeInsets.all(2),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -300,16 +344,17 @@ class DateCell extends StatelessWidget {
                     style: TextStyle(
                       color: isWeekend ? AppTheme.weekendColor : null,
                       fontWeight: isToday ? FontWeight.bold : null,
+                      fontSize: 12,
                     ),
                   ),
                   if (schedules.isNotEmpty) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 1),
                     ...schedules.take(2).map((schedule) {
                       final isOwner = schedule.ownerId == currentUserId;
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 1),
+                        margin: const EdgeInsets.only(bottom: 0.5),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 2, vertical: 1),
+                            horizontal: 1, vertical: 0.5),
                         decoration: BoxDecoration(
                           color: isOwner
                               ? Colors.grey.withOpacity(0.1)
@@ -320,13 +365,13 @@ class DateCell extends StatelessWidget {
                                 : Theme.of(context)
                                     .primaryColor
                                     .withOpacity(0.8),
-                            width: 1,
+                            width: 0.5,
                           ),
                           borderRadius: BorderRadius.circular(2),
                         ),
                         child: Text(
                           schedule.title,
-                          style: const TextStyle(fontSize: 9),
+                          style: const TextStyle(fontSize: 8),
                           overflow: TextOverflow.ellipsis,
                         ),
                       );
@@ -334,7 +379,7 @@ class DateCell extends StatelessWidget {
                     if (schedules.length > 2)
                       Text(
                         '+${schedules.length - 2}',
-                        style: const TextStyle(fontSize: 9, color: Colors.grey),
+                        style: const TextStyle(fontSize: 8, color: Colors.grey),
                       ),
                   ],
                 ],

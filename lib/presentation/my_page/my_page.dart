@@ -11,6 +11,7 @@ import '../../domain/entity/user.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
+import '../widgets/ad_banner_widget.dart';
 
 class MyPage extends ConsumerStatefulWidget {
   const MyPage({super.key});
@@ -246,293 +247,324 @@ class _MyPageState extends ConsumerState<MyPage> {
           ),
         ],
       ),
-      body: userState.when(
-        data: (user) {
-          if (user == null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'ユーザー情報が見つかりません',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: userState.when(
+                  data: (user) {
+                    if (user == null) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'ユーザー情報が見つかりません',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              await ref
-                  .read(myPageViewModelProvider.notifier)
-                  .loadUser(user.id);
-            },
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Card(
-                    elevation: 1,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            radius: 40,
-                            backgroundColor:
-                                Theme.of(context).primaryColor.withOpacity(0.1),
-                            child: Builder(
-                              builder: (context) {
-                                final selectedImage =
-                                    ref.watch(selectedImageProvider);
-                                if (selectedImage != null) {
-                                  return ClipOval(
-                                    child: Image.file(
-                                      selectedImage,
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  );
-                                }
-                                return user.iconUrl != null
-                                    ? ClipOval(
-                                        child: Image.network(
-                                          user.iconUrl!,
-                                          width: 80,
-                                          height: 80,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      )
-                                    : Icon(
-                                        Icons.person,
-                                        size: 40,
-                                        color: Theme.of(context).primaryColor,
-                                      );
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  user.displayName,
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                GestureDetector(
-                                  onTap: () async {
-                                    await Clipboard.setData(
-                                      ClipboardData(
-                                          text: user.searchId.toString()),
-                                    );
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text('検索IDをコピーしました'),
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        '@${user.searchId}',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: Theme.of(context)
-                                              .primaryColor
-                                              .withOpacity(0.8),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Icon(
-                                        Icons.copy,
-                                        size: 14,
-                                        color: AppTheme.primaryColor,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                OutlinedButton.icon(
-                                  onPressed: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) => _ProfileEditDialog(
-                                        user: user,
-                                        onImageEdit: () async {
-                                          final picker = ImagePicker();
-                                          final pickedFile =
-                                              await picker.pickImage(
-                                            source: ImageSource.gallery,
-                                          );
-                                          if (pickedFile != null) {
-                                            ref
-                                                .read(selectedImageProvider
-                                                    .notifier)
-                                                .state = File(pickedFile.path);
-                                            try {
-                                              await ref
-                                                  .read(myPageViewModelProvider
-                                                      .notifier)
-                                                  .updateProfile(
-                                                    name: user.name,
-                                                    displayName:
-                                                        user.displayName,
-                                                    searchIdStr: user.searchId
-                                                        .toString(),
-                                                    shortBio: user
-                                                        .publicProfile.shortBio,
-                                                    imageFile:
-                                                        File(pickedFile.path),
-                                                  );
-                                              if (mounted) {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  const SnackBar(
-                                                      content: Text(
-                                                          'プロフィール画像を更新しました')),
-                                                );
-                                              }
-                                            } catch (e) {
-                                              if (mounted) {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                      content: Text(
-                                                          'エラー: ${e.toString()}')),
-                                                );
-                                              }
-                                            }
-                                          }
-                                        },
-                                      ),
-                                    );
-                                  },
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor:
-                                        Theme.of(context).primaryColor,
-                                    side: BorderSide(
-                                      color: Theme.of(context).primaryColor,
-                                    ),
-                                  ),
-                                  icon: const Icon(Icons.edit),
-                                  label: const Text('プロフィールを編集'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (user.publicProfile.shortBio != null &&
-                      user.publicProfile.shortBio!.trim().isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Card(
-                      elevation: 1,
-                      child: Padding(
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                        await ref
+                            .read(myPageViewModelProvider.notifier)
+                            .loadUser(user.id);
+                      },
+                      child: SingleChildScrollView(
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Card(
+                              elevation: 1,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 40,
+                                      backgroundColor: Theme.of(context)
+                                          .primaryColor
+                                          .withOpacity(0.1),
+                                      child: Builder(
+                                        builder: (context) {
+                                          final selectedImage =
+                                              ref.watch(selectedImageProvider);
+                                          if (selectedImage != null) {
+                                            return ClipOval(
+                                              child: Image.file(
+                                                selectedImage,
+                                                width: 80,
+                                                height: 80,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            );
+                                          }
+                                          return user.iconUrl != null
+                                              ? ClipOval(
+                                                  child: Image.network(
+                                                    user.iconUrl!,
+                                                    width: 80,
+                                                    height: 80,
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                                )
+                                              : Icon(
+                                                  Icons.person,
+                                                  size: 40,
+                                                  color: Theme.of(context)
+                                                      .primaryColor,
+                                                );
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            user.displayName,
+                                            style: const TextStyle(
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          GestureDetector(
+                                            onTap: () async {
+                                              await Clipboard.setData(
+                                                ClipboardData(
+                                                    text: user.searchId
+                                                        .toString()),
+                                              );
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                      content:
+                                                          Text('検索IDをコピーしました')),
+                                                );
+                                              }
+                                            },
+                                            child: Row(
+                                              children: [
+                                                Text(
+                                                  '@${user.searchId}',
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    color: Theme.of(context)
+                                                        .primaryColor
+                                                        .withOpacity(0.8),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Icon(
+                                                  Icons.copy,
+                                                  size: 14,
+                                                  color: AppTheme.primaryColor,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          OutlinedButton.icon(
+                                            onPressed: () {
+                                              showDialog(
+                                                context: context,
+                                                builder: (context) =>
+                                                    _ProfileEditDialog(
+                                                  user: user,
+                                                  onImageEdit: () async {
+                                                    final picker =
+                                                        ImagePicker();
+                                                    final pickedFile =
+                                                        await picker.pickImage(
+                                                      source:
+                                                          ImageSource.gallery,
+                                                    );
+                                                    if (pickedFile != null) {
+                                                      ref
+                                                              .read(
+                                                                  selectedImageProvider
+                                                                      .notifier)
+                                                              .state =
+                                                          File(pickedFile.path);
+                                                      try {
+                                                        await ref
+                                                            .read(
+                                                                myPageViewModelProvider
+                                                                    .notifier)
+                                                            .updateProfile(
+                                                              name: user.name,
+                                                              displayName: user
+                                                                  .displayName,
+                                                              searchIdStr: user
+                                                                  .searchId
+                                                                  .toString(),
+                                                              shortBio: user
+                                                                  .publicProfile
+                                                                  .shortBio,
+                                                              imageFile: File(
+                                                                  pickedFile
+                                                                      .path),
+                                                            );
+                                                        if (mounted) {
+                                                          ScaffoldMessenger.of(
+                                                                  context)
+                                                              .showSnackBar(
+                                                            const SnackBar(
+                                                                content: Text(
+                                                                    'プロフィール画像を更新しました')),
+                                                          );
+                                                        }
+                                                      } catch (e) {
+                                                        if (mounted) {
+                                                          ScaffoldMessenger.of(
+                                                                  context)
+                                                              .showSnackBar(
+                                                            SnackBar(
+                                                                content: Text(
+                                                                    'エラー: ${e.toString()}')),
+                                                          );
+                                                        }
+                                                      }
+                                                    }
+                                                  },
+                                                ),
+                                              );
+                                            },
+                                            style: OutlinedButton.styleFrom(
+                                              foregroundColor: Theme.of(context)
+                                                  .primaryColor,
+                                              side: BorderSide(
+                                                color: Theme.of(context)
+                                                    .primaryColor,
+                                              ),
+                                            ),
+                                            icon: const Icon(Icons.edit),
+                                            label: const Text('プロフィールを編集'),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
                             Row(
                               children: [
                                 Icon(
-                                  Icons.format_quote,
-                                  size: 20,
+                                  Icons.description_outlined,
+                                  size: 24,
                                   color: Theme.of(context).primaryColor,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
                                   '一言コメント',
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: Theme.of(context).primaryColor,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              user.publicProfile.shortBio!,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[800],
+                            const SizedBox(height: 16),
+                            Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Theme.of(context)
+                                        .primaryColor
+                                        .withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: Colors.white,
+                                ),
+                                child: Text(
+                                  user.publicProfile.shortBio?.trim() ?? '',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[800],
+                                  ),
+                                ),
                               ),
                             ),
+                            const SizedBox(height: 24),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.event,
+                                  size: 24,
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '予定一覧',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildScheduleList(user.id),
                           ],
                         ),
                       ),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.event,
-                        size: 24,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '予定一覧',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).primaryColor,
+                    );
+                  },
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) => Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red[300],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        Text(
+                          'エラーが発生しました',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  _buildScheduleList(user.id),
-                ],
-              ),
-            ),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red[300],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'エラーが発生しました',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
                 ),
               ),
-            ],
-          ),
+            ),
+            const AdBannerWidget(),
+          ],
         ),
       ),
     );
@@ -619,13 +651,28 @@ class _ProfileEditDialogState extends ConsumerState<_ProfileEditDialog> {
             ),
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: _shortBioController,
-            decoration: const InputDecoration(
-              labelText: '一言コメント',
-              border: OutlineInputBorder(),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(
+                color: Theme.of(context).primaryColor.withOpacity(0.3),
+                width: 1,
+              ),
+              borderRadius: BorderRadius.circular(8),
             ),
-            maxLines: 3,
+            width: double.infinity,
+            child: TextField(
+              controller: _shortBioController,
+              decoration: InputDecoration(
+                labelText: '一言コメント',
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.all(16),
+                floatingLabelStyle: TextStyle(
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
+              maxLines: 3,
+            ),
           ),
         ],
       ),

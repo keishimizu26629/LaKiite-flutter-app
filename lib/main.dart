@@ -21,7 +21,7 @@ import 'application/auth/auth_state.dart';
 /// - Flutterウィジェットバインディングの初期化
 /// - Firebaseの初期化
 /// - アプリケーションの起動
-void main() async {
+Future<void> main([List<String>? args, List<Override> overrides = const []]) async {
   // Flutterウィジェットバインディングの初期化
   WidgetsFlutterBinding.ensureInitialized();
   // 日本語ロケールの初期化
@@ -29,7 +29,12 @@ void main() async {
   // Firebaseの初期化
   await Firebase.initializeApp();
   // アプリケーションの起動
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(
+    ProviderScope(
+      overrides: overrides,
+      child: const MyApp(),
+    ),
+  );
 }
 
 /// アプリケーションのルーティング設定を提供するプロバイダー
