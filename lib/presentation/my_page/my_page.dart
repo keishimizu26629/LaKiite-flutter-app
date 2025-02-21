@@ -1,14 +1,11 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import '../presentation_provider.dart';
 import 'my_page_view_model.dart';
 import '../calendar/schedule_detail_page.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entity/user.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ad_banner_widget.dart';
@@ -301,37 +298,13 @@ class _MyPageState extends ConsumerState<MyPage> {
                                       backgroundColor: Theme.of(context)
                                           .primaryColor
                                           .withOpacity(0.1),
-                                      child: Builder(
-                                        builder: (context) {
-                                          final selectedImage =
-                                              ref.watch(selectedImageProvider);
-                                          if (selectedImage != null) {
-                                            return ClipOval(
-                                              child: Image.file(
-                                                selectedImage,
-                                                width: 80,
-                                                height: 80,
-                                                fit: BoxFit.cover,
-                                              ),
-                                            );
-                                          }
-                                          return user.iconUrl != null
-                                              ? ClipOval(
-                                                  child: Image.network(
-                                                    user.iconUrl!,
-                                                    width: 80,
-                                                    height: 80,
-                                                    fit: BoxFit.cover,
-                                                  ),
-                                                )
-                                              : Icon(
-                                                  Icons.person,
-                                                  size: 40,
-                                                  color: Theme.of(context)
-                                                      .primaryColor,
-                                                );
-                                        },
-                                      ),
+                                      backgroundImage: user.iconUrl != null
+                                          ? NetworkImage(user.iconUrl!)
+                                          : null,
+                                      child: user.iconUrl == null
+                                          ? const Icon(Icons.person,
+                                              size: 40, color: Colors.grey)
+                                          : null,
                                     ),
                                     const SizedBox(width: 16),
                                     Expanded(
@@ -375,7 +348,7 @@ class _MyPageState extends ConsumerState<MyPage> {
                                                   ),
                                                 ),
                                                 const SizedBox(width: 6),
-                                                Icon(
+                                                const Icon(
                                                   Icons.copy,
                                                   size: 14,
                                                   color: AppTheme.primaryColor,
@@ -388,62 +361,28 @@ class _MyPageState extends ConsumerState<MyPage> {
                                             onPressed: () {
                                               showDialog(
                                                 context: context,
-                                                builder: (context) =>
+                                                barrierDismissible: false,
+                                                builder: (dialogContext) =>
                                                     _ProfileEditDialog(
                                                   user: user,
                                                   onImageEdit: () async {
-                                                    final picker =
-                                                        ImagePicker();
-                                                    final pickedFile =
-                                                        await picker.pickImage(
-                                                      source:
-                                                          ImageSource.gallery,
-                                                    );
-                                                    if (pickedFile != null) {
-                                                      ref
-                                                              .read(
-                                                                  selectedImageProvider
-                                                                      .notifier)
-                                                              .state =
-                                                          File(pickedFile.path);
-                                                      try {
-                                                        await ref
-                                                            .read(
-                                                                myPageViewModelProvider
-                                                                    .notifier)
-                                                            .updateProfile(
-                                                              name: user.name,
-                                                              displayName: user
-                                                                  .displayName,
-                                                              searchIdStr: user
-                                                                  .searchId
-                                                                  .toString(),
-                                                              shortBio: user
-                                                                  .publicProfile
-                                                                  .shortBio,
-                                                              imageFile: File(
-                                                                  pickedFile
-                                                                      .path),
-                                                            );
-                                                        if (mounted) {
-                                                          ScaffoldMessenger.of(
-                                                                  context)
-                                                              .showSnackBar(
-                                                            const SnackBar(
-                                                                content: Text(
-                                                                    'プロフィール画像を更新しました')),
-                                                          );
-                                                        }
-                                                      } catch (e) {
-                                                        if (mounted) {
-                                                          ScaffoldMessenger.of(
-                                                                  context)
-                                                              .showSnackBar(
-                                                            SnackBar(
-                                                                content: Text(
-                                                                    'エラー: ${e.toString()}')),
-                                                          );
-                                                        }
+                                                    if (!mounted) return;
+
+                                                    try {
+                                                      await ref
+                                                          .read(
+                                                              myPageViewModelProvider
+                                                                  .notifier)
+                                                          .pickImage();
+                                                    } catch (e) {
+                                                      if (mounted) {
+                                                        ScaffoldMessenger.of(
+                                                                dialogContext)
+                                                            .showSnackBar(
+                                                          SnackBar(
+                                                              content: Text(
+                                                                  '画像の選択に失敗しました: $e')),
+                                                        );
                                                       }
                                                     }
                                                   },
@@ -587,6 +526,7 @@ class _ProfileEditDialog extends ConsumerStatefulWidget {
 class _ProfileEditDialogState extends ConsumerState<_ProfileEditDialog> {
   late TextEditingController _displayNameController;
   late TextEditingController _shortBioController;
+  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -612,39 +552,50 @@ class _ProfileEditDialogState extends ConsumerState<_ProfileEditDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           GestureDetector(
-            onTap: widget.onImageEdit,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Colors.grey[200],
-                  backgroundImage: widget.user.iconUrl != null
-                      ? NetworkImage(widget.user.iconUrl!)
-                      : null,
-                  child: widget.user.iconUrl == null
-                      ? const Icon(Icons.person, size: 40, color: Colors.grey)
-                      : null,
-                ),
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.black.withOpacity(0.5),
-                  ),
-                  child: const Icon(
-                    Icons.camera_alt,
-                    color: Colors.white,
-                    size: 30,
-                  ),
-                ),
-              ],
+            onTap: _isProcessing ? null : widget.onImageEdit,
+            child: Builder(
+              builder: (context) {
+                final selectedImage = ref.watch(selectedImageProvider);
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundColor: Colors.grey[200],
+                      backgroundImage: selectedImage != null
+                          ? FileImage(selectedImage)
+                          : (widget.user.iconUrl != null
+                              ? NetworkImage(widget.user.iconUrl!)
+                                  as ImageProvider<Object>
+                              : null),
+                      child:
+                          widget.user.iconUrl == null && selectedImage == null
+                              ? const Icon(Icons.person,
+                                  size: 40, color: Colors.grey)
+                              : null,
+                    ),
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black.withOpacity(0.5),
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _displayNameController,
+            enabled: !_isProcessing,
             decoration: const InputDecoration(
               labelText: '表示名',
               border: OutlineInputBorder(),
@@ -663,6 +614,7 @@ class _ProfileEditDialogState extends ConsumerState<_ProfileEditDialog> {
             width: double.infinity,
             child: TextField(
               controller: _shortBioController,
+              enabled: !_isProcessing,
               decoration: InputDecoration(
                 labelText: '一言コメント',
                 border: InputBorder.none,
@@ -678,33 +630,60 @@ class _ProfileEditDialogState extends ConsumerState<_ProfileEditDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: _isProcessing
+              ? null
+              : () {
+                  ref.read(selectedImageProvider.notifier).state = null;
+                  Navigator.pop(context);
+                },
           child: const Text('キャンセル'),
         ),
         ElevatedButton(
-          onPressed: () async {
-            try {
-              await ref.read(myPageViewModelProvider.notifier).updateProfile(
-                    name: widget.user.name,
-                    displayName: _displayNameController.text,
-                    searchIdStr: widget.user.searchId.toString(),
-                    shortBio: _shortBioController.text,
-                  );
-              if (mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('プロフィールを更新しました')),
-                );
-              }
-            } catch (e) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('エラー: ${e.toString()}')),
-                );
-              }
-            }
-          },
-          child: const Text('保存'),
+          onPressed: _isProcessing
+              ? null
+              : () async {
+                  setState(() {
+                    _isProcessing = true;
+                  });
+                  try {
+                    final selectedImage = ref.read(selectedImageProvider);
+                    await ref
+                        .read(myPageViewModelProvider.notifier)
+                        .updateProfile(
+                          name: widget.user.name,
+                          displayName: _displayNameController.text,
+                          searchIdStr: widget.user.searchId.toString(),
+                          shortBio: _shortBioController.text,
+                          imageFile: selectedImage,
+                        );
+                    ref.read(selectedImageProvider.notifier).state = null;
+                    if (mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('プロフィールを更新しました')),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('エラー: ${e.toString()}')),
+                      );
+                      setState(() {
+                        _isProcessing = false;
+                      });
+                    }
+                  }
+                },
+          child: _isProcessing
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Text('保存'),
         ),
       ],
     );
