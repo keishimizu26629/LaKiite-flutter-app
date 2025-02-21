@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import '../presentation_provider.dart';
+import 'package:intl/intl.dart';
 import 'my_page_view_model.dart';
 import '../calendar/schedule_detail_page.dart';
-import 'package:intl/intl.dart';
-import '../../domain/entity/user.dart';
-import 'package:flutter/services.dart';
+import '../presentation_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ad_banner_widget.dart';
+import '../../domain/entity/user.dart';
 
 class MyPage extends ConsumerStatefulWidget {
   const MyPage({super.key});
