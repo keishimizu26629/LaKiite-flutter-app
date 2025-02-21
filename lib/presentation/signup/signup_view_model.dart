@@ -19,6 +19,7 @@ class SignupViewModel {
     required String email,
     required String password,
     required String name,
+    required String displayName,
   }) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
@@ -36,6 +37,7 @@ class SignupViewModel {
       final userModel = UserModel.create(
         id: uid,
         name: name,
+        displayName: displayName,
       );
 
       await userRepository.createUser(userModel);

@@ -5,6 +5,7 @@ import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/calendar/widgets/daily_schedule_view.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
+import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
 
 class CalendarPageView extends HookConsumerWidget {
   const CalendarPageView({super.key});
@@ -13,49 +14,93 @@ class CalendarPageView extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scheduleState = ref.watch(scheduleNotifierProvider);
     final currentIndex = useState(1200);
-    final visibleMonth = _getMonthName(_getVisibleDateTime(currentIndex.value).month);
+    final visibleMonth =
+        _getMonthName(_getVisibleDateTime(currentIndex.value).month);
     final visibleYear = _getVisibleDateTime(currentIndex.value).year.toString();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-          child: Text(
-            "$visibleYear年$visibleMonth",
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-        Expanded(
-          child: PageView.builder(
-            controller: PageController(initialPage: 1200),
-            itemBuilder: (context, index) {
-              final dateTime = _getVisibleDateTime(index);
-              return CalendarPage(
-                visiblePageDate: dateTime,
-                schedules: scheduleState.when(
-                  data: (state) => state.maybeMap(
-                    loaded: (loaded) => loaded.schedules,
-                    orElse: () => <Schedule>[],
-                  ),
-                  loading: () => <Schedule>[],
-                  error: (_, __) => <Schedule>[],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "$visibleYear年$visibleMonth",
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-              );
-            },
-            onPageChanged: (index) {
-              currentIndex.value = index;
-            },
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const CreateSchedulePage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.add, size: 20),
+                  label: const Text(
+                    '予定を作成',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+          Expanded(
+            child: PageView.builder(
+              controller: PageController(initialPage: 1200),
+              itemBuilder: (context, index) {
+                final dateTime = _getVisibleDateTime(index);
+                return CalendarPage(
+                  visiblePageDate: dateTime,
+                  schedules: scheduleState.when(
+                    data: (state) => state.maybeMap(
+                      loaded: (loaded) => loaded.schedules,
+                      orElse: () => <Schedule>[],
+                    ),
+                    loading: () => <Schedule>[],
+                    error: (_, __) => <Schedule>[],
+                  ),
+                );
+              },
+              onPageChanged: (index) {
+                currentIndex.value = index;
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   String _getMonthName(int month) {
     final monthNames = [
-      "1月", "2月", "3月", "4月", "5月", "6月",
-      "7月", "8月", "9月", "10月", "11月", "12月"
+      "1月",
+      "2月",
+      "3月",
+      "4月",
+      "5月",
+      "6月",
+      "7月",
+      "8月",
+      "9月",
+      "10月",
+      "11月",
+      "12月"
     ];
     return monthNames[month - 1];
   }
@@ -122,17 +167,25 @@ class CalendarPage extends StatelessWidget {
 
   List<Schedule> _getSchedulesForDate(DateTime date) {
     return schedules.where((schedule) {
-      final scheduleDate = DateTime(
-        schedule.dateTime.year,
-        schedule.dateTime.month,
-        schedule.dateTime.day,
+      final scheduleStartDate = DateTime(
+        schedule.startDateTime.year,
+        schedule.startDateTime.month,
+        schedule.startDateTime.day,
+      );
+      final scheduleEndDate = DateTime(
+        schedule.endDateTime.year,
+        schedule.endDateTime.month,
+        schedule.endDateTime.day,
       );
       final targetDate = DateTime(
         date.year,
         date.month,
         date.day,
       );
-      return scheduleDate.isAtSameMomentAs(targetDate);
+
+      // 開始日から終了日までの期間に含まれる場合に表示
+      return !targetDate.isBefore(scheduleStartDate) &&
+          !targetDate.isAfter(scheduleEndDate);
     }).toList();
   }
 
@@ -142,12 +195,22 @@ class CalendarPage extends StatelessWidget {
     return Column(
       children: [
         const DaysOfTheWeek(),
-        DatesRow(dates: currentDates.getRange(0, 7).toList(), schedules: schedules),
-        DatesRow(dates: currentDates.getRange(7, 14).toList(), schedules: schedules),
-        DatesRow(dates: currentDates.getRange(14, 21).toList(), schedules: schedules),
-        DatesRow(dates: currentDates.getRange(21, 28).toList(), schedules: schedules),
-        DatesRow(dates: currentDates.getRange(28, 35).toList(), schedules: schedules),
-        DatesRow(dates: currentDates.getRange(35, 42).toList(), schedules: schedules),
+        DatesRow(
+            dates: currentDates.getRange(0, 7).toList(), schedules: schedules),
+        DatesRow(
+            dates: currentDates.getRange(7, 14).toList(), schedules: schedules),
+        DatesRow(
+            dates: currentDates.getRange(14, 21).toList(),
+            schedules: schedules),
+        DatesRow(
+            dates: currentDates.getRange(21, 28).toList(),
+            schedules: schedules),
+        DatesRow(
+            dates: currentDates.getRange(28, 35).toList(),
+            schedules: schedules),
+        DatesRow(
+            dates: currentDates.getRange(35, 42).toList(),
+            schedules: schedules),
       ],
     );
   }
@@ -163,12 +226,13 @@ class DaysOfTheWeek extends StatelessWidget {
       children: daysOfTheWeek.map((day) {
         return Expanded(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: 4),
             child: Text(
               day,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
+                fontSize: 12,
                 color: day == '日' ? AppTheme.weekendColor : null,
               ),
             ),
@@ -195,17 +259,23 @@ class DatesRow extends StatelessWidget {
       child: Row(
         children: dates.map((date) {
           final dateSchedules = schedules.where((schedule) {
-            final scheduleDate = DateTime(
-              schedule.dateTime.year,
-              schedule.dateTime.month,
-              schedule.dateTime.day,
+            final scheduleStartDate = DateTime(
+              schedule.startDateTime.year,
+              schedule.startDateTime.month,
+              schedule.startDateTime.day,
+            );
+            final scheduleEndDate = DateTime(
+              schedule.endDateTime.year,
+              schedule.endDateTime.month,
+              schedule.endDateTime.day,
             );
             final targetDate = DateTime(
               date.year,
               date.month,
               date.day,
             );
-            return scheduleDate.isAtSameMomentAs(targetDate);
+            return !targetDate.isBefore(scheduleStartDate) &&
+                !targetDate.isAfter(scheduleEndDate);
           }).toList();
           return DateCell(date: date, schedules: dateSchedules);
         }).toList(),
@@ -227,62 +297,104 @@ class DateCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isToday = _isToday(date);
-    final isWeekend = date.weekday == DateTime.sunday || date.weekday == DateTime.saturday;
+    final isWeekend =
+        date.weekday == DateTime.sunday || date.weekday == DateTime.saturday;
 
     return Expanded(
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => DailyScheduleView(
-                date: date,
-                schedules: schedules,
+      child: Consumer(
+        builder: (context, ref, child) {
+          final currentUserId = ref.watch(currentUserIdProvider);
+          return InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => DailyScheduleView(
+                    initialDate: date,
+                    schedules: schedules,
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                      color: Theme.of(context).dividerColor, width: 1),
+                  right: BorderSide(
+                      color: Theme.of(context).dividerColor, width: 1),
+                ),
+                color: isToday ? Colors.blue.shade50 : null,
+                boxShadow: isToday
+                    ? [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 2,
+                        ),
+                      ]
+                    : null,
+                borderRadius: isToday ? BorderRadius.circular(4) : null,
+              ),
+              padding: const EdgeInsets.all(2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    date.day.toString(),
+                    style: TextStyle(
+                      color: isWeekend ? AppTheme.weekendColor : null,
+                      fontWeight: isToday ? FontWeight.bold : null,
+                      fontSize: 12,
+                    ),
+                  ),
+                  if (schedules.isNotEmpty) ...[
+                    const SizedBox(height: 1),
+                    ...schedules.take(2).map((schedule) {
+                      final isOwner = schedule.ownerId == currentUserId;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 0.5),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 1, vertical: 0.5),
+                        decoration: BoxDecoration(
+                          color: isOwner
+                              ? Colors.grey.withOpacity(0.1)
+                              : Theme.of(context).primaryColor.withOpacity(0.1),
+                          border: Border.all(
+                            color: isOwner
+                                ? Colors.grey.withOpacity(0.8)
+                                : Theme.of(context)
+                                    .primaryColor
+                                    .withOpacity(0.8),
+                            width: 0.5,
+                          ),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        child: Text(
+                          schedule.title,
+                          style: const TextStyle(fontSize: 8),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }),
+                    if (schedules.length > 2)
+                      Text(
+                        '+${schedules.length - 2}',
+                        style: const TextStyle(fontSize: 8, color: Colors.grey),
+                      ),
+                  ],
+                ],
               ),
             ),
           );
         },
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: Theme.of(context).dividerColor, width: 1),
-              right: BorderSide(color: Theme.of(context).dividerColor, width: 1),
-            ),
-            color: isToday ? AppTheme.backgroundColor : null,
-            borderRadius: isToday ? BorderRadius.circular(4) : null,
-          ),
-          padding: const EdgeInsets.all(4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                date.day.toString(),
-                style: TextStyle(
-                  color: isWeekend ? AppTheme.weekendColor : null,
-                  fontWeight: isToday ? FontWeight.bold : null,
-                ),
-              ),
-              if (schedules.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                ...schedules.take(3).map((schedule) => Text(
-                      schedule.title,
-                      style: const TextStyle(fontSize: 10),
-                      overflow: TextOverflow.ellipsis,
-                    )),
-                if (schedules.length > 3)
-                  Text(
-                    '+${schedules.length - 3}',
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
-              ],
-            ],
-          ),
-        ),
       ),
     );
   }
 
   bool _isToday(DateTime date) {
     final now = DateTime.now();
-    return date.year == now.year && date.month == now.month && date.day == now.day;
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 }

@@ -26,6 +26,13 @@ class ScheduleReaction with _$ScheduleReaction {
 
   factory ScheduleReaction.fromJson(Map<String, dynamic> json) {
     final createdAt = json['createdAt'];
+    if (createdAt == null) {
+      // createdAtがnullの場合は現在時刻を使用
+      return _$ScheduleReactionFromJson({
+        ...json,
+        'createdAt': DateTime.now().toIso8601String(),
+      });
+    }
     return _$ScheduleReactionFromJson({
       ...json,
       'createdAt': createdAt is DateTime

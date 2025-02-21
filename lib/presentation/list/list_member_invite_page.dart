@@ -14,7 +14,8 @@ class ListMemberInvitePage extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ListMemberInvitePage> createState() => _ListMemberInvitePageState();
+  ConsumerState<ListMemberInvitePage> createState() =>
+      _ListMemberInvitePageState();
 }
 
 class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
@@ -42,7 +43,8 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
           body: friendsAsync.when(
             data: (friends) {
               // 現在のユーザーのプライベートプロフィールを取得
-              final privateProfileAsync = ref.watch(privateUserStreamProvider(currentUser!.id));
+              final privateProfileAsync =
+                  ref.watch(privateUserStreamProvider(currentUser!.id));
 
               return privateProfileAsync.when(
                 data: (privateProfile) {
@@ -60,7 +62,8 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
 
                       return ListTile(
                         enabled: !isInList,
-                        tileColor: isInList ? Colors.grey.withOpacity(0.1) : null,
+                        tileColor:
+                            isInList ? Colors.grey.withOpacity(0.1) : null,
                         leading: CircleAvatar(
                           backgroundImage: friend.iconUrl != null
                               ? NetworkImage(friend.iconUrl!)
@@ -73,16 +76,29 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
                         subtitle: Text(friend.searchId.toString()),
                         trailing: Checkbox(
                           value: isSelected,
-                          onChanged: isInList ? null : (bool? value) {
-                            setState(() {
-                              if (value == true) {
-                                selectedFriends.add(friendId);
-                              } else {
-                                selectedFriends.remove(friendId);
-                              }
-                            });
-                          },
+                          onChanged: isInList
+                              ? null
+                              : (bool? value) {
+                                  setState(() {
+                                    if (value == true) {
+                                      selectedFriends.add(friendId);
+                                    } else {
+                                      selectedFriends.remove(friendId);
+                                    }
+                                  });
+                                },
                         ),
+                        onTap: isInList
+                            ? null
+                            : () {
+                                setState(() {
+                                  if (selectedFriends.contains(friendId)) {
+                                    selectedFriends.remove(friendId);
+                                  } else {
+                                    selectedFriends.add(friendId);
+                                  }
+                                });
+                              },
                       );
                     },
                   );
@@ -109,17 +125,19 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
                           // 選択された友達をリストに追加
                           for (final friendId in selectedFriends) {
                             // リストにメンバーを追加
-                            await ref.read(listNotifierProvider.notifier).addMember(
-                              widget.list.id,
-                              friendId,
-                              widget.list.ownerId,
-                            );
+                            await ref
+                                .read(listNotifierProvider.notifier)
+                                .addMember(
+                                  widget.list.id,
+                                  friendId,
+                                  widget.list.ownerId,
+                                );
 
                             // ユーザーのプライベートプロフィールのlistsフィールドを更新
                             await ref.read(userRepositoryProvider).addToList(
-                              currentUser!.id,
-                              friendId,
-                            );
+                                  currentUser!.id,
+                                  friendId,
+                                );
                           }
                           if (mounted) {
                             Navigator.of(context).pop();

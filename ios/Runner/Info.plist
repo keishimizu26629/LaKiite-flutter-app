@@ -109,5 +109,9 @@
 	</array>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>このアプリケーションは、より関連性の高い広告を表示するために、デバイスの識別子を使用します。</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>プロフィール画像を変更するために、写真ライブラリへのアクセスが必要です。</string>
+	<key>NSCameraUsageDescription</key>
+	<string>プロフィール画像を撮影するために、カメラへのアクセスが必要です。</string>
 </dict>
 </plist>

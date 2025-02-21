@@ -69,7 +69,8 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                       } catch (e) {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('削除に失敗しました: ${e.toString()}')),
+                            SnackBar(
+                                content: Text('削除に失敗しました: ${e.toString()}')),
                           );
                         }
                       }
@@ -85,126 +86,140 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
               ),
             ],
           ),
-          body: Column(
-            children: [
-              // リスト情報セクション
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // リストアイコン
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundImage: list.iconUrl != null
-                          ? NetworkImage(list.iconUrl!)
-                          : null,
-                      child: list.iconUrl == null
-                          ? const Icon(Icons.list, size: 40)
-                          : null,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            list.listName,
-                            style: theme.textTheme.headlineSmall,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 8),
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              // TODO: リスト編集機能の実装
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('編集機能は現在開発中です')),
-                              );
-                            },
-                            icon: const Icon(Icons.edit),
-                            label: const Text('リストを編集'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // リストの説明
-              if (list.description != null)
+          body: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // リスト情報セクション
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    list.description!,
-                    style: theme.textTheme.bodyLarge,
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // リストアイコン
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundImage: list.iconUrl != null
+                            ? NetworkImage(list.iconUrl!)
+                            : null,
+                        child: list.iconUrl == null
+                            ? const Icon(Icons.list, size: 40)
+                            : null,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              list.listName,
+                              style: theme.textTheme.headlineSmall,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 8),
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                // TODO: リスト編集機能の実装
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('編集機能は現在開発中です')),
+                                );
+                              },
+                              icon: const Icon(Icons.edit),
+                              label: const Text('リストを編集'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              const SizedBox(height: 16),
-              // メンバー数
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  children: [
-                    Text(
-                      'メンバー',
-                      style: theme.textTheme.titleLarge,
+                // リストの説明
+                if (list.description != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text(
+                      list.description!,
+                      style: theme.textTheme.bodyLarge,
                     ),
-                    const SizedBox(width: 8),
-                    Text('${list.memberIds.length}人'),
-                    const Spacer(),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => ListMemberInvitePage(list: list),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.person_add),
-                      label: const Text('友達を追加'),
-                    ),
-                  ],
+                  ),
+                const SizedBox(height: 16),
+                // メンバー数
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    children: [
+                      Text(
+                        'メンバー',
+                        style: theme.textTheme.titleLarge,
+                      ),
+                      const SizedBox(width: 8),
+                      Text('${list.memberIds.length}人'),
+                      const Spacer(),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ListMemberInvitePage(list: list),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.person_add),
+                        label: const Text('友達を追加'),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              // メンバーリスト
-              Expanded(
-                child: ListView.builder(
+                const SizedBox(height: 8),
+                // メンバーリスト
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   itemCount: list.memberIds.length,
                   itemBuilder: (context, index) {
                     final memberId = list.memberIds[index];
                     return ref.watch(publicUserStreamProvider(memberId)).when(
-                      data: (member) {
-                        if (member == null) {
-                          return const SizedBox.shrink();
-                        }
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundImage: member.iconUrl != null
-                                ? NetworkImage(member.iconUrl!)
-                                : null,
-                            child: member.iconUrl == null
-                                ? const Icon(Icons.person)
-                                : null,
+                          data: (member) {
+                            if (member == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundImage: member.iconUrl != null
+                                      ? NetworkImage(member.iconUrl!)
+                                      : null,
+                                  child: member.iconUrl == null
+                                      ? const Icon(Icons.person)
+                                      : null,
+                                ),
+                                title: Text(member.displayName),
+                                subtitle: Text('@${member.searchId}'),
+                              ),
+                            );
+                          },
+                          loading: () => const Card(
+                            margin: EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              leading: CircularProgressIndicator(),
+                              title: Text('読み込み中...'),
+                            ),
                           ),
-                          title: Text(member.displayName),
-                          subtitle: Text(member.searchId.toString()),
+                          error: (error, _) => Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              leading: const Icon(Icons.error),
+                              title: Text('エラーが発生しました: $error'),
+                            ),
+                          ),
                         );
-                      },
-                      loading: () => const ListTile(
-                        leading: CircularProgressIndicator(),
-                        title: Text('読み込み中...'),
-                      ),
-                      error: (error, _) => ListTile(
-                        leading: const Icon(Icons.error),
-                        title: Text('エラーが発生しました: $error'),
-                      ),
-                    );
                   },
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         );
       },

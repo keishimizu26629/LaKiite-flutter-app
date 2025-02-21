@@ -1,6 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/interfaces/i_auth_repository.dart';
 import '../../infrastructure/auth_repository.dart';
 import '../../presentation/presentation_provider.dart';
