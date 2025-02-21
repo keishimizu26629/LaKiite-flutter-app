@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../home/home_page.dart';
-import '../calendar/calendar_page.dart';
+import '../friend/friend_list_page.dart';
 import '../my_page/my_page.dart';
 
 class BottomNavigationPage extends ConsumerStatefulWidget {
@@ -17,7 +17,7 @@ class _BottomNavigationPageState extends ConsumerState<BottomNavigationPage> {
 
   static final List<Widget> _pages = [
     const HomePage(),
-    const CalendarPage(),
+    const FriendListPage(),
     const MyPage(),
   ];
 
@@ -61,9 +61,9 @@ class _BottomNavigationPageState extends ConsumerState<BottomNavigationPage> {
               label: 'ホーム',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today_outlined),
-              activeIcon: Icon(Icons.calendar_today),
-              label: '予定',
+              icon: Icon(Icons.groups_3_outlined),
+              activeIcon: Icon(Icons.groups_3),
+              label: 'フレンド',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
