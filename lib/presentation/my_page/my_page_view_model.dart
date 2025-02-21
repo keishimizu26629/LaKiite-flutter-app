@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../infrastructure/image_picker_service.dart' as picker;
 import 'package:flutter/services.dart';
+import '../../infrastructure/image_picker_service.dart' as picker;
 import '../../domain/entity/user.dart';
 import '../../domain/entity/schedule.dart';
 import '../../domain/value/user_id.dart';
