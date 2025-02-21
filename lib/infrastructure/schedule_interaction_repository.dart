@@ -34,7 +34,8 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       try {
         final data = {...doc.data(), 'id': doc.id};
         print('Reaction Data from Firestore: $data');
-        print('Reaction type from Firestore: ${data['type']} (${data['type'].runtimeType})');
+        print(
+            'Reaction type from Firestore: ${data['type']} (${data['type'].runtimeType})');
         final reaction = ScheduleReaction.fromJson(data);
         print('Converted Reaction: $reaction');
         return reaction;
@@ -57,6 +58,8 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
     String userId,
     ReactionType type,
   ) async {
+    print(
+        'addReaction: Adding reaction for schedule: $scheduleId, user: $userId, type: $type');
     final reactionDoc = _firestore
         .collection('schedules')
         .doc(scheduleId)
@@ -66,13 +69,15 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
     final userDoc = await _firestore.collection('users').doc(userId).get();
     final userData = userDoc.data();
 
+    final now = Timestamp.now();
     await reactionDoc.set({
       'userId': userId,
       'type': type == ReactionType.going ? 'going' : 'thinking',
-      'createdAt': FieldValue.serverTimestamp(),
+      'createdAt': now,
       'userDisplayName': userData?['displayName'],
       'userPhotoUrl': userData?['photoUrl'],
     });
+    print('addReaction: Successfully added reaction with createdAt: $now');
   }
 
   /// 指定された[scheduleId]と[userId]に対応するリアクションを削除
@@ -94,28 +99,35 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   /// 最新の[ScheduleReaction]のリストを提供します。
   @override
   Stream<List<ScheduleReaction>> watchReactions(String scheduleId) {
+    print(
+        'watchReactions: Starting to watch reactions for schedule: $scheduleId');
     return _firestore
         .collection('schedules')
         .doc(scheduleId)
         .collection('reactions')
+        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-          final reactions = snapshot.docs.map((doc) {
-            try {
-              final data = {...doc.data(), 'id': doc.id};
-              print('Reaction Data from Firestore (Watch): $data');
-              print('Reaction type from Firestore: ${data['type']} (${data['type'].runtimeType})');
-              final reaction = ScheduleReaction.fromJson(data);
-              print('Converted Reaction (Watch): $reaction');
-              return reaction;
-            } catch (e, stackTrace) {
-              print('Error converting reaction: $e');
-              print('Stack trace: $stackTrace');
-              rethrow;
-            }
-          }).toList();
-          return reactions;
-        });
+      print(
+          'watchReactions: Received snapshot with ${snapshot.docs.length} documents');
+      final reactions = snapshot.docs.map((doc) {
+        try {
+          final data = {...doc.data(), 'id': doc.id};
+          print('Reaction Data from Firestore (Watch): $data');
+          print(
+              'Reaction type from Firestore: ${data['type']} (${data['type'].runtimeType})');
+          final reaction = ScheduleReaction.fromJson(data);
+          print('Converted Reaction (Watch): $reaction');
+          return reaction;
+        } catch (e, stackTrace) {
+          print('Error converting reaction: $e');
+          print('Stack trace: $stackTrace');
+          rethrow;
+        }
+      }).toList();
+      print('watchReactions: Converted ${reactions.length} reactions');
+      return reactions;
+    });
   }
 
   /// 指定された[scheduleId]に関連する全コメントを取得
@@ -162,10 +174,11 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       final userData = userDoc.data();
       print('User data fetched: $userData');
 
+      final now = Timestamp.now();
       final commentData = {
         'userId': userId,
         'content': content,
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': now,
         'userDisplayName': userData?['displayName'],
         'userPhotoUrl': userData?['photoUrl'],
       };
@@ -210,20 +223,20 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-          final comments = snapshot.docs.map((doc) {
-            try {
-              final data = {...doc.data(), 'id': doc.id};
-              print('Comment Data from Firestore (Watch): $data');
-              final comment = ScheduleComment.fromJson(data);
-              print('Converted Comment (Watch): $comment');
-              return comment;
-            } catch (e, stackTrace) {
-              print('Error converting comment: $e');
-              print('Stack trace: $stackTrace');
-              rethrow;
-            }
-          }).toList();
-          return comments;
-        });
+      final comments = snapshot.docs.map((doc) {
+        try {
+          final data = {...doc.data(), 'id': doc.id};
+          print('Comment Data from Firestore (Watch): $data');
+          final comment = ScheduleComment.fromJson(data);
+          print('Converted Comment (Watch): $comment');
+          return comment;
+        } catch (e, stackTrace) {
+          print('Error converting comment: $e');
+          print('Stack trace: $stackTrace');
+          rethrow;
+        }
+      }).toList();
+      return comments;
+    });
   }
 }
