@@ -6,6 +6,15 @@ import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/calendar/widgets/daily_schedule_view.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart' show rootBundle;
+
+final holidaysProvider = FutureProvider<Map<String, String>>((ref) async {
+  final String jsonString =
+      await rootBundle.loadString('assets/data/japanese_holidays.json');
+  final Map<String, dynamic> jsonMap = json.decode(jsonString);
+  return Map<String, String>.from(jsonMap);
+});
 
 class CalendarPageView extends HookConsumerWidget {
   const CalendarPageView({super.key});
@@ -183,7 +192,6 @@ class CalendarPage extends StatelessWidget {
         date.day,
       );
 
-      // 開始日から終了日までの期間に含まれる場合に表示
       return !targetDate.isBefore(scheduleStartDate) &&
           !targetDate.isAfter(scheduleEndDate);
     }).toList();
@@ -196,21 +204,29 @@ class CalendarPage extends StatelessWidget {
       children: [
         const DaysOfTheWeek(),
         DatesRow(
-            dates: currentDates.getRange(0, 7).toList(), schedules: schedules),
+            dates: currentDates.getRange(0, 7).toList(),
+            schedules: schedules,
+            visibleMonth: visiblePageDate),
         DatesRow(
-            dates: currentDates.getRange(7, 14).toList(), schedules: schedules),
+            dates: currentDates.getRange(7, 14).toList(),
+            schedules: schedules,
+            visibleMonth: visiblePageDate),
         DatesRow(
             dates: currentDates.getRange(14, 21).toList(),
-            schedules: schedules),
+            schedules: schedules,
+            visibleMonth: visiblePageDate),
         DatesRow(
             dates: currentDates.getRange(21, 28).toList(),
-            schedules: schedules),
+            schedules: schedules,
+            visibleMonth: visiblePageDate),
         DatesRow(
             dates: currentDates.getRange(28, 35).toList(),
-            schedules: schedules),
+            schedules: schedules,
+            visibleMonth: visiblePageDate),
         DatesRow(
             dates: currentDates.getRange(35, 42).toList(),
-            schedules: schedules),
+            schedules: schedules,
+            visibleMonth: visiblePageDate),
       ],
     );
   }
@@ -233,7 +249,11 @@ class DaysOfTheWeek extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
-                color: day == '日' ? AppTheme.weekendColor : null,
+                color: day == '日'
+                    ? AppTheme.weekendColor
+                    : day == '土'
+                        ? Colors.blue
+                        : null,
               ),
             ),
           ),
@@ -247,11 +267,13 @@ class DatesRow extends StatelessWidget {
   const DatesRow({
     required this.dates,
     required this.schedules,
+    required this.visibleMonth,
     super.key,
   });
 
   final List<DateTime> dates;
   final List<Schedule> schedules;
+  final DateTime visibleMonth;
 
   @override
   Widget build(BuildContext context) {
@@ -277,7 +299,8 @@ class DatesRow extends StatelessWidget {
             return !targetDate.isBefore(scheduleStartDate) &&
                 !targetDate.isAfter(scheduleEndDate);
           }).toList();
-          return DateCell(date: date, schedules: dateSchedules);
+          return DateCell(
+              date: date, schedules: dateSchedules, visibleMonth: visibleMonth);
         }).toList(),
       ),
     );
@@ -288,100 +311,265 @@ class DateCell extends StatelessWidget {
   const DateCell({
     required this.date,
     required this.schedules,
+    required this.visibleMonth,
     super.key,
   });
 
   final DateTime date;
   final List<Schedule> schedules;
+  final DateTime visibleMonth;
 
   @override
   Widget build(BuildContext context) {
     final isToday = _isToday(date);
-    final isWeekend =
-        date.weekday == DateTime.sunday || date.weekday == DateTime.saturday;
+    final isWeekend = date.weekday == DateTime.sunday;
+    final isSaturday = date.weekday == DateTime.saturday;
+    final isCurrentMonth = date.month == visibleMonth.month;
 
     return Expanded(
       child: Consumer(
         builder: (context, ref, child) {
           final currentUserId = ref.watch(currentUserIdProvider);
-          return InkWell(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => DailyScheduleView(
-                    initialDate: date,
-                    schedules: schedules,
-                  ),
+          final holidaysAsync = ref.watch(holidaysProvider);
+
+          return holidaysAsync.when(
+            data: (holidays) {
+              final dateString =
+                  '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+              final isHoliday = holidays.containsKey(dateString);
+
+              // デバッグ用のログ出力
+              print('Date: $dateString, isHoliday: $isHoliday');
+              if (isHoliday) {
+                print('Holiday name: ${holidays[dateString]}');
+              }
+
+              return Material(
+                color: Colors.transparent,
+                child: Stack(
+                  children: [
+                    // 背景のコンテナ
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(
+                                color: Theme.of(context).dividerColor,
+                                width: 1),
+                            right: BorderSide(
+                                color: Theme.of(context).dividerColor,
+                                width: 1),
+                          ),
+                          color: isToday
+                              ? Colors.blue.shade50
+                              : !isCurrentMonth
+                                  ? Colors.grey.shade100
+                                  : null,
+                        ),
+                      ),
+                    ),
+                    // 日付と予定を表示するコンテナ
+                    InkWell(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => DailyScheduleView(
+                              initialDate: date,
+                              schedules: schedules,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              date.day.toString(),
+                              style: TextStyle(
+                                color: isHoliday || isWeekend
+                                    ? AppTheme.weekendColor
+                                    : isSaturday
+                                        ? Colors.blue
+                                        : !isCurrentMonth
+                                            ? Colors.grey.shade500
+                                            : null,
+                                fontWeight: isToday ? FontWeight.bold : null,
+                                fontSize: 12,
+                              ),
+                            ),
+                            if (schedules.isNotEmpty) ...[
+                              const SizedBox(height: 1),
+                              ...schedules.take(3).map((schedule) {
+                                final isOwner =
+                                    schedule.ownerId == currentUserId;
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 0.5),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 2, vertical: 0.5),
+                                  decoration: BoxDecoration(
+                                    color: isOwner
+                                        ? Colors.grey.shade200
+                                        : Theme.of(context)
+                                            .primaryColor
+                                            .withOpacity(0.15),
+                                    border: Border.all(
+                                      color: isOwner
+                                          ? Colors.grey.shade400
+                                          : Theme.of(context)
+                                              .primaryColor
+                                              .withOpacity(0.3),
+                                      width: 0.5,
+                                    ),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                  child: Text(
+                                    schedule.title,
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      color: isOwner
+                                          ? Colors.grey.shade700
+                                          : Theme.of(context)
+                                              .primaryColor
+                                              .withOpacity(0.8),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              }),
+                              if (schedules.length > 3)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 0.5),
+                                  child: Text(
+                                    '+${schedules.length - 3}',
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                      color: Theme.of(context).dividerColor, width: 1),
-                  right: BorderSide(
-                      color: Theme.of(context).dividerColor, width: 1),
-                ),
-                color: isToday ? Colors.blue.shade50 : null,
-                boxShadow: isToday
-                    ? [
-                        BoxShadow(
-                          color: Colors.blue.withOpacity(0.1),
-                          spreadRadius: 1,
-                          blurRadius: 2,
-                        ),
-                      ]
-                    : null,
-                borderRadius: isToday ? BorderRadius.circular(4) : null,
-              ),
-              padding: const EdgeInsets.all(2),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, __) => Material(
+              color: Colors.transparent,
+              child: Stack(
                 children: [
-                  Text(
-                    date.day.toString(),
-                    style: TextStyle(
-                      color: isWeekend ? AppTheme.weekendColor : null,
-                      fontWeight: isToday ? FontWeight.bold : null,
-                      fontSize: 12,
+                  // 背景のコンテナ
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                              color: Theme.of(context).dividerColor, width: 1),
+                          right: BorderSide(
+                              color: Theme.of(context).dividerColor, width: 1),
+                        ),
+                        color: isToday
+                            ? Colors.blue.shade50
+                            : !isCurrentMonth
+                                ? Colors.grey.shade100
+                                : null,
+                      ),
                     ),
                   ),
-                  if (schedules.isNotEmpty) ...[
-                    const SizedBox(height: 1),
-                    ...schedules.take(2).map((schedule) {
-                      final isOwner = schedule.ownerId == currentUserId;
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 0.5),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 1, vertical: 0.5),
-                        decoration: BoxDecoration(
-                          color: isOwner
-                              ? Colors.grey.withOpacity(0.1)
-                              : Theme.of(context).primaryColor.withOpacity(0.1),
-                          border: Border.all(
-                            color: isOwner
-                                ? Colors.grey.withOpacity(0.8)
-                                : Theme.of(context)
-                                    .primaryColor
-                                    .withOpacity(0.8),
-                            width: 0.5,
+                  // 日付と予定を表示するコンテナ
+                  InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => DailyScheduleView(
+                            initialDate: date,
+                            schedules: schedules,
                           ),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                        child: Text(
-                          schedule.title,
-                          style: const TextStyle(fontSize: 8),
-                          overflow: TextOverflow.ellipsis,
                         ),
                       );
-                    }),
-                    if (schedules.length > 2)
-                      Text(
-                        '+${schedules.length - 2}',
-                        style: const TextStyle(fontSize: 8, color: Colors.grey),
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            date.day.toString(),
+                            style: TextStyle(
+                              color: isWeekend
+                                  ? AppTheme.weekendColor
+                                  : isSaturday
+                                      ? Colors.blue
+                                      : !isCurrentMonth
+                                          ? Colors.grey.shade500
+                                          : null,
+                              fontWeight: isToday ? FontWeight.bold : null,
+                              fontSize: 12,
+                            ),
+                          ),
+                          if (schedules.isNotEmpty) ...[
+                            const SizedBox(height: 1),
+                            ...schedules.take(3).map((schedule) {
+                              final isOwner = schedule.ownerId == currentUserId;
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 0.5),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 2, vertical: 0.5),
+                                decoration: BoxDecoration(
+                                  color: isOwner
+                                      ? Colors.grey.shade200
+                                      : Theme.of(context)
+                                          .primaryColor
+                                          .withOpacity(0.15),
+                                  border: Border.all(
+                                    color: isOwner
+                                        ? Colors.grey.shade400
+                                        : Theme.of(context)
+                                            .primaryColor
+                                            .withOpacity(0.3),
+                                    width: 0.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                                child: Text(
+                                  schedule.title,
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    color: isOwner
+                                        ? Colors.grey.shade700
+                                        : Theme.of(context)
+                                            .primaryColor
+                                            .withOpacity(0.8),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            }),
+                            if (schedules.length > 3)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 0.5),
+                                child: Text(
+                                  '+${schedules.length - 3}',
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ],
                       ),
-                  ],
+                    ),
+                  ),
                 ],
               ),
             ),

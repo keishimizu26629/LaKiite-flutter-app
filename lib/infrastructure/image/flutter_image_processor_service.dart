@@ -22,7 +22,6 @@ class FlutterImageProcessorService implements IImageProcessorService {
         throw Exception('画像の圧縮に失敗しました');
       }
 
-      final tempDir = await createTempDirectory();
       return await createTempFile(compressedImage, 'jpg');
     } catch (e) {
       throw Exception('画像の圧縮処理に失敗しました: $e');
