@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
+import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:intl/intl.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
@@ -517,18 +518,96 @@ class CalendarPage extends HookConsumerWidget {
                               return Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  Icon(
-                                    Icons.people,
-                                    size: 16,
-                                    color: Theme.of(context).primaryColor,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '$totalReactions',
-                                    style: TextStyle(
-                                      color: Theme.of(context).primaryColor,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                  Row(
+                                    children: [
+                                      if (interactionState.reactions.isNotEmpty)
+                                        SizedBox(
+                                          width: 30,
+                                          height: 30,
+                                          child: Stack(
+                                            children: [
+                                              if (interactionState
+                                                              .reactionCounts[
+                                                          ReactionType
+                                                              .thinking] !=
+                                                      null &&
+                                                  interactionState
+                                                              .reactionCounts[
+                                                          ReactionType
+                                                              .thinking]! >
+                                                      0)
+                                                const Positioned(
+                                                  right: 2,
+                                                  child: Text(
+                                                    '🤔',
+                                                    style: TextStyle(
+                                                      fontSize: 20,
+                                                    ),
+                                                  ),
+                                                ),
+                                              if (interactionState
+                                                              .reactionCounts[
+                                                          ReactionType.going] !=
+                                                      null &&
+                                                  interactionState
+                                                              .reactionCounts[
+                                                          ReactionType.going]! >
+                                                      0)
+                                                Positioned(
+                                                  top: -1,
+                                                  right: interactionState
+                                                                      .reactionCounts[
+                                                                  ReactionType
+                                                                      .thinking] !=
+                                                              null &&
+                                                          interactionState
+                                                                      .reactionCounts[
+                                                                  ReactionType
+                                                                      .thinking]! >
+                                                              0
+                                                      ? null
+                                                      : 2,
+                                                  left: interactionState
+                                                                      .reactionCounts[
+                                                                  ReactionType
+                                                                      .thinking] !=
+                                                              null &&
+                                                          interactionState
+                                                                      .reactionCounts[
+                                                                  ReactionType
+                                                                      .thinking]! >
+                                                              0
+                                                      ? -2
+                                                      : null,
+                                                  child: const Text(
+                                                    '🙋',
+                                                    style: TextStyle(
+                                                      fontSize: 20,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        )
+                                      else
+                                        Icon(
+                                          Icons.people,
+                                          size: 16,
+                                          color: Theme.of(context).primaryColor,
+                                        ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '$totalReactions',
+                                        style: TextStyle(
+                                          color: interactionState
+                                                  .reactions.isNotEmpty
+                                              ? Colors.grey
+                                              : Theme.of(context).primaryColor,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(width: 16),
                                   Icon(
@@ -541,6 +620,7 @@ class CalendarPage extends HookConsumerWidget {
                                     '${interactionState.commentCount}',
                                     style: TextStyle(
                                       color: Colors.blue[400],
+                                      fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -736,18 +816,85 @@ class CalendarPage extends HookConsumerWidget {
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Icon(
-                          Icons.people,
-                          size: 16,
-                          color: Theme.of(context).primaryColor,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$totalReactions',
-                          style: TextStyle(
-                            color: Theme.of(context).primaryColor,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          children: [
+                            if (interactionState.reactions.isNotEmpty)
+                              SizedBox(
+                                width: 30,
+                                height: 30,
+                                child: Stack(
+                                  children: [
+                                    if (interactionState.reactionCounts[
+                                                ReactionType.thinking] !=
+                                            null &&
+                                        interactionState.reactionCounts[
+                                                ReactionType.thinking]! >
+                                            0)
+                                      const Positioned(
+                                        right: 2,
+                                        child: Text(
+                                          '🤔',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                          ),
+                                        ),
+                                      ),
+                                    if (interactionState.reactionCounts[
+                                                ReactionType.going] !=
+                                            null &&
+                                        interactionState.reactionCounts[
+                                                ReactionType.going]! >
+                                            0)
+                                      Positioned(
+                                        top: -1,
+                                        right: interactionState.reactionCounts[
+                                                        ReactionType
+                                                            .thinking] !=
+                                                    null &&
+                                                interactionState.reactionCounts[
+                                                        ReactionType
+                                                            .thinking]! >
+                                                    0
+                                            ? null
+                                            : 2,
+                                        left: interactionState.reactionCounts[
+                                                        ReactionType
+                                                            .thinking] !=
+                                                    null &&
+                                                interactionState.reactionCounts[
+                                                        ReactionType
+                                                            .thinking]! >
+                                                    0
+                                            ? -2
+                                            : null,
+                                        child: const Text(
+                                          '🙋',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              )
+                            else
+                              Icon(
+                                Icons.people,
+                                size: 16,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$totalReactions',
+                              style: TextStyle(
+                                color: interactionState.reactions.isNotEmpty
+                                    ? Colors.grey
+                                    : Theme.of(context).primaryColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(width: 16),
                         Icon(
@@ -760,6 +907,7 @@ class CalendarPage extends HookConsumerWidget {
                           '${interactionState.commentCount}',
                           style: TextStyle(
                             color: Colors.blue[400],
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
