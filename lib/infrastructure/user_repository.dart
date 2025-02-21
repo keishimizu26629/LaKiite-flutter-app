@@ -136,14 +136,23 @@ class UserRepository implements IUserRepository {
 
   @override
   Future<String?> uploadUserIcon(String userId, Uint8List imageBytes) async {
-    final ref = _storage.ref().child('user_icons/$userId.jpg');
-    await ref.putData(imageBytes);
+    final ref = _storage.ref().child('users/$userId/profile/avatar.jpg');
+    await ref.putData(
+      imageBytes,
+      SettableMetadata(
+        contentType: 'image/jpeg',
+        customMetadata: {
+          'uploadedAt': DateTime.now().toIso8601String(),
+          'userId': userId,
+        },
+      ),
+    );
     return await ref.getDownloadURL();
   }
 
   @override
   Future<void> deleteUserIcon(String userId) async {
-    final ref = _storage.ref().child('user_icons/$userId.jpg');
+    final ref = _storage.ref().child('users/$userId/profile/avatar.jpg');
     await ref.delete();
   }
 
@@ -196,21 +205,17 @@ class UserRepository implements IUserRepository {
       yield _publicProfileCache[id];
     }
 
-    yield* _firestore
-        .collection('users')
-        .doc(id)
-        .snapshots()
-        .map((doc) {
-          if (!doc.exists) return null;
-          final data = doc.data()!;
-          data['id'] = doc.id;
-          final publicModel = PublicUserModel.fromJson(data);
-          
-          // キャッシュを更新
-          _publicProfileCache[id] = publicModel;
-          
-          return publicModel;
-        });
+    yield* _firestore.collection('users').doc(id).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      final data = doc.data()!;
+      data['id'] = doc.id;
+      final publicModel = PublicUserModel.fromJson(data);
+
+      // キャッシュを更新
+      _publicProfileCache[id] = publicModel;
+
+      return publicModel;
+    });
   }
 
   @override
@@ -227,16 +232,16 @@ class UserRepository implements IUserRepository {
         .doc('profile')
         .snapshots()
         .map((doc) {
-          if (!doc.exists) return null;
-          final data = doc.data()!;
-          data['lists'] = data['lists'] ?? [];
-          final privateModel = PrivateUserModel.fromJson(data);
-          
-          // キャッシュを更新
-          _privateProfileCache[id] = privateModel;
-          
-          return privateModel;
-        });
+      if (!doc.exists) return null;
+      final data = doc.data()!;
+      data['lists'] = data['lists'] ?? [];
+      final privateModel = PrivateUserModel.fromJson(data);
+
+      // キャッシュを更新
+      _privateProfileCache[id] = privateModel;
+
+      return privateModel;
+    });
   }
 
   @override
@@ -309,18 +314,18 @@ class UserRepository implements IUserRepository {
   // 複数のユーザーの公開情報を一度に取得
   @override
   Future<List<PublicUserModel>> getPublicProfiles(List<String> userIds) async {
-    final futures = userIds.map((id) => _firestore
-        .collection('users')
-        .doc(id)
-        .get()
-        .then((doc) {
-          if (!doc.exists) return null;
-          final data = doc.data()!;
-          data['id'] = doc.id;
-          return PublicUserModel.fromJson(data);
-        }));
+    final futures = userIds
+        .map((id) => _firestore.collection('users').doc(id).get().then((doc) {
+              if (!doc.exists) return null;
+              final data = doc.data()!;
+              data['id'] = doc.id;
+              return PublicUserModel.fromJson(data);
+            }));
 
     final results = await Future.wait(futures);
-    return results.where((user) => user != null).cast<PublicUserModel>().toList();
+    return results
+        .where((user) => user != null)
+        .cast<PublicUserModel>()
+        .toList();
   }
 }

@@ -285,7 +285,7 @@ class _HomePageState extends ConsumerState<HomePage>
                               ),
                             ),
                             subtitle: Text(
-                              '${otherMemberCount}人のメンバー',
+                              '$otherMemberCount人のメンバー',
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 14,
@@ -314,9 +314,9 @@ class _HomePageState extends ConsumerState<HomePage>
               ],
             ),
           ),
-          Container(
+          const SizedBox(
             height: 50,
-            child: const AdBannerWidget(),
+            child: AdBannerWidget(),
           ),
         ],
       ),
