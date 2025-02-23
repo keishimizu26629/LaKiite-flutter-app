@@ -28,23 +28,6 @@ class ScheduleDetailPage extends HookConsumerWidget {
   /// 表示対象の[Schedule]インスタンス
   final Schedule schedule;
 
-  /// 指定された[type]に応じた[IconData]を返します
-  ///
-  /// [ReactionType]に基づいて適切なアイコンを返します：
-  /// - [ReactionType.going]: 参加アイコン
-  /// - [ReactionType.thinking]: 検討中アイコン
-  /// - その他: デフォルトのリアクションアイコン
-  IconData _getReactionIcon(ReactionType? type) {
-    switch (type) {
-      case ReactionType.going:
-        return Icons.person_add;
-      case ReactionType.thinking:
-        return Icons.psychology;
-      default:
-        return Icons.add_reaction_outlined;
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(authNotifierProvider);
