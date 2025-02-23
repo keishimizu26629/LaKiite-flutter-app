@@ -332,7 +332,7 @@ class NotificationRepository implements INotificationRepository {
 
       return snapshot.docs
           .map((doc) =>
-              (doc.data() as Map<String, dynamic>)['receiveUserId'] as String)
+              (doc.data())['receiveUserId'] as String)
           .toList();
     } catch (e) {
       debugPrint('Error getting pending group invitations: $e');
@@ -362,7 +362,7 @@ class NotificationRepository implements INotificationRepository {
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) =>
-                (doc.data() as Map<String, dynamic>)['receiveUserId'] as String)
+                (doc.data())['receiveUserId'] as String)
             .toList());
   }
 }

@@ -22,8 +22,7 @@ class PublicUserModel with _$PublicUserModel {
   const factory PublicUserModel({
     required String id,
     required String displayName,
-    @UserIdConverter()
-    required UserId searchId,
+    @UserIdConverter() required UserId searchId,
     String? iconUrl,
     String? shortBio,
   }) = _PublicUserModel;
@@ -108,19 +107,19 @@ class UserModel with _$UserModel {
   }) {
     return UserModel(
       publicProfile: PublicUserModel(
-        id: this.id,
+        id: id,
         displayName: displayName ?? this.displayName,
         searchId: searchId ?? this.searchId,
         iconUrl: iconUrl ?? this.iconUrl,
-        shortBio: shortBio ?? this.publicProfile.shortBio,
+        shortBio: shortBio ?? publicProfile.shortBio,
       ),
       privateProfile: PrivateUserModel(
-        id: this.id,
+        id: id,
         name: name ?? this.name,
-        friends: this.friends,
-        groups: this.groups,
-        lists: this.privateProfile.lists,
-        createdAt: this.createdAt,
+        friends: friends,
+        groups: groups,
+        lists: privateProfile.lists,
+        createdAt: createdAt,
       ),
     );
   }

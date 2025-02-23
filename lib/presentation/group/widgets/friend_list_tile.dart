@@ -11,14 +11,14 @@ class FriendListTile extends StatelessWidget {
   final Function(bool?)? onChanged;
 
   const FriendListTile({
-    Key? key,
+    super.key,
     required this.friend,
     required this.isSelected,
     required this.isInvitable,
     required this.isGroupMember,
     required this.hasPendingInvitation,
     this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -48,12 +48,9 @@ class FriendListTile extends StatelessWidget {
         ],
       ),
       secondary: CircleAvatar(
-        backgroundImage: friend.iconUrl != null
-            ? NetworkImage(friend.iconUrl!)
-            : null,
-        child: friend.iconUrl == null
-            ? const Icon(Icons.person)
-            : null,
+        backgroundImage:
+            friend.iconUrl != null ? NetworkImage(friend.iconUrl!) : null,
+        child: friend.iconUrl == null ? const Icon(Icons.person) : null,
       ),
     );
   }

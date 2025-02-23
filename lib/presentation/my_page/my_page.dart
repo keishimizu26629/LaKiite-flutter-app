@@ -368,6 +368,9 @@ class _MyPageState extends ConsumerState<MyPage> {
                                                   onImageEdit: () async {
                                                     if (!mounted) return;
 
+                                                    final scaffoldMessenger =
+                                                        ScaffoldMessenger.of(
+                                                            dialogContext);
                                                     try {
                                                       await ref
                                                           .read(
@@ -376,8 +379,7 @@ class _MyPageState extends ConsumerState<MyPage> {
                                                           .pickImage();
                                                     } catch (e) {
                                                       if (mounted) {
-                                                        ScaffoldMessenger.of(
-                                                                dialogContext)
+                                                        scaffoldMessenger
                                                             .showSnackBar(
                                                           SnackBar(
                                                               content: Text(
@@ -645,6 +647,10 @@ class _ProfileEditDialogState extends ConsumerState<_ProfileEditDialog> {
                   setState(() {
                     _isProcessing = true;
                   });
+
+                  final navigator = Navigator.of(context);
+                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+
                   try {
                     final selectedImage = ref.read(selectedImageProvider);
                     await ref
@@ -658,14 +664,14 @@ class _ProfileEditDialogState extends ConsumerState<_ProfileEditDialog> {
                         );
                     ref.read(selectedImageProvider.notifier).state = null;
                     if (mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      navigator.pop();
+                      scaffoldMessenger.showSnackBar(
                         const SnackBar(content: Text('プロフィールを更新しました')),
                       );
                     }
                   } catch (e) {
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      scaffoldMessenger.showSnackBar(
                         SnackBar(content: Text('エラー: ${e.toString()}')),
                       );
                       setState(() {

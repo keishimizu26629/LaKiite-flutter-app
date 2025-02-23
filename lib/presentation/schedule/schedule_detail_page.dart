@@ -9,9 +9,9 @@ class ScheduleDetailPage extends ConsumerWidget {
   final String scheduleId;
 
   const ScheduleDetailPage({
-    Key? key,
+    super.key,
     required this.scheduleId,
-  }) : super(key: key);
+  });
 
   String _formatDateTime(DateTime dateTime) {
     return '${dateTime.year}/${dateTime.month}/${dateTime.day} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';

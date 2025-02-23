@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
+import 'package:lakiite/utils/logger.dart';
 
 class ScheduleFormPage extends HookConsumerWidget {
   final Schedule? schedule;
@@ -41,9 +42,9 @@ class ScheduleFormPage extends HookConsumerWidget {
     // 編集時の初期値設定
     useEffect(() {
       if (schedule != null && listsAsync.hasValue) {
-        final existingLists = listsAsync.value!.where(
-          (list) => schedule!.sharedLists.contains(list.id)
-        ).toList();
+        final existingLists = listsAsync.value!
+            .where((list) => schedule!.sharedLists.contains(list.id))
+            .toList();
         selectedLists.value = existingLists;
       }
       return null;
@@ -104,7 +105,8 @@ class ScheduleFormPage extends HookConsumerWidget {
 
       try {
         if (schedule != null) {
-          print('ScheduleFormPage: Updating schedule ${schedule!.id}');
+          AppLogger.debug(
+              'ScheduleFormPage: Updating schedule ${schedule!.id}');
           await scheduleNotifier.updateSchedule(
             schedule!.copyWith(
               title: titleController.text,
@@ -119,9 +121,9 @@ class ScheduleFormPage extends HookConsumerWidget {
               updatedAt: DateTime.now(),
             ),
           );
-          print('ScheduleFormPage: Schedule updated successfully');
+          AppLogger.debug('ScheduleFormPage: Schedule updated successfully');
         } else {
-          print('ScheduleFormPage: Creating new schedule');
+          AppLogger.debug('ScheduleFormPage: Creating new schedule');
           await scheduleNotifier.createSchedule(
             title: titleController.text,
             description: descriptionController.text,
@@ -134,14 +136,14 @@ class ScheduleFormPage extends HookConsumerWidget {
             sharedLists: selectedLists.value.map((l) => l.id).toList(),
             visibleTo: [currentUser.id],
           );
-          print('ScheduleFormPage: Schedule created successfully');
+          AppLogger.debug('ScheduleFormPage: Schedule created successfully');
         }
 
         if (context.mounted) {
           Navigator.of(context).pop();
         }
       } catch (e) {
-        print('ScheduleFormPage: Error saving schedule: $e');
+        AppLogger.error('ScheduleFormPage: Error saving schedule: $e');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('スケジュールの保存に失敗しました: $e')),

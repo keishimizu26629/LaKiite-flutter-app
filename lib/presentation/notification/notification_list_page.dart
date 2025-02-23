@@ -196,124 +196,186 @@ class _NotificationItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.watch(notificationNotifierProvider.notifier);
+    final state = ref.watch(notificationNotifierProvider);
 
     // 通知を既読にする関数
     Future<void> markAsRead() async {
       if (!notification.isRead) {
-        await notifier.markAsRead(notification.id);
+        try {
+          await notifier.markAsRead(notification.id);
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('通知の既読処理に失敗しました'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
       }
     }
 
     // 通知を承認する関数
     Future<void> acceptNotification() async {
-      await markAsRead();
-      await notifier.acceptNotification(notification.id);
+      try {
+        await markAsRead();
+        await notifier.acceptNotification(notification.id);
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('通知の承認に失敗しました'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
 
     // 通知を拒否する関数
     Future<void> rejectNotification() async {
-      await markAsRead();
-      await notifier.rejectNotification(notification.id);
+      try {
+        await markAsRead();
+        await notifier.rejectNotification(notification.id);
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('通知の拒否に失敗しました'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 1,
-      child: Container(
-        decoration: BoxDecoration(
-          border: !notification.isRead
-              ? Border(
-                  left: BorderSide(
-                    color: Theme.of(context).primaryColor,
-                    width: 4,
+    // ローディング状態のオーバーレイを表示する関数
+    Widget buildLoadingOverlay(Widget child) {
+      return Stack(
+        children: [
+          child,
+          if (state.isLoading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.1),
+                child: const Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
                   ),
-                )
-              : null,
-        ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.all(16),
-          leading: _buildLeadingIcon(context),
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _buildTitle(),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                _buildSubtitle(),
-                style: TextStyle(
-                  fontSize: 14,
-                  color:
-                      notification.isRead ? Colors.grey[600] : Colors.grey[800],
-                ),
-              ),
-            ],
+            ),
+        ],
+      );
+    }
+
+    return buildLoadingOverlay(
+      Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        elevation: 1,
+        child: Container(
+          decoration: BoxDecoration(
+            border: !notification.isRead
+                ? Border(
+                    left: BorderSide(
+                      color: Theme.of(context).primaryColor,
+                      width: 4,
+                    ),
+                  )
+                : null,
           ),
-          trailing: notification.status == domain.NotificationStatus.pending
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: acceptNotification,
-                      icon: const Icon(Icons.check, size: 18),
-                      label: const Text('承認'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(16),
+            leading: _buildLeadingIcon(context),
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _buildTitle(),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _buildSubtitle(),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: notification.isRead
+                        ? Colors.grey[600]
+                        : Colors.grey[800],
+                  ),
+                ),
+              ],
+            ),
+            trailing: notification.status == domain.NotificationStatus.pending
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: state.isLoading ? null : acceptNotification,
+                        icon: const Icon(Icons.check, size: 18),
+                        label: const Text('承認'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      onPressed: rejectNotification,
-                      icon: const Icon(Icons.close, size: 18),
-                      label: const Text('拒否'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Theme.of(context).primaryColor,
-                        side: BorderSide(color: Theme.of(context).primaryColor),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        onPressed: state.isLoading ? null : rejectNotification,
+                        icon: const Icon(Icons.close, size: 18),
+                        label: const Text('拒否'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Theme.of(context).primaryColor,
+                          side:
+                              BorderSide(color: Theme.of(context).primaryColor),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                         ),
                       ),
+                    ],
+                  )
+                : Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
                     ),
-                  ],
-                )
-              : Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: notification.status ==
-                            domain.NotificationStatus.accepted
-                        ? Theme.of(context).primaryColor.withOpacity(0.1)
-                        : Theme.of(context).primaryColor.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    notification.status == domain.NotificationStatus.accepted
-                        ? '承認済み'
-                        : '拒否済み',
-                    style: TextStyle(
+                    decoration: BoxDecoration(
                       color: notification.status ==
                               domain.NotificationStatus.accepted
-                          ? Theme.of(context).primaryColor
-                          : Theme.of(context).primaryColor.withOpacity(0.8),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                          ? Theme.of(context).primaryColor.withOpacity(0.1)
+                          : Theme.of(context).primaryColor.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      notification.status == domain.NotificationStatus.accepted
+                          ? '承認済み'
+                          : '拒否済み',
+                      style: TextStyle(
+                        color: notification.status ==
+                                domain.NotificationStatus.accepted
+                            ? Theme.of(context).primaryColor
+                            : Theme.of(context).primaryColor.withOpacity(0.8),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
-                ),
-          onTap: markAsRead,
+            onTap: state.isLoading ? null : markAsRead,
+          ),
         ),
       ),
     );

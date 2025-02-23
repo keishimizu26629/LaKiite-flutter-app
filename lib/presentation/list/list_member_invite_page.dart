@@ -121,6 +121,8 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
                 onPressed: selectedFriends.isEmpty
                     ? null
                     : () async {
+                        final scaffoldMessenger = ScaffoldMessenger.of(context);
+                        final navigator = Navigator.of(context);
                         try {
                           // 選択された友達をリストに追加
                           for (final friendId in selectedFriends) {
@@ -140,11 +142,11 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
                                 );
                           }
                           if (mounted) {
-                            Navigator.of(context).pop();
+                            navigator.pop();
                           }
                         } catch (e) {
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            scaffoldMessenger.showSnackBar(
                               SnackBar(content: Text('メンバーの追加に失敗しました: $e')),
                             );
                           }

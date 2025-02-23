@@ -6,6 +6,7 @@ import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/calendar/widgets/daily_schedule_view.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
+import 'package:lakiite/utils/logger.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -339,9 +340,9 @@ class DateCell extends StatelessWidget {
               final isHoliday = holidays.containsKey(dateString);
 
               // デバッグ用のログ出力
-              print('Date: $dateString, isHoliday: $isHoliday');
+              AppLogger.debug('Date: $dateString, isHoliday: $isHoliday');
               if (isHoliday) {
-                print('Holiday name: ${holidays[dateString]}');
+                AppLogger.debug('Holiday name: ${holidays[dateString]}');
               }
 
               return Material(

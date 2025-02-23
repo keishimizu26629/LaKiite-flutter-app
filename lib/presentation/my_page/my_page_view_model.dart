@@ -11,6 +11,7 @@ import '../../domain/interfaces/i_storage_service.dart';
 import '../../domain/interfaces/i_image_processor_service.dart';
 import '../../presentation/presentation_provider.dart';
 import '../../infrastructure/providers.dart';
+import 'package:lakiite/utils/logger.dart';
 
 final selectedImageProvider = StateProvider<File?>((ref) => null);
 
@@ -70,42 +71,43 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
         throw Exception('ユーザー情報が見つかりません');
       }
 
-      print('画像選択を開始します');
+      AppLogger.debug('画像選択を開始します');
       final pickedImagePath = await _ref
           .read(picker.imagePickerServiceProvider)
           .pickImage(picker.ImageSource.gallery);
 
       if (pickedImagePath != null) {
-        print('選択された画像パス: $pickedImagePath');
+        AppLogger.debug('選択された画像パス: $pickedImagePath');
         final imageFile = File(pickedImagePath);
         if (!await imageFile.exists()) {
           throw Exception('画像ファイルが見つかりません');
         }
 
-        print('画像圧縮を開始します');
+        AppLogger.debug('画像圧縮を開始します');
         final compressedImageFile = await _imageProcessorService.compressImage(
           imageFile,
           minWidth: 300,
           minHeight: 300,
           quality: 85,
         );
-        print('圧縮後の画像パス: ${compressedImageFile.path}');
-        print('圧縮後のファイルサイズ: ${await compressedImageFile.length()} bytes');
+        AppLogger.debug('圧縮後の画像パス: ${compressedImageFile.path}');
+        AppLogger.debug(
+            '圧縮後のファイルサイズ: ${await compressedImageFile.length()} bytes');
 
         // 圧縮した画像をStateに保存
         _ref.read(selectedImageProvider.notifier).state = compressedImageFile;
-        print('画像の選択と圧縮が完了しました');
+        AppLogger.debug('画像の選択と圧縮が完了しました');
       } else {
-        print('画像が選択されませんでした');
+        AppLogger.debug('画像が選択されませんでした');
       }
     } on PlatformException catch (e) {
-      print('プラットフォームエラー発生: ${e.code} - ${e.message}');
+      AppLogger.error('プラットフォームエラー発生: ${e.code} - ${e.message}');
       if (e.code == 'photo_access_denied') {
         throw Exception('設定から、このアプリに端末内の画像の操作を許可してください。');
       }
       throw Exception('画像の選択に失敗しました: ${e.message}');
     } catch (e) {
-      print('エラー発生: $e');
+      AppLogger.error('エラー発生: $e');
       throw Exception('画像の選択に失敗しました: $e');
     }
   }
@@ -117,7 +119,7 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
     String? shortBio,
     File? imageFile,
   }) async {
-    print('プロフィール更新を開始します');
+    AppLogger.debug('プロフィール更新を開始します');
     if (!state.hasValue || state.value == null) {
       throw Exception('ユーザー情報が見つかりません');
     }
@@ -128,40 +130,40 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
       try {
         newSearchId = UserId(searchIdStr);
       } catch (e) {
-        print('検索ID変換エラー: $e');
+        AppLogger.error('検索ID変換エラー: $e');
         throw Exception('検索IDの形式が正しくありません');
       }
 
       // 現在のsearchIdと異なる場合のみユニーク性チェック
       if (state.value!.searchId.toString() != searchIdStr) {
-        print('検索IDのユニーク性チェックを実行します');
+        AppLogger.debug('検索IDのユニーク性チェックを実行します');
         final isUnique = await _userRepository.isUserIdUnique(newSearchId);
         if (!isUnique) {
           throw Exception('この検索IDは既に使用されています');
         }
-        print('検索IDのユニーク性チェックが完了しました');
+        AppLogger.debug('検索IDのユニーク性チェックが完了しました');
       }
 
       String? iconUrl = state.value!.iconUrl;
       if (imageFile != null) {
         try {
-          print('画像のアップロードを開始します');
+          AppLogger.debug('画像のアップロードを開始します');
           final path = 'users/${state.value!.id}/profile/avatar.jpg';
           final metadata = {
             'uploadedAt': DateTime.now().toIso8601String(),
             'userId': state.value!.id,
           };
 
-          print(
+          AppLogger.debug(
               'アップロード情報: パス=$path, ファイルサイズ=${await imageFile.length()} bytes');
           iconUrl = await _storageService.uploadFile(
             path: path,
             file: imageFile,
             metadata: metadata,
           );
-          print('画像のアップロードが完了しました: $iconUrl');
+          AppLogger.debug('画像のアップロードが完了しました: $iconUrl');
         } catch (e) {
-          print('画像アップロードエラー: $e');
+          AppLogger.error('画像アップロードエラー: $e');
           throw Exception('画像のアップロードに失敗しました: $e');
         }
       }
@@ -175,11 +177,11 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
       );
 
       try {
-        print('ユーザー情報の更新を開始します');
+        AppLogger.debug('ユーザー情報の更新を開始します');
         await _userRepository.updateUser(updatedUser);
-        print('ユーザー情報の更新が完了しました');
+        AppLogger.debug('ユーザー情報の更新が完了しました');
       } catch (e) {
-        print('ユーザー情報更新エラー: $e');
+        AppLogger.error('ユーザー情報更新エラー: $e');
         throw Exception('ユーザー情報の更新に失敗しました: $e');
       }
 
@@ -197,15 +199,15 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
       if (imageFile != null) {
         try {
           await imageFile.delete();
-          print('一時ファイルを削除しました');
+          AppLogger.debug('一時ファイルを削除しました');
         } catch (e) {
           // 一時ファイルの削除に失敗しても処理は続行
-          print('一時ファイルの削除に失敗しました: $e');
+          AppLogger.warning('一時ファイルの削除に失敗しました: $e');
         }
       }
-      print('プロフィール更新が完了しました');
+      AppLogger.debug('プロフィール更新が完了しました');
     } catch (e) {
-      print('プロフィール更新エラー: $e');
+      AppLogger.error('プロフィール更新エラー: $e');
       throw Exception('プロフィールの更新に失敗しました: $e');
     }
   }

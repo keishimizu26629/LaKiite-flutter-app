@@ -22,7 +22,7 @@ class GroupPage extends ConsumerWidget {
         ],
       ),
       body: ListView(
-        children: [
+        children: const [
           // グループタイルのリスト
         ],
       ),

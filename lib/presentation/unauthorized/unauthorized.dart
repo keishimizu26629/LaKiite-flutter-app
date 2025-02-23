@@ -5,7 +5,6 @@ class Unauthorized extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        body: Center(child: Container(child: const Text('メールを認証してください。'))));
+    return const Scaffold(body: Center(child: Text('メールを認証してください。')));
   }
 }
