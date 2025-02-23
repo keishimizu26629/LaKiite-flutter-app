@@ -5,8 +5,10 @@ import 'package:lakiite/domain/entity/schedule_comment.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
 import 'package:lakiite/infrastructure/schedule_interaction_repository.dart';
+import 'package:lakiite/utils/logger.dart';
 
-final scheduleInteractionRepositoryProvider = Provider<IScheduleInteractionRepository>(
+final scheduleInteractionRepositoryProvider =
+    Provider<IScheduleInteractionRepository>(
   (ref) => ScheduleInteractionRepository(),
 );
 
@@ -18,7 +20,8 @@ final scheduleInteractionNotifierProvider = StateNotifierProvider.family<
   ),
 );
 
-class ScheduleInteractionNotifier extends StateNotifier<ScheduleInteractionState> {
+class ScheduleInteractionNotifier
+    extends StateNotifier<ScheduleInteractionState> {
   final IScheduleInteractionRepository _repository;
   final String _scheduleId;
   StreamSubscription<List<ScheduleReaction>>? _reactionsSubscription;
@@ -38,10 +41,11 @@ class ScheduleInteractionNotifier extends StateNotifier<ScheduleInteractionState
     _reactionsSubscription?.cancel();
     _reactionsSubscription = _repository.watchReactions(_scheduleId).listen(
       (reactions) {
-        print('Updating state with reactions: $reactions');
-        print('Current state reactions count: ${state.reactions.length}');
+        AppLogger.debug('Updating state with reactions: $reactions');
+        AppLogger.debug(
+            'Current state reactions count: ${state.reactions.length}');
         state = state.copyWith(reactions: reactions);
-        print('New state reactions count: ${state.reactions.length}');
+        AppLogger.debug('New state reactions count: ${state.reactions.length}');
       },
       onError: (error) {
         state = state.copyWith(error: error.toString());
@@ -63,29 +67,29 @@ class ScheduleInteractionNotifier extends StateNotifier<ScheduleInteractionState
 
   Future<void> toggleReaction(String userId, ReactionType type) async {
     try {
-      print('toggleReaction called - userId: $userId, type: $type');
+      AppLogger.debug('toggleReaction called - userId: $userId, type: $type');
       state = state.copyWith(isLoading: true, error: null);
-      
+
       final currentReaction = state.getUserReaction(userId);
-      print('Current reaction: $currentReaction');
-      
+      AppLogger.debug('Current reaction: $currentReaction');
+
       if (currentReaction != null) {
         if (currentReaction.type == type) {
-          print('Removing same reaction');
+          AppLogger.debug('Removing same reaction');
           await _repository.removeReaction(_scheduleId, userId);
         } else {
-          print('Updating to different reaction');
+          AppLogger.debug('Updating to different reaction');
           await _repository.removeReaction(_scheduleId, userId);
           await _repository.addReaction(_scheduleId, userId, type);
         }
       } else {
-        print('Adding new reaction');
+        AppLogger.debug('Adding new reaction');
         await _repository.addReaction(_scheduleId, userId, type);
       }
-      
-      print('Current state reactions: ${state.reactions}');
+
+      AppLogger.debug('Current state reactions: ${state.reactions}');
       state = state.copyWith(isLoading: false);
-      print('Updated state reactions: ${state.reactions}');
+      AppLogger.debug('Updated state reactions: ${state.reactions}');
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }

@@ -236,7 +236,7 @@ class DailyScheduleContent extends HookConsumerWidget {
                         }),
                       ],
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ),

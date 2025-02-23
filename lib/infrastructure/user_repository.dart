@@ -4,6 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import '../domain/entity/user.dart';
 import '../domain/interfaces/i_user_repository.dart';
 import '../domain/value/user_id.dart';
+import '../utils/logger.dart';
 
 class UserRepository implements IUserRepository {
   final FirebaseFirestore _firestore;
@@ -102,7 +103,7 @@ class UserRepository implements IUserRepository {
         transaction.set(privateRef, _toFirestorePrivate(user.privateProfile));
       });
     } catch (e) {
-      print('Error creating user: $e');
+      AppLogger.error('Error creating user: $e');
       rethrow;
     }
   }
@@ -180,20 +181,20 @@ class UserRepository implements IUserRepository {
           .get();
 
       if (snapshot.docs.isEmpty) {
-        print('User not found with searchId: $searchId');
+        AppLogger.debug('User not found with searchId: $searchId');
         return null;
       }
 
       final userDoc = snapshot.docs.first;
       final data = userDoc.data();
 
-      print('Found user document:');
-      print('Document ID: ${userDoc.id}');
-      print('Data: $data');
+      AppLogger.debug('Found user document:');
+      AppLogger.debug('Document ID: ${userDoc.id}');
+      AppLogger.debug('Data: $data');
 
       return SearchUserModel.fromFirestore(userDoc.id, data);
     } catch (e) {
-      print('Error searching user: $e');
+      AppLogger.error('Error searching user: $e');
       return null;
     }
   }

@@ -45,8 +45,10 @@ class _EditNamePageState extends ConsumerState<EditNamePage> {
             onPressed: () async {
               if (!userState.hasValue || userState.value == null) return;
 
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               try {
                 final user = userState.value!;
+                final navigator = Navigator.of(context);
                 await ref.read(myPageViewModelProvider.notifier).updateProfile(
                       name: _nameController.text,
                       displayName: _displayNameController.text,
@@ -54,14 +56,14 @@ class _EditNamePageState extends ConsumerState<EditNamePage> {
                       shortBio: user.publicProfile.shortBio,
                     );
                 if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  navigator.pop();
+                  scaffoldMessenger.showSnackBar(
                     const SnackBar(content: Text('名前を更新しました')),
                   );
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  scaffoldMessenger.showSnackBar(
                     SnackBar(content: Text('エラー: ${e.toString()}')),
                   );
                 }
@@ -119,7 +121,8 @@ class _EditNamePageState extends ConsumerState<EditNamePage> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('エラー: ${error.toString()}')),
+        error: (error, stack) =>
+            Center(child: Text('エラー: ${error.toString()}')),
       ),
     );
   }

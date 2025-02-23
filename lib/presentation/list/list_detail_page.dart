@@ -40,6 +40,8 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
               PopupMenuButton<String>(
                 onSelected: (value) async {
                   if (value == 'delete') {
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
+                    final navigator = Navigator.of(context);
                     final confirmed = await showDialog<bool>(
                       context: context,
                       builder: (context) => AlertDialog(
@@ -64,11 +66,11 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                             .read(listNotifierProvider.notifier)
                             .deleteList(list.id, list.ownerId);
                         if (mounted) {
-                          Navigator.of(context).pop();
+                          navigator.pop();
                         }
                       } catch (e) {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          scaffoldMessenger.showSnackBar(
                             SnackBar(
                                 content: Text('削除に失敗しました: ${e.toString()}')),
                           );

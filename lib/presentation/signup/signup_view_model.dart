@@ -3,8 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/entity/user.dart';
 import '../../domain/interfaces/i_user_repository.dart';
 import '../../infrastructure/user_repository.dart';
+import '../../utils/logger.dart';
 
-final userRepositoryProvider = Provider<IUserRepository>((ref) => UserRepository());
+final userRepositoryProvider =
+    Provider<IUserRepository>((ref) => UserRepository());
 
 final signupViewModelProvider =
     Provider.autoDispose<SignupViewModel>((ref) => SignupViewModel(ref));
@@ -42,9 +44,9 @@ class SignupViewModel {
 
       await userRepository.createUser(userModel);
 
-      print('User document created successfully');
+      AppLogger.debug('User document created successfully');
     } catch (e) {
-      print('Error in signUp: $e');
+      AppLogger.error('Error in signUp: $e');
       rethrow;
     }
   }

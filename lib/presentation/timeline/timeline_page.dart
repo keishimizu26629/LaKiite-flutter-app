@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class TimelinePage extends ConsumerWidget {
-  const TimelinePage({Key? key}) : super(key: key);
+  const TimelinePage({super.key});
 
   // タイムラインを表示するウィジェット
   @override

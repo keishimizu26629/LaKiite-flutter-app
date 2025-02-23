@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/schedule_comment.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
+import '../utils/logger.dart';
 
 /// スケジュールの相互作用（リアクション・コメント）に関するデータアクセスを管理
 ///
@@ -33,15 +34,15 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
     final reactions = snapshot.docs.map((doc) {
       try {
         final data = {...doc.data(), 'id': doc.id};
-        print('Reaction Data from Firestore: $data');
-        print(
+        AppLogger.debug('Reaction Data from Firestore: $data');
+        AppLogger.debug(
             'Reaction type from Firestore: ${data['type']} (${data['type'].runtimeType})');
         final reaction = ScheduleReaction.fromJson(data);
-        print('Converted Reaction: $reaction');
+        AppLogger.debug('Converted Reaction: $reaction');
         return reaction;
       } catch (e, stackTrace) {
-        print('Error converting reaction: $e');
-        print('Stack trace: $stackTrace');
+        AppLogger.error('Error converting reaction: $e');
+        AppLogger.error('Stack trace: $stackTrace');
         rethrow;
       }
     }).toList();
@@ -58,7 +59,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
     String userId,
     ReactionType type,
   ) async {
-    print(
+    AppLogger.debug(
         'addReaction: Adding reaction for schedule: $scheduleId, user: $userId, type: $type');
     final reactionDoc = _firestore
         .collection('schedules')
@@ -77,7 +78,8 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       'userDisplayName': userData?['displayName'],
       'userPhotoUrl': userData?['photoUrl'],
     });
-    print('addReaction: Successfully added reaction with createdAt: $now');
+    AppLogger.debug(
+        'addReaction: Successfully added reaction with createdAt: $now');
   }
 
   /// 指定された[scheduleId]と[userId]に対応するリアクションを削除
@@ -85,12 +87,15 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   /// `schedules/{scheduleId}/reactions/{userId}`のドキュメントを削除します。
   @override
   Future<void> removeReaction(String scheduleId, String userId) async {
+    AppLogger.debug(
+        'Removing reaction - scheduleId: $scheduleId, userId: $userId');
     await _firestore
         .collection('schedules')
         .doc(scheduleId)
         .collection('reactions')
         .doc(userId)
         .delete();
+    AppLogger.debug('Successfully removed reaction for user: $userId');
   }
 
   /// 指定された[scheduleId]のリアクションをリアルタイムで監視
@@ -99,7 +104,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   /// 最新の[ScheduleReaction]のリストを提供します。
   @override
   Stream<List<ScheduleReaction>> watchReactions(String scheduleId) {
-    print(
+    AppLogger.debug(
         'watchReactions: Starting to watch reactions for schedule: $scheduleId');
     return _firestore
         .collection('schedules')
@@ -108,24 +113,25 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      print(
+      AppLogger.debug(
           'watchReactions: Received snapshot with ${snapshot.docs.length} documents');
       final reactions = snapshot.docs.map((doc) {
         try {
           final data = {...doc.data(), 'id': doc.id};
-          print('Reaction Data from Firestore (Watch): $data');
-          print(
+          AppLogger.debug('Reaction Data from Firestore (Watch): $data');
+          AppLogger.debug(
               'Reaction type from Firestore: ${data['type']} (${data['type'].runtimeType})');
           final reaction = ScheduleReaction.fromJson(data);
-          print('Converted Reaction (Watch): $reaction');
+          AppLogger.debug('Converted Reaction (Watch): $reaction');
           return reaction;
         } catch (e, stackTrace) {
-          print('Error converting reaction: $e');
-          print('Stack trace: $stackTrace');
+          AppLogger.error('Error converting reaction: $e');
+          AppLogger.error('Stack trace: $stackTrace');
           rethrow;
         }
       }).toList();
-      print('watchReactions: Converted ${reactions.length} reactions');
+      AppLogger.debug(
+          'watchReactions: Converted ${reactions.length} reactions');
       return reactions;
     });
   }
@@ -145,13 +151,13 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
     final comments = snapshot.docs.map((doc) {
       try {
         final data = {...doc.data(), 'id': doc.id};
-        print('Comment Data from Firestore: $data');
+        AppLogger.debug('Comment Data from Firestore: $data');
         final comment = ScheduleComment.fromJson(data);
-        print('Converted Comment: $comment');
+        AppLogger.debug('Converted Comment: $comment');
         return comment;
       } catch (e, stackTrace) {
-        print('Error converting comment: $e');
-        print('Stack trace: $stackTrace');
+        AppLogger.error('Error converting comment: $e');
+        AppLogger.error('Stack trace: $stackTrace');
         rethrow;
       }
     }).toList();
@@ -169,10 +175,11 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
     String content,
   ) async {
     try {
-      print('Adding comment - scheduleId: $scheduleId, userId: $userId');
+      AppLogger.debug(
+          'Adding comment - scheduleId: $scheduleId, userId: $userId');
       final userDoc = await _firestore.collection('users').doc(userId).get();
       final userData = userDoc.data();
-      print('User data fetched: $userData');
+      AppLogger.debug('User data fetched: $userData');
 
       final now = Timestamp.now();
       final commentData = {
@@ -182,17 +189,17 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         'userDisplayName': userData?['displayName'],
         'userPhotoUrl': userData?['photoUrl'],
       };
-      print('Comment data to save: $commentData');
+      AppLogger.debug('Comment data to save: $commentData');
 
       await _firestore
           .collection('schedules')
           .doc(scheduleId)
           .collection('comments')
           .add(commentData);
-      print('Comment added successfully');
+      AppLogger.debug('Comment added successfully');
     } catch (e, stackTrace) {
-      print('Error adding comment: $e');
-      print('Stack trace: $stackTrace');
+      AppLogger.error('Error adding comment: $e');
+      AppLogger.error('Stack trace: $stackTrace');
       rethrow;
     }
   }
@@ -202,12 +209,15 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   /// `schedules/{scheduleId}/comments/{commentId}`のドキュメントを削除します。
   @override
   Future<void> deleteComment(String scheduleId, String commentId) async {
+    AppLogger.debug(
+        'Deleting comment - scheduleId: $scheduleId, commentId: $commentId');
     await _firestore
         .collection('schedules')
         .doc(scheduleId)
         .collection('comments')
         .doc(commentId)
         .delete();
+    AppLogger.debug('Successfully deleted comment: $commentId');
   }
 
   /// 指定された[scheduleId]のコメントをリアルタイムで監視
@@ -216,6 +226,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   /// 最新の[ScheduleComment]のリストを提供します。
   @override
   Stream<List<ScheduleComment>> watchComments(String scheduleId) {
+    AppLogger.debug('Watching comments for schedule: $scheduleId');
     return _firestore
         .collection('schedules')
         .doc(scheduleId)
@@ -223,19 +234,22 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
+      AppLogger.debug(
+          'Received comment snapshot with ${snapshot.docs.length} documents');
       final comments = snapshot.docs.map((doc) {
         try {
           final data = {...doc.data(), 'id': doc.id};
-          print('Comment Data from Firestore (Watch): $data');
+          AppLogger.debug('Comment Data from Firestore (Watch): $data');
           final comment = ScheduleComment.fromJson(data);
-          print('Converted Comment (Watch): $comment');
+          AppLogger.debug('Converted Comment (Watch): $comment');
           return comment;
         } catch (e, stackTrace) {
-          print('Error converting comment: $e');
-          print('Stack trace: $stackTrace');
+          AppLogger.error('Error converting comment: $e');
+          AppLogger.error('Stack trace: $stackTrace');
           rethrow;
         }
       }).toList();
+      AppLogger.debug('Converted ${comments.length} comments');
       return comments;
     });
   }

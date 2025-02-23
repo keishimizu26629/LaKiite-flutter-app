@@ -8,6 +8,7 @@ import '../../application/auth/auth_notifier.dart' as auth;
 import '../../presentation/presentation_provider.dart';
 import '../../presentation/group/models/group_member_invite_state.dart';
 import '../../presentation/group/models/search_user_model.dart' as search;
+import '../../utils/logger.dart';
 
 /// グループメンバー招待画面のViewModel Provider
 final groupMemberInviteViewModelProvider = StateNotifierProvider.family<
@@ -59,7 +60,7 @@ class GroupMemberInviteNotifier extends StateNotifier<GroupMemberInviteState> {
         await _loadPendingInvitations(friendIds);
       }
     } catch (e) {
-      print('Error initializing view model: $e');
+      AppLogger.error('Error initializing view model: $e');
     }
   }
 
@@ -72,7 +73,7 @@ class GroupMemberInviteNotifier extends StateNotifier<GroupMemberInviteState> {
         pendingInvitations: Set<String>.from(snapshot),
       );
     } catch (e) {
-      print('Error loading pending invitations: $e');
+      AppLogger.error('Error loading pending invitations: $e');
     }
   }
 
@@ -91,7 +92,7 @@ class GroupMemberInviteNotifier extends StateNotifier<GroupMemberInviteState> {
         friends: friendProfiles.whereType<UserModel>().toList(),
       );
     } catch (e) {
-      print('Error loading friends: $e');
+      AppLogger.error('Error loading friends: $e');
     }
   }
 
@@ -140,7 +141,7 @@ class GroupMemberInviteNotifier extends StateNotifier<GroupMemberInviteState> {
 
         hasPending = hasSentPending;
       } catch (e) {
-        print('Group invitation check error: $e');
+        AppLogger.error('Group invitation check error: $e');
       }
 
       final searchUser = search.SearchUserModel(

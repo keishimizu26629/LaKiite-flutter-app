@@ -1,11 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../domain/entity/schedule.dart';
 import '../domain/interfaces/i_schedule_repository.dart';
+import '../domain/interfaces/i_friend_list_repository.dart';
+import '../utils/logger.dart';
 
 class ScheduleRepository implements IScheduleRepository {
   final FirebaseFirestore _firestore;
+  final IFriendListRepository _friendListRepository;
 
-  ScheduleRepository() : _firestore = FirebaseFirestore.instance;
+  ScheduleRepository(this._friendListRepository)
+      : _firestore = FirebaseFirestore.instance;
 
   Map<String, dynamic> _toFirestore(Schedule schedule) {
     return {
@@ -19,7 +23,9 @@ class ScheduleRepository implements IScheduleRepository {
       'ownerPhotoUrl': schedule.ownerPhotoUrl,
       'sharedLists': schedule.sharedLists,
       'visibleTo': schedule.visibleTo,
-      'createdAt': schedule.id.isEmpty ? FieldValue.serverTimestamp() : Timestamp.fromDate(schedule.createdAt),
+      'createdAt': schedule.id.isEmpty
+          ? FieldValue.serverTimestamp()
+          : Timestamp.fromDate(schedule.createdAt),
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
@@ -28,11 +34,13 @@ class ScheduleRepository implements IScheduleRepository {
     final data = doc.data() as Map<String, dynamic>;
 
     // リアクション数を取得
-    final reactionsSnapshot = await doc.reference.collection('reactions').count().get();
+    final reactionsSnapshot =
+        await doc.reference.collection('reactions').count().get();
     final reactionCount = reactionsSnapshot.count ?? 0;
 
     // コメント数を取得
-    final commentsSnapshot = await doc.reference.collection('comments').count().get();
+    final commentsSnapshot =
+        await doc.reference.collection('comments').count().get();
     final commentCount = commentsSnapshot.count ?? 0;
 
     return Schedule(
@@ -40,8 +48,10 @@ class ScheduleRepository implements IScheduleRepository {
       title: data['title'] as String,
       description: data['description'] as String,
       location: data['location'] as String?,
-      startDateTime: (data['startDateTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      endDateTime: (data['endDateTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      startDateTime:
+          (data['startDateTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      endDateTime:
+          (data['endDateTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
       ownerId: data['ownerId'] as String,
       ownerDisplayName: data['ownerDisplayName'] as String,
       ownerPhotoUrl: data['ownerPhotoUrl'] as String?,
@@ -62,17 +72,16 @@ class ScheduleRepository implements IScheduleRepository {
         .orderBy('startDateTime', descending: false)
         .get(const GetOptions(source: Source.cache))
         .catchError((error) async {
-          // キャッシュが利用できない場合はサーバーから取得
-          return await _firestore
-              .collection('schedules')
-              .where('sharedLists', arrayContains: listId)
-              .orderBy('startDateTime', descending: false)
-              .get();
-        });
+      // キャッシュが利用できない場合はサーバーから取得
+      return await _firestore
+          .collection('schedules')
+          .where('sharedLists', arrayContains: listId)
+          .orderBy('startDateTime', descending: false)
+          .get();
+    });
 
-    final schedules = await Future.wait(
-      snapshot.docs.map((doc) => _enrichSchedule(doc))
-    );
+    final schedules =
+        await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
     return schedules;
   }
 
@@ -84,108 +93,97 @@ class ScheduleRepository implements IScheduleRepository {
         .orderBy('startDateTime', descending: false)
         .get(const GetOptions(source: Source.cache))
         .catchError((error) async {
-          // キャッシュが利用できない場合はサーバーから取得
-          return await _firestore
-              .collection('schedules')
-              .where('visibleTo', arrayContains: userId)
-              .orderBy('startDateTime', descending: false)
-              .get();
-        });
+      // キャッシュが利用できない場合はサーバーから取得
+      return await _firestore
+          .collection('schedules')
+          .where('visibleTo', arrayContains: userId)
+          .orderBy('startDateTime', descending: false)
+          .get();
+    });
 
-    final schedules = await Future.wait(
-      snapshot.docs.map((doc) => _enrichSchedule(doc))
-    );
+    final schedules =
+        await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
     return schedules;
   }
 
   @override
   Future<Schedule> createSchedule(Schedule schedule) async {
-    print('ScheduleRepository: Creating schedule with data:');
-    print('Title: ${schedule.title}');
-    print('Description: ${schedule.description}');
-    print('StartDateTime: ${schedule.startDateTime}');
-    print('EndDateTime: ${schedule.endDateTime}');
-    print('OwnerId: ${schedule.ownerId}');
-    print('OwnerDisplayName: ${schedule.ownerDisplayName}');
-    print('SharedLists: ${schedule.sharedLists}');
-    print('VisibleTo: ${schedule.visibleTo}');
-
     try {
-      // visibleToリストを構築
-      List<String> newVisibleTo = [schedule.ownerId];
+      AppLogger.debug('ScheduleRepository: Creating schedule with data:');
+      AppLogger.debug('Title: ${schedule.title}');
+      AppLogger.debug('Description: ${schedule.description}');
+      AppLogger.debug('StartDateTime: ${schedule.startDateTime}');
+      AppLogger.debug('EndDateTime: ${schedule.endDateTime}');
+      AppLogger.debug('OwnerId: ${schedule.ownerId}');
+      AppLogger.debug('OwnerDisplayName: ${schedule.ownerDisplayName}');
+      AppLogger.debug('SharedLists: ${schedule.sharedLists}');
+      AppLogger.debug('VisibleTo: ${schedule.visibleTo}');
 
-      // 選択されているリストのメンバーを追加
-      for (String listId in schedule.sharedLists) {
-        print('Processing list: $listId');
-        final listDoc = await _firestore
-            .collection('lists')
-            .doc(listId)
-            .get();
-
-        if (listDoc.exists) {
-          final listData = listDoc.data() as Map<String, dynamic>;
-          final memberIds = List<String>.from(listData['memberIds'] as List? ?? []);
-          print('Adding members from list $listId: $memberIds');
-          newVisibleTo.addAll(memberIds);
+      // 共有リストのメンバーを取得
+      final Set<String> newVisibleTo = {...schedule.visibleTo};
+      for (final listId in schedule.sharedLists) {
+        AppLogger.debug('Processing list: $listId');
+        try {
+          final memberIds =
+              await _friendListRepository.getListMemberIds(listId);
+          if (memberIds != null) {
+            AppLogger.debug('Adding members from list $listId: $memberIds');
+            newVisibleTo.addAll(memberIds);
+          }
+        } catch (e) {
+          // エラーが発生しても処理を続行
+          continue;
         }
       }
+      AppLogger.debug('Final visibleTo list: $newVisibleTo');
 
-      // 重複を除去
-      newVisibleTo = newVisibleTo.toSet().toList();
-      print('Final visibleTo list: $newVisibleTo');
+      final data = schedule.copyWith(visibleTo: newVisibleTo.toList()).toJson();
 
-      // スケジュールを更新
-      final updatedSchedule = schedule.copyWith(visibleTo: newVisibleTo);
-      final data = _toFirestore(updatedSchedule);
-      print('ScheduleRepository: Converted to Firestore data:');
-      print(data);
+      AppLogger.debug('ScheduleRepository: Converted to Firestore data:');
+      AppLogger.debug(data.toString());
 
       final docRef = await _firestore.collection('schedules').add(data);
-      print('ScheduleRepository: Document created with ID: ${docRef.id}');
+      AppLogger.debug(
+          'ScheduleRepository: Document created with ID: ${docRef.id}');
 
-      // 作成後にキャッシュを更新するため、サーバーから最新データを取得
-      final doc = await docRef.get(const GetOptions(source: Source.server));
+      // 作成したドキュメントを取得して返す
+      final doc = await docRef.get();
       return _enrichSchedule(doc);
     } catch (e) {
-      print('ScheduleRepository: Error creating schedule: $e');
-      throw e;
+      AppLogger.error('ScheduleRepository: Error creating schedule: $e');
+      rethrow;
     }
   }
 
   @override
   Future<void> updateSchedule(Schedule schedule) async {
-    print('Updating schedule: ${schedule.id}');
-    print('Current sharedLists: ${schedule.sharedLists}');
+    try {
+      AppLogger.debug('Updating schedule: ${schedule.id}');
+      AppLogger.debug('Current sharedLists: ${schedule.sharedLists}');
 
-    // 常に新しいvisibleToリストを作成（ownerIdのみを含む）
-    List<String> newVisibleTo = [schedule.ownerId];
-
-    // 選択されているリストのメンバーを追加
-    for (String listId in schedule.sharedLists) {
-      print('Processing list: $listId');
-      final listDoc = await _firestore
-          .collection('lists')
-          .doc(listId)
-          .get();
-
-      if (listDoc.exists) {
-        final listData = listDoc.data() as Map<String, dynamic>;
-        final memberIds = List<String>.from(listData['memberIds'] as List? ?? []);
-        print('Adding members from list $listId: $memberIds');
-        newVisibleTo.addAll(memberIds);
+      // 共有リストのメンバーを取得
+      final Set<String> newVisibleTo = {...schedule.visibleTo};
+      for (final listId in schedule.sharedLists) {
+        AppLogger.debug('Processing list: $listId');
+        try {
+          final memberIds =
+              await _friendListRepository.getListMemberIds(listId);
+          if (memberIds != null) {
+            AppLogger.debug('Adding members from list $listId: $memberIds');
+            newVisibleTo.addAll(memberIds);
+          }
+        } catch (e) {
+          // エラーが発生しても処理を続行
+          continue;
+        }
       }
+      AppLogger.debug('Final visibleTo list: $newVisibleTo');
+
+      final data = schedule.copyWith(visibleTo: newVisibleTo.toList()).toJson();
+      await _firestore.collection('schedules').doc(schedule.id).update(data);
+    } catch (e) {
+      rethrow;
     }
-
-    // 重複を除去
-    newVisibleTo = newVisibleTo.toSet().toList();
-    print('Final visibleTo list: $newVisibleTo');
-
-    // スケジュールを更新（visibleToを新しいリストで上書き）
-    final updatedSchedule = schedule.copyWith(visibleTo: newVisibleTo);
-    await _firestore
-        .collection('schedules')
-        .doc(schedule.id)
-        .update(_toFirestore(updatedSchedule));
   }
 
   @override
@@ -201,28 +199,29 @@ class ScheduleRepository implements IScheduleRepository {
         .orderBy('startDateTime', descending: false)
         .snapshots()
         .asyncMap((snapshot) async {
-          final schedules = await Future.wait(
-            snapshot.docs.map((doc) => _enrichSchedule(doc))
-          );
-          return schedules;
-        });
+      final schedules =
+          await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
+      return schedules;
+    });
   }
 
   @override
   Stream<List<Schedule>> watchUserSchedules(String userId) {
-    print('ScheduleRepository: watchUserSchedules called for user: $userId');
+    AppLogger.debug(
+        'ScheduleRepository: watchUserSchedules called for user: $userId');
+
     final query = _firestore
         .collection('schedules')
         .where('visibleTo', arrayContains: userId)
-        .orderBy('startDateTime', descending: true);
+        .orderBy('startDateTime', descending: false);
 
-    print('ScheduleRepository: Query: ${query.parameters}');
+    AppLogger.debug('ScheduleRepository: Query: ${query.parameters}');
 
     return query.snapshots().asyncMap((snapshot) async {
-      print('ScheduleRepository: Received snapshot with ${snapshot.docs.length} documents');
-      final schedules = await Future.wait(
-        snapshot.docs.map((doc) => _enrichSchedule(doc))
-      );
+      AppLogger.debug(
+          'ScheduleRepository: Received snapshot with ${snapshot.docs.length} documents');
+      final schedules =
+          await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
       return schedules;
     });
   }
@@ -234,8 +233,8 @@ class ScheduleRepository implements IScheduleRepository {
         .doc(scheduleId)
         .snapshots()
         .asyncMap((doc) async {
-          if (!doc.exists) return null;
-          return _enrichSchedule(doc);
-        });
+      if (!doc.exists) return null;
+      return _enrichSchedule(doc);
+    });
   }
 }
