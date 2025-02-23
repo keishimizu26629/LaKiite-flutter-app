@@ -11,25 +11,6 @@ class ScheduleRepository implements IScheduleRepository {
   ScheduleRepository(this._friendListRepository)
       : _firestore = FirebaseFirestore.instance;
 
-  Map<String, dynamic> _toFirestore(Schedule schedule) {
-    return {
-      'title': schedule.title,
-      'description': schedule.description,
-      'location': schedule.location,
-      'startDateTime': Timestamp.fromDate(schedule.startDateTime),
-      'endDateTime': Timestamp.fromDate(schedule.endDateTime),
-      'ownerId': schedule.ownerId,
-      'ownerDisplayName': schedule.ownerDisplayName,
-      'ownerPhotoUrl': schedule.ownerPhotoUrl,
-      'sharedLists': schedule.sharedLists,
-      'visibleTo': schedule.visibleTo,
-      'createdAt': schedule.id.isEmpty
-          ? FieldValue.serverTimestamp()
-          : Timestamp.fromDate(schedule.createdAt),
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
-  }
-
   Future<Schedule> _enrichSchedule(DocumentSnapshot doc) async {
     final data = doc.data() as Map<String, dynamic>;
 

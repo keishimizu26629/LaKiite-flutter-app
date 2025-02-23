@@ -175,29 +175,6 @@ class CalendarPage extends StatelessWidget {
     return Duration(days: (weekday == 7) ? 0 : -weekday);
   }
 
-  List<Schedule> _getSchedulesForDate(DateTime date) {
-    return schedules.where((schedule) {
-      final scheduleStartDate = DateTime(
-        schedule.startDateTime.year,
-        schedule.startDateTime.month,
-        schedule.startDateTime.day,
-      );
-      final scheduleEndDate = DateTime(
-        schedule.endDateTime.year,
-        schedule.endDateTime.month,
-        schedule.endDateTime.day,
-      );
-      final targetDate = DateTime(
-        date.year,
-        date.month,
-        date.day,
-      );
-
-      return !targetDate.isBefore(scheduleStartDate) &&
-          !targetDate.isAfter(scheduleEndDate);
-    }).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     final currentDates = _getCurrentDates(visiblePageDate);
