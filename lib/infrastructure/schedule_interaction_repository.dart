@@ -19,6 +19,51 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   ScheduleInteractionRepository({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
+  /// スケジュールのカウンターを更新する内部メソッド
+  Future<void> _updateScheduleCounters(String scheduleId) async {
+    AppLogger.debug('Updating schedule counters for scheduleId: $scheduleId');
+
+    try {
+      await _firestore.runTransaction((transaction) async {
+        final scheduleRef = _firestore.collection('schedules').doc(scheduleId);
+        final scheduleDoc = await transaction.get(scheduleRef);
+
+        // リアクション数を取得
+        final reactionsSnapshot = await _firestore
+            .collection('schedules')
+            .doc(scheduleId)
+            .collection('reactions')
+            .get();
+        final reactionCount = reactionsSnapshot.docs.length;
+        AppLogger.debug('Current reaction count: $reactionCount');
+
+        // コメント数を取得
+        final commentsSnapshot = await _firestore
+            .collection('schedules')
+            .doc(scheduleId)
+            .collection('comments')
+            .get();
+        final commentCount = commentsSnapshot.docs.length;
+        AppLogger.debug('Current comment count: $commentCount');
+
+        // スケジュールドキュメントを更新
+        transaction.update(scheduleRef, {
+          'reactionCount': reactionCount,
+          'commentCount': commentCount,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        AppLogger.debug('Schedule counters updated in transaction');
+      }, maxAttempts: 3);
+
+      AppLogger.debug('Schedule counters transaction completed successfully');
+    } catch (e, stack) {
+      AppLogger.error('Error updating schedule counters: $e');
+      AppLogger.error('Stack trace: $stack');
+      rethrow;
+    }
+  }
+
   /// 指定された[scheduleId]に関連する全リアクションを取得
   ///
   /// Firestoreから`schedules/{scheduleId}/reactions`コレクションの
@@ -54,7 +99,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   /// [userId]をドキュメントIDとして使用し、ユーザーごとに1つのリアクションのみを
   /// 許可します。[type]には'going'または'thinking'が指定可能です。
   @override
-  Future<void> addReaction(
+  Future<String> addReaction(
     String scheduleId,
     String userId,
     ReactionType type,
@@ -69,17 +114,27 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
 
     final userDoc = await _firestore.collection('users').doc(userId).get();
     final userData = userDoc.data();
+    AppLogger.debug('User data fetched: $userData');
 
     final now = Timestamp.now();
-    await reactionDoc.set({
+    final reactionData = {
       'userId': userId,
       'type': type == ReactionType.going ? 'going' : 'thinking',
       'createdAt': now,
       'userDisplayName': userData?['displayName'],
       'userPhotoUrl': userData?['photoUrl'],
-    });
+    };
+    AppLogger.debug('Reaction data to save: $reactionData');
+
+    await reactionDoc.set(reactionData);
     AppLogger.debug(
         'addReaction: Successfully added reaction with createdAt: $now');
+
+    // カウンターを更新
+    await _updateScheduleCounters(scheduleId);
+    AppLogger.debug('Schedule counters updated after adding reaction');
+
+    return userId;
   }
 
   /// 指定された[scheduleId]と[userId]に対応するリアクションを削除
@@ -96,6 +151,9 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         .doc(userId)
         .delete();
     AppLogger.debug('Successfully removed reaction for user: $userId');
+
+    // カウンターを更新
+    await _updateScheduleCounters(scheduleId);
   }
 
   /// 指定された[scheduleId]のリアクションをリアルタイムで監視
@@ -169,7 +227,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   /// [userId]に対応するユーザー情報（表示名、プロフィール画像URL）も
   /// コメントと共に保存されます。
   @override
-  Future<void> addComment(
+  Future<String> addComment(
     String scheduleId,
     String userId,
     String content,
@@ -191,12 +249,17 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       };
       AppLogger.debug('Comment data to save: $commentData');
 
-      await _firestore
+      final docRef = await _firestore
           .collection('schedules')
           .doc(scheduleId)
           .collection('comments')
           .add(commentData);
-      AppLogger.debug('Comment added successfully');
+      AppLogger.debug('Comment added successfully with ID: ${docRef.id}');
+
+      // カウンターを更新
+      await _updateScheduleCounters(scheduleId);
+
+      return docRef.id;
     } catch (e, stackTrace) {
       AppLogger.error('Error adding comment: $e');
       AppLogger.error('Stack trace: $stackTrace');
@@ -218,6 +281,9 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         .doc(commentId)
         .delete();
     AppLogger.debug('Successfully deleted comment: $commentId');
+
+    // カウンターを更新
+    await _updateScheduleCounters(scheduleId);
   }
 
   /// 指定された[scheduleId]のコメントをリアルタイムで監視

@@ -12,6 +12,7 @@ class ScheduleFormPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    AppLogger.debug('ScheduleFormPage: Building form page');
     final titleController = useTextEditingController(text: schedule?.title);
     final descriptionController =
         useTextEditingController(text: schedule?.description);
@@ -39,6 +40,15 @@ class ScheduleFormPage extends HookConsumerWidget {
     final listsAsync = ref.watch(userListsStreamProvider);
     final authState = ref.watch(authNotifierProvider);
 
+    AppLogger.debug('ScheduleFormPage: Initial form values:');
+    AppLogger.debug('Title: ${titleController.text}');
+    AppLogger.debug('Description: ${descriptionController.text}');
+    AppLogger.debug('Location: ${locationController.text}');
+    AppLogger.debug('Start Date: ${selectedStartDate.value}');
+    AppLogger.debug('Start Time: ${selectedStartTime.value}');
+    AppLogger.debug('End Date: ${selectedEndDate.value}');
+    AppLogger.debug('End Time: ${selectedEndTime.value}');
+
     // 編集時の初期値設定
     useEffect(() {
       if (schedule != null && listsAsync.hasValue) {
@@ -52,16 +62,20 @@ class ScheduleFormPage extends HookConsumerWidget {
 
     // スケジュールの保存処理
     Future<void> handleSave() async {
+      AppLogger.debug('ScheduleFormPage: Save button pressed');
+
       if (titleController.text.isEmpty) {
+        AppLogger.warning('ScheduleFormPage: Title is empty');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('タイトルを入力してください')),
         );
         return;
       }
 
-      if (selectedLists.value.isEmpty) {
+      if (descriptionController.text.isEmpty) {
+        AppLogger.warning('ScheduleFormPage: Description is empty');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('公開するリストを選択してください')),
+          const SnackBar(content: Text('説明を入力してください')),
         );
         return;
       }
@@ -83,6 +97,7 @@ class ScheduleFormPage extends HookConsumerWidget {
       );
 
       if (endDateTime.isBefore(startDateTime)) {
+        AppLogger.warning('ScheduleFormPage: End date is before start date');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('終了日時は開始日時より後に設定してください')),
         );
@@ -90,23 +105,25 @@ class ScheduleFormPage extends HookConsumerWidget {
       }
 
       final scheduleNotifier = ref.read(scheduleNotifierProvider.notifier);
-      final currentUser = authState.when(
-        data: (state) => state.user,
-        loading: () => null,
-        error: (_, __) => null,
-      );
+      final currentUser = authState.requireValue.user;
 
       if (currentUser == null) {
+        AppLogger.error('ScheduleFormPage: User is not authenticated');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('ユーザー情報の取得に失敗しました')),
+          const SnackBar(content: Text('ユーザー認証が必要です')),
         );
         return;
       }
 
+      AppLogger.debug('ScheduleFormPage: Preparing to save schedule');
+      AppLogger.debug('Current user ID: ${currentUser.id}');
+      AppLogger.debug(
+          'Selected lists: ${selectedLists.value.map((l) => l.id).toList()}');
+
       try {
         if (schedule != null) {
-          AppLogger.debug(
-              'ScheduleFormPage: Updating schedule ${schedule!.id}');
+          // AppLogger.debug(
+          //     'ScheduleFormPage: Updating schedule ${schedule!.id}');
           await scheduleNotifier.updateSchedule(
             schedule!.copyWith(
               title: titleController.text,
@@ -121,9 +138,19 @@ class ScheduleFormPage extends HookConsumerWidget {
               updatedAt: DateTime.now(),
             ),
           );
-          AppLogger.debug('ScheduleFormPage: Schedule updated successfully');
+          // AppLogger.debug('ScheduleFormPage: Schedule updated successfully');
         } else {
-          AppLogger.debug('ScheduleFormPage: Creating new schedule');
+          AppLogger.debug('ScheduleFormPage: Creating new schedule with:');
+          AppLogger.debug('Title: ${titleController.text}');
+          AppLogger.debug('Description: ${descriptionController.text}');
+          AppLogger.debug('Location: ${locationController.text}');
+          AppLogger.debug('StartDateTime: $startDateTime');
+          AppLogger.debug('EndDateTime: $endDateTime');
+          AppLogger.debug('OwnerId: ${currentUser.id}');
+          AppLogger.debug(
+              'SharedLists: ${selectedLists.value.map((l) => l.id).toList()}');
+          AppLogger.debug('VisibleTo: [${currentUser.id}]');
+
           await scheduleNotifier.createSchedule(
             title: titleController.text,
             description: descriptionController.text,

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../domain/entity/notification.dart';
 import '../domain/interfaces/i_notification_repository.dart';
+import '../utils/logger.dart';
 
 /// 通知関連のFirestoreとのデータアクセスを管理するリポジトリクラス
 class NotificationRepository implements INotificationRepository {
@@ -15,15 +16,17 @@ class NotificationRepository implements INotificationRepository {
   /// [notification] 作成する通知オブジェクト
   @override
   Future<void> createNotification(Notification notification) async {
-    // 作成する通知の内容をログ
-    debugPrint('Creating notification: ${notification.toFirestore()}');
+    AppLogger.debug('Creating notification: ${notification.toFirestore()}');
     try {
       final docRef = _firestore.collection('notifications').doc();
-      await docRef.set(notification.toFirestore());
-      // 作成成功をログ
-      debugPrint('Notification created successfully with ID: ${docRef.id}');
-    } catch (e) {
-      debugPrint('Error creating notification: $e');
+      final data = notification.toFirestore();
+      AppLogger.debug('Notification data to save: $data');
+      await docRef.set(data);
+      AppLogger.debug(
+          'Notification created successfully with ID: ${docRef.id}');
+    } catch (e, stack) {
+      AppLogger.error('Error creating notification: $e');
+      AppLogger.error('Stack trace: $stack');
       rethrow;
     }
   }
@@ -331,8 +334,7 @@ class NotificationRepository implements INotificationRepository {
           .get();
 
       return snapshot.docs
-          .map((doc) =>
-              (doc.data())['receiveUserId'] as String)
+          .map((doc) => (doc.data())['receiveUserId'] as String)
           .toList();
     } catch (e) {
       debugPrint('Error getting pending group invitations: $e');
@@ -361,8 +363,7 @@ class NotificationRepository implements INotificationRepository {
         .where('receiveUserId', whereIn: friendIds)
         .snapshots()
         .map((snapshot) => snapshot.docs
-            .map((doc) =>
-                (doc.data())['receiveUserId'] as String)
+            .map((doc) => (doc.data())['receiveUserId'] as String)
             .toList());
   }
 }

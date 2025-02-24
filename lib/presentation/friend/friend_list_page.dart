@@ -5,10 +5,11 @@ import '../list/create_list_page.dart';
 import '../list/list_detail_page.dart';
 import '../presentation_provider.dart';
 import '../friend/friend_search_page.dart';
-import '../notification/notification_list_page.dart';
-import '../widgets/notification_badge.dart';
+import '../widgets/notification_button.dart';
 import '../widgets/ad_banner_widget.dart';
 
+/// フレンドリストとユーザーリストを表示するページ。
+/// タブで切り替えることができ、それぞれのタブに応じたFloatingActionButtonを表示します。
 class FriendListPage extends ConsumerStatefulWidget {
   const FriendListPage({super.key});
 
@@ -34,12 +35,20 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
     super.dispose();
   }
 
+  /// タブの変更を処理するメソッド。
+  /// タブの切り替えが完了したときにUIを更新します。
   void _handleTabChange() {
     if (!_tabController.indexIsChanging) {
       setState(() {});
     }
   }
 
+  /// 現在のタブに応じたFloatingActionButtonを構築します。
+  ///
+  /// フレンドタブの場合は友達追加ボタン、リストタブの場合はリスト作成ボタンを表示します。
+  ///
+  /// [context] - ウィジェットのビルドコンテキスト
+  /// [return] - 現在のタブに対応するFloatingActionButton
   Widget _buildFloatingActionButton(BuildContext context) {
     return _tabController.index == 0
         ? FloatingActionButton(
@@ -64,6 +73,14 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
           );
   }
 
+  /// ウィジェットのUIを構築します。
+  ///
+  /// フレンドリストとユーザーリストを含むタブビューを表示し、
+  /// 各タブの状態に応じて適切なコンテンツを表示します。
+  /// また、通知バッジ付きのアプリバーと広告バナーも含まれます。
+  ///
+  /// [context] - ウィジェットのビルドコンテキスト
+  /// [return] - 構築されたウィジェット
   @override
   Widget build(BuildContext context) {
     final friendsAsync = ref.watch(userFriendsStreamProvider);
@@ -88,22 +105,8 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
           ),
         ),
         centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 24.0),
-            child: IconButton(
-              icon: const NotificationBadge(
-                child: Icon(Icons.notifications_outlined),
-              ),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationListPage(),
-                  ),
-                );
-              },
-            ),
-          ),
+        actions: const [
+          NotificationButton(),
         ],
       ),
       floatingActionButton: Padding(
