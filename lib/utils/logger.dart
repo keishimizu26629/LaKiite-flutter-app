@@ -13,19 +13,57 @@ class AppLogger {
     ),
   );
 
+  // 予定作成関連のファイルパスリスト
+  static const _enabledPaths = [
+    'schedule_form_page.dart',
+    'schedule_repository.dart',
+    'schedule_notifier.dart'
+  ];
+
+  // スタックトレースからファイルパスを取得
+  static String _getFilePath() {
+    try {
+      final frames = StackTrace.current.toString().split('\n');
+      for (final frame in frames) {
+        for (final path in _enabledPaths) {
+          if (frame.toLowerCase().contains(path.toLowerCase())) {
+            return path;
+          }
+        }
+      }
+    } catch (e) {
+      return '';
+    }
+    return '';
+  }
+
   static void debug(dynamic message) {
-    _logger.d(message);
+    final filePath = _getFilePath();
+    if (_enabledPaths.contains(filePath)) {
+      print('🔵 [${filePath.split('.').first}] $message');
+    }
   }
 
   static void info(dynamic message) {
-    _logger.i(message);
+    final filePath = _getFilePath();
+    if (_enabledPaths.contains(filePath)) {
+      print('ℹ️ [${filePath.split('.').first}] $message');
+    }
   }
 
   static void warning(dynamic message) {
-    _logger.w(message);
+    final filePath = _getFilePath();
+    if (_enabledPaths.contains(filePath)) {
+      print('⚠️ [${filePath.split('.').first}] $message');
+    }
   }
 
   static void error(dynamic message, [dynamic error, StackTrace? stackTrace]) {
-    _logger.e(message, error: error, stackTrace: stackTrace);
+    final filePath = _getFilePath();
+    if (_enabledPaths.contains(filePath)) {
+      print('🔴 [${filePath.split('.').first}] $message');
+      if (error != null) print('Error: $error');
+      if (stackTrace != null) print('StackTrace: $stackTrace');
+    }
   }
 }

@@ -161,3 +161,39 @@ class SearchUserModel {
     );
   }
 }
+
+class User {
+  final String id;
+  final String displayName;
+  final String searchId;
+  final String? iconUrl;
+  final String? bio;
+
+  const User({
+    required this.id,
+    required this.displayName,
+    required this.searchId,
+    this.iconUrl,
+    this.bio,
+  });
+
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      id: json['id'] as String,
+      displayName: json['displayName'] as String,
+      searchId: json['searchId'] as String,
+      iconUrl: json['iconUrl'] as String?,
+      bio: json['bio'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'displayName': displayName,
+      'searchId': searchId,
+      'iconUrl': iconUrl,
+      'bio': bio,
+    };
+  }
+}

@@ -13,6 +13,7 @@ import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/presentation/calendar/widgets/calendar_page_view.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
 import 'package:lakiite/presentation/widgets/ad_banner_widget.dart';
+import 'package:lakiite/presentation/widgets/notification_button.dart';
 
 class HomePage extends HookConsumerWidget {
   const HomePage({super.key});
@@ -73,6 +74,9 @@ class HomePage extends HookConsumerWidget {
                 ),
               ),
               centerTitle: true,
+              actions: const [
+                NotificationButton(),
+              ],
             ),
             body: SafeArea(
               child: Column(

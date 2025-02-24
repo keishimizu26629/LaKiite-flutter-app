@@ -250,6 +250,58 @@ class _NotificationItem extends ConsumerWidget {
       }
     }
 
+    // 通知タップ時の処理
+    Future<void> handleNotificationTap() async {
+      // 既読にする
+      if (!notification.isRead) {
+        try {
+          await notifier.markAsRead(notification.id);
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('通知の既読処理に失敗しました'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      // 通知タイプに応じた画面遷移
+      if (!context.mounted) return;
+
+      switch (notification.type) {
+        case domain.NotificationType.friend:
+          // フレンドプロフィール画面へ遷移
+          Navigator.of(context).pushNamed(
+            '/friend/profile',
+            arguments: notification.sendUserId,
+          );
+          break;
+        case domain.NotificationType.groupInvitation:
+          // グループ詳細画面へ遷移
+          if (notification.groupId != null) {
+            Navigator.of(context).pushNamed(
+              '/group/detail',
+              arguments: notification.groupId,
+            );
+          }
+          break;
+        case domain.NotificationType.reaction:
+        case domain.NotificationType.comment:
+          // 投稿詳細画面へ遷移
+          if (notification.relatedItemId != null) {
+            Navigator.of(context).pushNamed(
+              '/schedule/detail',
+              arguments: notification.relatedItemId,
+            );
+          }
+          break;
+      }
+    }
+
     // ローディング状態のオーバーレイを表示する関数
     Widget buildLoadingOverlay(Widget child) {
       return Stack(
@@ -374,7 +426,7 @@ class _NotificationItem extends ConsumerWidget {
                       ),
                     ),
                   ),
-            onTap: state.isLoading ? null : markAsRead,
+            onTap: state.isLoading ? null : handleNotificationTap,
           ),
         ),
       ),
@@ -411,6 +463,34 @@ class _NotificationItem extends ConsumerWidget {
             size: 24,
           ),
         );
+      case domain.NotificationType.reaction:
+        return Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.favorite,
+            color: Theme.of(context).primaryColor,
+            size: 24,
+          ),
+        );
+      case domain.NotificationType.comment:
+        return Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.comment,
+            color: Theme.of(context).primaryColor,
+            size: 24,
+          ),
+        );
     }
   }
 
@@ -420,6 +500,10 @@ class _NotificationItem extends ConsumerWidget {
         return 'フレンド申請';
       case domain.NotificationType.groupInvitation:
         return 'グループ招待';
+      case domain.NotificationType.reaction:
+        return 'リアクション';
+      case domain.NotificationType.comment:
+        return 'コメント';
     }
   }
 
@@ -431,6 +515,10 @@ class _NotificationItem extends ConsumerWidget {
         return '$fromNameさんからフレンド申請が届いています';
       case domain.NotificationType.groupInvitation:
         return '$fromNameさんからグループ招待が届いています';
+      case domain.NotificationType.reaction:
+        return '$fromNameさんがあなたの投稿にリアクションしました';
+      case domain.NotificationType.comment:
+        return '$fromNameさんがあなたの投稿にコメントしました';
     }
   }
 }
