@@ -26,7 +26,6 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
     try {
       await _firestore.runTransaction((transaction) async {
         final scheduleRef = _firestore.collection('schedules').doc(scheduleId);
-        final scheduleDoc = await transaction.get(scheduleRef);
 
         // リアクション数を取得
         final reactionsSnapshot = await _firestore

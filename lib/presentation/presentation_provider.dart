@@ -22,14 +22,16 @@ import 'package:lakiite/domain/entity/group.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/infrastructure/friend_list_repository.dart';
+import '../domain/entity/schedule.dart';
 
 export 'package:lakiite/application/notification/notification_notifier.dart'
     show currentUserIdProvider;
 
-// Firebase instances
+/// Firebase認証インスタンスを提供するプロバイダー
 final firebaseAuthProvider = Provider((ref) => FirebaseAuth.instance);
 
-// Repository providers
+/// リポジトリプロバイダー群
+// ユーザーリポジトリプロバイダー
 final userRepositoryProvider = Provider<IUserRepository>((ref) {
   final repository = UserRepository();
   ref.onDispose(() {
@@ -39,51 +41,61 @@ final userRepositoryProvider = Provider<IUserRepository>((ref) {
   return repository;
 });
 
+/// グループリポジトリプロバイダー
 final groupRepositoryProvider = Provider<IGroupRepository>((ref) {
   return GroupRepository();
 });
 
+/// リストリポジトリプロバイダー
 final listRepositoryProvider = Provider<IListRepository>((ref) {
   return ListRepository();
 });
 
+/// スケジュールリポジトリプロバイダー
 final scheduleRepositoryProvider = Provider<IScheduleRepository>((ref) {
   return ScheduleRepository(FriendListRepository());
 });
 
+/// 通知リポジトリプロバイダー
 final notificationRepositoryProvider = Provider<INotificationRepository>((ref) {
   return NotificationRepository();
 });
-// Auth state providers
+
+/// 認証状態プロバイダー群
+// 認証状態の変更を監視するプロバイダー
 final authStateProvider = StreamProvider.autoDispose((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   return authRepository.authStateChanges();
 });
 
+/// 認証状態を管理するNotifierプロバイダー
 final authNotifierProvider =
     AutoDisposeAsyncNotifierProvider<AuthNotifier, AuthState>(
   AuthNotifier.new,
 );
 
-// Group state providers
+/// グループ状態プロバイダー群
+// グループ状態を管理するNotifierプロバイダー
 final groupNotifierProvider =
     AutoDisposeAsyncNotifierProvider<GroupNotifier, GroupState>(
   GroupNotifier.new,
 );
 
-// Schedule state providers
+/// スケジュール状態プロバイダー群
+// スケジュール状態を管理するNotifierプロバイダー
 final scheduleNotifierProvider =
     AutoDisposeAsyncNotifierProvider<ScheduleNotifier, ScheduleState>(
   ScheduleNotifier.new,
 );
 
-// List state providers
+/// リスト状態プロバイダー群
+// リスト状態を管理するNotifierプロバイダー
 final listNotifierProvider =
     AutoDisposeAsyncNotifierProvider<ListNotifier, ListState>(
   ListNotifier.new,
 );
 
-// リアルタイムリストストリーム
+/// ユーザーのリストをリアルタイムで監視するStreamプロバイダー
 final userListsStreamProvider =
     StreamProvider.autoDispose<List<UserList>>((ref) {
   final authState = ref.watch(authNotifierProvider);
@@ -99,7 +111,7 @@ final userListsStreamProvider =
   );
 });
 
-// リアルタイムグループストリーム
+/// ユーザーのグループをリアルタイムで監視するStreamプロバイダー
 final userGroupsStreamProvider = StreamProvider.autoDispose<List<Group>>((ref) {
   final authState = ref.watch(authNotifierProvider);
   return authState.when(
@@ -116,21 +128,29 @@ final userGroupsStreamProvider = StreamProvider.autoDispose<List<Group>>((ref) {
   );
 });
 
-// ユーザーの公開プロフィールストリーム
+/// ユーザーの公開プロフィールをリアルタイムで監視するStreamプロバイダー
+///
+/// [userId] 監視対象のユーザーID
 final publicUserStreamProvider =
     StreamProvider.family<PublicUserModel?, String>((ref, userId) {
   final userRepository = ref.watch(userRepositoryProvider);
   return userRepository.watchPublicProfile(userId);
 });
 
-// ユーザーの非公開プロフィールストリーム
+/// ユーザーの非公開プロフィールをリアルタイムで監視するStreamプロバイダー
+///
+/// [userId] 監視対象のユーザーID
 final privateUserStreamProvider =
     StreamProvider.family<PrivateUserModel?, String>((ref, userId) {
   final userRepository = ref.watch(userRepositoryProvider);
   return userRepository.watchPrivateProfile(userId);
 });
 
-// 統合されたユーザー情報ストリーム
+/// 統合されたユーザー情報をリアルタイムで監視するStreamプロバイダー
+///
+/// [userId] 監視対象のユーザーID
+///
+/// 公開プロフィールと非公開プロフィールを統合して[UserModel]として提供します。
 final userStreamProvider =
     StreamProvider.family<UserModel?, String>((ref, userId) async* {
   final publicProfileAsync = ref.watch(publicUserStreamProvider(userId));
@@ -153,14 +173,16 @@ final userStreamProvider =
   }
 });
 
-// リアルタイムフレンドストリーム
-// 特定のリストをリアルタイムで監視するプロバイダー
+/// 特定のリストをリアルタイムで監視するStreamプロバイダー
+///
+/// [listId] 監視対象のリストID
 final listStreamProvider =
     StreamProvider.family<UserList?, String>((ref, listId) {
   final listRepository = ref.watch(listRepositoryProvider);
   return listRepository.watchList(listId);
 });
 
+/// ユーザーのフレンド一覧をリアルタイムで監視するStreamプロバイダー
 final userFriendsStreamProvider =
     StreamProvider.autoDispose<List<PublicUserModel>>((ref) {
   final authState = ref.watch(authNotifierProvider);
@@ -188,3 +210,12 @@ final userFriendsStreamProvider =
     error: (_, __) => Stream.value([]),
   );
 });
+
+/// ユーザーのスケジュール一覧をリアルタイムで監視するStreamプロバイダー
+///
+/// [userId] 監視対象のユーザーID
+final userSchedulesStreamProvider =
+    StreamProvider.family<List<Schedule>, String>(
+  (ref, userId) =>
+      ref.watch(scheduleRepositoryProvider).watchUserSchedules(userId),
+);
