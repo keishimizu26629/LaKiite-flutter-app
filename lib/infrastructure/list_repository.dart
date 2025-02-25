@@ -20,7 +20,8 @@ class ListRepository implements IListRepository {
     final timestamp = data['createdAt'] as Timestamp?;
     final modifiedData = Map<String, dynamic>.from(data);
     modifiedData['id'] = doc.id;
-    modifiedData['createdAt'] = timestamp?.toDate().toIso8601String() ?? DateTime.now().toIso8601String();
+    modifiedData['createdAt'] = timestamp?.toDate().toIso8601String() ??
+        DateTime.now().toIso8601String();
     return UserList.fromJson(modifiedData);
   }
 
@@ -42,7 +43,7 @@ class ListRepository implements IListRepository {
     String? description,
   }) async {
     final list = UserList(
-      id: '',  // 一時的な空のID
+      id: '', // 一時的な空のID
       listName: listName,
       memberIds: memberIds,
       ownerId: ownerId,
@@ -100,5 +101,12 @@ class ListRepository implements IListRepository {
         .doc(listId)
         .snapshots()
         .map((doc) => doc.exists ? _fromFirestore(doc) : null);
+  }
+
+  @override
+  Future<UserList?> getList(String listId) async {
+    final doc = await _firestore.collection('lists').doc(listId).get();
+    if (!doc.exists) return null;
+    return _fromFirestore(doc);
   }
 }
