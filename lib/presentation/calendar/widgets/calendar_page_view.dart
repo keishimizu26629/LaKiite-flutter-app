@@ -324,41 +324,41 @@ class DateCell extends StatelessWidget {
 
               return Material(
                 color: Colors.transparent,
-                child: Stack(
-                  children: [
-                    // 背景のコンテナ
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border(
-                            top: BorderSide(
-                                color: Theme.of(context).dividerColor,
-                                width: 1),
-                            right: BorderSide(
-                                color: Theme.of(context).dividerColor,
-                                width: 1),
-                          ),
-                          color: isToday
-                              ? Colors.blue.shade50
-                              : !isCurrentMonth
-                                  ? Colors.grey.shade100
-                                  : null,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => DailyScheduleView(
+                          initialDate: date,
+                          schedules: schedules,
                         ),
                       ),
-                    ),
-                    // 日付と予定を表示するコンテナ
-                    InkWell(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => DailyScheduleView(
-                              initialDate: date,
-                              schedules: schedules,
+                    );
+                  },
+                  child: Stack(
+                    children: [
+                      // 背景のコンテナ
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border(
+                              top: BorderSide(
+                                  color: Theme.of(context).dividerColor,
+                                  width: 1),
+                              right: BorderSide(
+                                  color: Theme.of(context).dividerColor,
+                                  width: 1),
                             ),
+                            color: isToday
+                                ? Colors.blue.shade50
+                                : !isCurrentMonth
+                                    ? Colors.grey.shade100
+                                    : null,
                           ),
-                        );
-                      },
-                      child: Container(
+                        ),
+                      ),
+                      // 日付と予定を表示するコンテナ
+                      Container(
                         padding: const EdgeInsets.all(2),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,47 +433,49 @@ class DateCell extends StatelessWidget {
                           ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (_, __) => Material(
               color: Colors.transparent,
-              child: Stack(
-                children: [
-                  // 背景のコンテナ
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border(
-                          top: BorderSide(
-                              color: Theme.of(context).dividerColor, width: 1),
-                          right: BorderSide(
-                              color: Theme.of(context).dividerColor, width: 1),
-                        ),
-                        color: isToday
-                            ? Colors.blue.shade50
-                            : !isCurrentMonth
-                                ? Colors.grey.shade100
-                                : null,
+              child: InkWell(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => DailyScheduleView(
+                        initialDate: date,
+                        schedules: schedules,
                       ),
                     ),
-                  ),
-                  // 日付と予定を表示するコンテナ
-                  InkWell(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => DailyScheduleView(
-                            initialDate: date,
-                            schedules: schedules,
+                  );
+                },
+                child: Stack(
+                  children: [
+                    // 背景のコンテナ
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(
+                                color: Theme.of(context).dividerColor,
+                                width: 1),
+                            right: BorderSide(
+                                color: Theme.of(context).dividerColor,
+                                width: 1),
                           ),
+                          color: isToday
+                              ? Colors.blue.shade50
+                              : !isCurrentMonth
+                                  ? Colors.grey.shade100
+                                  : null,
                         ),
-                      );
-                    },
-                    child: Container(
+                      ),
+                    ),
+                    // 日付と予定を表示するコンテナ
+                    Container(
                       padding: const EdgeInsets.all(2),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -547,8 +549,8 @@ class DateCell extends StatelessWidget {
                         ],
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );

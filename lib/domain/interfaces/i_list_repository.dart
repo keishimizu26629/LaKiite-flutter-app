@@ -69,4 +69,10 @@ abstract class IListRepository {
   ///
   /// 返値: リストの変更を通知するStream
   Stream<UserList?> watchList(String listId);
+
+  /// リストを取得する
+  ///
+  /// [listId] 取得するリストのID
+  /// 返値: リスト情報、存在しない場合はnull
+  Future<UserList?> getList(String listId);
 }
