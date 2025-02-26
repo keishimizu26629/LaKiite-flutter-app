@@ -13,6 +13,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
   // State management
   StreamSubscription<List<Schedule>>? _scheduleSubscription;
   String? _currentUserId;
+  DateTime? _currentDisplayMonth;
   bool _isDisposed = false;
 
   @override
@@ -95,6 +96,87 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
     } catch (e) {
       if (_isDisposed) return;
       AppLogger.error('ScheduleNotifier: Exception in watchUserSchedules: $e');
+      Future(() {
+        if (!_isDisposed) {
+          state = AsyncValue.error(e, StackTrace.current);
+        }
+      });
+    }
+  }
+
+  /// 表示月に基づいてスケジュールを監視する
+  ///
+  /// [userId] 監視対象のユーザーID
+  /// [displayMonth] 表示中の月
+  void watchUserSchedulesForMonth(String userId, DateTime displayMonth) {
+    if (_isDisposed) {
+      AppLogger.debug(
+          'ScheduleNotifier: Notifier is disposed, ignoring watchUserSchedulesForMonth');
+      return;
+    }
+
+    // 年月のみを比較するために正規化した日付を作成
+    final normalizedDisplayMonth =
+        DateTime(displayMonth.year, displayMonth.month, 1);
+
+    AppLogger.debug(
+        'ScheduleNotifier: watchUserSchedulesForMonth called for user: $userId, month: ${normalizedDisplayMonth.year}-${normalizedDisplayMonth.month}');
+
+    // 同じユーザーかつ同じ月の場合は重複購読を避ける
+    if (_currentUserId == userId && _currentDisplayMonth != null) {
+      // 年月のみを比較
+      final normalizedCurrentMonth =
+          DateTime(_currentDisplayMonth!.year, _currentDisplayMonth!.month, 1);
+      if (normalizedCurrentMonth.year == normalizedDisplayMonth.year &&
+          normalizedCurrentMonth.month == normalizedDisplayMonth.month &&
+          _scheduleSubscription != null) {
+        AppLogger.debug(
+            'ScheduleNotifier: Already watching schedules for user: $userId and month: ${normalizedDisplayMonth.year}-${normalizedDisplayMonth.month}');
+        return;
+      }
+    }
+
+    // 既存の購読をキャンセル
+    _scheduleSubscription?.cancel();
+    _currentUserId = userId;
+    _currentDisplayMonth = normalizedDisplayMonth;
+
+    try {
+      AppLogger.debug(
+          'ScheduleNotifier: Starting new subscription for user: $userId and month: ${normalizedDisplayMonth.year}-${normalizedDisplayMonth.month}');
+
+      // ローディング状態を設定する前に現在のデータを保存
+      // 注意: AsyncValueのisLoadingフラグを使用するため、
+      // ローディング状態を明示的に設定しない
+
+      final stream = ref
+          .read(scheduleRepositoryProvider)
+          .watchUserSchedulesForMonth(userId, normalizedDisplayMonth);
+
+      _scheduleSubscription = stream.listen(
+        (schedules) {
+          if (_isDisposed) return;
+          AppLogger.debug(
+              'ScheduleNotifier: Received ${schedules.length} schedules for month: ${normalizedDisplayMonth.year}-${normalizedDisplayMonth.month}');
+          if (!_isDisposed) {
+            state = AsyncValue.data(ScheduleState.loaded(schedules));
+          }
+        },
+        onError: (error) {
+          if (_isDisposed) return;
+          AppLogger.error(
+              'ScheduleNotifier: Error watching schedules for month: $error');
+          Future(() {
+            if (!_isDisposed) {
+              state = AsyncValue.error(error, StackTrace.current);
+            }
+          });
+        },
+      );
+    } catch (e) {
+      if (_isDisposed) return;
+      AppLogger.error(
+          'ScheduleNotifier: Exception in watchUserSchedulesForMonth: $e');
       Future(() {
         if (!_isDisposed) {
           state = AsyncValue.error(e, StackTrace.current);
