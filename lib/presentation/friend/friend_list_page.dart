@@ -5,8 +5,9 @@ import '../list/create_list_page.dart';
 import '../list/list_detail_page.dart';
 import '../presentation_provider.dart';
 import '../friend/friend_search_page.dart';
+import '../friend/friend_profile_page.dart';
 import '../widgets/notification_button.dart';
-import '../widgets/ad_banner_widget.dart';
+import '../widgets/banner_ad_widget.dart';
 import '../widgets/default_user_icon.dart';
 
 /// フレンドリストとユーザーリストを表示するページ。
@@ -21,12 +22,48 @@ class FriendListPage extends ConsumerStatefulWidget {
 class _FriendListPageState extends ConsumerState<FriendListPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _isInitialized = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_handleTabChange);
+
+    // 初期化処理を遅延実行
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeData();
+    });
+  }
+
+  void _initializeData() {
+    if (!_isInitialized) {
+      final authState = ref.read(authNotifierProvider).value;
+      if (authState != null &&
+          authState.status == AuthStatus.authenticated &&
+          authState.user != null) {
+        // データの読み込みを開始
+        setState(() {
+          _isLoading = true;
+        });
+
+        // 非同期でデータを読み込む
+        Future.microtask(() {
+          ref.invalidate(userFriendsStreamProvider);
+          ref.invalidate(userListsStreamProvider);
+
+          setState(() {
+            _isInitialized = true;
+            _isLoading = false;
+          });
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -84,17 +121,17 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
   /// [return] - 構築されたウィジェット
   @override
   Widget build(BuildContext context) {
+    // ローディング中の場合は、ローディングインジケーターを表示
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     final friendsAsync = ref.watch(userFriendsStreamProvider);
     final listsAsync = ref.watch(userListsStreamProvider);
-
-    ref.listen(authNotifierProvider, (previous, next) {
-      next.whenData((authState) {
-        if (authState.status == AuthStatus.authenticated &&
-            authState.user != null) {
-          ref.invalidate(userFriendsStreamProvider);
-        }
-      });
-    });
 
     return Scaffold(
       appBar: AppBar(
@@ -213,7 +250,18 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
                                 color: Colors.grey[600],
                                 fontSize: 14,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => FriendProfilePage(
+                                    userId: friend.id,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         );
                       },
@@ -322,9 +370,9 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
               ],
             ),
           ),
-          const SizedBox(
+          SizedBox(
             height: 50,
-            child: AdBannerWidget(),
+            child: const BannerAdWidget(uniqueId: 'friend_list_page_ad'),
           ),
         ],
       ),

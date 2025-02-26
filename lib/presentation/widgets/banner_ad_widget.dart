@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:lakiite/infrastructure/admob_service.dart';
 
-final bannerAdProvider = Provider.autoDispose((ref) {
+// 各ウィジェットインスタンスごとに新しいBannerAdを作成するためのファミリープロバイダー
+final bannerAdProvider =
+    Provider.autoDispose.family<BannerAd, String>((ref, id) {
   final bannerAd = AdMobService.createBannerAd();
   bannerAd.load();
   ref.onDispose(() {
@@ -13,11 +15,18 @@ final bannerAdProvider = Provider.autoDispose((ref) {
 });
 
 class BannerAdWidget extends ConsumerWidget {
-  const BannerAdWidget({super.key});
+  // 一意のIDを追加
+  final String uniqueId;
+
+  const BannerAdWidget({
+    super.key,
+    required this.uniqueId,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bannerAd = ref.watch(bannerAdProvider);
+    // 一意のIDを使用して独自のBannerAdを取得
+    final bannerAd = ref.watch(bannerAdProvider(uniqueId));
 
     return Container(
       alignment: Alignment.center,
