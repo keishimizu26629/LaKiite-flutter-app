@@ -6,7 +6,7 @@ part of 'schedule_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$scheduleNotifierHash() => r'e35c8ae8d6caf2215d752a3f693878870b5407a1';
+String _$scheduleNotifierHash() => r'ca4449ee78c3a04dced425fc755d705df7332ca7';
 
 /// スケジュール状態を管理するNotifierクラス
 ///

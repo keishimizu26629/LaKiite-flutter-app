@@ -4,6 +4,126 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
+import 'package:lakiite/utils/logger.dart';
+import 'package:lakiite/presentation/list/list_detail_page.dart';
+
+/// 15分単位の時間選択ダイアログ
+class CustomTimePickerDialog extends StatefulWidget {
+  final TimeOfDay initialTime;
+
+  const CustomTimePickerDialog({
+    super.key,
+    required this.initialTime,
+  });
+
+  @override
+  State<CustomTimePickerDialog> createState() => _CustomTimePickerDialogState();
+}
+
+class _CustomTimePickerDialogState extends State<CustomTimePickerDialog> {
+  late int selectedHour;
+  late int selectedMinute;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedHour = widget.initialTime.hour;
+    selectedMinute = (widget.initialTime.minute ~/ 15) * 15;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              '時間を選択',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // 時間選択
+                SizedBox(
+                  width: 80,
+                  child: DropdownButtonFormField<int>(
+                    value: selectedHour,
+                    items: List.generate(24, (index) {
+                      return DropdownMenuItem(
+                        value: index,
+                        child: Text('${index.toString().padLeft(2, '0')}時'),
+                      );
+                    }),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          selectedHour = value;
+                        });
+                      }
+                    },
+                    decoration: const InputDecoration(
+                      contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // 分選択
+                SizedBox(
+                  width: 80,
+                  child: DropdownButtonFormField<int>(
+                    value: selectedMinute,
+                    items: [0, 15, 30, 45].map((minute) {
+                      return DropdownMenuItem(
+                        value: minute,
+                        child: Text('${minute.toString().padLeft(2, '0')}分'),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          selectedMinute = value;
+                        });
+                      }
+                    },
+                    decoration: const InputDecoration(
+                      contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('キャンセル'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(
+                      TimeOfDay(hour: selectedHour, minute: selectedMinute),
+                    );
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class ScheduleFormPage extends HookConsumerWidget {
   final Schedule? schedule;
@@ -11,6 +131,7 @@ class ScheduleFormPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    AppLogger.debug('ScheduleFormPage: Building form page');
     final titleController = useTextEditingController(text: schedule?.title);
     final descriptionController =
         useTextEditingController(text: schedule?.description);
@@ -34,33 +155,103 @@ class ScheduleFormPage extends HookConsumerWidget {
             minute: schedule!.endDateTime.minute)
         : TimeOfDay.fromDateTime(DateTime.now().add(const Duration(hours: 1))));
 
+    final hasTitleError = useState<bool>(false);
+    final hasLocationError = useState<bool>(false);
+    final hasTimeError = useState<bool>(false);
+
     final selectedLists = useState<List<UserList>>([]);
     final listsAsync = ref.watch(userListsStreamProvider);
     final authState = ref.watch(authNotifierProvider);
 
+    AppLogger.debug('ScheduleFormPage: Initial form values:');
+    AppLogger.debug('Title: ${titleController.text}');
+    AppLogger.debug('Description: ${descriptionController.text}');
+    AppLogger.debug('Location: ${locationController.text}');
+    AppLogger.debug('Start Date: ${selectedStartDate.value}');
+    AppLogger.debug('Start Time: ${selectedStartTime.value}');
+    AppLogger.debug('End Date: ${selectedEndDate.value}');
+    AppLogger.debug('End Time: ${selectedEndTime.value}');
+
     // 編集時の初期値設定
     useEffect(() {
       if (schedule != null && listsAsync.hasValue) {
-        final existingLists = listsAsync.value!.where(
-          (list) => schedule!.sharedLists.contains(list.id)
-        ).toList();
+        final existingLists = listsAsync.value!
+            .where((list) => schedule!.sharedLists.contains(list.id))
+            .toList();
         selectedLists.value = existingLists;
       }
       return null;
     }, [listsAsync]);
 
+    // 時間の整合性をチェックする関数
+    void validateTime() {
+      final startDateTime = DateTime(
+        selectedStartDate.value.year,
+        selectedStartDate.value.month,
+        selectedStartDate.value.day,
+        selectedStartTime.value.hour,
+        selectedStartTime.value.minute,
+      );
+
+      final endDateTime = DateTime(
+        selectedEndDate.value.year,
+        selectedEndDate.value.month,
+        selectedEndDate.value.day,
+        selectedEndTime.value.hour,
+        selectedEndTime.value.minute,
+      );
+
+      hasTimeError.value = endDateTime.isBefore(startDateTime);
+    }
+
+    // 初期表示時と時間変更時にバリデーションを実行
+    useEffect(() {
+      validateTime();
+      return null;
+    }, [
+      selectedStartDate.value,
+      selectedStartTime.value,
+      selectedEndDate.value,
+      selectedEndTime.value
+    ]);
+
+    // バリデーション関数
+    void validateInputs() {
+      hasTitleError.value = titleController.text.trim().isEmpty;
+      hasLocationError.value = locationController.text.trim().isEmpty;
+    }
+
+    // テキストフィールドの変更を監視
+    useEffect(() {
+      void listener() {
+        validateInputs();
+      }
+
+      titleController.addListener(listener);
+      locationController.addListener(listener);
+
+      return () {
+        titleController.removeListener(listener);
+        locationController.removeListener(listener);
+      };
+    }, [titleController, locationController]);
+
     // スケジュールの保存処理
     Future<void> handleSave() async {
+      AppLogger.debug('ScheduleFormPage: Save button pressed');
+
       if (titleController.text.isEmpty) {
+        AppLogger.warning('ScheduleFormPage: Title is empty');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('タイトルを入力してください')),
         );
         return;
       }
 
-      if (selectedLists.value.isEmpty) {
+      if (descriptionController.text.isEmpty) {
+        AppLogger.warning('ScheduleFormPage: Description is empty');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('公開するリストを選択してください')),
+          const SnackBar(content: Text('説明を入力してください')),
         );
         return;
       }
@@ -82,6 +273,7 @@ class ScheduleFormPage extends HookConsumerWidget {
       );
 
       if (endDateTime.isBefore(startDateTime)) {
+        AppLogger.warning('ScheduleFormPage: End date is before start date');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('終了日時は開始日時より後に設定してください')),
         );
@@ -89,22 +281,25 @@ class ScheduleFormPage extends HookConsumerWidget {
       }
 
       final scheduleNotifier = ref.read(scheduleNotifierProvider.notifier);
-      final currentUser = authState.when(
-        data: (state) => state.user,
-        loading: () => null,
-        error: (_, __) => null,
-      );
+      final currentUser = authState.requireValue.user;
 
       if (currentUser == null) {
+        AppLogger.error('ScheduleFormPage: User is not authenticated');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('ユーザー情報の取得に失敗しました')),
+          const SnackBar(content: Text('ユーザー認証が必要です')),
         );
         return;
       }
 
+      AppLogger.debug('ScheduleFormPage: Preparing to save schedule');
+      AppLogger.debug('Current user ID: ${currentUser.id}');
+      AppLogger.debug(
+          'Selected lists: ${selectedLists.value.map((l) => l.id).toList()}');
+
       try {
         if (schedule != null) {
-          print('ScheduleFormPage: Updating schedule ${schedule!.id}');
+          // AppLogger.debug(
+          //     'ScheduleFormPage: Updating schedule ${schedule!.id}');
           await scheduleNotifier.updateSchedule(
             schedule!.copyWith(
               title: titleController.text,
@@ -119,9 +314,19 @@ class ScheduleFormPage extends HookConsumerWidget {
               updatedAt: DateTime.now(),
             ),
           );
-          print('ScheduleFormPage: Schedule updated successfully');
+          // AppLogger.debug('ScheduleFormPage: Schedule updated successfully');
         } else {
-          print('ScheduleFormPage: Creating new schedule');
+          AppLogger.debug('ScheduleFormPage: Creating new schedule with:');
+          AppLogger.debug('Title: ${titleController.text}');
+          AppLogger.debug('Description: ${descriptionController.text}');
+          AppLogger.debug('Location: ${locationController.text}');
+          AppLogger.debug('StartDateTime: $startDateTime');
+          AppLogger.debug('EndDateTime: $endDateTime');
+          AppLogger.debug('OwnerId: ${currentUser.id}');
+          AppLogger.debug(
+              'SharedLists: ${selectedLists.value.map((l) => l.id).toList()}');
+          AppLogger.debug('VisibleTo: [${currentUser.id}]');
+
           await scheduleNotifier.createSchedule(
             title: titleController.text,
             description: descriptionController.text,
@@ -134,14 +339,14 @@ class ScheduleFormPage extends HookConsumerWidget {
             sharedLists: selectedLists.value.map((l) => l.id).toList(),
             visibleTo: [currentUser.id],
           );
-          print('ScheduleFormPage: Schedule created successfully');
+          AppLogger.debug('ScheduleFormPage: Schedule created successfully');
         }
 
         if (context.mounted) {
           Navigator.of(context).pop();
         }
       } catch (e) {
-        print('ScheduleFormPage: Error saving schedule: $e');
+        AppLogger.error('ScheduleFormPage: Error saving schedule: $e');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('スケジュールの保存に失敗しました: $e')),
@@ -161,9 +366,10 @@ class ScheduleFormPage extends HookConsumerWidget {
           children: [
             TextField(
               controller: titleController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'タイトル',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                errorText: hasTitleError.value ? 'タイトルを入力してください' : null,
               ),
             ),
             const SizedBox(height: 16),
@@ -178,9 +384,13 @@ class ScheduleFormPage extends HookConsumerWidget {
             const SizedBox(height: 16),
             TextField(
               controller: locationController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: '場所',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                errorText: hasLocationError.value
+                    ? '場所を入力してください。場所が未定の場合は「未定」と入力してください。'
+                    : null,
+                helperText: '場所が未定の場合は「未定」と入力してください。',
               ),
             ),
             const SizedBox(height: 16),
@@ -190,58 +400,87 @@ class ScheduleFormPage extends HookConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: ListTile(
-                    title: const Text('日付'),
-                    subtitle: Text(
-                      '${selectedStartDate.value.year}年${selectedStartDate.value.month}月${selectedStartDate.value.day}日',
-                    ),
-                    trailing: const Icon(Icons.calendar_today),
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: selectedStartDate.value,
-                        firstDate: DateTime.now(),
-                        lastDate:
-                            DateTime.now().add(const Duration(days: 365 * 2)),
-                      );
-                      if (picked != null) {
-                        selectedStartDate.value = picked;
-                        if (selectedEndDate.value.isBefore(picked)) {
-                          selectedEndDate.value = picked;
-                        }
-                      }
-                    },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('日付'),
+                      const SizedBox(height: 4),
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: selectedStartDate.value,
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now()
+                                .add(const Duration(days: 365 * 2)),
+                          );
+                          if (picked != null) {
+                            selectedStartDate.value = picked;
+                            if (selectedEndDate.value.isBefore(picked)) {
+                              selectedEndDate.value = picked;
+                            }
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '${selectedStartDate.value.year}年${selectedStartDate.value.month}月${selectedStartDate.value.day}日',
+                              ),
+                              const Icon(Icons.calendar_today, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(width: 16),
                 Expanded(
-                  child: ListTile(
-                    title: const Text('時間'),
-                    subtitle: Text(
-                      '${selectedStartTime.value.hour.toString().padLeft(2, '0')}:${(selectedStartTime.value.minute - selectedStartTime.value.minute % 15).toString().padLeft(2, '0')}',
-                    ),
-                    trailing: const Icon(Icons.access_time),
-                    onTap: () async {
-                      final picked = await showTimePicker(
-                        context: context,
-                        initialTime: selectedStartTime.value,
-                        builder: (context, child) {
-                          return MediaQuery(
-                            data: MediaQuery.of(context).copyWith(
-                              alwaysUse24HourFormat: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('時間'),
+                      const SizedBox(height: 4),
+                      InkWell(
+                        onTap: () async {
+                          final result = await showDialog<TimeOfDay>(
+                            context: context,
+                            builder: (context) => CustomTimePickerDialog(
+                              initialTime: selectedStartTime.value,
                             ),
-                            child: child!,
                           );
+                          if (result != null) {
+                            selectedStartTime.value = result;
+                            validateTime();
+                          }
                         },
-                      );
-                      if (picked != null) {
-                        final adjustedMinute =
-                            picked.minute - picked.minute % 15;
-                        selectedStartTime.value = TimeOfDay(
-                          hour: picked.hour,
-                          minute: adjustedMinute,
-                        );
-                      }
-                    },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '${selectedStartTime.value.hour.toString().padLeft(2, '0')}:${((selectedStartTime.value.minute ~/ 15) * 15).toString().padLeft(2, '0')}',
+                              ),
+                              const Icon(Icons.access_time, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -253,59 +492,154 @@ class ScheduleFormPage extends HookConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: ListTile(
-                    title: const Text('日付'),
-                    subtitle: Text(
-                      '${selectedEndDate.value.year}年${selectedEndDate.value.month}月${selectedEndDate.value.day}日',
-                    ),
-                    trailing: const Icon(Icons.calendar_today),
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: selectedEndDate.value,
-                        firstDate: selectedStartDate.value,
-                        lastDate:
-                            DateTime.now().add(const Duration(days: 365 * 2)),
-                      );
-                      if (picked != null) {
-                        selectedEndDate.value = picked;
-                      }
-                    },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('日付'),
+                      const SizedBox(height: 4),
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: selectedEndDate.value,
+                            firstDate: selectedStartDate.value,
+                            lastDate: DateTime.now()
+                                .add(const Duration(days: 365 * 2)),
+                          );
+                          if (picked != null) {
+                            selectedEndDate.value = picked;
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '${selectedEndDate.value.year}年${selectedEndDate.value.month}月${selectedEndDate.value.day}日',
+                              ),
+                              const Icon(Icons.calendar_today, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(width: 16),
                 Expanded(
-                  child: ListTile(
-                    title: const Text('時間'),
-                    subtitle: Text(
-                      '${selectedEndTime.value.hour.toString().padLeft(2, '0')}:${(selectedEndTime.value.minute - selectedEndTime.value.minute % 15).toString().padLeft(2, '0')}',
-                    ),
-                    trailing: const Icon(Icons.access_time),
-                    onTap: () async {
-                      final picked = await showTimePicker(
-                        context: context,
-                        initialTime: selectedEndTime.value,
-                        builder: (context, child) {
-                          return MediaQuery(
-                            data: MediaQuery.of(context).copyWith(
-                              alwaysUse24HourFormat: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('時間'),
+                      const SizedBox(height: 4),
+                      InkWell(
+                        onTap: () async {
+                          final result = await showDialog<TimeOfDay>(
+                            context: context,
+                            builder: (context) => CustomTimePickerDialog(
+                              initialTime: selectedEndTime.value,
                             ),
-                            child: child!,
                           );
+                          if (result != null) {
+                            selectedEndTime.value = result;
+                            validateTime();
+                          }
                         },
-                      );
-                      if (picked != null) {
-                        final adjustedMinute =
-                            picked.minute - picked.minute % 15;
-                        selectedEndTime.value = TimeOfDay(
-                          hour: picked.hour,
-                          minute: adjustedMinute,
-                        );
-                      }
-                    },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '${selectedEndTime.value.hour.toString().padLeft(2, '0')}:${((selectedEndTime.value.minute ~/ 15) * 15).toString().padLeft(2, '0')}',
+                              ),
+                              const Icon(Icons.access_time, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            if (hasTimeError.value ||
+                hasTitleError.value ||
+                hasLocationError.value)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  border: Border.all(color: Colors.red),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (hasTitleError.value)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline,
+                                color: Colors.red, size: 16),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'タイトルを入力してください',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (hasLocationError.value)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline,
+                                color: Colors.red, size: 16),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '場所を入力してください。場所が未定の場合は「未定」と入力してください。',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (hasTimeError.value)
+                      const Row(
+                        children: [
+                          Icon(Icons.error_outline,
+                              color: Colors.red, size: 16),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '終了日時は開始日時より後に設定してください',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 16),
             const Text('公開するリスト', style: TextStyle(fontSize: 16)),
             const SizedBox(height: 8),
@@ -327,18 +661,100 @@ class ScheduleFormPage extends HookConsumerWidget {
                 }
                 return Column(
                   children: lists.map((list) {
-                    return CheckboxListTile(
-                      title: Text(list.listName),
-                      value: selectedLists.value.contains(list),
-                      onChanged: (bool? value) {
-                        if (value == true) {
-                          selectedLists.value = [...selectedLists.value, list];
-                        } else {
-                          selectedLists.value = selectedLists.value
-                              .where((l) => l.id != list.id)
-                              .toList();
-                        }
-                      },
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 4, horizontal: 8),
+                      child: InkWell(
+                        onTap: () {
+                          final newValue = !selectedLists.value.contains(list);
+                          if (newValue) {
+                            selectedLists.value = [
+                              ...selectedLists.value,
+                              list
+                            ];
+                          } else {
+                            selectedLists.value = selectedLists.value
+                                .where((l) => l.id != list.id)
+                                .toList();
+                          }
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 12),
+                          child: Row(
+                            children: [
+                              Checkbox(
+                                value: selectedLists.value.contains(list),
+                                onChanged: (bool? value) {
+                                  if (value == true) {
+                                    selectedLists.value = [
+                                      ...selectedLists.value,
+                                      list
+                                    ];
+                                  } else {
+                                    selectedLists.value = selectedLists.value
+                                        .where((l) => l.id != list.id)
+                                        .toList();
+                                  }
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        list.listName,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                ListDetailPage(list: list),
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.withOpacity(0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              '詳細',
+                                              style: TextStyle(
+                                                color: Theme.of(context)
+                                                    .primaryColor,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Icon(
+                                              Icons.info_outline,
+                                              size: 16,
+                                              color: Theme.of(context)
+                                                  .primaryColor,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     );
                   }).toList(),
                 );
@@ -350,9 +766,18 @@ class ScheduleFormPage extends HookConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: handleSave,
+        onPressed: (hasTimeError.value ||
+                hasTitleError.value ||
+                hasLocationError.value)
+            ? null
+            : handleSave,
         icon: const Icon(Icons.save),
         label: const Text('保存'),
+        backgroundColor: (hasTimeError.value ||
+                hasTitleError.value ||
+                hasLocationError.value)
+            ? Colors.grey
+            : null,
       ),
     );
   }

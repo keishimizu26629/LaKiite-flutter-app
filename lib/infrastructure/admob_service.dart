@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../utils/logger.dart';
 
 class AdMobService {
   static String get bannerAdUnitId {
@@ -21,9 +22,9 @@ class AdMobService {
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
-        onAdLoaded: (ad) => print('Ad loaded: ${ad.adUnitId}'),
+        onAdLoaded: (ad) => AppLogger.debug('Ad loaded: ${ad.adUnitId}'),
         onAdFailedToLoad: (ad, error) {
-          print('Ad failed to load: ${ad.adUnitId}, $error');
+          AppLogger.error('Ad failed to load: ${ad.adUnitId}, $error');
           ad.dispose();
         },
       ),

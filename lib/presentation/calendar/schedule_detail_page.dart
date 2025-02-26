@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/user.dart';
@@ -10,6 +9,8 @@ import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart'
 import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
+import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
+import 'package:lakiite/presentation/widgets/default_user_icon.dart';
 import 'package:intl/intl.dart';
 
 /// スケジュールの詳細情報を表示するページ
@@ -28,26 +29,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
   /// 表示対象の[Schedule]インスタンス
   final Schedule schedule;
 
-  /// 指定された[type]に応じた[IconData]を返します
-  ///
-  /// [ReactionType]に基づいて適切なアイコンを返します：
-  /// - [ReactionType.going]: 参加アイコン
-  /// - [ReactionType.thinking]: 検討中アイコン
-  /// - その他: デフォルトのリアクションアイコン
-  IconData _getReactionIcon(ReactionType? type) {
-    switch (type) {
-      case ReactionType.going:
-        return Icons.person_add;
-      case ReactionType.thinking:
-        return Icons.psychology;
-      default:
-        return Icons.add_reaction_outlined;
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authNotifierProvider);
+    ref.watch(authNotifierProvider);
     final interactions = ref.watch(
       scheduleInteractionNotifierProvider(schedule.id),
     );
@@ -59,11 +43,20 @@ class ScheduleDetailPage extends HookConsumerWidget {
         actions: [
           if (schedule.ownerId ==
               ref.watch(authNotifierProvider).value?.user?.id)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                context.push('/schedule/edit/${schedule.id}');
-              },
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => EditSchedulePage(
+                        schedule: schedule,
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
         ],
       ),
@@ -124,9 +117,232 @@ class ScheduleDetailPage extends HookConsumerWidget {
                         );
                       },
                     ),
-                    const Divider(height: 32),
-                    _buildReactionsSection(context, interactions),
-                    const Divider(height: 32),
+                    // リアクションボタンとコメントボタン
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final authState = ref.watch(authNotifierProvider);
+                        if (authState.value?.status !=
+                                AuthStatus.authenticated ||
+                            authState.value?.user == null) {
+                          return const SizedBox.shrink();
+                        }
+
+                        final userReaction = interactions
+                            .getUserReaction(authState.value!.user!.id);
+
+                        return Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () =>
+                                        _showReactionUsers(context, ref),
+                                    child: Row(
+                                      children: [
+                                        if (schedule.reactionCount > 0)
+                                          const Row(
+                                            children: [
+                                              SizedBox(
+                                                width: 30,
+                                                height: 30,
+                                                child: Stack(
+                                                  children: [
+                                                    Positioned(
+                                                      right: 2,
+                                                      child: Text(
+                                                        '🤔',
+                                                        style: TextStyle(
+                                                          fontSize: 20,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Positioned(
+                                                      top: -1,
+                                                      left: -2,
+                                                      child: Text(
+                                                        '🙋',
+                                                        style: TextStyle(
+                                                          fontSize: 20,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        else
+                                          Icon(
+                                            Icons.people,
+                                            size: 16,
+                                            color:
+                                                Theme.of(context).primaryColor,
+                                          ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${schedule.reactionCount}',
+                                          style: TextStyle(
+                                            color: schedule.reactionCount > 0
+                                                ? Colors.grey
+                                                : Theme.of(context)
+                                                    .primaryColor,
+                                            fontWeight: FontWeight.bold,
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Icon(
+                                    Icons.comment,
+                                    size: 16,
+                                    color: Colors.blue[400],
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${schedule.commentCount}',
+                                    style: TextStyle(
+                                      color: Colors.blue[400],
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Divider(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: PopupMenuButton<ReactionType>(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 8),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          if (userReaction != null)
+                                            Text(
+                                              userReaction.type ==
+                                                      ReactionType.going
+                                                  ? '🙋'
+                                                  : '🤔',
+                                              style: const TextStyle(
+                                                fontSize: 20,
+                                              ),
+                                            )
+                                          else
+                                            const Icon(
+                                              Icons.add_reaction_outlined,
+                                              color: Colors.grey,
+                                              size: 20,
+                                            ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            userReaction != null
+                                                ? (userReaction.type ==
+                                                        ReactionType.going
+                                                    ? '行きます！'
+                                                    : '考え中！')
+                                                : 'リアクション',
+                                            style: TextStyle(
+                                              color: userReaction != null
+                                                  ? Theme.of(context)
+                                                      .primaryColor
+                                                  : Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    onSelected: (ReactionType type) {
+                                      ref
+                                          .read(
+                                              scheduleInteractionNotifierProvider(
+                                                      schedule.id)
+                                                  .notifier)
+                                          .toggleReaction(
+                                              authState.value!.user!.id, type);
+                                    },
+                                    itemBuilder: (context) => [
+                                      PopupMenuItem(
+                                        value: ReactionType.going,
+                                        child: Row(
+                                          children: [
+                                            const Text('🙋 '),
+                                            const Text('行きます！'),
+                                            const Spacer(),
+                                            if (userReaction?.type ==
+                                                ReactionType.going)
+                                              const Text('✓',
+                                                  style: TextStyle(
+                                                      color: AppTheme
+                                                          .primaryColor)),
+                                          ],
+                                        ),
+                                      ),
+                                      PopupMenuItem(
+                                        value: ReactionType.thinking,
+                                        child: Row(
+                                          children: [
+                                            const Text('🤔 '),
+                                            const Text('考え中！'),
+                                            const Spacer(),
+                                            if (userReaction?.type ==
+                                                ReactionType.thinking)
+                                              const Text('✓',
+                                                  style: TextStyle(
+                                                      color: AppTheme
+                                                          .primaryColor)),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () {
+                                      _showCommentDialog(context, ref,
+                                          authState.value!.user!.id);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 8),
+                                      child: const Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.comment_outlined,
+                                            color: Colors.grey,
+                                            size: 20,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            'コメント',
+                                            style: TextStyle(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                        );
+                      },
+                    ),
                     _buildCommentsSection(context, interactions),
                     // キーボードが表示された時の余白
                     const SizedBox(height: 80),
@@ -137,98 +353,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: authState.when(
-        data: (state) {
-          if (state.status != AuthStatus.authenticated || state.user == null) {
-            return null;
-          }
-          return FloatingActionButton(
-            onPressed: () {
-              _showCommentDialog(context, ref, state.user!.id);
-            },
-            child: const Icon(Icons.comment),
-          );
-        },
-        loading: () => null,
-        error: (_, __) => null,
-      ),
-      bottomNavigationBar: authState.when(
-        data: (state) {
-          if (state.status != AuthStatus.authenticated || state.user == null) {
-            return const SizedBox.shrink();
-          }
-
-          final userReaction = interactions.getUserReaction(state.user!.id);
-
-          return Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
-                  spreadRadius: 1,
-                  blurRadius: 3,
-                  offset: const Offset(0, -1),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                child: Row(
-                  children: [
-                    PopupMenuButton<ReactionType>(
-                      icon: Icon(
-                        _getReactionIcon(userReaction?.type),
-                        color:
-                            userReaction != null ? AppTheme.primaryColor : null,
-                      ),
-                      onSelected: (ReactionType type) {
-                        ref
-                            .read(
-                                scheduleInteractionNotifierProvider(schedule.id)
-                                    .notifier)
-                            .toggleReaction(state.user!.id, type);
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: ReactionType.going,
-                          child: Row(
-                            children: [
-                              const Text('🙋 '),
-                              const Text('行きます！'),
-                              const Spacer(),
-                              if (userReaction?.type == ReactionType.going)
-                                const Icon(Icons.check,
-                                    color: AppTheme.primaryColor),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: ReactionType.thinking,
-                          child: Row(
-                            children: [
-                              const Text('🤔 '),
-                              const Text('考え中！'),
-                              const Spacer(),
-                              if (userReaction?.type == ReactionType.thinking)
-                                const Icon(Icons.check,
-                                    color: AppTheme.primaryColor),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-        loading: () => const SizedBox.shrink(),
-        error: (_, __) => const SizedBox.shrink(),
-      ),
+      floatingActionButton: null,
     );
   }
 
@@ -307,6 +432,84 @@ class ScheduleDetailPage extends HookConsumerWidget {
     );
   }
 
+  Future<void> _showReactionUsers(BuildContext context, WidgetRef ref) async {
+    final reactions = await ref
+        .read(reactionRepositoryProvider)
+        .getReactionsForSchedule(schedule.id);
+    if (!context.mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'リアクションした人',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            FutureBuilder<List<UserModel>>(
+              future: Future.wait(
+                reactions.map((reaction) => ref
+                    .read(userRepositoryProvider)
+                    .getUser(reaction.userId)
+                    .then((user) => user!)),
+              ),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final users = snapshot.data!;
+                return SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.3,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: users.length,
+                    itemBuilder: (context, index) {
+                      final user = users[index];
+                      final reaction = reactions[index];
+                      return ListTile(
+                        leading: Stack(
+                          children: [
+                            const DefaultUserIcon(),
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Text(
+                                reaction.type == 'going' ? '🙋' : '🤔',
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          ],
+                        ),
+                        title: Text(user.displayName),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// 情報セクションを構築する[Widget]を返します
   ///
   /// [icon]、[title]、[content]を受け取り、一貫したレイアウトで
@@ -347,77 +550,6 @@ class ScheduleDetailPage extends HookConsumerWidget {
     );
   }
 
-  /// リアクションセクションを構築する[Widget]を返します
-  ///
-  /// [interactions]から現在のリアクション状態を取得し、
-  /// リアクションの種類ごとの集計を表示します。
-  Widget _buildReactionsSection(
-    BuildContext context,
-    ScheduleInteractionState interactions,
-  ) {
-    final reactionCounts = interactions.reactionCounts;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.people, size: 20, color: AppTheme.primaryColor),
-            const SizedBox(width: 8),
-            Text(
-              'リアクション ${interactions.reactions.length}件',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        if (interactions.reactions.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 16,
-            children: [
-              _buildReactionCount(
-                emoji: '🙋',
-                label: '行きます！',
-                count: reactionCounts[ReactionType.going] ?? 0,
-              ),
-              _buildReactionCount(
-                emoji: '🤔',
-                label: '考え中！',
-                count: reactionCounts[ReactionType.thinking] ?? 0,
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-
-  /// リアクションのカウントを表示する[Widget]を返します
-  ///
-  /// [emoji]、[label]、[count]を受け取り、リアクションの
-  /// 種類ごとの集計を表示します。[count]が0の場合は何も表示しません。
-  Widget _buildReactionCount({
-    required String emoji,
-    required String label,
-    required int count,
-  }) {
-    if (count == 0) return const SizedBox.shrink();
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 20)),
-        const SizedBox(width: 4),
-        Text('$count', style: const TextStyle(fontSize: 16)),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 14, color: Colors.grey)),
-      ],
-    );
-  }
-
   /// コメントセクションを構築する[Widget]を返します
   ///
   /// [interactions]から現在のコメント一覧を取得し、
@@ -426,27 +558,13 @@ class ScheduleDetailPage extends HookConsumerWidget {
     BuildContext context,
     ScheduleInteractionState interactions,
   ) {
-    // コメントを日時の降順でソート
+    // コメントを日時の昇順でソート
     final sortedComments = [...interactions.comments]
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Icon(Icons.comment, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'コメント ${interactions.commentCount}件',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
         ...sortedComments.map((comment) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
@@ -460,10 +578,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
                       radius: 20,
                     )
                   else
-                    const CircleAvatar(
-                      child: Icon(Icons.person),
-                      radius: 20,
-                    ),
+                    const DefaultUserIcon(),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(

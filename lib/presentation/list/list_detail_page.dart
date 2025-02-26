@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entity/list.dart';
 import '../presentation_provider.dart';
 import 'list_member_invite_page.dart';
+import 'list_edit_page.dart';
 
 /// プライベートリストの詳細画面を表示するウィジェット
 ///
@@ -40,6 +41,8 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
               PopupMenuButton<String>(
                 onSelected: (value) async {
                   if (value == 'delete') {
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
+                    final navigator = Navigator.of(context);
                     final confirmed = await showDialog<bool>(
                       context: context,
                       builder: (context) => AlertDialog(
@@ -64,11 +67,11 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                             .read(listNotifierProvider.notifier)
                             .deleteList(list.id, list.ownerId);
                         if (mounted) {
-                          Navigator.of(context).pop();
+                          navigator.pop();
                         }
                       } catch (e) {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          scaffoldMessenger.showSnackBar(
                             SnackBar(
                                 content: Text('削除に失敗しました: ${e.toString()}')),
                           );
@@ -119,9 +122,11 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                             const SizedBox(height: 8),
                             OutlinedButton.icon(
                               onPressed: () {
-                                // TODO: リスト編集機能の実装
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('編集機能は現在開発中です')),
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ListEditPage(list: list),
+                                  ),
                                 );
                               },
                               icon: const Icon(Icons.edit),
@@ -196,7 +201,20 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                                       : null,
                                 ),
                                 title: Text(member.displayName),
-                                subtitle: Text('@${member.searchId}'),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('@${member.searchId}'),
+                                    if (member.shortBio != null &&
+                                        member.shortBio!.isNotEmpty)
+                                      Text(
+                                        member.shortBio!,
+                                        style: theme.textTheme.bodySmall,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                  ],
+                                ),
                               ),
                             );
                           },
