@@ -19,6 +19,23 @@ class HomePage extends HookConsumerWidget {
     final initialized = useState(false);
     final userId = useState<String?>(null);
     final hideOwnSchedules = useState(false);
+    final currentTabIndex = useState(0);
+
+    // TabControllerを取得
+    final tabController = DefaultTabController.maybeOf(context);
+
+    // TabControllerのリスナー設定
+    useEffect(() {
+      if (tabController != null) {
+        void listener() {
+          currentTabIndex.value = tabController.index;
+        }
+
+        tabController.addListener(listener);
+        return () => tabController.removeListener(listener);
+      }
+      return null;
+    }, [tabController]);
 
     useEffect(() {
       if (!authState.hasValue) return null;
@@ -32,9 +49,11 @@ class HomePage extends HookConsumerWidget {
             userId.value = currentUserId;
 
             WidgetsBinding.instance.addPostFrameCallback((_) {
+              // 常に全ての予定を取得する
               ref
                   .read(scheduleNotifierProvider.notifier)
                   .watchUserSchedules(currentUserId);
+
               ref
                   .read(listNotifierProvider.notifier)
                   .watchUserLists(currentUserId);
@@ -126,13 +145,26 @@ class HomePage extends HookConsumerWidget {
                               scheduleState.when(
                                 data: (scheduleState) => scheduleState.maybeMap(
                                   loaded: (loaded) {
-                                    final filteredSchedules = hideOwnSchedules
-                                            .value
-                                        ? loaded.schedules
-                                            .where((s) =>
-                                                s.ownerId != state.user!.id)
-                                            .toList()
-                                        : loaded.schedules;
+                                    // 本日以降のスケジュールをフィルタリング
+                                    final today = DateTime.now();
+                                    final todayStart = DateTime(
+                                        today.year, today.month, today.day);
+
+                                    final allSchedules = loaded.schedules;
+                                    final filteredByDate =
+                                        allSchedules.where((schedule) {
+                                      return schedule.endDateTime
+                                          .isAfter(todayStart);
+                                    }).toList();
+
+                                    // 自分の予定を非表示にするフィルタリング
+                                    final filteredSchedules =
+                                        hideOwnSchedules.value
+                                            ? filteredByDate
+                                                .where((s) =>
+                                                    s.ownerId != state.user!.id)
+                                                .toList()
+                                            : filteredByDate;
 
                                     return Column(
                                       children: [
@@ -322,6 +354,7 @@ class HomePage extends HookConsumerWidget {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
+              // 常に全ての予定を取得する
               ref
                   .read(scheduleNotifierProvider.notifier)
                   .watchUserSchedules(state.user!.id);
