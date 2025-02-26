@@ -10,6 +10,9 @@ import 'package:lakiite/utils/logger.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 
+// 現在表示中のカレンダーページインデックスを保持するプロバイダー
+final calendarCurrentIndexProvider = StateProvider<int>((ref) => 1200);
+
 final holidaysProvider = FutureProvider<Map<String, String>>((ref) async {
   final String jsonString =
       await rootBundle.loadString('assets/data/japanese_holidays.json');
@@ -23,10 +26,67 @@ class CalendarPageView extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheduleState = ref.watch(scheduleNotifierProvider);
-    final currentIndex = useState(1200);
+    // 保存されたインデックスを使用
+    final currentIndex = ref.watch(calendarCurrentIndexProvider.notifier);
     final visibleMonth =
-        _getMonthName(_getVisibleDateTime(currentIndex.value).month);
-    final visibleYear = _getVisibleDateTime(currentIndex.value).year.toString();
+        _getMonthName(_getVisibleDateTime(currentIndex.state).month);
+    final visibleYear = _getVisibleDateTime(currentIndex.state).year.toString();
+    final authState = ref.watch(authNotifierProvider);
+    final currentUserId = ref.watch(currentUserIdProvider);
+
+    // 前回のスケジュールデータを保持
+    final previousSchedules = useState<List<Schedule>>([]);
+
+    // スケジュールデータが更新されたら保存
+    useEffect(() {
+      scheduleState.whenData((state) {
+        state.maybeMap(
+          loaded: (loaded) {
+            previousSchedules.value = loaded.schedules;
+          },
+          orElse: () {},
+        );
+      });
+      return null;
+    }, [scheduleState]);
+
+    // PageControllerを作成し、保存されたインデックスを初期ページとして使用
+    final pageController =
+        useMemoized(() => PageController(initialPage: currentIndex.state), []);
+
+    // コントローラーの破棄を適切に行う
+    useEffect(() {
+      return () {
+        pageController.dispose();
+      };
+    }, [pageController]);
+
+    // 初期表示時に現在の月のデータを取得
+    useEffect(() {
+      if (currentUserId != null) {
+        final visibleDate = _getVisibleDateTime(currentIndex.state);
+        AppLogger.debug('初期表示時の月: ${visibleDate.year}-${visibleDate.month}');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref
+              .read(scheduleNotifierProvider.notifier)
+              .watchUserSchedulesForMonth(currentUserId, visibleDate);
+        });
+      }
+      return null;
+    }, [currentUserId]);
+
+    // スケジュールデータを取得（ローディング中は前回のデータを表示）
+    final schedules = scheduleState.when(
+      data: (state) => state.maybeMap(
+        loaded: (loaded) => loaded.schedules,
+        orElse: () => <Schedule>[],
+      ),
+      loading: () => previousSchedules.value,
+      error: (_, __) => previousSchedules.value,
+    );
+
+    // ローディング中かどうかを判定
+    final isLoading = scheduleState.isLoading;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 0),
@@ -70,25 +130,36 @@ class CalendarPageView extends HookConsumerWidget {
               ],
             ),
           ),
+          // ローディングインジケーターを表示（データは維持したまま）
+          if (isLoading)
+            const LinearProgressIndicator(
+              backgroundColor: Colors.transparent,
+              minHeight: 2,
+            ),
           Expanded(
             child: PageView.builder(
-              controller: PageController(initialPage: 1200),
+              controller: pageController,
               itemBuilder: (context, index) {
                 final dateTime = _getVisibleDateTime(index);
                 return CalendarPage(
                   visiblePageDate: dateTime,
-                  schedules: scheduleState.when(
-                    data: (state) => state.maybeMap(
-                      loaded: (loaded) => loaded.schedules,
-                      orElse: () => <Schedule>[],
-                    ),
-                    loading: () => <Schedule>[],
-                    error: (_, __) => <Schedule>[],
-                  ),
+                  schedules: schedules,
                 );
               },
               onPageChanged: (index) {
-                currentIndex.value = index;
+                // インデックスを状態プロバイダーに保存
+                currentIndex.state = index;
+                AppLogger.debug('ページ変更: インデックス=$index');
+
+                // ページ変更時に表示月に基づいてデータを取得
+                if (currentUserId != null) {
+                  final visibleDate = _getVisibleDateTime(index);
+                  AppLogger.debug(
+                      '表示月変更: ${visibleDate.year}-${visibleDate.month}');
+                  ref
+                      .read(scheduleNotifierProvider.notifier)
+                      .watchUserSchedulesForMonth(currentUserId, visibleDate);
+                }
               },
             ),
           ),
@@ -119,30 +190,55 @@ class CalendarPageView extends HookConsumerWidget {
     final monthDif = index - 1200;
     final visibleYear = _getVisibleYear(monthDif);
     final visibleMonth = _getVisibleMonth(monthDif);
+    AppLogger.debug(
+        '_getVisibleDateTime: index=$index, monthDif=$monthDif, year=$visibleYear, month=$visibleMonth');
     return DateTime(visibleYear, visibleMonth);
   }
 
   int _getVisibleYear(int monthDif) {
-    final currentMonth = DateTime.now().month;
-    final currentYear = DateTime.now().year;
-    final visibleMonth = currentMonth + monthDif;
+    final now = DateTime.now();
+    final currentMonth = now.month;
+    final currentYear = now.year;
 
-    if (visibleMonth > 0) {
-      return currentYear + (visibleMonth ~/ 12);
+    // 現在の月に差分を加える
+    final targetMonthValue = currentMonth + monthDif;
+
+    // 年の調整を計算
+    int yearAdjustment;
+    if (targetMonthValue > 0) {
+      // 正の値の場合は単純に12で割った商
+      yearAdjustment = (targetMonthValue - 1) ~/ 12;
     } else {
-      return currentYear + ((visibleMonth ~/ 12) - 1);
+      // 負の値の場合は、-1ヶ月が前年の12月になるように調整
+      yearAdjustment = (targetMonthValue - 12) ~/ 12;
     }
+
+    final result = currentYear + yearAdjustment;
+    AppLogger.debug(
+        '_getVisibleYear: monthDif=$monthDif, targetMonthValue=$targetMonthValue, yearAdjustment=$yearAdjustment, result=$result');
+    return result;
   }
 
   int _getVisibleMonth(int monthDif) {
-    final initialMonth = DateTime.now().month;
-    final currentMonth = initialMonth + monthDif;
+    final now = DateTime.now();
+    final initialMonth = now.month;
+    final targetMonthValue = initialMonth + monthDif;
 
-    if (currentMonth > 0) {
-      return currentMonth % 12;
+    // 1〜12の範囲に変換
+    int result;
+    if (targetMonthValue > 0) {
+      result = ((targetMonthValue - 1) % 12) + 1;
     } else {
-      return 12 - (-currentMonth % 12);
+      // 負の値の場合、-1→12月、-2→11月...となるように調整
+      result = 12 - ((-targetMonthValue) % 12);
+      if (result == 12 && targetMonthValue % 12 != 0) {
+        result = 12;
+      }
     }
+
+    AppLogger.debug(
+        '_getVisibleMonth: monthDif=$monthDif, targetMonthValue=$targetMonthValue, result=$result');
+    return result;
   }
 }
 

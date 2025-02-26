@@ -10,6 +10,8 @@ part 'schedule_state.freezed.dart';
 /// - ローディング状態: データ取得/更新中
 /// - 取得完了状態: データ取得/更新成功
 /// - エラー状態: 操作失敗
+/// - データ付きローディング状態: 既存データを表示しながらデータ取得/更新中
+/// - データ付きエラー状態: 既存データを表示しながらエラー状態
 ///
 /// 実装:
 /// - [freezed]パッケージによるイミュータブルな状態管理
@@ -65,4 +67,35 @@ class ScheduleState with _$ScheduleState {
   /// - エラー内容をユーザーに通知可能
   /// - エラーハンドリングの起点として使用
   const factory ScheduleState.error(String message) = _Error;
+
+  /// データを保持したままローディング状態を表すファクトリーメソッド
+  ///
+  /// パラメータ:
+  /// - [schedules] 既存のスケジュールのリスト
+  ///
+  /// 用途:
+  /// - 既存データを表示しながら新しいデータを取得中
+  /// - ページ切り替え時のスムーズな遷移
+  ///
+  /// 特徴:
+  /// - 既存データを保持したままローディング状態を表現
+  /// - UIでのデータ表示を継続しながら更新中であることを通知
+  const factory ScheduleState.loadingWithData(List<Schedule> schedules) =
+      _LoadingWithData;
+
+  /// データを保持したままエラー状態を表すファクトリーメソッド
+  ///
+  /// パラメータ:
+  /// - [schedules] 既存のスケジュールのリスト
+  /// - [message] エラーの詳細メッセージ
+  ///
+  /// 用途:
+  /// - 既存データを表示しながらエラー状態を通知
+  /// - データ更新失敗時も既存データの表示を継続
+  ///
+  /// 特徴:
+  /// - 既存データを保持したままエラー状態を表現
+  /// - UIでのデータ表示を継続しながらエラーを通知
+  const factory ScheduleState.errorWithData(
+      List<Schedule> schedules, String message) = _ErrorWithData;
 }
