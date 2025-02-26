@@ -85,13 +85,13 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
                     showDialog(
                       context: context,
                       barrierDismissible: true,
-                      builder: (context) => WillPopScope(
-                        onWillPop: () async {
+                      builder: (context) => PopScope(
+                        canPop: true,
+                        onPopInvoked: (didPop) {
                           setState(() {
                             isDialogShowing = false;
                           });
                           viewModel.resetState();
-                          return true;
                         },
                         child: AlertDialog(
                           content: SizedBox(
@@ -144,19 +144,20 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
                                       ),
                                       ElevatedButton(
                                         onPressed: () async {
+                                          final scaffoldMessenger =
+                                              ScaffoldMessenger.of(context);
+                                          final navigator =
+                                              Navigator.of(context);
                                           await viewModel.sendFriendRequest(
                                               state.value!.id);
                                           if (mounted) {
                                             setState(() {
                                               isDialogShowing = false;
                                             });
-                                            Navigator.of(context).pop();
-                                            // 検索入力欄をクリア
+                                            navigator.pop();
                                             searchController.clear();
-                                            // 申請完了メッセージを表示
                                             if (viewModel.message != null) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
+                                              scaffoldMessenger.showSnackBar(
                                                 SnackBar(
                                                   content:
                                                       Text(viewModel.message!),

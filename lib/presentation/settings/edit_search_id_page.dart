@@ -21,7 +21,8 @@ class _EditSearchIdPageState extends ConsumerState<EditSearchIdPage> {
     super.initState();
     final user = ref.read(myPageViewModelProvider).value;
     if (user != null) {
-      _searchIdController = TextEditingController(text: user.searchId.toString());
+      _searchIdController =
+          TextEditingController(text: user.searchId.toString());
     } else {
       _searchIdController = TextEditingController();
     }
@@ -68,7 +69,8 @@ class _EditSearchIdPageState extends ConsumerState<EditSearchIdPage> {
         return;
       }
 
-      final isUnique = await ref.read(userRepositoryProvider).isUserIdUnique(UserId(value));
+      final isUnique =
+          await ref.read(userRepositoryProvider).isUserIdUnique(UserId(value));
       if (!isUnique) {
         setState(() {
           _errorText = 'この検索IDは既に使用されています';
@@ -99,23 +101,28 @@ class _EditSearchIdPageState extends ConsumerState<EditSearchIdPage> {
                 : () async {
                     if (!userState.hasValue || userState.value == null) return;
 
+                    final navigator = Navigator.of(context);
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
                     try {
                       final user = userState.value!;
-                      await ref.read(myPageViewModelProvider.notifier).updateProfile(
+                      await ref
+                          .read(myPageViewModelProvider.notifier)
+                          .updateProfile(
                             name: user.name,
                             displayName: user.displayName,
                             searchIdStr: _searchIdController.text,
                             shortBio: user.publicProfile.shortBio,
                           );
                       if (mounted) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        navigator.pop();
+                        scaffoldMessenger.showSnackBar(
                           const SnackBar(content: Text('検索IDを更新しました')),
                         );
                       }
                     } catch (e) {
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        scaffoldMessenger.showSnackBar(
                           SnackBar(content: Text('エラー: ${e.toString()}')),
                         );
                       }
@@ -177,7 +184,8 @@ class _EditSearchIdPageState extends ConsumerState<EditSearchIdPage> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('エラー: ${error.toString()}')),
+        error: (error, stack) =>
+            Center(child: Text('エラー: ${error.toString()}')),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entity/notification.dart' as domain;
 import '../../domain/interfaces/i_notification_repository.dart';
 import '../../infrastructure/notification_repository.dart';
+import '../../utils/logger.dart';
 import '../auth/auth_notifier.dart';
 
 typedef Notification = domain.Notification;
@@ -34,7 +35,8 @@ final unreadNotificationCountProvider = StreamProvider<int>((ref) {
 /// [type] 監視対象の通知タイプ
 /// ログインユーザーの指定タイプの未読通知数のストリームを提供する
 /// 未ログイン時は0を返す
-final unreadNotificationCountByTypeProvider = StreamProvider.family<int, NotificationType>((ref, type) {
+final unreadNotificationCountByTypeProvider =
+    StreamProvider.family<int, NotificationType>((ref, type) {
   final repository = ref.watch(notificationRepositoryProvider);
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return Stream.value(0);
@@ -57,7 +59,8 @@ final receivedNotificationsProvider = StreamProvider<List<Notification>>((ref) {
 /// [type] 監視対象の通知タイプ
 /// ログインユーザーが受信した指定タイプの通知のストリームを提供する
 /// 未ログイン時は空配列を返す
-final receivedNotificationsByTypeProvider = StreamProvider.family<List<Notification>, NotificationType>((ref, type) {
+final receivedNotificationsByTypeProvider =
+    StreamProvider.family<List<Notification>, NotificationType>((ref, type) {
   final repository = ref.watch(notificationRepositoryProvider);
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return Stream.value([]);
@@ -80,7 +83,8 @@ final sentNotificationsProvider = StreamProvider<List<Notification>>((ref) {
 /// [type] 監視対象の通知タイプ
 /// ログインユーザーが送信した指定タイプの通知のストリームを提供する
 /// 未ログイン時は空配列を返す
-final sentNotificationsByTypeProvider = StreamProvider.family<List<Notification>, NotificationType>((ref, type) {
+final sentNotificationsByTypeProvider =
+    StreamProvider.family<List<Notification>, NotificationType>((ref, type) {
   final repository = ref.watch(notificationRepositoryProvider);
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return Stream.value([]);
@@ -191,10 +195,84 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
       state = AsyncValue.error(e, stack);
     }
   }
+
+  /// リアクション通知を作成する
+  ///
+  /// [toUserId] 送信先のユーザーID（投稿作成者）
+  /// [fromUserId] 送信元のユーザーID（リアクションした人）
+  /// [scheduleId] スケジュールのID
+  /// [interactionId] リアクションのID
+  /// [fromUserDisplayName] 送信元のユーザー表示名（オプション）
+  Future<void> createReactionNotification({
+    required String toUserId,
+    required String fromUserId,
+    required String scheduleId,
+    required String interactionId,
+    String? fromUserDisplayName,
+  }) async {
+    AppLogger.debug(
+        'Creating reaction notification - toUserId: $toUserId, fromUserId: $fromUserId, scheduleId: $scheduleId, interactionId: $interactionId');
+    state = const AsyncValue.loading();
+    try {
+      final notification = Notification.createReactionNotification(
+        fromUserId: fromUserId,
+        toUserId: toUserId,
+        relatedItemId: scheduleId,
+        interactionId: interactionId,
+        fromUserDisplayName: fromUserDisplayName,
+      );
+      AppLogger.debug('Created notification object: $notification');
+      await _repository.createNotification(notification);
+      AppLogger.debug(
+          'Successfully created reaction notification in Firestore');
+      state = const AsyncValue.data(null);
+    } catch (e, stack) {
+      AppLogger.error('Error creating reaction notification: $e');
+      AppLogger.error('Stack trace: $stack');
+      state = AsyncValue.error(e, stack);
+    }
+  }
+
+  /// コメント通知を作成する
+  ///
+  /// [toUserId] 送信先のユーザーID（投稿作成者）
+  /// [fromUserId] 送信元のユーザーID（コメントした人）
+  /// [scheduleId] スケジュールのID
+  /// [interactionId] コメントのID
+  /// [fromUserDisplayName] 送信元のユーザー表示名（オプション）
+  Future<void> createCommentNotification({
+    required String toUserId,
+    required String fromUserId,
+    required String scheduleId,
+    required String interactionId,
+    String? fromUserDisplayName,
+  }) async {
+    AppLogger.debug(
+        'Creating comment notification - toUserId: $toUserId, fromUserId: $fromUserId, scheduleId: $scheduleId, interactionId: $interactionId');
+    state = const AsyncValue.loading();
+    try {
+      final notification = Notification.createCommentNotification(
+        fromUserId: fromUserId,
+        toUserId: toUserId,
+        relatedItemId: scheduleId,
+        interactionId: interactionId,
+        fromUserDisplayName: fromUserDisplayName,
+      );
+      AppLogger.debug('Created notification object: $notification');
+      await _repository.createNotification(notification);
+      AppLogger.debug('Successfully created comment notification in Firestore');
+      state = const AsyncValue.data(null);
+    } catch (e, stack) {
+      AppLogger.error('Error creating comment notification: $e');
+      AppLogger.error('Stack trace: $stack');
+      state = AsyncValue.error(e, stack);
+    }
+  }
 }
 
 /// 通知操作を提供するNotifierのプロバイダー
-final notificationNotifierProvider = StateNotifierProvider<NotificationNotifier, AsyncValue<void>>((ref) {
+final notificationNotifierProvider =
+    StateNotifierProvider<NotificationNotifier, AsyncValue<void>>((ref) {
   final repository = ref.watch(notificationRepositoryProvider);
   return NotificationNotifier(repository);
 });

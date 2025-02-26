@@ -13,7 +13,7 @@ final bannerAdProvider = Provider.autoDispose((ref) {
 });
 
 class BannerAdWidget extends ConsumerWidget {
-  const BannerAdWidget({Key? key}) : super(key: key);
+  const BannerAdWidget({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -6,7 +6,7 @@ part of 'list_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$listNotifierHash() => r'0dc68b71436c57ccb2cac8ddff01ac571ef9b77e';
+String _$listNotifierHash() => r'28a2b735037baeda00115a6aaf2f769ee797862a';
 
 /// プライベートリスト状態を管理するNotifierクラス
 ///

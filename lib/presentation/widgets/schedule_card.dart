@@ -18,11 +18,6 @@ class ScheduleCard extends StatelessWidget {
     return formatter.format(dateTime);
   }
 
-  String _formatDate(DateTime dateTime) {
-    final formatter = DateFormat('M/d (E)', 'ja_JP');
-    return formatter.format(dateTime);
-  }
-
   double _calculateTimePosition(DateTime time) {
     // 1時間を60ピクセルとして、分単位で計算
     final minutes = time.minute;

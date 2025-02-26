@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
+import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:intl/intl.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
@@ -113,9 +114,9 @@ class CalendarPage extends HookConsumerWidget {
                             children: [
                               // カレンダー表示タブ
                               scheduleState.when(
-                                data: (_) => Column(
+                                data: (_) => const Column(
                                   children: [
-                                    const Expanded(child: CalendarPageView()),
+                                    Expanded(child: CalendarPageView()),
                                   ],
                                 ),
                                 error: (error, _) => _buildErrorWidget(
@@ -307,9 +308,9 @@ class CalendarPage extends HookConsumerWidget {
                             ],
                           ),
                         ),
-                        Container(
+                        const SizedBox(
                           height: 50,
-                          child: const AdBannerWidget(),
+                          child: AdBannerWidget(),
                         ),
                       ],
                     ),
@@ -338,223 +339,6 @@ class CalendarPage extends HookConsumerWidget {
         return const Scaffold(
           body: Center(
             child: CircularProgressIndicator(),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildTimelineList(
-    BuildContext context,
-    List<Schedule> schedules,
-    UserModel currentUser,
-    WidgetRef ref,
-  ) {
-    final sortedSchedules = List<Schedule>.from(schedules)
-      ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: sortedSchedules.length,
-      itemBuilder: (context, index) {
-        final schedule = sortedSchedules[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: InkWell(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => ScheduleDetailPage(schedule: schedule),
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: schedule.ownerId == currentUser.id
-                    ? Border.all(
-                        color: Theme.of(context).primaryColor.withOpacity(0.3),
-                        width: 1,
-                      )
-                    : null,
-                borderRadius: BorderRadius.circular(8),
-                color: schedule.ownerId == currentUser.id
-                    ? Theme.of(context).primaryColor.withOpacity(0.05)
-                    : null,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          schedule.title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      if (schedule.ownerId == currentUser.id)
-                        IconButton(
-                          icon: Icon(
-                            Icons.edit,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => EditSchedulePage(
-                                  schedule: schedule,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  FutureBuilder<UserModel?>(
-                    future: ref
-                        .read(userRepositoryProvider)
-                        .getUser(schedule.ownerId),
-                    builder: (context, snapshot) {
-                      final ownerName = snapshot.hasData
-                          ? snapshot.data!.displayName
-                          : '読み込み中...';
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (schedule.description.isNotEmpty) ...[
-                            Text(
-                              schedule.description,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[800],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                          ],
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.access_time,
-                                size: 16,
-                                color: Colors.grey[600],
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '${DateFormat('yyyy/MM/dd HH:mm').format(schedule.startDateTime)} - '
-                                  '${DateFormat('yyyy/MM/dd HH:mm').format(schedule.endDateTime)}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (schedule.location != null) ...[
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  size: 16,
-                                  color: Colors.grey[600],
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    schedule.location!,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.person,
-                                size: 16,
-                                color: Colors.grey[600],
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '作成者: ${schedule.ownerId == currentUser.id ? '自分' : ownerName}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Divider(height: 24),
-                          Consumer(
-                            builder: (context, ref, _) {
-                              final interactionState = ref.watch(
-                                scheduleInteractionNotifierProvider(
-                                    schedule.id),
-                              );
-                              if (interactionState.isLoading) {
-                                return const SizedBox();
-                              }
-                              if (interactionState.error != null) {
-                                return const SizedBox();
-                              }
-                              final reactionCounts =
-                                  interactionState.reactionCounts;
-                              final totalReactions = reactionCounts.values
-                                  .fold(0, (sum, count) => sum + count);
-                              return Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  Icon(
-                                    Icons.people,
-                                    size: 16,
-                                    color: Theme.of(context).primaryColor,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '$totalReactions',
-                                    style: TextStyle(
-                                      color: Theme.of(context).primaryColor,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Icon(
-                                    Icons.comment,
-                                    size: 16,
-                                    color: Colors.blue[400],
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${interactionState.commentCount}',
-                                    style: TextStyle(
-                                      color: Colors.blue[400],
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
           ),
         );
       },
@@ -736,18 +520,85 @@ class CalendarPage extends HookConsumerWidget {
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Icon(
-                          Icons.people,
-                          size: 16,
-                          color: Theme.of(context).primaryColor,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$totalReactions',
-                          style: TextStyle(
-                            color: Theme.of(context).primaryColor,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          children: [
+                            if (interactionState.reactions.isNotEmpty)
+                              SizedBox(
+                                width: 30,
+                                height: 30,
+                                child: Stack(
+                                  children: [
+                                    if (interactionState.reactionCounts[
+                                                ReactionType.thinking] !=
+                                            null &&
+                                        interactionState.reactionCounts[
+                                                ReactionType.thinking]! >
+                                            0)
+                                      const Positioned(
+                                        right: 2,
+                                        child: Text(
+                                          '🤔',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                          ),
+                                        ),
+                                      ),
+                                    if (interactionState.reactionCounts[
+                                                ReactionType.going] !=
+                                            null &&
+                                        interactionState.reactionCounts[
+                                                ReactionType.going]! >
+                                            0)
+                                      Positioned(
+                                        top: -1,
+                                        right: interactionState.reactionCounts[
+                                                        ReactionType
+                                                            .thinking] !=
+                                                    null &&
+                                                interactionState.reactionCounts[
+                                                        ReactionType
+                                                            .thinking]! >
+                                                    0
+                                            ? null
+                                            : 2,
+                                        left: interactionState.reactionCounts[
+                                                        ReactionType
+                                                            .thinking] !=
+                                                    null &&
+                                                interactionState.reactionCounts[
+                                                        ReactionType
+                                                            .thinking]! >
+                                                    0
+                                            ? -2
+                                            : null,
+                                        child: const Text(
+                                          '🙋',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              )
+                            else
+                              Icon(
+                                Icons.people,
+                                size: 16,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$totalReactions',
+                              style: TextStyle(
+                                color: interactionState.reactions.isNotEmpty
+                                    ? Colors.grey
+                                    : Theme.of(context).primaryColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(width: 16),
                         Icon(
@@ -760,6 +611,7 @@ class CalendarPage extends HookConsumerWidget {
                           '${interactionState.commentCount}',
                           style: TextStyle(
                             color: Colors.blue[400],
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

@@ -70,13 +70,37 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
 
   /// リスト情報を更新する
   ///
-  /// [list] 更新するリスト情報
+  /// [listId] 更新するリストのID
+  /// [listName] 更新するリストの名前
+  /// [iconUrl] 更新するリストのアイコン画像URL（任意）
+  /// [memberIds] 更新するリストのメンバーIDリスト
   ///
   /// エラー発生時は[ListState.error]を返します。
-  Future<void> updateList(UserList list) async {
+  Future<void> updateList(
+    String listId,
+    String listName,
+    String? iconUrl,
+    List<String> memberIds,
+  ) async {
     state = const AsyncValue.loading();
     try {
-      await ref.read(listRepositoryProvider).updateList(list);
+      final list = await ref.read(listRepositoryProvider).getList(listId);
+      if (list == null) {
+        state = const AsyncValue.data(ListState.error('リストが見つかりません'));
+        return;
+      }
+
+      final updatedList = UserList(
+        id: listId,
+        listName: listName,
+        ownerId: list.ownerId,
+        memberIds: memberIds,
+        createdAt: list.createdAt,
+        iconUrl: iconUrl,
+        description: list.description,
+      );
+
+      await ref.read(listRepositoryProvider).updateList(updatedList);
       await fetchLists(list.ownerId);
     } catch (e) {
       state = AsyncValue.data(ListState.error(e.toString()));
@@ -123,7 +147,8 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
   /// [ownerId] リストの所有者ID
   ///
   /// エラー発生時は[ListState.error]を返します。
-  Future<void> removeMember(String listId, String userId, String ownerId) async {
+  Future<void> removeMember(
+      String listId, String userId, String ownerId) async {
     state = const AsyncValue.loading();
     try {
       await ref.read(listRepositoryProvider).removeMember(listId, userId);

@@ -58,9 +58,11 @@ class DailyScheduleView extends HookConsumerWidget {
     // 初期化時にスケジュールの監視を開始
     useEffect(() {
       if (currentUserId != null) {
-        ref
-            .read(scheduleNotifierProvider.notifier)
-            .watchUserSchedules(currentUserId);
+        Future.microtask(() {
+          ref
+              .read(scheduleNotifierProvider.notifier)
+              .watchUserSchedules(currentUserId);
+        });
       }
       return null;
     }, [currentUserId]);

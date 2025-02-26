@@ -15,7 +15,8 @@ class GroupMemberInvitePage extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<GroupMemberInvitePage> createState() => _GroupMemberInvitePageState();
+  ConsumerState<GroupMemberInvitePage> createState() =>
+      _GroupMemberInvitePageState();
 }
 
 class _GroupMemberInvitePageState extends ConsumerState<GroupMemberInvitePage> {
@@ -30,7 +31,8 @@ class _GroupMemberInvitePageState extends ConsumerState<GroupMemberInvitePage> {
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = ref.watch(groupMemberInviteViewModelProvider(widget.group).notifier);
+    final viewModel =
+        ref.watch(groupMemberInviteViewModelProvider(widget.group).notifier);
     final state = ref.watch(groupMemberInviteViewModelProvider(widget.group));
 
     // ローディング状態の表示
@@ -80,7 +82,9 @@ class _GroupMemberInvitePageState extends ConsumerState<GroupMemberInvitePage> {
             ),
 
           // 検索結果ダイアログの表示
-          if (state.searchResult.hasValue && state.searchResult.value != null && !isDialogShowing)
+          if (state.searchResult.hasValue &&
+              state.searchResult.value != null &&
+              !isDialogShowing)
             Builder(
               builder: (context) {
                 isDialogShowing = true;
@@ -125,7 +129,8 @@ class _GroupMemberInvitePageState extends ConsumerState<GroupMemberInvitePage> {
                   isSelected: isSelected,
                   isInvitable: isInvitable,
                   isGroupMember: state.groupMembers.contains(friend.id),
-                  hasPendingInvitation: state.pendingInvitations.contains(friend.id),
+                  hasPendingInvitation:
+                      state.pendingInvitations.contains(friend.id),
                   onChanged: (bool? value) {
                     viewModel.toggleFriendSelection(friend.id);
                   },
@@ -143,9 +148,10 @@ class _GroupMemberInvitePageState extends ConsumerState<GroupMemberInvitePage> {
             onPressed: state.selectedFriends.isEmpty
                 ? null
                 : () async {
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
                     await viewModel.sendGroupInvitations(widget.group);
                     if (state.message != null && mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      scaffoldMessenger.showSnackBar(
                         SnackBar(
                           content: Text(state.message!),
                           duration: const Duration(seconds: 2),
