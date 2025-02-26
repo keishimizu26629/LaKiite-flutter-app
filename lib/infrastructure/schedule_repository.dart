@@ -78,9 +78,20 @@ class ScheduleRepository implements IScheduleRepository {
 
   @override
   Future<List<Schedule>> getUserSchedules(String userId) async {
+    // 前月の1日を計算
+    final now = DateTime.now();
+    final previousMonth = DateTime(now.year, now.month - 1, 1);
+
+    // 日付形式を正確に整形（必ず2桁になるようにフォーマット）
+    final year = previousMonth.year.toString();
+    final month = previousMonth.month.toString().padLeft(2, '0');
+    final day = previousMonth.day.toString().padLeft(2, '0');
+    final previousMonthIso = "$year-$month-${day}T00:00:00.000";
+
     final snapshot = await _firestore
         .collection('schedules')
         .where('visibleTo', arrayContains: userId)
+        .where('startDateTime', isGreaterThanOrEqualTo: previousMonthIso)
         .orderBy('startDateTime', descending: false)
         .get(const GetOptions(source: Source.cache))
         .catchError((error) async {
@@ -88,6 +99,7 @@ class ScheduleRepository implements IScheduleRepository {
       return await _firestore
           .collection('schedules')
           .where('visibleTo', arrayContains: userId)
+          .where('startDateTime', isGreaterThanOrEqualTo: previousMonthIso)
           .orderBy('startDateTime', descending: false)
           .get();
     });
@@ -216,9 +228,20 @@ class ScheduleRepository implements IScheduleRepository {
 
   @override
   Stream<List<Schedule>> watchListSchedules(String listId) {
+    // 前月の1日を計算
+    final now = DateTime.now();
+    final previousMonth = DateTime(now.year, now.month - 1, 1);
+
+    // 日付形式を正確に整形（必ず2桁になるようにフォーマット）
+    final year = previousMonth.year.toString();
+    final month = previousMonth.month.toString().padLeft(2, '0');
+    final day = previousMonth.day.toString().padLeft(2, '0');
+    final previousMonthIso = "$year-$month-${day}T00:00:00.000";
+
     return _firestore
         .collection('schedules')
         .where('sharedLists', arrayContains: listId)
+        .where('startDateTime', isGreaterThanOrEqualTo: previousMonthIso)
         .orderBy('startDateTime', descending: false)
         .snapshots()
         .asyncMap((snapshot) async {
@@ -233,9 +256,20 @@ class ScheduleRepository implements IScheduleRepository {
     try {
       await _ensureAuthenticated();
 
+      // 前月の1日を計算
+      final now = DateTime.now();
+      final previousMonth = DateTime(now.year, now.month - 1, 1);
+
+      // 日付形式を正確に整形（必ず2桁になるようにフォーマット）
+      final year = previousMonth.year.toString();
+      final month = previousMonth.month.toString().padLeft(2, '0');
+      final day = previousMonth.day.toString().padLeft(2, '0');
+      final previousMonthIso = "$year-$month-${day}T00:00:00.000";
+
       final stream = _firestore
           .collection('schedules')
           .where('visibleTo', arrayContains: userId)
+          .where('startDateTime', isGreaterThanOrEqualTo: previousMonthIso)
           .orderBy('startDateTime', descending: false)
           .snapshots();
 
@@ -253,6 +287,52 @@ class ScheduleRepository implements IScheduleRepository {
       }
     } catch (e) {
       AppLogger.error('Error in watchUserSchedules: $e');
+      yield [];
+    }
+  }
+
+  @override
+  Stream<List<Schedule>> watchUserSchedulesForMonth(
+      String userId, DateTime displayMonth) async* {
+    try {
+      await _ensureAuthenticated();
+
+      // 表示月の前月の1日を計算
+      final previousMonth =
+          DateTime(displayMonth.year, displayMonth.month - 1, 1);
+
+      // 日付形式を正確に整形（必ず2桁になるようにフォーマット）
+      final year = previousMonth.year.toString();
+      final month = previousMonth.month.toString().padLeft(2, '0');
+      final day = previousMonth.day.toString().padLeft(2, '0');
+      final previousMonthIso = "$year-$month-${day}T00:00:00.000";
+
+      AppLogger.debug(
+          'Fetching schedules from: $previousMonthIso for display month: ${displayMonth.year}-${displayMonth.month}');
+
+      final stream = _firestore
+          .collection('schedules')
+          .where('visibleTo', arrayContains: userId)
+          .where('startDateTime', isGreaterThanOrEqualTo: previousMonthIso)
+          .orderBy('startDateTime', descending: false)
+          .snapshots();
+
+      await for (final snapshot in stream) {
+        try {
+          final schedules = await Future.wait(
+            snapshot.docs.map((doc) => _enrichSchedule(doc)),
+          );
+          AppLogger.debug(
+              'Retrieved ${schedules.length} schedules for month: ${displayMonth.year}-${displayMonth.month}');
+          yield schedules;
+        } catch (e) {
+          AppLogger.error('Error processing schedule snapshot for month: $e');
+          // エラーが発生した場合は空のリストを返す
+          yield [];
+        }
+      }
+    } catch (e) {
+      AppLogger.error('Error in watchUserSchedulesForMonth: $e');
       yield [];
     }
   }

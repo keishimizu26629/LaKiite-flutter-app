@@ -29,7 +29,27 @@ class ScheduleMapper {
   static DateTime _parseDateTime(dynamic value) {
     if (value == null) return DateTime.now();
     if (value is Timestamp) return value.toDate();
-    if (value is String) return DateTime.parse(value);
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (e) {
+        // 不正な日付形式の場合、修正を試みる
+        try {
+          // 日付部分が1桁の場合（例: 2025-01-1）を修正
+          final RegExp datePattern = RegExp(r'(\d{4}-\d{2}-)(\d)([T])');
+          if (datePattern.hasMatch(value)) {
+            final correctedValue = value.replaceAllMapped(
+                datePattern, (match) => '${match[1]}0${match[2]}${match[3]}');
+            return DateTime.parse(correctedValue);
+          }
+
+          // それでも失敗する場合は現在時刻を返す
+          return DateTime.now();
+        } catch (_) {
+          return DateTime.now();
+        }
+      }
+    }
     return DateTime.now();
   }
 

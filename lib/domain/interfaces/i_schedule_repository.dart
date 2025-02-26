@@ -56,6 +56,15 @@ abstract class IScheduleRepository {
   /// 返値: ユーザーに関連するスケジュールリストの変更を通知するStream
   Stream<List<Schedule>> watchUserSchedules(String userId);
 
+  /// 特定のユーザーに関連するスケジュールを表示月に基づいて監視する
+  ///
+  /// [userId] 監視対象のユーザーID
+  /// [displayMonth] 表示中の月（DateTime）
+  ///
+  /// 返値: ユーザーに関連するスケジュールリストの変更を通知するStream
+  Stream<List<Schedule>> watchUserSchedulesForMonth(
+      String userId, DateTime displayMonth);
+
   /// 特定のスケジュールを監視する
   ///
   /// [scheduleId] 監視対象のスケジュールID

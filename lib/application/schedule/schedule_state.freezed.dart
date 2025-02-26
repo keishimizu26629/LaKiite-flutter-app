@@ -22,6 +22,9 @@ mixin _$ScheduleState {
     required TResult Function() loading,
     required TResult Function(List<Schedule> schedules) loaded,
     required TResult Function(String message) error,
+    required TResult Function(List<Schedule> schedules) loadingWithData,
+    required TResult Function(List<Schedule> schedules, String message)
+        errorWithData,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -30,6 +33,8 @@ mixin _$ScheduleState {
     TResult? Function()? loading,
     TResult? Function(List<Schedule> schedules)? loaded,
     TResult? Function(String message)? error,
+    TResult? Function(List<Schedule> schedules)? loadingWithData,
+    TResult? Function(List<Schedule> schedules, String message)? errorWithData,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -38,6 +43,8 @@ mixin _$ScheduleState {
     TResult Function()? loading,
     TResult Function(List<Schedule> schedules)? loaded,
     TResult Function(String message)? error,
+    TResult Function(List<Schedule> schedules)? loadingWithData,
+    TResult Function(List<Schedule> schedules, String message)? errorWithData,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -47,6 +54,8 @@ mixin _$ScheduleState {
     required TResult Function(_Loading value) loading,
     required TResult Function(_Loaded value) loaded,
     required TResult Function(_Error value) error,
+    required TResult Function(_LoadingWithData value) loadingWithData,
+    required TResult Function(_ErrorWithData value) errorWithData,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -55,6 +64,8 @@ mixin _$ScheduleState {
     TResult? Function(_Loading value)? loading,
     TResult? Function(_Loaded value)? loaded,
     TResult? Function(_Error value)? error,
+    TResult? Function(_LoadingWithData value)? loadingWithData,
+    TResult? Function(_ErrorWithData value)? errorWithData,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -63,6 +74,8 @@ mixin _$ScheduleState {
     TResult Function(_Loading value)? loading,
     TResult Function(_Loaded value)? loaded,
     TResult Function(_Error value)? error,
+    TResult Function(_LoadingWithData value)? loadingWithData,
+    TResult Function(_ErrorWithData value)? errorWithData,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -128,6 +141,9 @@ class _$InitialImpl implements _Initial {
     required TResult Function() loading,
     required TResult Function(List<Schedule> schedules) loaded,
     required TResult Function(String message) error,
+    required TResult Function(List<Schedule> schedules) loadingWithData,
+    required TResult Function(List<Schedule> schedules, String message)
+        errorWithData,
   }) {
     return initial();
   }
@@ -139,6 +155,8 @@ class _$InitialImpl implements _Initial {
     TResult? Function()? loading,
     TResult? Function(List<Schedule> schedules)? loaded,
     TResult? Function(String message)? error,
+    TResult? Function(List<Schedule> schedules)? loadingWithData,
+    TResult? Function(List<Schedule> schedules, String message)? errorWithData,
   }) {
     return initial?.call();
   }
@@ -150,6 +168,8 @@ class _$InitialImpl implements _Initial {
     TResult Function()? loading,
     TResult Function(List<Schedule> schedules)? loaded,
     TResult Function(String message)? error,
+    TResult Function(List<Schedule> schedules)? loadingWithData,
+    TResult Function(List<Schedule> schedules, String message)? errorWithData,
     required TResult orElse(),
   }) {
     if (initial != null) {
@@ -165,6 +185,8 @@ class _$InitialImpl implements _Initial {
     required TResult Function(_Loading value) loading,
     required TResult Function(_Loaded value) loaded,
     required TResult Function(_Error value) error,
+    required TResult Function(_LoadingWithData value) loadingWithData,
+    required TResult Function(_ErrorWithData value) errorWithData,
   }) {
     return initial(this);
   }
@@ -176,6 +198,8 @@ class _$InitialImpl implements _Initial {
     TResult? Function(_Loading value)? loading,
     TResult? Function(_Loaded value)? loaded,
     TResult? Function(_Error value)? error,
+    TResult? Function(_LoadingWithData value)? loadingWithData,
+    TResult? Function(_ErrorWithData value)? errorWithData,
   }) {
     return initial?.call(this);
   }
@@ -187,6 +211,8 @@ class _$InitialImpl implements _Initial {
     TResult Function(_Loading value)? loading,
     TResult Function(_Loaded value)? loaded,
     TResult Function(_Error value)? error,
+    TResult Function(_LoadingWithData value)? loadingWithData,
+    TResult Function(_ErrorWithData value)? errorWithData,
     required TResult orElse(),
   }) {
     if (initial != null) {
@@ -242,6 +268,9 @@ class _$LoadingImpl implements _Loading {
     required TResult Function() loading,
     required TResult Function(List<Schedule> schedules) loaded,
     required TResult Function(String message) error,
+    required TResult Function(List<Schedule> schedules) loadingWithData,
+    required TResult Function(List<Schedule> schedules, String message)
+        errorWithData,
   }) {
     return loading();
   }
@@ -253,6 +282,8 @@ class _$LoadingImpl implements _Loading {
     TResult? Function()? loading,
     TResult? Function(List<Schedule> schedules)? loaded,
     TResult? Function(String message)? error,
+    TResult? Function(List<Schedule> schedules)? loadingWithData,
+    TResult? Function(List<Schedule> schedules, String message)? errorWithData,
   }) {
     return loading?.call();
   }
@@ -264,6 +295,8 @@ class _$LoadingImpl implements _Loading {
     TResult Function()? loading,
     TResult Function(List<Schedule> schedules)? loaded,
     TResult Function(String message)? error,
+    TResult Function(List<Schedule> schedules)? loadingWithData,
+    TResult Function(List<Schedule> schedules, String message)? errorWithData,
     required TResult orElse(),
   }) {
     if (loading != null) {
@@ -279,6 +312,8 @@ class _$LoadingImpl implements _Loading {
     required TResult Function(_Loading value) loading,
     required TResult Function(_Loaded value) loaded,
     required TResult Function(_Error value) error,
+    required TResult Function(_LoadingWithData value) loadingWithData,
+    required TResult Function(_ErrorWithData value) errorWithData,
   }) {
     return loading(this);
   }
@@ -290,6 +325,8 @@ class _$LoadingImpl implements _Loading {
     TResult? Function(_Loading value)? loading,
     TResult? Function(_Loaded value)? loaded,
     TResult? Function(_Error value)? error,
+    TResult? Function(_LoadingWithData value)? loadingWithData,
+    TResult? Function(_ErrorWithData value)? errorWithData,
   }) {
     return loading?.call(this);
   }
@@ -301,6 +338,8 @@ class _$LoadingImpl implements _Loading {
     TResult Function(_Loading value)? loading,
     TResult Function(_Loaded value)? loaded,
     TResult Function(_Error value)? error,
+    TResult Function(_LoadingWithData value)? loadingWithData,
+    TResult Function(_ErrorWithData value)? errorWithData,
     required TResult orElse(),
   }) {
     if (loading != null) {
@@ -389,6 +428,9 @@ class _$LoadedImpl implements _Loaded {
     required TResult Function() loading,
     required TResult Function(List<Schedule> schedules) loaded,
     required TResult Function(String message) error,
+    required TResult Function(List<Schedule> schedules) loadingWithData,
+    required TResult Function(List<Schedule> schedules, String message)
+        errorWithData,
   }) {
     return loaded(schedules);
   }
@@ -400,6 +442,8 @@ class _$LoadedImpl implements _Loaded {
     TResult? Function()? loading,
     TResult? Function(List<Schedule> schedules)? loaded,
     TResult? Function(String message)? error,
+    TResult? Function(List<Schedule> schedules)? loadingWithData,
+    TResult? Function(List<Schedule> schedules, String message)? errorWithData,
   }) {
     return loaded?.call(schedules);
   }
@@ -411,6 +455,8 @@ class _$LoadedImpl implements _Loaded {
     TResult Function()? loading,
     TResult Function(List<Schedule> schedules)? loaded,
     TResult Function(String message)? error,
+    TResult Function(List<Schedule> schedules)? loadingWithData,
+    TResult Function(List<Schedule> schedules, String message)? errorWithData,
     required TResult orElse(),
   }) {
     if (loaded != null) {
@@ -426,6 +472,8 @@ class _$LoadedImpl implements _Loaded {
     required TResult Function(_Loading value) loading,
     required TResult Function(_Loaded value) loaded,
     required TResult Function(_Error value) error,
+    required TResult Function(_LoadingWithData value) loadingWithData,
+    required TResult Function(_ErrorWithData value) errorWithData,
   }) {
     return loaded(this);
   }
@@ -437,6 +485,8 @@ class _$LoadedImpl implements _Loaded {
     TResult? Function(_Loading value)? loading,
     TResult? Function(_Loaded value)? loaded,
     TResult? Function(_Error value)? error,
+    TResult? Function(_LoadingWithData value)? loadingWithData,
+    TResult? Function(_ErrorWithData value)? errorWithData,
   }) {
     return loaded?.call(this);
   }
@@ -448,6 +498,8 @@ class _$LoadedImpl implements _Loaded {
     TResult Function(_Loading value)? loading,
     TResult Function(_Loaded value)? loaded,
     TResult Function(_Error value)? error,
+    TResult Function(_LoadingWithData value)? loadingWithData,
+    TResult Function(_ErrorWithData value)? errorWithData,
     required TResult orElse(),
   }) {
     if (loaded != null) {
@@ -534,6 +586,9 @@ class _$ErrorImpl implements _Error {
     required TResult Function() loading,
     required TResult Function(List<Schedule> schedules) loaded,
     required TResult Function(String message) error,
+    required TResult Function(List<Schedule> schedules) loadingWithData,
+    required TResult Function(List<Schedule> schedules, String message)
+        errorWithData,
   }) {
     return error(message);
   }
@@ -545,6 +600,8 @@ class _$ErrorImpl implements _Error {
     TResult? Function()? loading,
     TResult? Function(List<Schedule> schedules)? loaded,
     TResult? Function(String message)? error,
+    TResult? Function(List<Schedule> schedules)? loadingWithData,
+    TResult? Function(List<Schedule> schedules, String message)? errorWithData,
   }) {
     return error?.call(message);
   }
@@ -556,6 +613,8 @@ class _$ErrorImpl implements _Error {
     TResult Function()? loading,
     TResult Function(List<Schedule> schedules)? loaded,
     TResult Function(String message)? error,
+    TResult Function(List<Schedule> schedules)? loadingWithData,
+    TResult Function(List<Schedule> schedules, String message)? errorWithData,
     required TResult orElse(),
   }) {
     if (error != null) {
@@ -571,6 +630,8 @@ class _$ErrorImpl implements _Error {
     required TResult Function(_Loading value) loading,
     required TResult Function(_Loaded value) loaded,
     required TResult Function(_Error value) error,
+    required TResult Function(_LoadingWithData value) loadingWithData,
+    required TResult Function(_ErrorWithData value) errorWithData,
   }) {
     return error(this);
   }
@@ -582,6 +643,8 @@ class _$ErrorImpl implements _Error {
     TResult? Function(_Loading value)? loading,
     TResult? Function(_Loaded value)? loaded,
     TResult? Function(_Error value)? error,
+    TResult? Function(_LoadingWithData value)? loadingWithData,
+    TResult? Function(_ErrorWithData value)? errorWithData,
   }) {
     return error?.call(this);
   }
@@ -593,6 +656,8 @@ class _$ErrorImpl implements _Error {
     TResult Function(_Loading value)? loading,
     TResult Function(_Loaded value)? loaded,
     TResult Function(_Error value)? error,
+    TResult Function(_LoadingWithData value)? loadingWithData,
+    TResult Function(_ErrorWithData value)? errorWithData,
     required TResult orElse(),
   }) {
     if (error != null) {
@@ -608,5 +673,351 @@ abstract class _Error implements ScheduleState {
   String get message;
   @JsonKey(ignore: true)
   _$$ErrorImplCopyWith<_$ErrorImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$LoadingWithDataImplCopyWith<$Res> {
+  factory _$$LoadingWithDataImplCopyWith(_$LoadingWithDataImpl value,
+          $Res Function(_$LoadingWithDataImpl) then) =
+      __$$LoadingWithDataImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({List<Schedule> schedules});
+}
+
+/// @nodoc
+class __$$LoadingWithDataImplCopyWithImpl<$Res>
+    extends _$ScheduleStateCopyWithImpl<$Res, _$LoadingWithDataImpl>
+    implements _$$LoadingWithDataImplCopyWith<$Res> {
+  __$$LoadingWithDataImplCopyWithImpl(
+      _$LoadingWithDataImpl _value, $Res Function(_$LoadingWithDataImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? schedules = null,
+  }) {
+    return _then(_$LoadingWithDataImpl(
+      null == schedules
+          ? _value._schedules
+          : schedules // ignore: cast_nullable_to_non_nullable
+              as List<Schedule>,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$LoadingWithDataImpl implements _LoadingWithData {
+  const _$LoadingWithDataImpl(final List<Schedule> schedules)
+      : _schedules = schedules;
+
+  final List<Schedule> _schedules;
+  @override
+  List<Schedule> get schedules {
+    if (_schedules is EqualUnmodifiableListView) return _schedules;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_schedules);
+  }
+
+  @override
+  String toString() {
+    return 'ScheduleState.loadingWithData(schedules: $schedules)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$LoadingWithDataImpl &&
+            const DeepCollectionEquality()
+                .equals(other._schedules, _schedules));
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, const DeepCollectionEquality().hash(_schedules));
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$LoadingWithDataImplCopyWith<_$LoadingWithDataImpl> get copyWith =>
+      __$$LoadingWithDataImplCopyWithImpl<_$LoadingWithDataImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() initial,
+    required TResult Function() loading,
+    required TResult Function(List<Schedule> schedules) loaded,
+    required TResult Function(String message) error,
+    required TResult Function(List<Schedule> schedules) loadingWithData,
+    required TResult Function(List<Schedule> schedules, String message)
+        errorWithData,
+  }) {
+    return loadingWithData(schedules);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? initial,
+    TResult? Function()? loading,
+    TResult? Function(List<Schedule> schedules)? loaded,
+    TResult? Function(String message)? error,
+    TResult? Function(List<Schedule> schedules)? loadingWithData,
+    TResult? Function(List<Schedule> schedules, String message)? errorWithData,
+  }) {
+    return loadingWithData?.call(schedules);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? initial,
+    TResult Function()? loading,
+    TResult Function(List<Schedule> schedules)? loaded,
+    TResult Function(String message)? error,
+    TResult Function(List<Schedule> schedules)? loadingWithData,
+    TResult Function(List<Schedule> schedules, String message)? errorWithData,
+    required TResult orElse(),
+  }) {
+    if (loadingWithData != null) {
+      return loadingWithData(schedules);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Initial value) initial,
+    required TResult Function(_Loading value) loading,
+    required TResult Function(_Loaded value) loaded,
+    required TResult Function(_Error value) error,
+    required TResult Function(_LoadingWithData value) loadingWithData,
+    required TResult Function(_ErrorWithData value) errorWithData,
+  }) {
+    return loadingWithData(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Initial value)? initial,
+    TResult? Function(_Loading value)? loading,
+    TResult? Function(_Loaded value)? loaded,
+    TResult? Function(_Error value)? error,
+    TResult? Function(_LoadingWithData value)? loadingWithData,
+    TResult? Function(_ErrorWithData value)? errorWithData,
+  }) {
+    return loadingWithData?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Initial value)? initial,
+    TResult Function(_Loading value)? loading,
+    TResult Function(_Loaded value)? loaded,
+    TResult Function(_Error value)? error,
+    TResult Function(_LoadingWithData value)? loadingWithData,
+    TResult Function(_ErrorWithData value)? errorWithData,
+    required TResult orElse(),
+  }) {
+    if (loadingWithData != null) {
+      return loadingWithData(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _LoadingWithData implements ScheduleState {
+  const factory _LoadingWithData(final List<Schedule> schedules) =
+      _$LoadingWithDataImpl;
+
+  List<Schedule> get schedules;
+  @JsonKey(ignore: true)
+  _$$LoadingWithDataImplCopyWith<_$LoadingWithDataImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$ErrorWithDataImplCopyWith<$Res> {
+  factory _$$ErrorWithDataImplCopyWith(
+          _$ErrorWithDataImpl value, $Res Function(_$ErrorWithDataImpl) then) =
+      __$$ErrorWithDataImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({List<Schedule> schedules, String message});
+}
+
+/// @nodoc
+class __$$ErrorWithDataImplCopyWithImpl<$Res>
+    extends _$ScheduleStateCopyWithImpl<$Res, _$ErrorWithDataImpl>
+    implements _$$ErrorWithDataImplCopyWith<$Res> {
+  __$$ErrorWithDataImplCopyWithImpl(
+      _$ErrorWithDataImpl _value, $Res Function(_$ErrorWithDataImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? schedules = null,
+    Object? message = null,
+  }) {
+    return _then(_$ErrorWithDataImpl(
+      null == schedules
+          ? _value._schedules
+          : schedules // ignore: cast_nullable_to_non_nullable
+              as List<Schedule>,
+      null == message
+          ? _value.message
+          : message // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$ErrorWithDataImpl implements _ErrorWithData {
+  const _$ErrorWithDataImpl(final List<Schedule> schedules, this.message)
+      : _schedules = schedules;
+
+  final List<Schedule> _schedules;
+  @override
+  List<Schedule> get schedules {
+    if (_schedules is EqualUnmodifiableListView) return _schedules;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_schedules);
+  }
+
+  @override
+  final String message;
+
+  @override
+  String toString() {
+    return 'ScheduleState.errorWithData(schedules: $schedules, message: $message)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ErrorWithDataImpl &&
+            const DeepCollectionEquality()
+                .equals(other._schedules, _schedules) &&
+            (identical(other.message, message) || other.message == message));
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, const DeepCollectionEquality().hash(_schedules), message);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ErrorWithDataImplCopyWith<_$ErrorWithDataImpl> get copyWith =>
+      __$$ErrorWithDataImplCopyWithImpl<_$ErrorWithDataImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() initial,
+    required TResult Function() loading,
+    required TResult Function(List<Schedule> schedules) loaded,
+    required TResult Function(String message) error,
+    required TResult Function(List<Schedule> schedules) loadingWithData,
+    required TResult Function(List<Schedule> schedules, String message)
+        errorWithData,
+  }) {
+    return errorWithData(schedules, message);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? initial,
+    TResult? Function()? loading,
+    TResult? Function(List<Schedule> schedules)? loaded,
+    TResult? Function(String message)? error,
+    TResult? Function(List<Schedule> schedules)? loadingWithData,
+    TResult? Function(List<Schedule> schedules, String message)? errorWithData,
+  }) {
+    return errorWithData?.call(schedules, message);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? initial,
+    TResult Function()? loading,
+    TResult Function(List<Schedule> schedules)? loaded,
+    TResult Function(String message)? error,
+    TResult Function(List<Schedule> schedules)? loadingWithData,
+    TResult Function(List<Schedule> schedules, String message)? errorWithData,
+    required TResult orElse(),
+  }) {
+    if (errorWithData != null) {
+      return errorWithData(schedules, message);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Initial value) initial,
+    required TResult Function(_Loading value) loading,
+    required TResult Function(_Loaded value) loaded,
+    required TResult Function(_Error value) error,
+    required TResult Function(_LoadingWithData value) loadingWithData,
+    required TResult Function(_ErrorWithData value) errorWithData,
+  }) {
+    return errorWithData(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Initial value)? initial,
+    TResult? Function(_Loading value)? loading,
+    TResult? Function(_Loaded value)? loaded,
+    TResult? Function(_Error value)? error,
+    TResult? Function(_LoadingWithData value)? loadingWithData,
+    TResult? Function(_ErrorWithData value)? errorWithData,
+  }) {
+    return errorWithData?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Initial value)? initial,
+    TResult Function(_Loading value)? loading,
+    TResult Function(_Loaded value)? loaded,
+    TResult Function(_Error value)? error,
+    TResult Function(_LoadingWithData value)? loadingWithData,
+    TResult Function(_ErrorWithData value)? errorWithData,
+    required TResult orElse(),
+  }) {
+    if (errorWithData != null) {
+      return errorWithData(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _ErrorWithData implements ScheduleState {
+  const factory _ErrorWithData(
+          final List<Schedule> schedules, final String message) =
+      _$ErrorWithDataImpl;
+
+  List<Schedule> get schedules;
+  String get message;
+  @JsonKey(ignore: true)
+  _$$ErrorWithDataImplCopyWith<_$ErrorWithDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
