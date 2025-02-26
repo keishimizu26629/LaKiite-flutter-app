@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class GroupPage extends ConsumerWidget {
-  const GroupPage({Key? key}) : super(key: key);
+  const GroupPage({super.key});
 
   // グループ一覧を表示するウィジェット
   @override
@@ -22,7 +22,7 @@ class GroupPage extends ConsumerWidget {
         ],
       ),
       body: ListView(
-        children: [
+        children: const [
           // グループタイルのリスト
         ],
       ),

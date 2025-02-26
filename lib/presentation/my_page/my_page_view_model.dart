@@ -1,52 +1,114 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/services.dart';
+import '../../infrastructure/image_picker_service.dart' as picker;
 import '../../domain/entity/user.dart';
+import '../../domain/entity/schedule.dart';
 import '../../domain/value/user_id.dart';
 import '../../domain/interfaces/i_user_repository.dart';
-import '../../application/auth/auth_notifier.dart';
+import '../../domain/interfaces/i_schedule_repository.dart';
+import '../../domain/interfaces/i_storage_service.dart';
+import '../../domain/interfaces/i_image_processor_service.dart';
+import '../../presentation/presentation_provider.dart';
+import '../../infrastructure/providers.dart';
+import 'package:lakiite/utils/logger.dart';
 
 final selectedImageProvider = StateProvider<File?>((ref) => null);
 
 final myPageEditingProvider = StateProvider<bool>((ref) => false);
 
-final myPageViewModelProvider = StateNotifierProvider<MyPageViewModel, AsyncValue<UserModel?>>((ref) {
+final timelineSchedulesProvider = StreamProvider<List<Schedule>>((ref) {
+  final scheduleRepository = ref.watch(scheduleRepositoryProvider);
+  final currentUserId = ref.watch(currentUserIdProvider);
+  if (currentUserId == null) return Stream.value([]);
+
+  return scheduleRepository.watchUserSchedules(currentUserId);
+});
+
+final userSchedulesStreamProvider =
+    StreamProvider.family<List<Schedule>, String>((ref, userId) {
+  final scheduleRepository = ref.watch(scheduleRepositoryProvider);
+  return scheduleRepository.watchUserSchedules(userId);
+});
+
+final cachedUserProvider =
+    StateProvider.family<UserModel?, String>((ref, userId) => null);
+
+final myPageViewModelProvider =
+    StateNotifierProvider<MyPageViewModel, AsyncValue<UserModel?>>((ref) {
   final userRepository = ref.watch(userRepositoryProvider);
-  return MyPageViewModel(userRepository);
+  final scheduleRepository = ref.watch(scheduleRepositoryProvider);
+  final storageService = ref.watch(storageServiceProvider);
+  final imageProcessorService = ref.watch(imageProcessorServiceProvider);
+  return MyPageViewModel(
+    userRepository,
+    scheduleRepository,
+    storageService,
+    imageProcessorService,
+    ref,
+  );
 });
 
 class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
   final IUserRepository _userRepository;
+  final IScheduleRepository _scheduleRepository;
+  final IStorageService _storageService;
+  final IImageProcessorService _imageProcessorService;
+  final Ref _ref;
 
-  MyPageViewModel(this._userRepository) : super(const AsyncValue.loading());
+  MyPageViewModel(
+    this._userRepository,
+    this._scheduleRepository,
+    this._storageService,
+    this._imageProcessorService,
+    this._ref,
+  ) : super(const AsyncValue.loading());
 
   Future<void> pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      state.whenData((user) {
-        if (user != null) {
-          state = AsyncValue.data(user);
-        }
-      });
-    }
-  }
-
-  Future<String?> uploadImage(File imageFile) async {
     try {
-      if (!state.hasValue || state.value == null) return null;
+      final currentUser = state.value;
+      if (currentUser == null) {
+        throw Exception('ユーザー情報が見つかりません');
+      }
 
-      final userId = state.value!.id;
-      final storageRef = FirebaseStorage.instance.ref();
-      final imageRef = storageRef.child('user_icons/$userId.jpg');
+      AppLogger.debug('画像選択を開始します');
+      final pickedImagePath = await _ref
+          .read(picker.imagePickerServiceProvider)
+          .pickImage(picker.ImageSource.gallery);
 
-      await imageRef.putFile(imageFile);
-      final downloadUrl = await imageRef.getDownloadURL();
-      return downloadUrl;
+      if (pickedImagePath != null) {
+        AppLogger.debug('選択された画像パス: $pickedImagePath');
+        final imageFile = File(pickedImagePath);
+        if (!await imageFile.exists()) {
+          throw Exception('画像ファイルが見つかりません');
+        }
+
+        AppLogger.debug('画像圧縮を開始します');
+        final compressedImageFile = await _imageProcessorService.compressImage(
+          imageFile,
+          minWidth: 300,
+          minHeight: 300,
+          quality: 85,
+        );
+        AppLogger.debug('圧縮後の画像パス: ${compressedImageFile.path}');
+        AppLogger.debug(
+            '圧縮後のファイルサイズ: ${await compressedImageFile.length()} bytes');
+
+        // 圧縮した画像をStateに保存
+        _ref.read(selectedImageProvider.notifier).state = compressedImageFile;
+        AppLogger.debug('画像の選択と圧縮が完了しました');
+      } else {
+        AppLogger.debug('画像が選択されませんでした');
+      }
+    } on PlatformException catch (e) {
+      AppLogger.error('プラットフォームエラー発生: ${e.code} - ${e.message}');
+      if (e.code == 'photo_access_denied') {
+        throw Exception('設定から、このアプリに端末内の画像の操作を許可してください。');
+      }
+      throw Exception('画像の選択に失敗しました: ${e.message}');
     } catch (e) {
-      print('Error uploading image: $e');
-      return null;
+      AppLogger.error('エラー発生: $e');
+      throw Exception('画像の選択に失敗しました: $e');
     }
   }
 
@@ -54,9 +116,13 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
     required String name,
     required String displayName,
     required String searchIdStr,
+    String? shortBio,
     File? imageFile,
   }) async {
-    if (!state.hasValue || state.value == null) return;
+    AppLogger.debug('プロフィール更新を開始します');
+    if (!state.hasValue || state.value == null) {
+      throw Exception('ユーザー情報が見つかりません');
+    }
 
     try {
       // searchIdのバリデーション
@@ -64,44 +130,114 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
       try {
         newSearchId = UserId(searchIdStr);
       } catch (e) {
-        throw Exception('Invalid search ID format');
+        AppLogger.error('検索ID変換エラー: $e');
+        throw Exception('検索IDの形式が正しくありません');
       }
 
       // 現在のsearchIdと異なる場合のみユニーク性チェック
       if (state.value!.searchId.toString() != searchIdStr) {
+        AppLogger.debug('検索IDのユニーク性チェックを実行します');
         final isUnique = await _userRepository.isUserIdUnique(newSearchId);
         if (!isUnique) {
-          throw Exception('This search ID is already taken');
+          throw Exception('この検索IDは既に使用されています');
         }
+        AppLogger.debug('検索IDのユニーク性チェックが完了しました');
       }
 
-      String? iconUrl;
+      String? iconUrl = state.value!.iconUrl;
       if (imageFile != null) {
-        iconUrl = await uploadImage(imageFile);
+        try {
+          AppLogger.debug('画像のアップロードを開始します');
+          final path = 'users/${state.value!.id}/profile/avatar.jpg';
+          final metadata = {
+            'uploadedAt': DateTime.now().toIso8601String(),
+            'userId': state.value!.id,
+          };
+
+          AppLogger.debug(
+              'アップロード情報: パス=$path, ファイルサイズ=${await imageFile.length()} bytes');
+          iconUrl = await _storageService.uploadFile(
+            path: path,
+            file: imageFile,
+            metadata: metadata,
+          );
+          AppLogger.debug('画像のアップロードが完了しました: $iconUrl');
+        } catch (e) {
+          AppLogger.error('画像アップロードエラー: $e');
+          throw Exception('画像のアップロードに失敗しました: $e');
+        }
       }
 
       final updatedUser = state.value!.updateProfile(
         name: name,
         displayName: displayName,
         searchId: newSearchId,
-        iconUrl: iconUrl ?? state.value!.iconUrl,
+        shortBio: shortBio,
+        iconUrl: iconUrl,
       );
 
-      await _userRepository.updateUser(updatedUser);
+      try {
+        AppLogger.debug('ユーザー情報の更新を開始します');
+        await _userRepository.updateUser(updatedUser);
+        AppLogger.debug('ユーザー情報の更新が完了しました');
+      } catch (e) {
+        AppLogger.error('ユーザー情報更新エラー: $e');
+        throw Exception('ユーザー情報の更新に失敗しました: $e');
+      }
+
+      // キャッシュを更新
+      _ref.read(cachedUserProvider(updatedUser.id).notifier).state =
+          updatedUser;
+
+      // 状態を更新
       state = AsyncValue.data(updatedUser);
+
+      // 選択された画像をクリア
+      _ref.read(selectedImageProvider.notifier).state = null;
+
+      // 一時ファイルを削除
+      if (imageFile != null) {
+        try {
+          await imageFile.delete();
+          AppLogger.debug('一時ファイルを削除しました');
+        } catch (e) {
+          // 一時ファイルの削除に失敗しても処理は続行
+          AppLogger.warning('一時ファイルの削除に失敗しました: $e');
+        }
+      }
+      AppLogger.debug('プロフィール更新が完了しました');
     } catch (e) {
-      state = AsyncValue.error(e, StackTrace.current);
-      rethrow;
+      AppLogger.error('プロフィール更新エラー: $e');
+      throw Exception('プロフィールの更新に失敗しました: $e');
     }
   }
 
   Future<void> loadUser(String userId) async {
     try {
+      // キャッシュされたデータがあればそれを使用
+      final cachedUser = _ref.read(cachedUserProvider(userId));
+      if (cachedUser != null) {
+        state = AsyncValue.data(cachedUser);
+        return;
+      }
+
       state = const AsyncValue.loading();
       final user = await _userRepository.getUser(userId);
+
+      // キャッシュを更新
+      _ref.read(cachedUserProvider(userId).notifier).state = user;
+
       state = AsyncValue.data(user);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
+    }
+  }
+
+  Future<List<Schedule>> getUserSchedules(String userId) async {
+    try {
+      return await _scheduleRepository.getUserSchedules(userId);
+    } catch (e) {
+      throw Exception('予定の取得に失敗しました: $e');
     }
   }
 }

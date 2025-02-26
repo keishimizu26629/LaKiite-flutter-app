@@ -1,0 +1,207 @@
+import 'dart:async';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lakiite/domain/entity/schedule_reaction.dart';
+import 'package:lakiite/domain/entity/schedule_comment.dart';
+import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
+import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
+import 'package:lakiite/infrastructure/schedule_interaction_repository.dart';
+import 'package:lakiite/utils/logger.dart';
+import 'package:lakiite/application/notification/notification_notifier.dart';
+import 'package:lakiite/presentation/presentation_provider.dart';
+
+final scheduleInteractionRepositoryProvider =
+    Provider<IScheduleInteractionRepository>(
+  (ref) => ScheduleInteractionRepository(),
+);
+
+final scheduleInteractionNotifierProvider = StateNotifierProvider.family<
+    ScheduleInteractionNotifier, ScheduleInteractionState, String>(
+  (ref, scheduleId) => ScheduleInteractionNotifier(
+    ref.watch(scheduleInteractionRepositoryProvider),
+    scheduleId,
+    ref,
+  ),
+);
+
+class ScheduleInteractionNotifier
+    extends StateNotifier<ScheduleInteractionState> {
+  final IScheduleInteractionRepository _repository;
+  final String _scheduleId;
+  final Ref _ref;
+  StreamSubscription<List<ScheduleReaction>>? _reactionsSubscription;
+  StreamSubscription<List<ScheduleComment>>? _commentsSubscription;
+
+  ScheduleInteractionNotifier(
+    this._repository,
+    this._scheduleId,
+    this._ref,
+  ) : super(const ScheduleInteractionState()) {
+    _initializeSubscriptions();
+  }
+
+  Future<void> _initializeSubscriptions() async {
+    try {
+      // 認証状態を確認
+      final authState = await _ref.read(authNotifierProvider.future);
+      if (authState.user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // リアクションの監視を開始
+      _reactionsSubscription = _repository.watchReactions(_scheduleId).listen(
+            (reactions) => state = state.copyWith(reactions: reactions),
+            onError: (error) => state = state.copyWith(error: error.toString()),
+          );
+
+      // コメントの監視を開始
+      _commentsSubscription = _repository.watchComments(_scheduleId).listen(
+            (comments) => state = state.copyWith(comments: comments),
+            onError: (error) => state = state.copyWith(error: error.toString()),
+          );
+    } catch (e) {
+      AppLogger.error('Error initializing subscriptions: $e');
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> toggleReaction(String userId, ReactionType type) async {
+    try {
+      AppLogger.debug('toggleReaction called - userId: $userId, type: $type');
+      state = state.copyWith(isLoading: true, error: null);
+
+      final currentReaction = state.getUserReaction(userId);
+      AppLogger.debug('Current reaction: $currentReaction');
+
+      final scheduleStream =
+          _ref.read(scheduleRepositoryProvider).watchSchedule(_scheduleId);
+      final schedule = await scheduleStream.first;
+      AppLogger.debug('Schedule data: $schedule');
+      if (schedule == null) {
+        throw Exception('Schedule not found');
+      }
+
+      final userDoc = await _ref.read(userRepositoryProvider).getUser(userId);
+      AppLogger.debug('User data: $userDoc');
+      if (userDoc == null) {
+        throw Exception('User not found');
+      }
+
+      if (currentReaction != null) {
+        if (currentReaction.type == type) {
+          AppLogger.debug('Removing same reaction');
+          await _repository.removeReaction(_scheduleId, userId);
+        } else {
+          AppLogger.debug('Updating to different reaction');
+          await _repository.removeReaction(_scheduleId, userId);
+          await _repository.addReaction(_scheduleId, userId, type);
+
+          if (userId != schedule.ownerId) {
+            AppLogger.debug(
+                'Creating notification for reaction update - fromUserId: $userId, toUserId: ${schedule.ownerId}');
+            await _ref
+                .read(notificationNotifierProvider.notifier)
+                .createReactionNotification(
+                  toUserId: schedule.ownerId,
+                  fromUserId: userId,
+                  scheduleId: _scheduleId,
+                  interactionId: currentReaction.id,
+                  fromUserDisplayName: userDoc.displayName,
+                );
+            AppLogger.debug(
+                'Notification created successfully for reaction update');
+          } else {
+            AppLogger.debug(
+                'Skipping notification creation - user is the schedule owner');
+          }
+        }
+      } else {
+        AppLogger.debug('Adding new reaction');
+        final reactionId =
+            await _repository.addReaction(_scheduleId, userId, type);
+
+        if (userId != schedule.ownerId) {
+          AppLogger.debug(
+              'Creating notification for new reaction - fromUserId: $userId, toUserId: ${schedule.ownerId}');
+          await _ref
+              .read(notificationNotifierProvider.notifier)
+              .createReactionNotification(
+                toUserId: schedule.ownerId,
+                fromUserId: userId,
+                scheduleId: _scheduleId,
+                interactionId: reactionId,
+                fromUserDisplayName: userDoc.displayName,
+              );
+          AppLogger.debug('Notification created successfully for new reaction');
+        } else {
+          AppLogger.debug(
+              'Skipping notification creation - user is the schedule owner');
+        }
+      }
+
+      AppLogger.debug('Current state reactions: ${state.reactions}');
+      state = state.copyWith(isLoading: false);
+      AppLogger.debug('Updated state reactions: ${state.reactions}');
+    } catch (e, stack) {
+      AppLogger.error('Error in toggleReaction: $e');
+      AppLogger.error('Stack trace: $stack');
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> addComment(String userId, String content) async {
+    try {
+      state = state.copyWith(isLoading: true, error: null);
+
+      // スケジュール情報を取得
+      final scheduleStream =
+          _ref.read(scheduleRepositoryProvider).watchSchedule(_scheduleId);
+      final schedule = await scheduleStream.first;
+      if (schedule == null) {
+        throw Exception('Schedule not found');
+      }
+
+      // ユーザー情報を取得
+      final userDoc = await _ref.read(userRepositoryProvider).getUser(userId);
+      if (userDoc == null) {
+        throw Exception('User not found');
+      }
+
+      final commentId =
+          await _repository.addComment(_scheduleId, userId, content);
+
+      // 自分の投稿以外の場合のみ通知を作成
+      if (userId != schedule.ownerId) {
+        await _ref
+            .read(notificationNotifierProvider.notifier)
+            .createCommentNotification(
+              toUserId: schedule.ownerId,
+              fromUserId: userId,
+              scheduleId: _scheduleId,
+              interactionId: commentId,
+              fromUserDisplayName: userDoc.displayName,
+            );
+      }
+
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> deleteComment(String commentId) async {
+    try {
+      state = state.copyWith(isLoading: true, error: null);
+      await _repository.deleteComment(_scheduleId, commentId);
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  @override
+  void dispose() {
+    _reactionsSubscription?.cancel();
+    _commentsSubscription?.cancel();
+    super.dispose();
+  }
+}

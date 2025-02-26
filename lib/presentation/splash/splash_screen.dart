@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tarakite/application/auth/auth_state.dart';
-import 'package:tarakite/presentation/presentation_provider.dart';
+import 'package:lakiite/application/auth/auth_state.dart';
+import 'package:lakiite/presentation/presentation_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   ConsumerState<SplashScreen> createState() => _SplashScreenState();

@@ -25,6 +25,7 @@ mixin _$Group {
   String get ownerId => throw _privateConstructorUsedError;
   List<String> get memberIds => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
+  String? get iconUrl => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -41,7 +42,8 @@ abstract class $GroupCopyWith<$Res> {
       String groupName,
       String ownerId,
       List<String> memberIds,
-      DateTime createdAt});
+      DateTime createdAt,
+      String? iconUrl});
 }
 
 /// @nodoc
@@ -62,6 +64,7 @@ class _$GroupCopyWithImpl<$Res, $Val extends Group>
     Object? ownerId = null,
     Object? memberIds = null,
     Object? createdAt = null,
+    Object? iconUrl = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -84,6 +87,10 @@ class _$GroupCopyWithImpl<$Res, $Val extends Group>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      iconUrl: freezed == iconUrl
+          ? _value.iconUrl
+          : iconUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -100,7 +107,8 @@ abstract class _$$GroupImplCopyWith<$Res> implements $GroupCopyWith<$Res> {
       String groupName,
       String ownerId,
       List<String> memberIds,
-      DateTime createdAt});
+      DateTime createdAt,
+      String? iconUrl});
 }
 
 /// @nodoc
@@ -119,6 +127,7 @@ class __$$GroupImplCopyWithImpl<$Res>
     Object? ownerId = null,
     Object? memberIds = null,
     Object? createdAt = null,
+    Object? iconUrl = freezed,
   }) {
     return _then(_$GroupImpl(
       id: null == id
@@ -141,6 +150,10 @@ class __$$GroupImplCopyWithImpl<$Res>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      iconUrl: freezed == iconUrl
+          ? _value.iconUrl
+          : iconUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -153,7 +166,8 @@ class _$GroupImpl implements _Group {
       required this.groupName,
       required this.ownerId,
       required final List<String> memberIds,
-      required this.createdAt})
+      required this.createdAt,
+      this.iconUrl})
       : _memberIds = memberIds;
 
   factory _$GroupImpl.fromJson(Map<String, dynamic> json) =>
@@ -175,10 +189,12 @@ class _$GroupImpl implements _Group {
 
   @override
   final DateTime createdAt;
+  @override
+  final String? iconUrl;
 
   @override
   String toString() {
-    return 'Group(id: $id, groupName: $groupName, ownerId: $ownerId, memberIds: $memberIds, createdAt: $createdAt)';
+    return 'Group(id: $id, groupName: $groupName, ownerId: $ownerId, memberIds: $memberIds, createdAt: $createdAt, iconUrl: $iconUrl)';
   }
 
   @override
@@ -193,13 +209,14 @@ class _$GroupImpl implements _Group {
             const DeepCollectionEquality()
                 .equals(other._memberIds, _memberIds) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.iconUrl, iconUrl) || other.iconUrl == iconUrl));
   }
 
   @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(runtimeType, id, groupName, ownerId,
-      const DeepCollectionEquality().hash(_memberIds), createdAt);
+      const DeepCollectionEquality().hash(_memberIds), createdAt, iconUrl);
 
   @JsonKey(ignore: true)
   @override
@@ -221,7 +238,8 @@ abstract class _Group implements Group {
       required final String groupName,
       required final String ownerId,
       required final List<String> memberIds,
-      required final DateTime createdAt}) = _$GroupImpl;
+      required final DateTime createdAt,
+      final String? iconUrl}) = _$GroupImpl;
 
   factory _Group.fromJson(Map<String, dynamic> json) = _$GroupImpl.fromJson;
 
@@ -235,6 +253,8 @@ abstract class _Group implements Group {
   List<String> get memberIds;
   @override
   DateTime get createdAt;
+  @override
+  String? get iconUrl;
   @override
   @JsonKey(ignore: true)
   _$$GroupImplCopyWith<_$GroupImpl> get copyWith =>

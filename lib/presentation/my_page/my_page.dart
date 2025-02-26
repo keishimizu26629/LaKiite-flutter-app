@@ -1,10 +1,18 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
-import '../presentation_provider.dart';
+import 'package:go_router/go_router.dart';
 import 'my_page_view_model.dart';
+import '../presentation_provider.dart';
+import '../widgets/ad_banner_widget.dart';
+import 'widgets/profile_card.dart';
+import 'widgets/section_header.dart';
+import 'widgets/short_bio_card.dart';
+import 'widgets/schedule_list.dart';
+import 'widgets/profile_edit_dialog.dart';
 
+/// マイページを表示するウィジェット
+///
+/// ユーザーのプロフィール情報、予定一覧を表示し、プロフィールの編集機能を提供します。
 class MyPage extends ConsumerStatefulWidget {
   const MyPage({super.key});
 
@@ -12,6 +20,7 @@ class MyPage extends ConsumerStatefulWidget {
   ConsumerState<MyPage> createState() => _MyPageState();
 }
 
+/// MyPageの状態を管理するクラス
 class _MyPageState extends ConsumerState<MyPage> {
   @override
   void initState() {
@@ -29,196 +38,135 @@ class _MyPageState extends ConsumerState<MyPage> {
   @override
   Widget build(BuildContext context) {
     final userState = ref.watch(myPageViewModelProvider);
-    final isEditing = ref.watch(myPageEditingProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('マイページ'),
+        title: const Text(
+          'マイページ',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
         actions: [
-          if (!isEditing)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => ref.read(myPageEditingProvider.notifier).state = true,
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => ref.read(myPageEditingProvider.notifier).state = false,
-            ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () {
+              context.push('/settings');
+            },
+          ),
         ],
       ),
-      body: userState.when(
-        data: (user) {
-          if (user == null) return const Center(child: Text('ユーザー情報が見つかりません'));
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: userState.when(
+                  data: (user) {
+                    if (user == null) {
+                      return const _EmptyUserState();
+                    }
 
-          final nameController = TextEditingController(text: user.name);
-          final displayNameController = TextEditingController(text: user.displayName);
-          final searchIdController = TextEditingController(text: user.searchId.toString());
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.grey[200],
-                        child: Builder(
-                          builder: (context) {
-                            final selectedImage = ref.watch(selectedImageProvider);
-                            if (selectedImage != null) {
-                              return ClipOval(
-                                child: Image.file(
-                                  selectedImage,
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                ),
-                              );
-                            }
-                            return user.iconUrl != null
-                                ? ClipOval(
-                                    child: Image.network(
-                                      user.iconUrl!,
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  )
-                                : const Icon(Icons.person, size: 50, color: Colors.grey);
-                          },
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                        await ref
+                            .read(myPageViewModelProvider.notifier)
+                            .loadUser(user.id);
+                      },
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ProfileCard(
+                              user: user,
+                              onEditPressed: () {
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (dialogContext) => ProfileEditDialog(
+                                    user: user,
+                                    onImageEdit: () async {
+                                      if (!mounted) return;
+                                      final scaffoldMessenger =
+                                          ScaffoldMessenger.of(dialogContext);
+                                      try {
+                                        await ref
+                                            .read(myPageViewModelProvider
+                                                .notifier)
+                                            .pickImage();
+                                      } catch (e) {
+                                        if (mounted) {
+                                          scaffoldMessenger.showSnackBar(
+                                            SnackBar(
+                                                content:
+                                                    Text('画像の選択に失敗しました: $e')),
+                                          );
+                                        }
+                                      }
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 24),
+                            const SectionHeader(
+                              icon: Icons.description_outlined,
+                              title: '一言コメント',
+                            ),
+                            const SizedBox(height: 16),
+                            ShortBioCard(shortBio: user.publicProfile.shortBio),
+                            const SizedBox(height: 24),
+                            const SectionHeader(
+                              icon: Icons.event,
+                              title: '予定一覧',
+                            ),
+                            const SizedBox(height: 16),
+                            ScheduleList(userId: user.id),
+                          ],
                         ),
                       ),
-                      if (isEditing)
-                        Positioned.fill(
-                          child: GestureDetector(
-                            onTap: () async {
-                              final picker = ImagePicker();
-                              final pickedFile = await picker.pickImage(
-                                source: ImageSource.gallery,
-                              );
-                              if (pickedFile != null) {
-                                ref.read(selectedImageProvider.notifier).state = File(pickedFile.path);
-                              }
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.black.withOpacity(0.5),
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt,
-                                color: Colors.white,
-                                size: 30,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                    );
+                  },
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) => const _ErrorState(),
                 ),
-                const SizedBox(height: 24),
-                if (!isEditing) ...[
-                  _ProfileField(label: '名前', value: user.name),
-                  _ProfileField(label: '表示名', value: user.displayName),
-                  _ProfileField(label: '検索ID', value: user.searchId.toString()),
-                ] else ...[
-                  _ProfileTextField(
-                    label: '名前',
-                    controller: nameController,
-                  ),
-                  _ProfileTextField(
-                    label: '表示名',
-                    controller: displayNameController,
-                  ),
-                  _ProfileTextField(
-                    label: '検索ID',
-                    controller: searchIdController,
-                    helperText: '8文字の半角英数字',
-                  ),
-                  const SizedBox(height: 24),
-                  Center(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        try {
-                          final selectedImage = ref.read(selectedImageProvider);
-                          await ref.read(myPageViewModelProvider.notifier).updateProfile(
-                                name: nameController.text,
-                                displayName: displayNameController.text,
-                                searchIdStr: searchIdController.text,
-                                imageFile: selectedImage,
-                              );
-                          ref.read(selectedImageProvider.notifier).state = null;
-                          ref.read(myPageEditingProvider.notifier).state = false;
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('プロフィールを更新しました')),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('エラー: ${e.toString()}')),
-                            );
-                          }
-                        }
-                      },
-                      child: const Text('保存'),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                Center(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      try {
-                        await ref.read(authNotifierProvider.notifier).signOut();
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('ログアウトに失敗しました')),
-                          );
-                        }
-                      }
-                    },
-                    child: const Text('ログアウト'),
-                  ),
-                ),
-              ],
+              ),
             ),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('エラー: ${error.toString()}')),
+            const AdBannerWidget(),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _ProfileField extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _ProfileField({required this.label, required this.value});
+/// ユーザーが見つからない場合の表示ウィジェット
+class _EmptyUserState extends StatelessWidget {
+  const _EmptyUserState();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    return Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelLarge,
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: Colors.grey[400],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 16),
           Text(
-            value,
-            style: Theme.of(context).textTheme.bodyLarge,
+            'ユーザー情報が見つかりません',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+            ),
           ),
         ],
       ),
@@ -226,28 +174,30 @@ class _ProfileField extends StatelessWidget {
   }
 }
 
-class _ProfileTextField extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final String? helperText;
-
-  const _ProfileTextField({
-    required this.label,
-    required this.controller,
-    this.helperText,
-  });
+/// エラー発生時の表示ウィジェット
+class _ErrorState extends StatelessWidget {
+  const _ErrorState();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          helperText: helperText,
-          border: const OutlineInputBorder(),
-        ),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: Colors.red[300],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'エラーが発生しました',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
       ),
     );
   }

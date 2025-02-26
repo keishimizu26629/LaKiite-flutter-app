@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:tarakite/domain/entity/group.dart';
+import 'package:lakiite/domain/entity/group.dart';
 
 part 'group_state.freezed.dart';
 

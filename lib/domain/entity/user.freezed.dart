@@ -20,10 +20,12 @@ PublicUserModel _$PublicUserModelFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$PublicUserModel {
+  String get id => throw _privateConstructorUsedError;
   String get displayName => throw _privateConstructorUsedError;
   @UserIdConverter()
   UserId get searchId => throw _privateConstructorUsedError;
   String? get iconUrl => throw _privateConstructorUsedError;
+  String? get shortBio => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -38,9 +40,11 @@ abstract class $PublicUserModelCopyWith<$Res> {
       _$PublicUserModelCopyWithImpl<$Res, PublicUserModel>;
   @useResult
   $Res call(
-      {String displayName,
+      {String id,
+      String displayName,
       @UserIdConverter() UserId searchId,
-      String? iconUrl});
+      String? iconUrl,
+      String? shortBio});
 }
 
 /// @nodoc
@@ -56,11 +60,17 @@ class _$PublicUserModelCopyWithImpl<$Res, $Val extends PublicUserModel>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? id = null,
     Object? displayName = null,
     Object? searchId = null,
     Object? iconUrl = freezed,
+    Object? shortBio = freezed,
   }) {
     return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
       displayName: null == displayName
           ? _value.displayName
           : displayName // ignore: cast_nullable_to_non_nullable
@@ -72,6 +82,10 @@ class _$PublicUserModelCopyWithImpl<$Res, $Val extends PublicUserModel>
       iconUrl: freezed == iconUrl
           ? _value.iconUrl
           : iconUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      shortBio: freezed == shortBio
+          ? _value.shortBio
+          : shortBio // ignore: cast_nullable_to_non_nullable
               as String?,
     ) as $Val);
   }
@@ -86,9 +100,11 @@ abstract class _$$PublicUserModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {String displayName,
+      {String id,
+      String displayName,
       @UserIdConverter() UserId searchId,
-      String? iconUrl});
+      String? iconUrl,
+      String? shortBio});
 }
 
 /// @nodoc
@@ -102,11 +118,17 @@ class __$$PublicUserModelImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? id = null,
     Object? displayName = null,
     Object? searchId = null,
     Object? iconUrl = freezed,
+    Object? shortBio = freezed,
   }) {
     return _then(_$PublicUserModelImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
       displayName: null == displayName
           ? _value.displayName
           : displayName // ignore: cast_nullable_to_non_nullable
@@ -119,6 +141,10 @@ class __$$PublicUserModelImplCopyWithImpl<$Res>
           ? _value.iconUrl
           : iconUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      shortBio: freezed == shortBio
+          ? _value.shortBio
+          : shortBio // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -127,14 +153,18 @@ class __$$PublicUserModelImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$PublicUserModelImpl extends _PublicUserModel {
   const _$PublicUserModelImpl(
-      {required this.displayName,
+      {required this.id,
+      required this.displayName,
       @UserIdConverter() required this.searchId,
-      this.iconUrl})
+      this.iconUrl,
+      this.shortBio})
       : super._();
 
   factory _$PublicUserModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$PublicUserModelImplFromJson(json);
 
+  @override
+  final String id;
   @override
   final String displayName;
   @override
@@ -142,10 +172,12 @@ class _$PublicUserModelImpl extends _PublicUserModel {
   final UserId searchId;
   @override
   final String? iconUrl;
+  @override
+  final String? shortBio;
 
   @override
   String toString() {
-    return 'PublicUserModel(displayName: $displayName, searchId: $searchId, iconUrl: $iconUrl)';
+    return 'PublicUserModel(id: $id, displayName: $displayName, searchId: $searchId, iconUrl: $iconUrl, shortBio: $shortBio)';
   }
 
   @override
@@ -153,16 +185,20 @@ class _$PublicUserModelImpl extends _PublicUserModel {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$PublicUserModelImpl &&
+            (identical(other.id, id) || other.id == id) &&
             (identical(other.displayName, displayName) ||
                 other.displayName == displayName) &&
             (identical(other.searchId, searchId) ||
                 other.searchId == searchId) &&
-            (identical(other.iconUrl, iconUrl) || other.iconUrl == iconUrl));
+            (identical(other.iconUrl, iconUrl) || other.iconUrl == iconUrl) &&
+            (identical(other.shortBio, shortBio) ||
+                other.shortBio == shortBio));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, displayName, searchId, iconUrl);
+  int get hashCode =>
+      Object.hash(runtimeType, id, displayName, searchId, iconUrl, shortBio);
 
   @JsonKey(ignore: true)
   @override
@@ -181,14 +217,18 @@ class _$PublicUserModelImpl extends _PublicUserModel {
 
 abstract class _PublicUserModel extends PublicUserModel {
   const factory _PublicUserModel(
-      {required final String displayName,
+      {required final String id,
+      required final String displayName,
       @UserIdConverter() required final UserId searchId,
-      final String? iconUrl}) = _$PublicUserModelImpl;
+      final String? iconUrl,
+      final String? shortBio}) = _$PublicUserModelImpl;
   const _PublicUserModel._() : super._();
 
   factory _PublicUserModel.fromJson(Map<String, dynamic> json) =
       _$PublicUserModelImpl.fromJson;
 
+  @override
+  String get id;
   @override
   String get displayName;
   @override
@@ -196,6 +236,8 @@ abstract class _PublicUserModel extends PublicUserModel {
   UserId get searchId;
   @override
   String? get iconUrl;
+  @override
+  String? get shortBio;
   @override
   @JsonKey(ignore: true)
   _$$PublicUserModelImplCopyWith<_$PublicUserModelImpl> get copyWith =>
@@ -212,6 +254,7 @@ mixin _$PrivateUserModel {
   String get name => throw _privateConstructorUsedError;
   List<String> get friends => throw _privateConstructorUsedError;
   List<String> get groups => throw _privateConstructorUsedError;
+  List<String> get lists => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -231,6 +274,7 @@ abstract class $PrivateUserModelCopyWith<$Res> {
       String name,
       List<String> friends,
       List<String> groups,
+      List<String> lists,
       DateTime createdAt});
 }
 
@@ -251,6 +295,7 @@ class _$PrivateUserModelCopyWithImpl<$Res, $Val extends PrivateUserModel>
     Object? name = null,
     Object? friends = null,
     Object? groups = null,
+    Object? lists = null,
     Object? createdAt = null,
   }) {
     return _then(_value.copyWith(
@@ -269,6 +314,10 @@ class _$PrivateUserModelCopyWithImpl<$Res, $Val extends PrivateUserModel>
       groups: null == groups
           ? _value.groups
           : groups // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      lists: null == lists
+          ? _value.lists
+          : lists // ignore: cast_nullable_to_non_nullable
               as List<String>,
       createdAt: null == createdAt
           ? _value.createdAt
@@ -291,6 +340,7 @@ abstract class _$$PrivateUserModelImplCopyWith<$Res>
       String name,
       List<String> friends,
       List<String> groups,
+      List<String> lists,
       DateTime createdAt});
 }
 
@@ -309,6 +359,7 @@ class __$$PrivateUserModelImplCopyWithImpl<$Res>
     Object? name = null,
     Object? friends = null,
     Object? groups = null,
+    Object? lists = null,
     Object? createdAt = null,
   }) {
     return _then(_$PrivateUserModelImpl(
@@ -328,6 +379,10 @@ class __$$PrivateUserModelImplCopyWithImpl<$Res>
           ? _value._groups
           : groups // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      lists: null == lists
+          ? _value._lists
+          : lists // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -344,9 +399,11 @@ class _$PrivateUserModelImpl extends _PrivateUserModel {
       required this.name,
       required final List<String> friends,
       required final List<String> groups,
+      required final List<String> lists,
       required this.createdAt})
       : _friends = friends,
         _groups = groups,
+        _lists = lists,
         super._();
 
   factory _$PrivateUserModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -372,12 +429,20 @@ class _$PrivateUserModelImpl extends _PrivateUserModel {
     return EqualUnmodifiableListView(_groups);
   }
 
+  final List<String> _lists;
+  @override
+  List<String> get lists {
+    if (_lists is EqualUnmodifiableListView) return _lists;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_lists);
+  }
+
   @override
   final DateTime createdAt;
 
   @override
   String toString() {
-    return 'PrivateUserModel(id: $id, name: $name, friends: $friends, groups: $groups, createdAt: $createdAt)';
+    return 'PrivateUserModel(id: $id, name: $name, friends: $friends, groups: $groups, lists: $lists, createdAt: $createdAt)';
   }
 
   @override
@@ -389,6 +454,7 @@ class _$PrivateUserModelImpl extends _PrivateUserModel {
             (identical(other.name, name) || other.name == name) &&
             const DeepCollectionEquality().equals(other._friends, _friends) &&
             const DeepCollectionEquality().equals(other._groups, _groups) &&
+            const DeepCollectionEquality().equals(other._lists, _lists) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt));
   }
@@ -401,6 +467,7 @@ class _$PrivateUserModelImpl extends _PrivateUserModel {
       name,
       const DeepCollectionEquality().hash(_friends),
       const DeepCollectionEquality().hash(_groups),
+      const DeepCollectionEquality().hash(_lists),
       createdAt);
 
   @JsonKey(ignore: true)
@@ -424,6 +491,7 @@ abstract class _PrivateUserModel extends PrivateUserModel {
       required final String name,
       required final List<String> friends,
       required final List<String> groups,
+      required final List<String> lists,
       required final DateTime createdAt}) = _$PrivateUserModelImpl;
   const _PrivateUserModel._() : super._();
 
@@ -438,6 +506,8 @@ abstract class _PrivateUserModel extends PrivateUserModel {
   List<String> get friends;
   @override
   List<String> get groups;
+  @override
+  List<String> get lists;
   @override
   DateTime get createdAt;
   @override
