@@ -44,7 +44,7 @@ class ScheduleTile extends ConsumerWidget {
                 color: isTimelineView
                     ? (isOwnSchedule
                         ? Colors.grey[400]!
-                        : Theme.of(context).primaryColor.withOpacity(0.3))
+                        : Theme.of(context).primaryColor.withAlpha(77))
                     : Colors.grey[300]!,
                 width: 1,
               ),
@@ -188,14 +188,14 @@ class ScheduleTile extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   if (schedule.reactionCount > 0)
-                    Row(
+                    const Row(
                       children: [
                         SizedBox(
                           width: 30,
                           height: 30,
                           child: Stack(
                             children: [
-                              const Positioned(
+                              Positioned(
                                 right: 2,
                                 child: Text(
                                   '🤔',

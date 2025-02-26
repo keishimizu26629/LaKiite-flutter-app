@@ -86,7 +86,7 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
     try {
       final list = await ref.read(listRepositoryProvider).getList(listId);
       if (list == null) {
-        state = AsyncValue.data(ListState.error('リストが見つかりません'));
+        state = const AsyncValue.data(ListState.error('リストが見つかりません'));
         return;
       }
 

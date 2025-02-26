@@ -40,6 +40,7 @@ class AppLogger {
   static void debug(dynamic message) {
     final filePath = _getFilePath();
     if (_enabledPaths.contains(filePath)) {
+      // ignore: avoid_print
       print('🔵 [${filePath.split('.').first}] $message');
     }
   }
@@ -47,6 +48,7 @@ class AppLogger {
   static void info(dynamic message) {
     final filePath = _getFilePath();
     if (_enabledPaths.contains(filePath)) {
+      // ignore: avoid_print
       print('ℹ️ [${filePath.split('.').first}] $message');
     }
   }
@@ -54,6 +56,7 @@ class AppLogger {
   static void warning(dynamic message) {
     final filePath = _getFilePath();
     if (_enabledPaths.contains(filePath)) {
+      // ignore: avoid_print
       print('⚠️ [${filePath.split('.').first}] $message');
     }
   }
@@ -61,8 +64,11 @@ class AppLogger {
   static void error(dynamic message, [dynamic error, StackTrace? stackTrace]) {
     final filePath = _getFilePath();
     if (_enabledPaths.contains(filePath)) {
+      // ignore: avoid_print
       print('🔴 [${filePath.split('.').first}] $message');
+      // ignore: avoid_print
       if (error != null) print('Error: $error');
+      // ignore: avoid_print
       if (stackTrace != null) print('StackTrace: $stackTrace');
     }
   }

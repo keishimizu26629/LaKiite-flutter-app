@@ -7,6 +7,7 @@ import '../presentation_provider.dart';
 import '../friend/friend_search_page.dart';
 import '../widgets/notification_button.dart';
 import '../widgets/ad_banner_widget.dart';
+import '../widgets/default_user_icon.dart';
 
 /// フレンドリストとユーザーリストを表示するページ。
 /// タブで切り替えることができ、それぞれのタブに応じたFloatingActionButtonを表示します。
@@ -192,15 +193,13 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
                               horizontal: 16,
                               vertical: 4,
                             ),
-                            leading: CircleAvatar(
-                              radius: 24,
-                              backgroundImage: friend.iconUrl != null
-                                  ? NetworkImage(friend.iconUrl!)
-                                  : null,
-                              child: friend.iconUrl == null
-                                  ? const Icon(Icons.person, size: 32)
-                                  : null,
-                            ),
+                            leading: friend.iconUrl != null
+                                ? CircleAvatar(
+                                    radius: 24,
+                                    backgroundImage:
+                                        NetworkImage(friend.iconUrl!),
+                                  )
+                                : const DefaultUserIcon(size: 48),
                             title: Text(
                               friend.displayName,
                               style: const TextStyle(

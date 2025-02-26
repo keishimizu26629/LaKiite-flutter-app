@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lakiite/presentation/widgets/schedule_tile.dart';
 import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
 import '../../presentation_provider.dart';

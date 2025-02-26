@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/user.dart';
@@ -11,6 +10,7 @@ import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
 import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
+import 'package:lakiite/presentation/widgets/default_user_icon.dart';
 import 'package:intl/intl.dart';
 
 /// スケジュールの詳細情報を表示するページ
@@ -132,113 +132,87 @@ class ScheduleDetailPage extends HookConsumerWidget {
 
                         return Column(
                           children: [
-                            Row(
-                              children: [
-                                Row(
-                                  children: [
-                                    const SizedBox(width: 8),
-                                    if (interactions.reactions.isNotEmpty)
-                                      Row(
-                                        children: [
-                                          SizedBox(
-                                            width: 30,
-                                            height: 30,
-                                            child: Stack(
-                                              children: [
-                                                if (interactions.reactionCounts[
-                                                            ReactionType
-                                                                .thinking] !=
-                                                        null &&
-                                                    interactions.reactionCounts[
-                                                            ReactionType
-                                                                .thinking]! >
-                                                        0)
-                                                  const Positioned(
-                                                    right: 2,
-                                                    child: Text(
-                                                      '🤔',
-                                                      style: TextStyle(
-                                                        fontSize: 20,
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () =>
+                                        _showReactionUsers(context, ref),
+                                    child: Row(
+                                      children: [
+                                        if (schedule.reactionCount > 0)
+                                          const Row(
+                                            children: [
+                                              SizedBox(
+                                                width: 30,
+                                                height: 30,
+                                                child: Stack(
+                                                  children: [
+                                                    Positioned(
+                                                      right: 2,
+                                                      child: Text(
+                                                        '🤔',
+                                                        style: TextStyle(
+                                                          fontSize: 20,
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
-                                                if (interactions.reactionCounts[
-                                                            ReactionType
-                                                                .going] !=
-                                                        null &&
-                                                    interactions.reactionCounts[
-                                                            ReactionType
-                                                                .going]! >
-                                                        0)
-                                                  Positioned(
-                                                    top: -1,
-                                                    right: interactions.reactionCounts[
-                                                                    ReactionType
-                                                                        .thinking] !=
-                                                                null &&
-                                                            interactions.reactionCounts[
-                                                                    ReactionType
-                                                                        .thinking]! >
-                                                                0
-                                                        ? null
-                                                        : 2,
-                                                    left: interactions.reactionCounts[
-                                                                    ReactionType
-                                                                        .thinking] !=
-                                                                null &&
-                                                            interactions.reactionCounts[
-                                                                    ReactionType
-                                                                        .thinking]! >
-                                                                0
-                                                        ? -2
-                                                        : null,
-                                                    child: const Text(
-                                                      '🙋',
-                                                      style: TextStyle(
-                                                        fontSize: 20,
+                                                    Positioned(
+                                                      top: -1,
+                                                      left: -2,
+                                                      child: Text(
+                                                        '🙋',
+                                                        style: TextStyle(
+                                                          fontSize: 20,
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
-                                              ],
-                                            ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        else
+                                          Icon(
+                                            Icons.people,
+                                            size: 16,
+                                            color:
+                                                Theme.of(context).primaryColor,
                                           ),
-                                        ],
-                                      )
-                                    else
-                                      Icon(
-                                        Icons.people,
-                                        size: 20,
-                                        color: Theme.of(context).primaryColor,
-                                      ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${interactions.reactions.length}',
-                                      style: TextStyle(
-                                        color: interactions.reactions.isNotEmpty
-                                            ? Colors.grey
-                                            : Theme.of(context).primaryColor,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${schedule.reactionCount}',
+                                          style: TextStyle(
+                                            color: schedule.reactionCount > 0
+                                                ? Colors.grey
+                                                : Theme.of(context)
+                                                    .primaryColor,
+                                            fontWeight: FontWeight.bold,
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 16),
-                                  ],
-                                ),
-                                Icon(
-                                  Icons.comment,
-                                  size: 20,
-                                  color: Colors.blue[400],
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${interactions.commentCount}',
-                                  style: TextStyle(
-                                    color: Colors.blue[400],
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 16),
+                                  Icon(
+                                    Icons.comment,
+                                    size: 16,
+                                    color: Colors.blue[400],
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${schedule.commentCount}',
+                                    style: TextStyle(
+                                      color: Colors.blue[400],
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                             const SizedBox(height: 8),
                             const Divider(height: 16),
@@ -458,6 +432,84 @@ class ScheduleDetailPage extends HookConsumerWidget {
     );
   }
 
+  Future<void> _showReactionUsers(BuildContext context, WidgetRef ref) async {
+    final reactions = await ref
+        .read(reactionRepositoryProvider)
+        .getReactionsForSchedule(schedule.id);
+    if (!context.mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'リアクションした人',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            FutureBuilder<List<UserModel>>(
+              future: Future.wait(
+                reactions.map((reaction) => ref
+                    .read(userRepositoryProvider)
+                    .getUser(reaction.userId)
+                    .then((user) => user!)),
+              ),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final users = snapshot.data!;
+                return SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.3,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: users.length,
+                    itemBuilder: (context, index) {
+                      final user = users[index];
+                      final reaction = reactions[index];
+                      return ListTile(
+                        leading: Stack(
+                          children: [
+                            const DefaultUserIcon(),
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Text(
+                                reaction.type == 'going' ? '🙋' : '🤔',
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          ],
+                        ),
+                        title: Text(user.displayName),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// 情報セクションを構築する[Widget]を返します
   ///
   /// [icon]、[title]、[content]を受け取り、一貫したレイアウトで
@@ -526,10 +578,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
                       radius: 20,
                     )
                   else
-                    const CircleAvatar(
-                      child: Icon(Icons.person),
-                      radius: 20,
-                    ),
+                    const DefaultUserIcon(),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
