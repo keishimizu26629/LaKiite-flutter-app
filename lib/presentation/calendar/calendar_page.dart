@@ -12,7 +12,7 @@ import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart'
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/presentation/calendar/widgets/calendar_page_view.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
-import 'package:lakiite/presentation/widgets/ad_banner_widget.dart';
+import 'package:lakiite/presentation/widgets/banner_ad_widget.dart';
 
 class CalendarPage extends HookConsumerWidget {
   const CalendarPage({super.key});
@@ -310,7 +310,7 @@ class CalendarPage extends HookConsumerWidget {
                         ),
                         const SizedBox(
                           height: 50,
-                          child: AdBannerWidget(),
+                          child: BannerAdWidget(),
                         ),
                       ],
                     ),

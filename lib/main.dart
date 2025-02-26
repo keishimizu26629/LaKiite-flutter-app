@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'infrastructure/go_router_refresh_notifier.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'presentation/theme/app_theme.dart';
 import 'presentation/login/login_page.dart';
 import 'presentation/signup/signup.dart';
@@ -21,9 +22,12 @@ import 'application/auth/auth_state.dart';
 /// - Flutterウィジェットバインディングの初期化
 /// - Firebaseの初期化
 /// - アプリケーションの起動
+/// - モバイル広告の初期化
 Future<void> main([List<String>? args, List<Override> overrides = const []]) async {
   // Flutterウィジェットバインディングの初期化
   WidgetsFlutterBinding.ensureInitialized();
+  // モバイル広告の初期化
+  await MobileAds.instance.initialize();
   // 日本語ロケールの初期化
   await initializeDateFormatting('ja_JP', null);
   // Firebaseの初期化

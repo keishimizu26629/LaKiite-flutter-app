@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'my_page_view_model.dart';
 import '../presentation_provider.dart';
-import '../widgets/ad_banner_widget.dart';
+import '../widgets/banner_ad_widget.dart';
 import 'widgets/profile_card.dart';
 import 'widgets/section_header.dart';
 import 'widgets/short_bio_card.dart';
@@ -137,7 +137,7 @@ class _MyPageState extends ConsumerState<MyPage> {
                 ),
               ),
             ),
-            const AdBannerWidget(),
+            const BannerAdWidget(),
           ],
         ),
       ),

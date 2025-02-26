@@ -6,7 +6,7 @@ import '../list/list_detail_page.dart';
 import '../presentation_provider.dart';
 import '../friend/friend_search_page.dart';
 import '../widgets/notification_button.dart';
-import '../widgets/ad_banner_widget.dart';
+import '../widgets/banner_ad_widget.dart';
 import '../widgets/default_user_icon.dart';
 
 /// フレンドリストとユーザーリストを表示するページ。
@@ -324,7 +324,7 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
           ),
           const SizedBox(
             height: 50,
-            child: AdBannerWidget(),
+            child: BannerAdWidget(),
           ),
         ],
       ),

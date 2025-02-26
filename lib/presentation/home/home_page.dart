@@ -5,7 +5,7 @@ import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
 import 'package:lakiite/presentation/calendar/widgets/calendar_page_view.dart';
-import 'package:lakiite/presentation/widgets/ad_banner_widget.dart';
+import 'package:lakiite/presentation/widgets/banner_ad_widget.dart';
 import 'package:lakiite/presentation/widgets/notification_button.dart';
 import 'package:lakiite/presentation/widgets/schedule_tile.dart';
 
@@ -262,7 +262,7 @@ class HomePage extends HookConsumerWidget {
                         ),
                         const SizedBox(
                           height: 50,
-                          child: AdBannerWidget(),
+                          child: BannerAdWidget(),
                         ),
                       ],
                     ),
