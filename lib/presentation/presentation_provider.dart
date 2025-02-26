@@ -224,6 +224,27 @@ final userSchedulesStreamProvider =
       ref.watch(scheduleRepositoryProvider).watchUserSchedules(userId),
 );
 
+/// ユーザーが所有するスケジュール一覧をリアルタイムで監視するStreamプロバイダー
+///
+/// [userId] 監視対象のユーザーID
+final userOwnedSchedulesStreamProvider =
+    StreamProvider.family<List<Schedule>, String>(
+  (ref, userId) =>
+      ref.watch(scheduleRepositoryProvider).watchUserOwnedSchedules(userId),
+);
+
+/// 特定のユーザーに公開されていて、特定のユーザーが所有するスケジュール一覧をリアルタイムで監視するStreamプロバイダー
+///
+/// [params] パラメータ（visibleToUserId, ownerId）
+final visibleAndOwnedSchedulesStreamProvider = StreamProvider.family<
+    List<Schedule>, ({String visibleToUserId, String ownerId})>(
+  (ref, params) =>
+      ref.watch(scheduleRepositoryProvider).watchVisibleAndOwnedSchedules(
+            params.visibleToUserId,
+            params.ownerId,
+          ),
+);
+
 final reactionRepositoryProvider = Provider<ReactionRepository>((ref) {
   final firestore = FirebaseFirestore.instance;
   return ReactionRepositoryImpl(firestore);

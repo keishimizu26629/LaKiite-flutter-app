@@ -8,6 +8,7 @@ import '../friend/friend_search_page.dart';
 import '../widgets/notification_button.dart';
 import '../widgets/banner_ad_widget.dart';
 import '../widgets/default_user_icon.dart';
+import '../friend/friend_profile_page.dart';
 
 /// フレンドリストとユーザーリストを表示するページ。
 /// タブで切り替えることができ、それぞれのタブに応じたFloatingActionButtonを表示します。
@@ -214,6 +215,15 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
                                 fontSize: 14,
                               ),
                             ),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => FriendProfilePage(
+                                    userId: friend.id,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         );
                       },

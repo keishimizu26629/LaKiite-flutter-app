@@ -56,6 +56,22 @@ abstract class IScheduleRepository {
   /// 返値: ユーザーに関連するスケジュールリストの変更を通知するStream
   Stream<List<Schedule>> watchUserSchedules(String userId);
 
+  /// 特定のユーザーが所有するスケジュールのみを監視する
+  ///
+  /// [userId] 監視対象のユーザーID
+  ///
+  /// 返値: ユーザーが所有するスケジュールリストの変更を通知するStream
+  Stream<List<Schedule>> watchUserOwnedSchedules(String userId);
+
+  /// 特定のユーザーに公開されていて、特定のユーザーが所有するスケジュールを監視する
+  ///
+  /// [visibleToUserId] スケジュールが公開されているユーザーID
+  /// [ownerId] スケジュールの所有者ID
+  ///
+  /// 返値: 条件に一致するスケジュールリストの変更を通知するStream
+  Stream<List<Schedule>> watchVisibleAndOwnedSchedules(
+      String visibleToUserId, String ownerId);
+
   /// 特定のスケジュールを監視する
   ///
   /// [scheduleId] 監視対象のスケジュールID

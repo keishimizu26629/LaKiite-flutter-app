@@ -258,6 +258,67 @@ class ScheduleRepository implements IScheduleRepository {
   }
 
   @override
+  Stream<List<Schedule>> watchUserOwnedSchedules(String userId) async* {
+    try {
+      await _ensureAuthenticated();
+
+      final stream = _firestore
+          .collection('schedules')
+          .where('ownerId', isEqualTo: userId)
+          .orderBy('startDateTime', descending: false)
+          .snapshots();
+
+      await for (final snapshot in stream) {
+        try {
+          final schedules = await Future.wait(
+            snapshot.docs.map((doc) => _enrichSchedule(doc)),
+          );
+          yield schedules;
+        } catch (e) {
+          AppLogger.error('Error processing owned schedule snapshot: $e');
+          // エラーが発生した場合は空のリストを返す
+          yield [];
+        }
+      }
+    } catch (e) {
+      AppLogger.error('Error in watchUserOwnedSchedules: $e');
+      yield [];
+    }
+  }
+
+  @override
+  Stream<List<Schedule>> watchVisibleAndOwnedSchedules(
+      String visibleToUserId, String ownerId) async* {
+    try {
+      await _ensureAuthenticated();
+
+      final stream = _firestore
+          .collection('schedules')
+          .where('visibleTo', arrayContains: visibleToUserId)
+          .where('ownerId', isEqualTo: ownerId)
+          .orderBy('startDateTime', descending: false)
+          .snapshots();
+
+      await for (final snapshot in stream) {
+        try {
+          final schedules = await Future.wait(
+            snapshot.docs.map((doc) => _enrichSchedule(doc)),
+          );
+          yield schedules;
+        } catch (e) {
+          AppLogger.error(
+              'Error processing visible and owned schedule snapshot: $e');
+          // エラーが発生した場合は空のリストを返す
+          yield [];
+        }
+      }
+    } catch (e) {
+      AppLogger.error('Error in watchVisibleAndOwnedSchedules: $e');
+      yield [];
+    }
+  }
+
+  @override
   Stream<Schedule?> watchSchedule(String scheduleId) {
     return _firestore
         .collection('schedules')
