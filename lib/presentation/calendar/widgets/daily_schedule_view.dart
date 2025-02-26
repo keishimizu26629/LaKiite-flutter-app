@@ -142,6 +142,10 @@ class DailyScheduleView extends HookConsumerWidget {
                     loaded: (schedules) =>
                         _getSchedulesForDate(date, schedules),
                     error: (_) => <Schedule>[],
+                    loadingWithData: (schedules) =>
+                        _getSchedulesForDate(date, schedules),
+                    errorWithData: (schedules, _) =>
+                        _getSchedulesForDate(date, schedules),
                   ),
                   loading: () => <Schedule>[],
                   error: (_, __) => <Schedule>[],
