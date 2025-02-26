@@ -9,17 +9,21 @@ part of 'user.dart';
 _$PublicUserModelImpl _$$PublicUserModelImplFromJson(
         Map<String, dynamic> json) =>
     _$PublicUserModelImpl(
+      id: json['id'] as String,
       displayName: json['displayName'] as String,
       searchId: const UserIdConverter().fromJson(json['searchId'] as String),
       iconUrl: json['iconUrl'] as String?,
+      shortBio: json['shortBio'] as String?,
     );
 
 Map<String, dynamic> _$$PublicUserModelImplToJson(
         _$PublicUserModelImpl instance) =>
     <String, dynamic>{
+      'id': instance.id,
       'displayName': instance.displayName,
       'searchId': const UserIdConverter().toJson(instance.searchId),
       'iconUrl': instance.iconUrl,
+      'shortBio': instance.shortBio,
     };
 
 _$PrivateUserModelImpl _$$PrivateUserModelImplFromJson(
@@ -31,6 +35,7 @@ _$PrivateUserModelImpl _$$PrivateUserModelImplFromJson(
           (json['friends'] as List<dynamic>).map((e) => e as String).toList(),
       groups:
           (json['groups'] as List<dynamic>).map((e) => e as String).toList(),
+      lists: (json['lists'] as List<dynamic>).map((e) => e as String).toList(),
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
 
@@ -41,6 +46,7 @@ Map<String, dynamic> _$$PrivateUserModelImplToJson(
       'name': instance.name,
       'friends': instance.friends,
       'groups': instance.groups,
+      'lists': instance.lists,
       'createdAt': instance.createdAt.toIso8601String(),
     };
 

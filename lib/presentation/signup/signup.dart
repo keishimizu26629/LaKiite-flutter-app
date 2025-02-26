@@ -14,6 +14,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _displayNameController = TextEditingController();
   bool _isLoading = false;
 
   @override
@@ -36,6 +37,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
             email: _emailController.text,
             password: _passwordController.text,
             name: _nameController.text,
+            displayName: _displayNameController.text.isNotEmpty
+                ? _displayNameController.text
+                : _nameController.text,
           );
       if (mounted) {
         context.go('/');
@@ -76,6 +80,16 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 decoration: const InputDecoration(
                   labelText: '名前(フルネーム)',
                   border: OutlineInputBorder(),
+                ),
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _displayNameController,
+                decoration: const InputDecoration(
+                  labelText: '表示名(ニックネーム)',
+                  border: OutlineInputBorder(),
+                  helperText: '空白の場合は名前が表示名として使用されます',
                 ),
                 textInputAction: TextInputAction.next,
               ),

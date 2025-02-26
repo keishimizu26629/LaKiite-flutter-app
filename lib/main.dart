@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'infrastructure/go_router_refresh_notifier.dart';
+import 'presentation/theme/app_theme.dart';
 import 'presentation/login/login_page.dart';
 import 'presentation/signup/signup.dart';
 import 'presentation/bottom_navigation/bottom_navigation.dart';
+import 'presentation/settings/settings_page.dart';
+import 'presentation/settings/edit_name_page.dart';
+import 'presentation/settings/edit_email_page.dart';
+import 'presentation/settings/edit_search_id_page.dart';
 import 'presentation/presentation_provider.dart';
 import 'application/auth/auth_state.dart';
 
@@ -15,13 +21,20 @@ import 'application/auth/auth_state.dart';
 /// - Flutterウィジェットバインディングの初期化
 /// - Firebaseの初期化
 /// - アプリケーションの起動
-void main() async {
+Future<void> main([List<String>? args, List<Override> overrides = const []]) async {
   // Flutterウィジェットバインディングの初期化
   WidgetsFlutterBinding.ensureInitialized();
+  // 日本語ロケールの初期化
+  await initializeDateFormatting('ja_JP', null);
   // Firebaseの初期化
   await Firebase.initializeApp();
   // アプリケーションの起動
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(
+    ProviderScope(
+      overrides: overrides,
+      child: const MyApp(),
+    ),
+  );
 }
 
 /// アプリケーションのルーティング設定を提供するプロバイダー
@@ -82,6 +95,24 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/signup',
         builder: (context, state) => const SignupPage(),
       ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsPage(),
+        routes: [
+          GoRoute(
+            path: 'name',
+            builder: (context, state) => const EditNamePage(),
+          ),
+          GoRoute(
+            path: 'email',
+            builder: (context, state) => const EditEmailPage(),
+          ),
+          GoRoute(
+            path: 'search-id',
+            builder: (context, state) => const EditSearchIdPage(),
+          ),
+        ],
+      ),
     ],
   );
 });
@@ -105,11 +136,8 @@ class MyApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'タラカイト',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
+      title: 'LaKiite',
+      theme: AppTheme.theme,
       routerConfig: router,
     );
   }

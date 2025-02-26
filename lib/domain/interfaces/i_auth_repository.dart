@@ -1,4 +1,4 @@
-import 'package:tarakite/domain/entity/user.dart';
+import 'package:lakiite/domain/entity/user.dart';
 
 /// 認証機能を提供するリポジトリのインターフェース
 ///

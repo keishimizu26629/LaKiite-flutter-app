@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../home/home_page.dart';
-import '../calendar/calendar_page.dart';
+import '../friend/friend_list_page.dart';
 import '../my_page/my_page.dart';
 
 class BottomNavigationPage extends ConsumerStatefulWidget {
   const BottomNavigationPage({super.key});
 
   @override
-  ConsumerState<BottomNavigationPage> createState() => _BottomNavigationPageState();
+  ConsumerState<BottomNavigationPage> createState() =>
+      _BottomNavigationPageState();
 }
 
 class _BottomNavigationPageState extends ConsumerState<BottomNavigationPage> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _pages = [
-    HomePage(),
-    CalendarPage(),
-    MyPage(),
+  static final List<Widget> _pages = [
+    const HomePage(),
+    const FriendListPage(),
+    const MyPage(),
   ];
 
   void _onItemTapped(int index) {
@@ -30,23 +31,49 @@ class _BottomNavigationPageState extends ConsumerState<BottomNavigationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'ホーム',
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          elevation: 0,
+          backgroundColor: Colors.white,
+          selectedItemColor: Theme.of(context).primaryColor,
+          unselectedItemColor: Colors.grey[600],
+          selectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'カレンダー',
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 12,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'マイページ',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'ホーム',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.groups_3_outlined),
+              activeIcon: Icon(Icons.groups_3),
+              label: 'フレンド',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'マイページ',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+        ),
       ),
     );
   }

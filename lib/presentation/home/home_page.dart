@@ -1,183 +1,338 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../application/auth/auth_state.dart';
-import '../group/create_group_page.dart';
-import '../presentation_provider.dart';
-import '../friend/friend_search_page.dart';
-import '../friend/friend_request_list_page.dart';
-import '../widgets/friend_request_badge.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lakiite/application/auth/auth_state.dart';
+import 'package:lakiite/presentation/presentation_provider.dart';
+import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
+import 'package:lakiite/presentation/calendar/widgets/calendar_page_view.dart';
+import 'package:lakiite/presentation/widgets/ad_banner_widget.dart';
+import 'package:lakiite/presentation/widgets/notification_button.dart';
+import 'package:lakiite/presentation/widgets/schedule_tile.dart';
 
-/// アプリケーションのホーム画面を表示するウィジェット
-///
-/// 機能:
-/// - フレンドリストの表示
-/// - 所属グループの表示
-/// - 新規グループ作成画面への遷移
-///
-/// 状態管理:
-/// - Riverpodを使用
-/// - ユーザーの認証状態に応じた表示
-class HomePage extends ConsumerStatefulWidget {
+class HomePage extends HookConsumerWidget {
   const HomePage({super.key});
 
   @override
-  ConsumerState<HomePage> createState() => _HomePageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authNotifierProvider);
+    final scheduleState = ref.watch(scheduleNotifierProvider);
+    final initialized = useState(false);
+    final userId = useState<String?>(null);
+    final hideOwnSchedules = useState(false);
 
-/// HomePageの状態を管理するStateクラス
-///
-/// 管理する状態:
-/// - フレンドリストの取得状態
-/// - グループリストの取得状態
-/// - 認証状態の監視
-class _HomePageState extends ConsumerState<HomePage> {
-  @override
-  Widget build(BuildContext context) {
-    // フレンドとグループの状態を監視
-    final friendsAsync = ref.watch(userFriendsStreamProvider);
-    final groupsAsync = ref.watch(userGroupsStreamProvider);
+    useEffect(() {
+      if (!authState.hasValue) return null;
 
-    // 認証状態の変更を監視
-    ref.listen(authNotifierProvider, (previous, next) {
-      next.whenData((authState) {
-        // ユーザーが認証済みの場合の処理
-        if (authState.status == AuthStatus.authenticated &&
-            authState.user != null) {
-          // ユーザー認証状態の変更を監視
+      authState.whenData((state) {
+        if (state.status == AuthStatus.authenticated && state.user != null) {
+          final currentUserId = state.user!.id;
+
+          if (!initialized.value || userId.value != currentUserId) {
+            initialized.value = true;
+            userId.value = currentUserId;
+
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ref
+                  .read(scheduleNotifierProvider.notifier)
+                  .watchUserSchedules(currentUserId);
+              ref
+                  .read(listNotifierProvider.notifier)
+                  .watchUserLists(currentUserId);
+            });
+          }
         }
       });
-    });
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('ホーム'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const FriendSearchPage(),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const FriendRequestBadge(
-              child: Icon(Icons.notifications),
-            ),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const FriendRequestListPage(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-      // 新規グループ作成ボタン
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // グループ作成画面への遷移
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const CreateGroupPage(),
+      return null;
+    }, [authState]);
+
+    return authState.when(
+      data: (state) {
+        if (state.status != AuthStatus.authenticated || state.user == null) {
+          return const Scaffold(
+            body: Center(
+              child: Text('ログインが必要です'),
             ),
           );
-        },
-        child: const Icon(Icons.add),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'フレンド',
-              style: Theme.of(context).textTheme.titleLarge,
+        }
+
+        return DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text(
+                'ホーム',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              centerTitle: true,
+              actions: const [
+                NotificationButton(),
+              ],
             ),
-            const SizedBox(height: 8),
-            // フレンドリストの状態に応じた表示を切り替え
-            friendsAsync.when(
-              data: (friends) {
-                // フレンドが存在しない場合のメッセージを表示
-                if (friends.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text('フレンドはいません'),
-                  );
-                }
-                // フレンドリストを表示
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: friends.length,
-                  itemBuilder: (context, index) {
-                    final friend = friends[index];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage: friend.iconUrl != null
-                            ? NetworkImage(friend.iconUrl!)
-                            : null,
-                        child: friend.iconUrl == null
-                            ? const Icon(Icons.person)
-                            : null,
+            body: SafeArea(
+              child: Column(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TabBar(
+                      labelColor: Theme.of(context).primaryColor,
+                      unselectedLabelColor: Colors.grey[600],
+                      indicatorColor: Theme.of(context).primaryColor,
+                      indicatorWeight: 3,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
-                      title: Text(friend.displayName),
-                      // nameプロパティは存在しないため、displayNameを使用
-                      subtitle: Text(friend.searchId.toString()),
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) =>
-                  Center(child: Text('エラー: ${error.toString()}')),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'グループ',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            // グループリストの状態に応じた表示を切り替え
-            groupsAsync.when(
-              data: (groups) {
-                // グループが存在しない場合のメッセージを表示
-                if (groups.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text('所属しているグループはありません'),
-                  );
-                }
-                // グループリストを表示
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: groups.length,
-                  itemBuilder: (context, index) {
-                    final group = groups[index];
-                    return ListTile(
-                      leading: const CircleAvatar(
-                        child: Icon(Icons.group),
+                      unselectedLabelStyle: const TextStyle(
+                        fontSize: 16,
                       ),
-                      title: Text(group.groupName),
-                      subtitle: Text('${group.memberIds.length}人のメンバー'),
-                      onTap: () {
-                        // TODO: グループ詳細画面への遷移を実装
-                      },
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) =>
-                  Center(child: Text('エラー: ${error.toString()}')),
+                      tabs: const [
+                        Tab(text: 'カレンダー'),
+                        Tab(text: 'タイムライン'),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: TabBarView(
+                            children: [
+                              // カレンダー表示タブ
+                              scheduleState.when(
+                                data: (_) => const Column(
+                                  children: [
+                                    Expanded(child: CalendarPageView()),
+                                  ],
+                                ),
+                                error: (error, _) => _buildErrorWidget(
+                                    context, ref, state, error),
+                                loading: () => const Center(
+                                    child: CircularProgressIndicator()),
+                              ),
+                              // タイムライン表示タブ
+                              scheduleState.when(
+                                data: (scheduleState) => scheduleState.maybeMap(
+                                  loaded: (loaded) {
+                                    final filteredSchedules = hideOwnSchedules
+                                            .value
+                                        ? loaded.schedules
+                                            .where((s) =>
+                                                s.ownerId != state.user!.id)
+                                            .toList()
+                                        : loaded.schedules;
+
+                                    return Column(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  const Text(
+                                                    '自分の予定を非表示',
+                                                    style:
+                                                        TextStyle(fontSize: 14),
+                                                  ),
+                                                  Switch(
+                                                    value:
+                                                        hideOwnSchedules.value,
+                                                    onChanged: (value) {
+                                                      hideOwnSchedules.value =
+                                                          value;
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                              ElevatedButton.icon(
+                                                onPressed: () {
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          const CreateSchedulePage(),
+                                                    ),
+                                                  );
+                                                },
+                                                icon: const Icon(Icons.add,
+                                                    size: 20),
+                                                label: const Text(
+                                                  '予定を作成',
+                                                  style:
+                                                      TextStyle(fontSize: 14),
+                                                ),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      Theme.of(context)
+                                                          .primaryColor,
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 8,
+                                                  ),
+                                                  minimumSize: Size.zero,
+                                                  tapTargetSize:
+                                                      MaterialTapTargetSize
+                                                          .shrinkWrap,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (filteredSchedules.isEmpty)
+                                          Expanded(
+                                            child: Center(
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.event_busy,
+                                                    size: 64,
+                                                    color: Colors.grey[400],
+                                                  ),
+                                                  const SizedBox(height: 16),
+                                                  Text(
+                                                    '予定がありません',
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      color: Colors.grey[600],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          )
+                                        else
+                                          Expanded(
+                                            child: ListView.builder(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 8),
+                                              itemCount:
+                                                  filteredSchedules.length,
+                                              itemBuilder: (context, index) {
+                                                final schedule =
+                                                    filteredSchedules[index];
+                                                return ScheduleTile(
+                                                  schedule: schedule,
+                                                  currentUserId: state.user!.id,
+                                                  showOwner: true,
+                                                  showEditButton:
+                                                      schedule.ownerId ==
+                                                          state.user!.id,
+                                                  isTimelineView: true,
+                                                  showDivider: false,
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                      ],
+                                    );
+                                  },
+                                  orElse: () => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                ),
+                                error: (error, _) => _buildErrorWidget(
+                                    context, ref, state, error),
+                                loading: () => const Center(
+                                    child: CircularProgressIndicator()),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 50,
+                          child: AdBannerWidget(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+        );
+      },
+      error: (error, _) {
+        return Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48),
+                const SizedBox(height: 16),
+                Text('認証エラーが発生しました: $error'),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () {
+        return const Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildErrorWidget(
+    BuildContext context,
+    WidgetRef ref,
+    AuthState state,
+    Object error,
+  ) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 48,
+            color: Theme.of(context).primaryColor.withOpacity(0.7),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'エラーが発生しました: $error',
+            style: TextStyle(
+              color: Theme.of(context).primaryColor.withOpacity(0.9),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              ref
+                  .read(scheduleNotifierProvider.notifier)
+                  .watchUserSchedules(state.user!.id);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('再読み込み'),
+          ),
+        ],
       ),
     );
   }
