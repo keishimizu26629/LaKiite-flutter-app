@@ -13,6 +13,7 @@ import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/presentation/calendar/widgets/calendar_page_view.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
 import 'package:lakiite/presentation/widgets/ad_banner_widget.dart';
+import 'package:lakiite/utils/logger.dart';
 
 class CalendarPage extends HookConsumerWidget {
   const CalendarPage({super.key});
@@ -37,9 +38,16 @@ class CalendarPage extends HookConsumerWidget {
             userId.value = currentUserId;
 
             WidgetsBinding.instance.addPostFrameCallback((_) {
+              // 保存されたインデックスから表示月を取得
+              final currentIndex = ref.read(calendarCurrentIndexProvider);
+              final visibleDate = _getVisibleDateTime(currentIndex);
+              AppLogger.debug(
+                  'アプリ再起動時の表示月: ${visibleDate.year}-${visibleDate.month}');
+
               ref
                   .read(scheduleNotifierProvider.notifier)
-                  .watchUserSchedules(currentUserId);
+                  .watchUserSchedulesForMonth(currentUserId, visibleDate);
+
               ref
                   .read(listNotifierProvider.notifier)
                   .watchUserLists(currentUserId);
@@ -125,185 +133,223 @@ class CalendarPage extends HookConsumerWidget {
                                     child: CircularProgressIndicator()),
                               ),
                               // タイムライン表示タブ
-                              scheduleState.when(
-                                data: (scheduleState) => scheduleState.maybeMap(
-                                  loaded: (loaded) {
-                                    final filteredSchedules = hideOwnSchedules
-                                            .value
-                                        ? loaded.schedules
-                                            .where((s) =>
-                                                s.ownerId != state.user!.id)
-                                            .toList()
-                                        : loaded.schedules;
+                              Column(
+                                children: [
+                                  // ローディングインジケーターを表示
+                                  if (scheduleState.isLoading)
+                                    const LinearProgressIndicator(
+                                      backgroundColor: Colors.transparent,
+                                      minHeight: 2,
+                                    ),
+                                  Expanded(
+                                    child: scheduleState.when(
+                                      data: (scheduleState) =>
+                                          scheduleState.maybeMap(
+                                        loaded: (loaded) {
+                                          final filteredSchedules =
+                                              hideOwnSchedules.value
+                                                  ? loaded.schedules
+                                                      .where((s) =>
+                                                          s.ownerId !=
+                                                          state.user!.id)
+                                                      .toList()
+                                                  : loaded.schedules;
 
-                                    return Column(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 12,
-                                          ),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
+                                          return Column(
                                             children: [
-                                              Row(
-                                                children: [
-                                                  const Text(
-                                                    '自分の予定を非表示',
-                                                    style:
-                                                        TextStyle(fontSize: 14),
-                                                  ),
-                                                  Switch(
-                                                    value:
-                                                        hideOwnSchedules.value,
-                                                    onChanged: (value) {
-                                                      hideOwnSchedules.value =
-                                                          value;
-                                                    },
-                                                  ),
-                                                ],
-                                              ),
-                                              ElevatedButton.icon(
-                                                onPressed: () {
-                                                  Navigator.of(context).push(
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          const CreateSchedulePage(),
-                                                    ),
-                                                  );
-                                                },
-                                                icon: const Icon(Icons.add,
-                                                    size: 20),
-                                                label: const Text(
-                                                  '予定を作成',
-                                                  style:
-                                                      TextStyle(fontSize: 14),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 12,
                                                 ),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor:
-                                                      Theme.of(context)
-                                                          .primaryColor,
-                                                  foregroundColor: Colors.white,
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 8,
-                                                  ),
-                                                  minimumSize: Size.zero,
-                                                  tapTargetSize:
-                                                      MaterialTapTargetSize
-                                                          .shrinkWrap,
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    Row(
+                                                      children: [
+                                                        const Text(
+                                                          '自分の予定を非表示',
+                                                          style: TextStyle(
+                                                              fontSize: 14),
+                                                        ),
+                                                        Switch(
+                                                          value:
+                                                              hideOwnSchedules
+                                                                  .value,
+                                                          onChanged: (value) {
+                                                            hideOwnSchedules
+                                                                .value = value;
+                                                          },
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    ElevatedButton.icon(
+                                                      onPressed: () {
+                                                        Navigator.of(context)
+                                                            .push(
+                                                          MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                const CreateSchedulePage(),
+                                                          ),
+                                                        );
+                                                      },
+                                                      icon: const Icon(
+                                                          Icons.add,
+                                                          size: 20),
+                                                      label: const Text(
+                                                        '予定を作成',
+                                                        style: TextStyle(
+                                                            fontSize: 14),
+                                                      ),
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            Theme.of(context)
+                                                                .primaryColor,
+                                                        foregroundColor:
+                                                            Colors.white,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 8,
+                                                        ),
+                                                        minimumSize: Size.zero,
+                                                        tapTargetSize:
+                                                            MaterialTapTargetSize
+                                                                .shrinkWrap,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
-                                            ],
-                                          ),
-                                        ),
-                                        if (filteredSchedules.isEmpty)
-                                          Expanded(
-                                            child: Center(
-                                              child: Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Icon(
-                                                    Icons.event_busy,
-                                                    size: 64,
-                                                    color: Colors.grey[400],
-                                                  ),
-                                                  const SizedBox(height: 16),
-                                                  Text(
-                                                    '予定がありません',
-                                                    style: TextStyle(
-                                                      fontSize: 16,
-                                                      color: Colors.grey[600],
+                                              if (filteredSchedules.isEmpty)
+                                                Expanded(
+                                                  child: Center(
+                                                    child: Column(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                      children: [
+                                                        Icon(
+                                                          Icons.event_busy,
+                                                          size: 64,
+                                                          color:
+                                                              Colors.grey[400],
+                                                        ),
+                                                        const SizedBox(
+                                                            height: 16),
+                                                        Text(
+                                                          '予定がありません',
+                                                          style: TextStyle(
+                                                            fontSize: 16,
+                                                            color: Colors
+                                                                .grey[600],
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
                                                   ),
-                                                ],
-                                              ),
-                                            ),
-                                          )
-                                        else
-                                          Expanded(
-                                            child: ListView.builder(
-                                              padding: const EdgeInsets.only(
-                                                  top: 4, bottom: 4),
-                                              itemCount:
-                                                  filteredSchedules.length,
-                                              itemBuilder: (context, index) {
-                                                final schedule =
-                                                    filteredSchedules[index];
-                                                return Card(
-                                                  margin: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 16,
-                                                      vertical: 6),
-                                                  child: InkWell(
-                                                    onTap: () {
-                                                      Navigator.of(context)
-                                                          .push(
-                                                        MaterialPageRoute(
-                                                          builder: (context) =>
-                                                              ScheduleDetailPage(
-                                                                  schedule:
-                                                                      schedule),
+                                                )
+                                              else
+                                                Expanded(
+                                                  child: ListView.builder(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            top: 4, bottom: 4),
+                                                    itemCount: filteredSchedules
+                                                        .length,
+                                                    itemBuilder:
+                                                        (context, index) {
+                                                      final schedule =
+                                                          filteredSchedules[
+                                                              index];
+                                                      return Card(
+                                                        margin: const EdgeInsets
+                                                            .symmetric(
+                                                            horizontal: 16,
+                                                            vertical: 6),
+                                                        child: InkWell(
+                                                          onTap: () {
+                                                            Navigator.of(
+                                                                    context)
+                                                                .push(
+                                                              MaterialPageRoute(
+                                                                builder: (context) =>
+                                                                    ScheduleDetailPage(
+                                                                        schedule:
+                                                                            schedule),
+                                                              ),
+                                                            );
+                                                          },
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .all(16),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              border: schedule
+                                                                          .ownerId ==
+                                                                      state
+                                                                          .user!
+                                                                          .id
+                                                                  ? Border.all(
+                                                                      color: Theme.of(
+                                                                              context)
+                                                                          .primaryColor
+                                                                          .withOpacity(
+                                                                              0.3),
+                                                                      width: 1,
+                                                                    )
+                                                                  : null,
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8),
+                                                              color: schedule
+                                                                          .ownerId ==
+                                                                      state
+                                                                          .user!
+                                                                          .id
+                                                                  ? Theme.of(
+                                                                          context)
+                                                                      .primaryColor
+                                                                      .withOpacity(
+                                                                          0.05)
+                                                                  : null,
+                                                            ),
+                                                            child:
+                                                                _buildScheduleItem(
+                                                                    context,
+                                                                    schedule,
+                                                                    state.user!,
+                                                                    ref),
+                                                          ),
                                                         ),
                                                       );
                                                     },
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                    child: Container(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              16),
-                                                      decoration: BoxDecoration(
-                                                        border: schedule
-                                                                    .ownerId ==
-                                                                state.user!.id
-                                                            ? Border.all(
-                                                                color: Theme.of(
-                                                                        context)
-                                                                    .primaryColor
-                                                                    .withOpacity(
-                                                                        0.3),
-                                                                width: 1,
-                                                              )
-                                                            : null,
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                        color: schedule
-                                                                    .ownerId ==
-                                                                state.user!.id
-                                                            ? Theme.of(context)
-                                                                .primaryColor
-                                                                .withOpacity(
-                                                                    0.05)
-                                                            : null,
-                                                      ),
-                                                      child: _buildScheduleItem(
-                                                          context,
-                                                          schedule,
-                                                          state.user!,
-                                                          ref),
-                                                    ),
                                                   ),
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                      ],
-                                    );
-                                  },
-                                  orElse: () => const Center(
-                                    child: CircularProgressIndicator(),
+                                                ),
+                                            ],
+                                          );
+                                        },
+                                        orElse: () => const Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      ),
+                                      error: (error, _) => _buildErrorWidget(
+                                          context, ref, state, error),
+                                      loading: () => const Center(
+                                          child: CircularProgressIndicator()),
+                                    ),
                                   ),
-                                ),
-                                error: (error, _) => _buildErrorWidget(
-                                    context, ref, state, error),
-                                loading: () => const Center(
-                                    child: CircularProgressIndicator()),
+                                ],
                               ),
                             ],
                           ),
@@ -625,5 +671,60 @@ class CalendarPage extends HookConsumerWidget {
         ),
       ],
     );
+  }
+
+  DateTime _getVisibleDateTime(int index) {
+    final monthDif = index - 1200;
+    final visibleYear = _getVisibleYear(monthDif);
+    final visibleMonth = _getVisibleMonth(monthDif);
+    AppLogger.debug(
+        'CalendarPage._getVisibleDateTime: index=$index, monthDif=$monthDif, year=$visibleYear, month=$visibleMonth');
+    return DateTime(visibleYear, visibleMonth);
+  }
+
+  int _getVisibleYear(int monthDif) {
+    final now = DateTime.now();
+    final currentMonth = now.month;
+    final currentYear = now.year;
+
+    // 現在の月に差分を加える
+    final targetMonthValue = currentMonth + monthDif;
+
+    // 年の調整を計算
+    int yearAdjustment;
+    if (targetMonthValue > 0) {
+      // 正の値の場合は単純に12で割った商
+      yearAdjustment = (targetMonthValue - 1) ~/ 12;
+    } else {
+      // 負の値の場合は、-1ヶ月が前年の12月になるように調整
+      yearAdjustment = (targetMonthValue - 12) ~/ 12;
+    }
+
+    final result = currentYear + yearAdjustment;
+    AppLogger.debug(
+        'CalendarPage._getVisibleYear: monthDif=$monthDif, targetMonthValue=$targetMonthValue, yearAdjustment=$yearAdjustment, result=$result');
+    return result;
+  }
+
+  int _getVisibleMonth(int monthDif) {
+    final now = DateTime.now();
+    final initialMonth = now.month;
+    final targetMonthValue = initialMonth + monthDif;
+
+    // 1〜12の範囲に変換
+    int result;
+    if (targetMonthValue > 0) {
+      result = ((targetMonthValue - 1) % 12) + 1;
+    } else {
+      // 負の値の場合、-1→12月、-2→11月...となるように調整
+      result = 12 - ((-targetMonthValue) % 12);
+      if (result == 12 && targetMonthValue % 12 != 0) {
+        result = 12;
+      }
+    }
+
+    AppLogger.debug(
+        'CalendarPage._getVisibleMonth: monthDif=$monthDif, targetMonthValue=$targetMonthValue, result=$result');
+    return result;
   }
 }
