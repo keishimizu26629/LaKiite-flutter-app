@@ -13,6 +13,11 @@ class AppTheme {
   static const dividerColor = Color(0xFFE4E6E8);
   static const disabledColor = Colors.grey;
 
+  // ユーザーアイコン用カラー
+  static const userIconBackgroundColor =
+      Color(0xFFfff5e6); // primaryColor[50]と同じ
+  static const userIconColor = Color(0xFFffc74d); // primaryColor[300]と同じ
+
   static ThemeData get theme => ThemeData(
         useMaterial3: false,
         primarySwatch: MaterialColor(

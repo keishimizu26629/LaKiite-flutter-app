@@ -8,11 +8,11 @@ class UserSearchDialog extends StatelessWidget {
   final Function(String) onSelect;
 
   const UserSearchDialog({
-    Key? key,
+    super.key,
     required this.user,
     required this.onCancel,
     required this.onSelect,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

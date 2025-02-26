@@ -23,6 +23,10 @@ import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/infrastructure/friend_list_repository.dart';
 import '../domain/entity/schedule.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lakiite/domain/repository/reaction_repository.dart';
+import 'package:lakiite/infrastructure/repository/reaction_repository_impl.dart';
 
 export 'package:lakiite/application/notification/notification_notifier.dart'
     show currentUserIdProvider;
@@ -219,3 +223,8 @@ final userSchedulesStreamProvider =
   (ref, userId) =>
       ref.watch(scheduleRepositoryProvider).watchUserSchedules(userId),
 );
+
+final reactionRepositoryProvider = Provider<ReactionRepository>((ref) {
+  final firestore = FirebaseFirestore.instance;
+  return ReactionRepositoryImpl(firestore);
+});
