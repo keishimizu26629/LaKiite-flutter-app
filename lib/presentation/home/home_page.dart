@@ -14,6 +14,7 @@ import 'package:lakiite/presentation/calendar/widgets/calendar_page_view.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
 import 'package:lakiite/presentation/widgets/ad_banner_widget.dart';
 import 'package:lakiite/presentation/widgets/notification_button.dart';
+import 'package:lakiite/presentation/widgets/schedule_tile.dart';
 
 class HomePage extends HookConsumerWidget {
   const HomePage({super.key});
@@ -230,69 +231,23 @@ class HomePage extends HookConsumerWidget {
                                         else
                                           Expanded(
                                             child: ListView.builder(
-                                              padding: const EdgeInsets.only(
-                                                  top: 4, bottom: 4),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 8),
                                               itemCount:
                                                   filteredSchedules.length,
                                               itemBuilder: (context, index) {
                                                 final schedule =
                                                     filteredSchedules[index];
-                                                return Card(
-                                                  margin: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 16,
-                                                      vertical: 6),
-                                                  child: InkWell(
-                                                    onTap: () {
-                                                      Navigator.of(context)
-                                                          .push(
-                                                        MaterialPageRoute(
-                                                          builder: (context) =>
-                                                              ScheduleDetailPage(
-                                                                  schedule:
-                                                                      schedule),
-                                                        ),
-                                                      );
-                                                    },
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                    child: Container(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              16),
-                                                      decoration: BoxDecoration(
-                                                        border: schedule
-                                                                    .ownerId ==
-                                                                state.user!.id
-                                                            ? Border.all(
-                                                                color: Theme.of(
-                                                                        context)
-                                                                    .primaryColor
-                                                                    .withOpacity(
-                                                                        0.3),
-                                                                width: 1,
-                                                              )
-                                                            : null,
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                        color: schedule
-                                                                    .ownerId ==
-                                                                state.user!.id
-                                                            ? Theme.of(context)
-                                                                .primaryColor
-                                                                .withOpacity(
-                                                                    0.05)
-                                                            : null,
-                                                      ),
-                                                      child: _buildScheduleItem(
-                                                          context,
-                                                          schedule,
-                                                          state.user!,
-                                                          ref),
-                                                    ),
-                                                  ),
+                                                return ScheduleTile(
+                                                  schedule: schedule,
+                                                  currentUserId: state.user!.id,
+                                                  showOwner: true,
+                                                  showEditButton:
+                                                      schedule.ownerId ==
+                                                          state.user!.id,
+                                                  isTimelineView: true,
+                                                  showDivider: false,
                                                 );
                                               },
                                             ),

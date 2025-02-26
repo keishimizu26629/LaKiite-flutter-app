@@ -10,6 +10,7 @@ import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart'
 import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
+import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
 import 'package:intl/intl.dart';
 
 /// スケジュールの詳細情報を表示するページ
@@ -42,11 +43,20 @@ class ScheduleDetailPage extends HookConsumerWidget {
         actions: [
           if (schedule.ownerId ==
               ref.watch(authNotifierProvider).value?.user?.id)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                context.push('/schedule/edit/${schedule.id}');
-              },
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => EditSchedulePage(
+                        schedule: schedule,
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
         ],
       ),

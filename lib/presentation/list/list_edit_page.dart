@@ -17,7 +17,7 @@ class ListEditPage extends ConsumerStatefulWidget {
 class _ListEditPageState extends ConsumerState<ListEditPage> {
   late TextEditingController _nameController;
   File? _selectedImage;
-  Set<String> _excludedMemberIds = {};
+  final Set<String> _excludedMemberIds = {};
   bool _isLoading = false;
 
   @override
