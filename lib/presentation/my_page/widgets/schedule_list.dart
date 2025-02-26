@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
-import '../../calendar/schedule_detail_page.dart';
+import 'package:lakiite/presentation/widgets/schedule_tile.dart';
+import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
 import '../../presentation_provider.dart';
 
 /// ユーザーの予定一覧を表示するウィジェット
@@ -61,142 +61,22 @@ class ScheduleList extends ConsumerWidget {
           itemCount: mySchedules.length,
           itemBuilder: (context, index) {
             final schedule = mySchedules[index];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: InkWell(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          ScheduleDetailPage(schedule: schedule),
+            return ScheduleTile(
+              schedule: schedule,
+              currentUserId: userId,
+              showOwner: false,
+              showEditButton: true,
+              isTimelineView: false,
+              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              onEditPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => EditSchedulePage(
+                      schedule: schedule,
                     ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Theme.of(context).primaryColor.withOpacity(0.3),
-                      width: 1,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                    color: Theme.of(context).primaryColor.withOpacity(0.05),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              schedule.title,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.edit,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                            onPressed: () {
-                              context.push('/calendar/create', extra: schedule);
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      if (schedule.description.isNotEmpty) ...[
-                        Text(
-                          schedule.description,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[800],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            size: 16,
-                            color: Colors.grey[600],
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '${DateFormat('yyyy/MM/dd HH:mm').format(schedule.startDateTime)} - '
-                              '${DateFormat('yyyy/MM/dd HH:mm').format(schedule.endDateTime)}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (schedule.location != null) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              size: 16,
-                              color: Colors.grey[600],
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                schedule.location!,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Icon(
-                            Icons.people,
-                            size: 16,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${schedule.reactionCount}',
-                            style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Icon(
-                            Icons.comment,
-                            size: 16,
-                            color: Colors.blue[400],
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${schedule.commentCount}',
-                            style: TextStyle(
-                              color: Colors.blue[400],
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+                );
+              },
             );
           },
         );
