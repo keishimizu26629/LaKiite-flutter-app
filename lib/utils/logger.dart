@@ -17,7 +17,9 @@ class AppLogger {
   static const _enabledPaths = [
     'schedule_form_page.dart',
     'schedule_repository.dart',
-    'schedule_notifier.dart'
+    'schedule_notifier.dart',
+    'calendar_page_view.dart',
+    'daily_schedule_view.dart'
   ];
 
   // スタックトレースからファイルパスを取得
