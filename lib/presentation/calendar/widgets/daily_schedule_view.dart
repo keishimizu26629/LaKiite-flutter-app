@@ -7,15 +7,16 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/presentation/presentation_provider.dart'
     hide scheduleNotifierProvider;
 import 'package:lakiite/application/schedule/schedule_notifier.dart';
+import 'package:lakiite/utils/logger.dart';
 
 class DailyScheduleView extends HookConsumerWidget {
   const DailyScheduleView({
-    required this.initialDate,
+    this.initialDate,
     required this.schedules,
     super.key,
   });
 
-  final DateTime initialDate;
+  final DateTime? initialDate;
   final List<Schedule> schedules;
 
   String _formatDate(DateTime date) {
@@ -46,7 +47,23 @@ class DailyScheduleView extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = useState(1000); // 中央のページから開始
     final pageController = usePageController(initialPage: currentIndex.value);
-    final currentDate = useState(initialDate);
+
+    // selectedDateProviderから初期日付を取得
+    final selectedDate = ref.watch(selectedDateProvider);
+    // initialDateが指定されていればそれを使用し、なければselectedDateを使用
+    final effectiveInitialDate = initialDate ?? selectedDate;
+    final currentDate = useState(effectiveInitialDate);
+
+    // 日付情報をログ出力
+    AppLogger.debug(
+        'DailyScheduleView - 初期日付(引数): ${initialDate?.year}年${initialDate?.month}月${initialDate?.day}日 (null=${initialDate == null})');
+    AppLogger.debug(
+        'DailyScheduleView - selectedDateProviderの日付: ${selectedDate.year}年${selectedDate.month}月${selectedDate.day}日');
+    AppLogger.debug(
+        'DailyScheduleView - 使用する初期日付: ${effectiveInitialDate.year}年${effectiveInitialDate.month}月${effectiveInitialDate.day}日');
+    AppLogger.debug(
+        'DailyScheduleView - 現在の表示日付: ${currentDate.value.year}年${currentDate.value.month}月${currentDate.value.day}日');
+
     final scrollController = useScrollController(
       initialScrollOffset: 6 * 60.0, // 6:00の位置（1時間 = 60.0）
     );
@@ -66,6 +83,14 @@ class DailyScheduleView extends HookConsumerWidget {
       }
       return null;
     }, [currentUserId]);
+
+    // 日付が変更されたときにProviderを更新
+    useEffect(() {
+      ref.read(selectedDateProvider.notifier).state = currentDate.value;
+      AppLogger.debug(
+          'DailyScheduleView - selectedDateProviderを更新: ${currentDate.value.year}年${currentDate.value.month}月${currentDate.value.day}日');
+      return null;
+    }, [currentDate.value]);
 
     return Scaffold(
       appBar: AppBar(),
@@ -126,13 +151,33 @@ class DailyScheduleView extends HookConsumerWidget {
               onPageChanged: (index) {
                 currentIndex.value = index;
                 final difference = index - 1000;
-                currentDate.value = initialDate.add(Duration(days: difference));
+
+                // 日付計算の問題を修正
+                // 日付の加算は年月をまたぐ場合に問題が発生することがあるため、
+                // 年月日を明示的に計算する
+                final newDate = DateTime(
+                  effectiveInitialDate.year,
+                  effectiveInitialDate.month,
+                  effectiveInitialDate.day + difference,
+                );
+
+                currentDate.value = newDate;
+                AppLogger.debug(
+                    'DailyScheduleView - ページ変更: インデックス=$index, 差分=$difference日');
+                AppLogger.debug(
+                    'DailyScheduleView - 新しい表示日付: ${newDate.year}年${newDate.month}月${newDate.day}日');
                 // 日付が変わっても6:00の位置にスクロール
                 scrollController.jumpTo(6 * 60.0);
               },
               itemBuilder: (context, index) {
                 final difference = index - 1000;
-                final date = initialDate.add(Duration(days: difference));
+
+                // 同様に、itemBuilderでも日付計算を修正
+                final date = DateTime(
+                  effectiveInitialDate.year,
+                  effectiveInitialDate.month,
+                  effectiveInitialDate.day + difference,
+                );
 
                 // スケジュール状態から該当日の予定を取得
                 final dateSchedules = scheduleState.when(
