@@ -114,11 +114,11 @@ class DailyScheduleContent extends HookConsumerWidget {
                       ),
                     ),
                   // 現在時刻の線
-                  if (date.year == DateTime.now().year &&
-                      date.month == DateTime.now().month &&
-                      date.day == DateTime.now().day)
+                  if (date.year == DateTime.now().toLocal().year &&
+                      date.month == DateTime.now().toLocal().month &&
+                      date.day == DateTime.now().toLocal().day)
                     Positioned(
-                      top: _calculateTimePosition(DateTime.now()),
+                      top: _calculateTimePosition(DateTime.now().toLocal()),
                       left: 0,
                       right: 0,
                       child: Container(

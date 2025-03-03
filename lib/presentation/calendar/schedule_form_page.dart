@@ -504,6 +504,7 @@ class ScheduleFormPage extends HookConsumerWidget {
                             initialDate: selectedEndDate.value,
                             firstDate: selectedStartDate.value,
                             lastDate: DateTime.now()
+                                .toLocal()
                                 .add(const Duration(days: 365 * 2)),
                           );
                           if (picked != null) {
