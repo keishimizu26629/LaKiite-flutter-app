@@ -146,7 +146,7 @@ class HomePage extends HookConsumerWidget {
                                 data: (scheduleState) => scheduleState.maybeMap(
                                   loaded: (loaded) {
                                     // 本日以降のスケジュールをフィルタリング
-                                    final today = DateTime.now();
+                                    final today = DateTime.now().toLocal();
                                     final todayStart = DateTime(
                                         today.year, today.month, today.day);
 

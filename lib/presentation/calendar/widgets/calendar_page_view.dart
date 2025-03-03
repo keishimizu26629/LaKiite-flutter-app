@@ -196,7 +196,8 @@ class CalendarPageView extends HookConsumerWidget {
   }
 
   int _getVisibleYear(int monthDif) {
-    final now = DateTime.now();
+    // DateTime.now()の代わりに、タイムゾーンを明示的に指定
+    final now = DateTime.now().toLocal();
     final currentMonth = now.month;
     final currentYear = now.year;
 
@@ -220,7 +221,8 @@ class CalendarPageView extends HookConsumerWidget {
   }
 
   int _getVisibleMonth(int monthDif) {
-    final now = DateTime.now();
+    // DateTime.now()の代わりに、タイムゾーンを明示的に指定
+    final now = DateTime.now().toLocal();
     final initialMonth = now.month;
     final targetMonthValue = initialMonth + monthDif;
 
@@ -656,7 +658,7 @@ class DateCell extends StatelessWidget {
   }
 
   bool _isToday(DateTime date) {
-    final now = DateTime.now();
+    final now = DateTime.now().toLocal();
     return date.year == now.year &&
         date.month == now.month &&
         date.day == now.day;

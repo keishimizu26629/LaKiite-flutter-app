@@ -103,10 +103,8 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
   void _handleTabChange() {
     // タブの切り替えが完了したときのみ、FloatingActionButtonの表示を更新
     if (!_tabController.indexIsChanging) {
-      // 最小限の更新のみを行う
-      setState(() {
-        // 空のsetStateでタブインデックスの変更のみを反映
-      });
+      // 最小限の更新のみを行う - FABはキーを持つので再構築を防止
+      setState(() {});
     }
   }
 
@@ -335,6 +333,7 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
         ],
       ),
       floatingActionButton: Padding(
+        key: const ValueKey('friend_list_fab'), // キーを追加して再構築を防止
         padding: const EdgeInsets.only(bottom: 58),
         child: _buildFloatingActionButton(),
       ),
