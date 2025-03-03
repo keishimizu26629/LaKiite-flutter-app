@@ -201,20 +201,18 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                                       : null,
                                 ),
                                 title: Text(member.displayName),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('@${member.searchId}'),
-                                    if (member.shortBio != null &&
-                                        member.shortBio!.isNotEmpty)
-                                      Text(
+                                subtitle: member.shortBio != null &&
+                                        member.shortBio!.isNotEmpty
+                                    ? Text(
                                         member.shortBio!,
-                                        style: theme.textTheme.bodySmall,
-                                        maxLines: 2,
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 14,
+                                        ),
+                                        maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                      ),
-                                  ],
-                                ),
+                                      )
+                                    : null,
                               ),
                             );
                           },
