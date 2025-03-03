@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../presentation/presentation_provider.dart';
+import '../widgets/schedule_tile.dart';
 
 class FriendProfilePage extends ConsumerWidget {
   final String userId;
@@ -13,6 +15,7 @@ class FriendProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final publicProfileAsync = ref.watch(publicUserStreamProvider(userId));
+    final schedulesAsync = ref.watch(userSchedulesStreamProvider(userId));
 
     return Scaffold(
       appBar: AppBar(
@@ -61,13 +64,37 @@ class FriendProfilePage extends ConsumerWidget {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              Text(
-                                '@${user.searchId}',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Theme.of(context)
-                                      .primaryColor
-                                      .withOpacity(0.8),
+                              GestureDetector(
+                                onTap: () async {
+                                  await Clipboard.setData(
+                                    ClipboardData(
+                                        text: user.searchId.toString()),
+                                  );
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text('検索IDをコピーしました')),
+                                    );
+                                  }
+                                },
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      '@${user.searchId}',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Theme.of(context)
+                                            .primaryColor
+                                            .withOpacity(0.8),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    const Icon(
+                                      Icons.copy,
+                                      size: 14,
+                                      color: Colors.blue,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -78,6 +105,11 @@ class FriendProfilePage extends ConsumerWidget {
                   ),
                 ),
                 if (user.shortBio != null && user.shortBio!.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  const _SectionHeader(
+                    icon: Icons.description_outlined,
+                    title: '一言コメント',
+                  ),
                   const SizedBox(height: 16),
                   Card(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -103,6 +135,68 @@ class FriendProfilePage extends ConsumerWidget {
                     ),
                   ),
                 ],
+                const SizedBox(height: 24),
+                const _SectionHeader(
+                  icon: Icons.event,
+                  title: '予定一覧',
+                ),
+                const SizedBox(height: 16),
+                schedulesAsync.when(
+                  data: (schedules) {
+                    final userSchedules =
+                        schedules.where((s) => s.ownerId == userId).toList();
+
+                    if (userSchedules.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.event_busy,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              '予定がありません',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    userSchedules.sort(
+                        (a, b) => a.startDateTime.compareTo(b.startDateTime));
+
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: userSchedules.length,
+                      itemBuilder: (context, index) {
+                        final schedule = userSchedules[index];
+                        return ScheduleTile(
+                          schedule: schedule,
+                          currentUserId: userId,
+                          showOwner: false,
+                          showEditButton: false,
+                          isTimelineView: false,
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 6),
+                        );
+                      },
+                    );
+                  },
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  error: (error, stack) => Center(
+                    child: Text('エラーが発生しました: $error'),
+                  ),
+                ),
               ],
             ),
           );
@@ -112,6 +206,39 @@ class FriendProfilePage extends ConsumerWidget {
           child: Text('エラーが発生しました: $error'),
         ),
       ),
+    );
+  }
+}
+
+/// セクションヘッダーウィジェット
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+
+  const _SectionHeader({
+    required this.icon,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: Theme.of(context).primaryColor,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).primaryColor,
+          ),
+        ),
+      ],
     );
   }
 }

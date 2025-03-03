@@ -73,7 +73,18 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
                               : null,
                         ),
                         title: Text(friend.displayName),
-                        subtitle: Text(friend.searchId.toString()),
+                        subtitle: friend.shortBio != null &&
+                                friend.shortBio!.isNotEmpty
+                            ? Text(
+                                friend.shortBio!,
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 14,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              )
+                            : null,
                         trailing: Checkbox(
                           value: isSelected,
                           onChanged: isInList
