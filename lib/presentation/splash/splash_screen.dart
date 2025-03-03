@@ -46,21 +46,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       });
     });
 
-    return const Scaffold(
+    return Scaffold(
+      backgroundColor: const Color(0xFFffa600),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text(
-              'LaKiite',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+        child: Image.asset(
+          'assets/icon/icon.png',
+          width: 150,
+          height: 150,
         ),
       ),
     );
