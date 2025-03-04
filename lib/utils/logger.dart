@@ -13,14 +13,21 @@ class AppLogger {
     ),
   );
 
-  // 予定作成関連のファイルパスリスト
+  // デバッグログを有効にするファイルパスリスト
   static const _enabledPaths = [
     'schedule_form_page.dart',
     'schedule_repository.dart',
     'schedule_notifier.dart',
     'calendar_page_view.dart',
-    'daily_schedule_view.dart'
+    'daily_schedule_view.dart',
+    'firebase_storage_service.dart',
+    'my_page_view_model.dart',
+    'storage_service.dart',
+    'image_processor_service.dart'
   ];
+
+  // 常にログを表示するかどうか
+  static const bool _alwaysShowLogs = true;
 
   // スタックトレースからファイルパスを取得
   static String _getFilePath() {
@@ -41,33 +48,37 @@ class AppLogger {
 
   static void debug(dynamic message) {
     final filePath = _getFilePath();
-    if (_enabledPaths.contains(filePath)) {
+    if (_alwaysShowLogs || _enabledPaths.contains(filePath)) {
       // ignore: avoid_print
-      print('🔵 [${filePath.split('.').first}] $message');
+      print(
+          '🔵 [DEBUG] [${filePath.isEmpty ? 'App' : filePath.split('.').first}] $message');
     }
   }
 
   static void info(dynamic message) {
     final filePath = _getFilePath();
-    if (_enabledPaths.contains(filePath)) {
+    if (_alwaysShowLogs || _enabledPaths.contains(filePath)) {
       // ignore: avoid_print
-      print('ℹ️ [${filePath.split('.').first}] $message');
+      print(
+          'ℹ️ [INFO] [${filePath.isEmpty ? 'App' : filePath.split('.').first}] $message');
     }
   }
 
   static void warning(dynamic message) {
     final filePath = _getFilePath();
-    if (_enabledPaths.contains(filePath)) {
+    if (_alwaysShowLogs || _enabledPaths.contains(filePath)) {
       // ignore: avoid_print
-      print('⚠️ [${filePath.split('.').first}] $message');
+      print(
+          '⚠️ [WARN] [${filePath.isEmpty ? 'App' : filePath.split('.').first}] $message');
     }
   }
 
   static void error(dynamic message, [dynamic error, StackTrace? stackTrace]) {
     final filePath = _getFilePath();
-    if (_enabledPaths.contains(filePath)) {
+    if (_alwaysShowLogs || _enabledPaths.contains(filePath)) {
       // ignore: avoid_print
-      print('🔴 [${filePath.split('.').first}] $message');
+      print(
+          '🔴 [ERROR] [${filePath.isEmpty ? 'App' : filePath.split('.').first}] $message');
       // ignore: avoid_print
       if (error != null) print('Error: $error');
       // ignore: avoid_print

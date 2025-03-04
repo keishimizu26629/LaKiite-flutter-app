@@ -89,10 +89,10 @@ class FriendProfilePage extends ConsumerWidget {
                                       ),
                                     ),
                                     const SizedBox(width: 6),
-                                    const Icon(
+                                    Icon(
                                       Icons.copy,
                                       size: 14,
-                                      color: Colors.blue,
+                                      color: Theme.of(context).primaryColor,
                                     ),
                                   ],
                                 ),
