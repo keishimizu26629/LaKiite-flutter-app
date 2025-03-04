@@ -137,7 +137,8 @@ class UserRepository implements IUserRepository {
 
   @override
   Future<String?> uploadUserIcon(String userId, Uint8List imageBytes) async {
-    final ref = _storage.ref().child('users/$userId/profile/avatar.jpg');
+    // 新しいパス構造を使用
+    final ref = _storage.ref().child('v1/users/icon/$userId');
     await ref.putData(
       imageBytes,
       SettableMetadata(
@@ -148,7 +149,37 @@ class UserRepository implements IUserRepository {
         },
       ),
     );
-    return await ref.getDownloadURL();
+
+    // ダウンロードURLを取得
+    final downloadUrl = await ref.getDownloadURL();
+
+    // ユーザードキュメントの参照を取得
+    final userRef = _firestore.collection('users').doc(userId);
+    final privateRef = userRef.collection('private').doc('profile');
+
+    // トランザクションでアイコンURLを更新
+    await _firestore.runTransaction((transaction) async {
+      // 公開プロフィールのiconUrlを更新
+      final userDoc = await transaction.get(userRef);
+      if (userDoc.exists) {
+        final userData = userDoc.data() ?? {};
+        userData['iconUrl'] = downloadUrl;
+        transaction.update(userRef, userData);
+      }
+
+      // プライベートプロフィールにも同じURLを保存
+      final privateDoc = await transaction.get(privateRef);
+      if (privateDoc.exists) {
+        final privateData = privateDoc.data() ?? {};
+        if (privateData['profile'] == null) {
+          privateData['profile'] = {};
+        }
+        privateData['profile']['iconUrl'] = downloadUrl;
+        transaction.update(privateRef, privateData);
+      }
+    });
+
+    return downloadUrl;
   }
 
   @override
