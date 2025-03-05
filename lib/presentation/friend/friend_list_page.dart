@@ -22,8 +22,6 @@ class FriendListPage extends ConsumerStatefulWidget {
 class _FriendListPageState extends ConsumerState<FriendListPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _isInitialized = false;
-  bool _isLoading = true;
 
   // フローティングボタンをキャッシュするための変数
   late final Widget _friendTabFAB;
@@ -57,38 +55,6 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
       },
       child: const Icon(Icons.post_add_outlined),
     );
-
-    // 初期化処理を遅延実行
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeData();
-    });
-  }
-
-  void _initializeData() {
-    if (!_isInitialized) {
-      final authState = ref.read(authNotifierProvider).value;
-      if (authState != null &&
-          authState.status == AuthStatus.authenticated &&
-          authState.user != null) {
-        // データの読み込みを開始
-        setState(() {
-          _isLoading = true;
-        });
-
-        // 非同期でデータを読み込む
-        Future.microtask(() {
-          // プロバイダーを無効化するのではなく、単に読み込み状態を更新
-          setState(() {
-            _isInitialized = true;
-            _isLoading = false;
-          });
-        });
-      } else {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
   }
 
   @override
@@ -103,7 +69,6 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
   void _handleTabChange() {
     // タブの切り替えが完了したときのみ、FloatingActionButtonの表示を更新
     if (!_tabController.indexIsChanging) {
-      // 最小限の更新のみを行う - FABはキーを持つので再構築を防止
       setState(() {});
     }
   }
@@ -309,95 +274,108 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
   /// [return] - 構築されたウィジェット
   @override
   Widget build(BuildContext context) {
-    // ローディング中の場合は、ローディングインジケーターを表示
-    if (_isLoading) {
-      return const Scaffold(
+    final authState = ref.watch(authNotifierProvider);
+
+    return authState.when(
+      data: (state) {
+        if (state.status != AuthStatus.authenticated || state.user == null) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'フレンド',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            centerTitle: true,
+            actions: const [
+              NotificationButton(),
+            ],
+          ),
+          floatingActionButton: Padding(
+            key: const ValueKey('friend_list_fab'),
+            padding: const EdgeInsets.only(bottom: 58),
+            child: _buildFloatingActionButton(),
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          body: Column(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: Theme.of(context).primaryColor,
+                  unselectedLabelColor: Colors.grey[600],
+                  indicatorColor: Theme.of(context).primaryColor,
+                  indicatorWeight: 3,
+                  labelStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 16,
+                  ),
+                  tabs: const [
+                    Tab(text: 'フレンド'),
+                    Tab(text: 'リスト'),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    IndexedStack(
+                      index: _tabController.index == 0 ? 0 : 1,
+                      children: [
+                        _buildFriendTabContent(),
+                        Container(),
+                      ],
+                    ),
+                    IndexedStack(
+                      index: _tabController.index == 1 ? 0 : 1,
+                      children: [
+                        _buildListTabContent(),
+                        Container(),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(
+                height: 50,
+                child: BannerAdWidget(uniqueId: 'friend_list_page_ad'),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
         ),
-      );
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'フレンド',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+      ),
+      error: (error, stack) => Scaffold(
+        body: Center(
+          child: Text('エラーが発生しました: $error'),
         ),
-        centerTitle: true,
-        actions: const [
-          NotificationButton(),
-        ],
-      ),
-      floatingActionButton: Padding(
-        key: const ValueKey('friend_list_fab'), // キーを追加して再構築を防止
-        padding: const EdgeInsets.only(bottom: 58),
-        child: _buildFloatingActionButton(),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: Column(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: TabBar(
-              controller: _tabController,
-              labelColor: Theme.of(context).primaryColor,
-              unselectedLabelColor: Colors.grey[600],
-              indicatorColor: Theme.of(context).primaryColor,
-              indicatorWeight: 3,
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 16,
-              ),
-              tabs: const [
-                Tab(text: 'フレンド'),
-                Tab(text: 'リスト'),
-              ],
-            ),
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                // フレンドタブ - IndexedStackを使用して状態を保持
-                IndexedStack(
-                  index: _tabController.index == 0 ? 0 : 1,
-                  children: [
-                    _buildFriendTabContent(),
-                    Container(), // 非表示時のプレースホルダー
-                  ],
-                ),
-                // リストタブ - IndexedStackを使用して状態を保持
-                IndexedStack(
-                  index: _tabController.index == 1 ? 0 : 1,
-                  children: [
-                    _buildListTabContent(),
-                    Container(), // 非表示時のプレースホルダー
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(
-            height: 50,
-            child: BannerAdWidget(uniqueId: 'friend_list_page_ad'),
-          ),
-        ],
       ),
     );
   }

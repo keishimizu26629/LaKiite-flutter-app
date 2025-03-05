@@ -19,55 +19,40 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _initialize() async {
-    // 認証状態の初期化を待つ
     await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+
+    final authState = ref.read(authNotifierProvider);
+    authState.whenData((state) {
+      if (!mounted) return;
+      if (state.status == AuthStatus.authenticated) {
+        context.go('/');
+      } else {
+        context.go('/login');
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    // AuthNotifierの状態を監視
     ref.listen<AsyncValue<AuthState>>(authNotifierProvider, (previous, next) {
-      next.when(
-        data: (authState) {
-          if (authState.status == AuthStatus.authenticated) {
-            context.go('/');
-          } else if (authState.status == AuthStatus.unauthenticated) {
-            context.go('/login');
-          }
-        },
-        loading: () => null,
-        error: (_, __) => null,
-      );
+      next.whenData((state) {
+        if (!mounted) return;
+        if (state.status == AuthStatus.authenticated) {
+          context.go('/');
+        } else if (state.status == AuthStatus.unauthenticated) {
+          context.go('/login');
+        }
+      });
     });
 
     return Scaffold(
+      backgroundColor: const Color(0xFFffa600),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/logo.png',
-              width: 200,
-              height: 200,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(
-                  Icons.calendar_today,
-                  size: 100,
-                  color: Colors.blue,
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            const Text(
-              '予定共有アプリ',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+        child: Image.asset(
+          'assets/icon/icon.png',
+          width: 150,
+          height: 150,
         ),
       ),
     );

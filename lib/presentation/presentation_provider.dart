@@ -228,3 +228,8 @@ final reactionRepositoryProvider = Provider<ReactionRepository>((ref) {
   final firestore = FirebaseFirestore.instance;
   return ReactionRepositoryImpl(firestore);
 });
+
+// 現在選択されている日付を保持するプロバイダー
+final selectedDateProvider = StateProvider<DateTime>((ref) {
+  return DateTime.now();
+});

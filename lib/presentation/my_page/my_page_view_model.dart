@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../../infrastructure/image_picker_service.dart' as picker;
 import '../../domain/entity/user.dart';
 import '../../domain/entity/schedule.dart';
@@ -148,22 +149,43 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
       if (imageFile != null) {
         try {
           AppLogger.debug('画像のアップロードを開始します');
-          final path = 'users/${state.value!.id}/profile/avatar.jpg';
+          AppLogger.debug('現在のユーザーID: ${state.value!.id}');
+
+          // ファイル情報の詳細ログ
+          final fileExists = await imageFile.exists();
+          AppLogger.debug('ファイルの存在確認: $fileExists');
+          final fileSize = await imageFile.length();
+          AppLogger.debug('ファイルサイズ: $fileSize bytes');
+          AppLogger.debug('ファイルパス: ${imageFile.path}');
+
+          final path = 'v1/users/icon/${state.value!.id}';
+          AppLogger.debug('アップロード先パス: $path');
+
           final metadata = {
             'uploadedAt': DateTime.now().toIso8601String(),
             'userId': state.value!.id,
           };
+          AppLogger.debug('メタデータ: $metadata');
 
-          AppLogger.debug(
-              'アップロード情報: パス=$path, ファイルサイズ=${await imageFile.length()} bytes');
-          iconUrl = await _storageService.uploadFile(
-            path: path,
-            file: imageFile,
-            metadata: metadata,
-          );
-          AppLogger.debug('画像のアップロードが完了しました: $iconUrl');
+          AppLogger.debug('StorageServiceのアップロードメソッドを呼び出します');
+          try {
+            iconUrl = await _storageService.uploadFile(
+              path: path,
+              file: imageFile,
+              metadata: metadata,
+            );
+            AppLogger.debug('画像のアップロードが完了しました: $iconUrl');
+          } catch (uploadError) {
+            AppLogger.error('StorageService.uploadFile内部エラー: $uploadError');
+            if (uploadError is FirebaseException) {
+              AppLogger.error('Firebase エラーコード: ${uploadError.code}');
+              AppLogger.error('Firebase エラーメッセージ: ${uploadError.message}');
+            }
+            rethrow;
+          }
         } catch (e) {
           AppLogger.error('画像アップロードエラー: $e');
+          AppLogger.error('エラースタックトレース: ${StackTrace.current}');
           throw Exception('画像のアップロードに失敗しました: $e');
         }
       }

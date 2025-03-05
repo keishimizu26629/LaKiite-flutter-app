@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'config/app_config.dart';
 import 'infrastructure/go_router_refresh_notifier.dart';
 import 'infrastructure/admob_service.dart';
 import 'presentation/theme/app_theme.dart';
@@ -14,24 +15,43 @@ import 'presentation/settings/edit_name_page.dart';
 import 'presentation/settings/edit_email_page.dart';
 import 'presentation/settings/edit_search_id_page.dart';
 import 'presentation/presentation_provider.dart';
+import 'presentation/splash/splash_screen.dart';
 import 'application/auth/auth_state.dart';
 
 /// アプリケーションのエントリーポイント
+Future<void> main() async {
+  // 環境変数からFlavorを取得
+  const flavorString = String.fromEnvironment('FLAVOR');
+  const environment = flavorString == 'production'
+      ? Environment.production
+      : Environment.development;
+
+  await startApp(environment);
+}
+
+/// アプリケーションの起動処理
 ///
-/// 初期化処理:
-/// - Flutterウィジェットバインディングの初期化
-/// - Firebaseの初期化
-/// - アプリケーションの起動
-Future<void> main(
-    [List<String>? args, List<Override> overrides = const []]) async {
+/// [environment] 起動する環境
+Future<void> startApp(
+    [Environment environment = Environment.development,
+    List<Override> overrides = const []]) async {
   // Flutterウィジェットバインディングの初期化
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 環境設定の初期化
+  AppConfig.initialize(environment);
+
   // 日本語ロケールの初期化
   await initializeDateFormatting('ja_JP', null);
+
   // Firebaseの初期化
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: AppConfig.instance.firebaseOptions,
+  );
+
   // AdMobの初期化
   await AdMobService.initialize();
+
   // アプリケーションの起動
   runApp(
     ProviderScope(
@@ -53,18 +73,20 @@ Future<void> main(
 /// 戻り値:
 /// - [GoRouter] 設定されたルーターインスタンス
 final routerProvider = Provider<GoRouter>((ref) {
-  // 認証状態の監視
-  final authState = ref.watch(authNotifierProvider);
-
-  // 認証状態の変更を監視するリフレッシュ通知
   final refreshNotifier = ref.watch(goRouterRefreshProvider);
+  final authState = ref.watch(authNotifierProvider);
 
   return GoRouter(
     refreshListenable: refreshNotifier,
+    initialLocation: '/splash',
     redirect: (context, state) {
+      // スプラッシュ画面の場合はリダイレクトしない
+      if (state.location == '/splash') {
+        return null;
+      }
+
       return authState.when(
         data: (authState) {
-          // 現在の認証状態とナビゲーション状態を確認
           final isLoggedIn = authState.status == AuthStatus.authenticated;
           final isLoggingIn = state.location == '/login';
           final isSigningUp = state.location == '/signup';
@@ -85,8 +107,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         error: (_, __) => '/login',
       );
     },
-    // アプリケーションのルート定義
     routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: '/',
         builder: (context, state) => const BottomNavigationPage(),
@@ -143,6 +168,8 @@ class MyApp extends ConsumerWidget {
       title: 'LaKiite',
       theme: AppTheme.theme,
       routerConfig: router,
+      // 環境名をデバッグモードで表示
+      debugShowCheckedModeBanner: AppConfig.instance.isDevelopment,
     );
   }
 }

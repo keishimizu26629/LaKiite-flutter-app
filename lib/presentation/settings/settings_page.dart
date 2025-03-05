@@ -63,6 +63,9 @@ class SettingsPage extends ConsumerWidget {
               if (confirmed == true && context.mounted) {
                 try {
                   await ref.read(authNotifierProvider.notifier).signOut();
+                  if (context.mounted) {
+                    context.go('/login');
+                  }
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
