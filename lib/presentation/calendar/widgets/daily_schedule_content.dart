@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/application/notification/notification_notifier.dart';
+import 'package:lakiite/utils/logger.dart';
 
 class DailyScheduleContent extends HookConsumerWidget {
   const DailyScheduleContent({
@@ -64,6 +65,11 @@ class DailyScheduleContent extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 日付情報をログ出力
+    AppLogger.debug(
+        'DailyScheduleContent - 表示日付: ${date.year}年${date.month}月${date.day}日');
+    AppLogger.debug('DailyScheduleContent - スケジュール数: ${schedules.length}');
+
     final currentUserId = ref.watch(currentUserIdProvider);
     final sortedSchedules = List<Schedule>.from(schedules)
       ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
@@ -114,11 +120,12 @@ class DailyScheduleContent extends HookConsumerWidget {
                       ),
                     ),
                   // 現在時刻の線
-                  if (date.year == DateTime.now().toLocal().year &&
-                      date.month == DateTime.now().toLocal().month &&
-                      date.day == DateTime.now().toLocal().day)
+                  if (date.year == DateTime.now().toUtc().toLocal().year &&
+                      date.month == DateTime.now().toUtc().toLocal().month &&
+                      date.day == DateTime.now().toUtc().toLocal().day)
                     Positioned(
-                      top: _calculateTimePosition(DateTime.now().toLocal()),
+                      top: _calculateTimePosition(
+                          DateTime.now().toUtc().toLocal()),
                       left: 0,
                       right: 0,
                       child: Container(
