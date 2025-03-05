@@ -54,7 +54,6 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: 画像のアップロード処理
       String? newIconUrl = widget.list.iconUrl;
       if (_selectedImage != null) {
         // 画像のアップロード処理を実装

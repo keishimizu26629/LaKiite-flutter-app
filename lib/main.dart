@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'config/app_config.dart';
 import 'infrastructure/go_router_refresh_notifier.dart';
 import 'infrastructure/admob_service.dart';
 import 'presentation/theme/app_theme.dart';
@@ -18,21 +19,39 @@ import 'presentation/splash/splash_screen.dart';
 import 'application/auth/auth_state.dart';
 
 /// アプリケーションのエントリーポイント
+Future<void> main() async {
+  // 環境変数からFlavorを取得
+  const flavorString = String.fromEnvironment('FLAVOR');
+  const environment = flavorString == 'production'
+      ? Environment.production
+      : Environment.development;
+
+  await startApp(environment);
+}
+
+/// アプリケーションの起動処理
 ///
-/// 初期化処理:
-/// - Flutterウィジェットバインディングの初期化
-/// - Firebaseの初期化
-/// - アプリケーションの起動
-Future<void> main(
-    [List<String>? args, List<Override> overrides = const []]) async {
+/// [environment] 起動する環境
+Future<void> startApp(
+    [Environment environment = Environment.development,
+    List<Override> overrides = const []]) async {
   // Flutterウィジェットバインディングの初期化
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 環境設定の初期化
+  AppConfig.initialize(environment);
+
   // 日本語ロケールの初期化
   await initializeDateFormatting('ja_JP', null);
+
   // Firebaseの初期化
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: AppConfig.instance.firebaseOptions,
+  );
+
   // AdMobの初期化
   await AdMobService.initialize();
+
   // アプリケーションの起動
   runApp(
     ProviderScope(
@@ -149,6 +168,8 @@ class MyApp extends ConsumerWidget {
       title: 'LaKiite',
       theme: AppTheme.theme,
       routerConfig: router,
+      // 環境名をデバッグモードで表示
+      debugShowCheckedModeBanner: AppConfig.instance.isDevelopment,
     );
   }
 }
