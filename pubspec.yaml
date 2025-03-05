@@ -90,6 +90,10 @@ flutter:
     - assets/data/
     - assets/
 
+# JSON Serializable設定
+json_serializable:
+  explicit_to_json: true
+
 # Dependency Resolution
 dependency_overrides:
   watcher: ^1.1.0
