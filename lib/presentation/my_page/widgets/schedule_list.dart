@@ -9,7 +9,7 @@ import '../../presentation_provider.dart';
 /// [userId] ユーザーID
 ///
 /// 予定がない場合は「予定がありません」というメッセージを表示します。
-/// 予定がある場合は、日付でソートされたリストを表示します。
+/// 予定がある場合は、本日以降の日付でソートされたリストを表示します。
 class ScheduleList extends ConsumerWidget {
   final String userId;
 
@@ -24,9 +24,15 @@ class ScheduleList extends ConsumerWidget {
 
     return schedulesAsync.when(
       data: (schedules) {
-        // 自分の予定のみをフィルタリング
-        final mySchedules =
-            schedules.where((s) => s.ownerId == userId).toList();
+        // 本日以降のスケジュールをフィルタリング
+        final today = DateTime.now().toUtc().toLocal();
+        final todayStart = DateTime(today.year, today.month, today.day);
+
+        // 自分の予定のみをフィルタリングし、さらに本日以降のものだけに絞る
+        final mySchedules = schedules
+            .where(
+                (s) => s.ownerId == userId && s.endDateTime.isAfter(todayStart))
+            .toList();
 
         if (mySchedules.isEmpty) {
           return Center(
