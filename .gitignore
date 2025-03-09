@@ -30,6 +30,7 @@
 .pub-cache/
 .pub/
 /build/
+build/ios/XCBuildData/
 
 # Web related
 lib/generated_plugin_registrant.dart
@@ -55,3 +56,6 @@ app.*.map.json
 .ai/
 
 ios/Runner/GoogleService-Info.plist
+
+# Nested project directory
+/lakiite-flutter-app/

@@ -50,10 +50,10 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "com.example.tarakite"
+        applicationId "com.inoworl.lakiite"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion flutter.minSdkVersion
+        minSdkVersion 21
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
@@ -64,11 +64,12 @@ android {
     productFlavors {
         dev {
             dimension "environment"
-            applicationIdSuffix ".dev"
+            applicationId "com.example.tarakite"
             versionNameSuffix "-dev"
         }
         prod {
             dimension "environment"
+            applicationId "com.inoworl.lakiite"
         }
     }
 
