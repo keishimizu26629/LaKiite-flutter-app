@@ -14,6 +14,7 @@ import 'presentation/settings/settings_page.dart';
 import 'presentation/settings/edit_name_page.dart';
 import 'presentation/settings/edit_email_page.dart';
 import 'presentation/settings/edit_search_id_page.dart';
+import 'presentation/settings/legal_info_page_alternative.dart';
 import 'presentation/presentation_provider.dart';
 import 'presentation/splash/splash_screen.dart';
 import 'application/auth/auth_state.dart';
@@ -139,6 +140,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'search-id',
             builder: (context, state) => const EditSearchIdPage(),
+          ),
+          GoRoute(
+            path: 'privacy-policy',
+            builder: (context, state) => const LegalInfoPageAlternative(
+              title: 'プライバシーポリシー',
+              urlPath: 'privacy-policy.html',
+            ),
+          ),
+          GoRoute(
+            path: 'terms-of-service',
+            builder: (context, state) => const LegalInfoPageAlternative(
+              title: '利用規約',
+              urlPath: 'terms-of-service.html',
+            ),
           ),
         ],
       ),
