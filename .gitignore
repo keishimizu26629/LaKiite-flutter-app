@@ -35,6 +35,11 @@ build/ios/XCBuildData/
 # Web related
 lib/generated_plugin_registrant.dart
 
+# Firebase related
+/lib/firebase_options.dart
+/lib/firebase_options_dev.dart
+/lib/firebase_options_prod.dart
+
 # Symbolication related
 app.*.symbols
 
@@ -47,8 +52,6 @@ app.*.map.json
 /android/app/release
 
 .vscode/settings.json
-
-/lib/firebase_options.dart
 
 # FVM Version Cache
 .fvm/
