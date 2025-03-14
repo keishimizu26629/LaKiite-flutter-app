@@ -31,7 +31,7 @@ apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
-    namespace "com.example.tarakite"
+    namespace "com.inoworl.lakiite"
     compileSdkVersion flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
@@ -64,7 +64,7 @@ android {
     productFlavors {
         dev {
             dimension "environment"
-            applicationId "com.example.tarakite"
+            applicationId "com.inoworl.lakiite"
             versionNameSuffix "-dev"
         }
         prod {

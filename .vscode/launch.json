@@ -8,6 +8,7 @@
         "flutterMode": "debug",
         "program": "lib/main.dart",
         "args": [
+          "--flavor", "dev",
           "--dart-define-from-file=dart_define/dev_dart_define.json"
         ]
       },
@@ -18,6 +19,7 @@
         "flutterMode": "debug",
         "program": "lib/main.dart",
         "args": [
+          "--flavor", "prod",
           "--dart-define-from-file=dart_define/prod_dart_define.json"
         ]
       },
@@ -28,6 +30,7 @@
         "flutterMode": "profile",
         "program": "lib/main.dart",
         "args": [
+          "--flavor", "dev",
           "--dart-define-from-file=dart_define/dev_dart_define.json"
         ]
       },
@@ -38,6 +41,7 @@
         "flutterMode": "release",
         "program": "lib/main.dart",
         "args": [
+          "--flavor", "prod",
           "--dart-define-from-file=dart_define/prod_dart_define.json"
         ]
       }
