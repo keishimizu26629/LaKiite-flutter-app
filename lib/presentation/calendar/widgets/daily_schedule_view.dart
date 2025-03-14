@@ -86,9 +86,11 @@ class DailyScheduleView extends HookConsumerWidget {
 
     // 日付が変更されたときにProviderを更新
     useEffect(() {
-      ref.read(selectedDateProvider.notifier).state = currentDate.value;
-      AppLogger.debug(
-          'DailyScheduleView - selectedDateProviderを更新: ${currentDate.value.year}年${currentDate.value.month}月${currentDate.value.day}日');
+      Future.microtask(() {
+        ref.read(selectedDateProvider.notifier).state = currentDate.value;
+        AppLogger.debug(
+            'DailyScheduleView - selectedDateProviderを更新: ${currentDate.value.year}年${currentDate.value.month}月${currentDate.value.day}日');
+      });
       return null;
     }, [currentDate.value]);
 
