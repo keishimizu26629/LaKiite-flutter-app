@@ -54,7 +54,6 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: 画像のアップロード処理
       String? newIconUrl = widget.list.iconUrl;
       if (_selectedImage != null) {
         // 画像のアップロード処理を実装
@@ -217,31 +216,23 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
                                           ? const TextStyle(color: Colors.grey)
                                           : null,
                                     ),
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '@${member.searchId}',
-                                          style: isExcluded
-                                              ? const TextStyle(
-                                                  color: Colors.grey)
-                                              : null,
-                                        ),
-                                        if (member.shortBio != null &&
-                                            member.shortBio!.isNotEmpty)
-                                          Text(
+                                    subtitle: member.shortBio != null &&
+                                            member.shortBio!.isNotEmpty
+                                        ? Text(
                                             member.shortBio!,
                                             style: isExcluded
-                                                ? theme.textTheme.bodySmall
-                                                    ?.copyWith(
-                                                        color: Colors.grey)
-                                                : theme.textTheme.bodySmall,
-                                            maxLines: 2,
+                                                ? TextStyle(
+                                                    color: Colors.grey[600],
+                                                    fontSize: 14,
+                                                  )
+                                                : TextStyle(
+                                                    color: Colors.grey[600],
+                                                    fontSize: 14,
+                                                  ),
+                                            maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                          ),
-                                      ],
-                                    ),
+                                          )
+                                        : null,
                                     trailing: Checkbox(
                                       value: isExcluded,
                                       onChanged: (value) {

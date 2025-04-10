@@ -5,6 +5,7 @@ import 'package:lakiite/main.dart' as app;
 import 'package:lakiite/application/auth/auth_notifier.dart';
 import 'firebase_test_utils.dart';
 import 'mock_auth_repository.dart';
+import 'package:lakiite/config/app_config.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +26,7 @@ void main() {
       ];
 
       // アプリの起動（テスト用のオーバーライドを適用）
-      await app.main(null, overrides);
+      await app.startApp(Environment.development, overrides);
       await tester.pumpAndSettle();
 
       // スプラッシュ画面の待機（必要に応じて時間を調整）

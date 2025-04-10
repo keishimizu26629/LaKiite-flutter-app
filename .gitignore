@@ -30,9 +30,15 @@
 .pub-cache/
 .pub/
 /build/
+build/ios/XCBuildData/
 
 # Web related
 lib/generated_plugin_registrant.dart
+
+# Firebase related
+/lib/firebase_options.dart
+/lib/firebase_options_dev.dart
+/lib/firebase_options_prod.dart
 
 # Symbolication related
 app.*.symbols
@@ -47,11 +53,12 @@ app.*.map.json
 
 .vscode/settings.json
 
-/lib/firebase_options.dart
-
 # FVM Version Cache
 .fvm/
 
 .ai/
 
 ios/Runner/GoogleService-Info.plist
+
+# Nested project directory
+/lakiite-flutter-app/
