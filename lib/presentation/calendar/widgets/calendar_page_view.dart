@@ -11,7 +11,50 @@ import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 
 // 現在表示中のカレンダーページインデックスを保持するプロバイダー
-final calendarCurrentIndexProvider = StateProvider<int>((ref) => 1200);
+// StateProviderからProviderに変更して、タブ切り替え時にも値が保持されるようにする
+final calendarCurrentIndexProvider =
+    AutoDisposeStateNotifierProvider<CalendarIndexNotifier, int>(
+        (ref) => CalendarIndexNotifier());
+
+// カレンダーインデックスを管理するStateNotifier
+class CalendarIndexNotifier extends StateNotifier<int> {
+  CalendarIndexNotifier() : super(1200);
+
+  void update(int index) {
+    state = index;
+  }
+
+  void reset() {
+    state = 1200;
+  }
+}
+
+// PageControllerをキャッシュするプロバイダー
+// タブ切り替え時に再作成されないように、cacheProviderを使用
+final calendarPageControllerProvider = Provider<PageController>((ref) {
+  // 現在のインデックスを取得
+  final currentIndex = ref.watch(calendarCurrentIndexProvider);
+
+  // PageControllerを作成
+  final controller = PageController(initialPage: currentIndex);
+
+  AppLogger.debug('PageController作成: initialPage=$currentIndex');
+
+  // 現在の日時情報をログ出力
+  final now = DateTime.now().toUtc().toLocal();
+  AppLogger.debug('現在の日時: ${now.year}年${now.month}月${now.day}日');
+
+  // インデックスの情報をログ出力
+  AppLogger.debug('PageController初期化時のインデックス: $currentIndex (標準値は1200)');
+
+  // PageControllerが破棄されるときの処理
+  ref.onDispose(() {
+    AppLogger.debug('PageController破棄');
+    controller.dispose();
+  });
+
+  return controller;
+});
 
 final holidaysProvider = FutureProvider<Map<String, String>>((ref) async {
   final String jsonString =
@@ -27,11 +70,19 @@ class CalendarPageView extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scheduleState = ref.watch(scheduleNotifierProvider);
     // 保存されたインデックスを使用
-    final currentIndex = ref.watch(calendarCurrentIndexProvider.notifier);
-    final visibleMonth =
-        _getMonthName(_getVisibleDateTime(currentIndex.state).month);
-    final visibleYear = _getVisibleDateTime(currentIndex.state).year.toString();
-    final authState = ref.watch(authNotifierProvider);
+    ref.watch(calendarCurrentIndexProvider.notifier);
+    final currentIndexValue = ref.watch(calendarCurrentIndexProvider);
+
+    // デバッグログを追加
+    AppLogger.debug('CalendarPageView.build - 現在のインデックス: $currentIndexValue');
+
+    final visibleDateTime = _getVisibleDateTime(currentIndexValue);
+    AppLogger.debug(
+        'CalendarPageView.build - 表示日付: ${visibleDateTime.year}年${visibleDateTime.month}月');
+
+    final visibleMonth = _getMonthName(visibleDateTime.month);
+    final visibleYear = visibleDateTime.year.toString();
+    ref.watch(authNotifierProvider);
     final currentUserId = ref.watch(currentUserIdProvider);
 
     // 前回のスケジュールデータを保持
@@ -50,21 +101,34 @@ class CalendarPageView extends HookConsumerWidget {
       return null;
     }, [scheduleState]);
 
-    // PageControllerを作成し、保存されたインデックスを初期ページとして使用
-    final pageController =
-        useMemoized(() => PageController(initialPage: currentIndex.state), []);
+    // キャッシュされたPageControllerを使用
+    final pageController = ref.watch(calendarPageControllerProvider);
+    AppLogger.debug(
+        'CalendarPageView.build - PageController: ${pageController.initialPage}');
 
-    // コントローラーの破棄を適切に行う
+    // PageControllerの位置を確認し、必要に応じて修正
     useEffect(() {
-      return () {
-        pageController.dispose();
-      };
-    }, [pageController]);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (pageController.hasClients) {
+          final currentPage = pageController.page?.round() ?? -1;
+          AppLogger.debug(
+              'CalendarPageView.build - 現在のページ: $currentPage (期待値: $currentIndexValue)');
+
+          // ページが期待値と異なる場合は修正
+          if (currentPage != currentIndexValue && currentPage != -1) {
+            AppLogger.debug(
+                'CalendarPageView.build - ページを修正します: $currentPage → $currentIndexValue');
+            pageController.jumpToPage(currentIndexValue);
+          }
+        }
+      });
+      return null;
+    }, []);
 
     // 初期表示時に現在の月のデータを取得
     useEffect(() {
       if (currentUserId != null) {
-        final visibleDate = _getVisibleDateTime(currentIndex.state);
+        final visibleDate = _getVisibleDateTime(currentIndexValue);
         AppLogger.debug('初期表示時の月: ${visibleDate.year}-${visibleDate.month}');
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ref
@@ -148,17 +212,23 @@ class CalendarPageView extends HookConsumerWidget {
               },
               onPageChanged: (index) {
                 // インデックスを状態プロバイダーに保存
-                currentIndex.state = index;
-                AppLogger.debug('ページ変更: インデックス=$index');
+                if (index >= 0 && index <= 2400) {
+                  ref.read(calendarCurrentIndexProvider.notifier).update(index);
+                  AppLogger.debug('ページ変更: インデックス=$index');
 
-                // ページ変更時に表示月に基づいてデータを取得
-                if (currentUserId != null) {
-                  final visibleDate = _getVisibleDateTime(index);
-                  AppLogger.debug(
-                      '表示月変更: ${visibleDate.year}-${visibleDate.month}');
-                  ref
-                      .read(scheduleNotifierProvider.notifier)
-                      .watchUserSchedulesForMonth(currentUserId, visibleDate);
+                  // ページ変更時に表示月に基づいてデータを取得
+                  if (currentUserId != null) {
+                    final visibleDate = _getVisibleDateTime(index);
+                    AppLogger.debug(
+                        '表示月変更: ${visibleDate.year}-${visibleDate.month}');
+                    ref
+                        .read(scheduleNotifierProvider.notifier)
+                        .watchUserSchedulesForMonth(currentUserId, visibleDate);
+                  }
+                } else {
+                  // 異常なインデックスの場合はリセット
+                  AppLogger.debug('異常なインデックス検出: $index, リセットします');
+                  ref.read(calendarCurrentIndexProvider.notifier).reset();
                 }
               },
             ),
@@ -187,57 +257,54 @@ class CalendarPageView extends HookConsumerWidget {
   }
 
   DateTime _getVisibleDateTime(int index) {
+    // 現在の日時を取得（基準日時）
+    final now = DateTime.now().toUtc().toLocal();
+    AppLogger.debug(
+        '_getVisibleDateTime - 基準日時: ${now.year}年${now.month}月${now.day}日');
+
+    // インデックスの妥当性チェック - より厳格に
+    if (index < 1000 || index > 1400) {
+      AppLogger.debug('異常なインデックス検出: $index, デフォルト値(1200)に修正します');
+      // 異常値の場合は現在の月を返す
+      return DateTime(now.year, now.month);
+    }
+
     final monthDif = index - 1200;
-    final visibleYear = _getVisibleYear(monthDif);
-    final visibleMonth = _getVisibleMonth(monthDif);
-    AppLogger.debug(
-        '_getVisibleDateTime: index=$index, monthDif=$monthDif, year=$visibleYear, month=$visibleMonth');
-    return DateTime(visibleYear, visibleMonth);
-  }
+    AppLogger.debug('_getVisibleDateTime - インデックス: $index, 月差分: $monthDif');
 
-  int _getVisibleYear(int monthDif) {
-    final now = DateTime.now();
-    final currentMonth = now.month;
-    final currentYear = now.year;
+    // 新しい計算方法 - より単純で確実
+    // 基準日時の年月を取得
+    final baseYear = now.year;
+    final baseMonth = now.month;
 
-    // 現在の月に差分を加える
-    final targetMonthValue = currentMonth + monthDif;
+    // 基準日時からの月数の差分を計算
+    final totalMonths = baseYear * 12 + baseMonth + monthDif;
 
-    // 年の調整を計算
-    int yearAdjustment;
-    if (targetMonthValue > 0) {
-      // 正の値の場合は単純に12で割った商
-      yearAdjustment = (targetMonthValue - 1) ~/ 12;
-    } else {
-      // 負の値の場合は、-1ヶ月が前年の12月になるように調整
-      yearAdjustment = (targetMonthValue - 12) ~/ 12;
+    // 年と月を計算
+    final targetYear = totalMonths ~/ 12;
+    final targetMonth = totalMonths % 12;
+
+    // 月が0になる場合は前年の12月を意味する
+    final adjustedMonth = targetMonth == 0 ? 12 : targetMonth;
+    final adjustedYear = targetMonth == 0 ? targetYear - 1 : targetYear;
+
+    AppLogger.debug('_getVisibleDateTime - 新計算方法:');
+    AppLogger.debug('  基準: ${baseYear}年${baseMonth}月');
+    AppLogger.debug('  総月数: $totalMonths');
+    AppLogger.debug('  計算結果: ${adjustedYear}年${adjustedMonth}月');
+
+    // 極端な年をチェック - より厳格に
+    if (adjustedYear < now.year - 10 || adjustedYear > now.year + 10) {
+      AppLogger.debug('異常な年を検出: $adjustedYear, デフォルト値に修正します');
+      // 異常値の場合は現在の月を返す
+      return DateTime(now.year, now.month);
     }
 
-    final result = currentYear + yearAdjustment;
+    // 詳細なデバッグ情報
+    final result = DateTime(adjustedYear, adjustedMonth);
     AppLogger.debug(
-        '_getVisibleYear: monthDif=$monthDif, targetMonthValue=$targetMonthValue, yearAdjustment=$yearAdjustment, result=$result');
-    return result;
-  }
+        '計算された表示日付: ${result.year}年${result.month}月 (インデックス=$index)');
 
-  int _getVisibleMonth(int monthDif) {
-    final now = DateTime.now();
-    final initialMonth = now.month;
-    final targetMonthValue = initialMonth + monthDif;
-
-    // 1〜12の範囲に変換
-    int result;
-    if (targetMonthValue > 0) {
-      result = ((targetMonthValue - 1) % 12) + 1;
-    } else {
-      // 負の値の場合、-1→12月、-2→11月...となるように調整
-      result = 12 - ((-targetMonthValue) % 12);
-      if (result == 12 && targetMonthValue % 12 != 0) {
-        result = 12;
-      }
-    }
-
-    AppLogger.debug(
-        '_getVisibleMonth: monthDif=$monthDif, targetMonthValue=$targetMonthValue, result=$result');
     return result;
   }
 }
@@ -422,10 +489,20 @@ class DateCell extends StatelessWidget {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: () {
+                    // 日付セルがタップされたときの処理
+                    AppLogger.debug(
+                        'DateCell - タップされた日付: ${date.year}年${date.month}月${date.day}日');
+
+                    // 選択された日付をProviderに保存（先に保存）
+                    ref.read(selectedDateProvider.notifier).state = date;
+                    AppLogger.debug(
+                        'DateCell - selectedDateProviderに保存した日付: ${date.year}年${date.month}月${date.day}日');
+
+                    // DailyScheduleViewに遷移（initialDateを明示的に指定）
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => DailyScheduleView(
-                          initialDate: date,
+                          initialDate: date, // 明示的に日付を渡す
                           schedules: schedules,
                         ),
                       ),
@@ -539,10 +616,16 @@ class DateCell extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 onTap: () {
+                  // 選択された日付をProviderに保存（先に保存）
+                  ref.read(selectedDateProvider.notifier).state = date;
+                  AppLogger.debug(
+                      'DateCell(error) - selectedDateProviderに保存した日付: ${date.year}年${date.month}月${date.day}日');
+
+                  // DailyScheduleViewに遷移（initialDateを明示的に指定）
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => DailyScheduleView(
-                        initialDate: date,
+                        initialDate: date, // 明示的に日付を渡す
                         schedules: schedules,
                       ),
                     ),
@@ -656,7 +739,7 @@ class DateCell extends StatelessWidget {
   }
 
   bool _isToday(DateTime date) {
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc().toLocal();
     return date.year == now.year &&
         date.month == now.month &&
         date.day == now.day;

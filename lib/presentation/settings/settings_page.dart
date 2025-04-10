@@ -38,6 +38,24 @@ class SettingsPage extends ConsumerWidget {
               context.push('/settings/search-id');
             },
           ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_outlined),
+            title: const Text('プライバシーポリシー'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              context.push('/settings/privacy-policy');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.description_outlined),
+            title: const Text('利用規約'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              context.push('/settings/terms-of-service');
+            },
+          ),
+          const Divider(),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('ログアウト'),
@@ -63,6 +81,9 @@ class SettingsPage extends ConsumerWidget {
               if (confirmed == true && context.mounted) {
                 try {
                   await ref.read(authNotifierProvider.notifier).signOut();
+                  if (context.mounted) {
+                    context.go('/login');
+                  }
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(

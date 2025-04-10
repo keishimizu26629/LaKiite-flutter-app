@@ -15,10 +15,10 @@ class BottomNavigationPage extends ConsumerStatefulWidget {
 class _BottomNavigationPageState extends ConsumerState<BottomNavigationPage> {
   int _selectedIndex = 0;
 
-  static final List<Widget> _pages = [
-    const HomePage(),
-    const FriendListPage(),
-    const MyPage(),
+  final List<Widget> _pages = [
+    const HomePage(key: PageStorageKey('home_page')),
+    const FriendListPage(key: PageStorageKey('friend_list_page')),
+    const MyPage(key: PageStorageKey('my_page')),
   ];
 
   void _onItemTapped(int index) {
@@ -30,7 +30,10 @@ class _BottomNavigationPageState extends ConsumerState<BottomNavigationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [

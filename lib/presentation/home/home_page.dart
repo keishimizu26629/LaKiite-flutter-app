@@ -5,9 +5,10 @@ import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
 import 'package:lakiite/presentation/calendar/widgets/calendar_page_view.dart';
-import 'package:lakiite/presentation/widgets/ad_banner_widget.dart';
+import 'package:lakiite/presentation/widgets/banner_ad_widget.dart';
 import 'package:lakiite/presentation/widgets/notification_button.dart';
 import 'package:lakiite/presentation/widgets/schedule_tile.dart';
+import 'package:lakiite/utils/logger.dart';
 
 class HomePage extends HookConsumerWidget {
   const HomePage({super.key});
@@ -28,7 +29,94 @@ class HomePage extends HookConsumerWidget {
     useEffect(() {
       if (tabController != null) {
         void listener() {
-          currentTabIndex.value = tabController.index;
+          // タブが切り替わった時の処理
+          if (currentTabIndex.value != tabController.index) {
+            // タイムラインからカレンダータブに戻る場合
+            if (tabController.index == 0 && currentTabIndex.value == 1) {
+              // カレンダーのインデックスをリセット
+              ref.read(calendarCurrentIndexProvider.notifier).reset();
+
+              // 選択日付を今日の日付にリセット
+              final today = DateTime.now();
+              ref.read(selectedDateProvider.notifier).state = today;
+              AppLogger.debug(
+                  'タブ切り替え: selectedDateProviderを今日の日付にリセットしました: ${today.year}年${today.month}月${today.day}日');
+
+              // PageControllerの位置も1200にリセット
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                try {
+                  final pageController =
+                      ref.read(calendarPageControllerProvider);
+                  if (pageController.hasClients) {
+                    pageController.jumpToPage(1200);
+                    AppLogger.debug('タブ切り替え: PageControllerの位置を1200にリセットしました');
+                  } else {
+                    AppLogger.debug('タブ切り替え: PageControllerにクライアントがありません');
+                  }
+                } catch (e) {
+                  AppLogger.error(
+                      'タブ切り替え: PageControllerのリセット中にエラーが発生しました: $e');
+                }
+              });
+              AppLogger.debug('タブ切り替え: カレンダーインデックスをリセットしました');
+
+              // PageControllerの位置も1200にリセット
+              // 複数回のフレーム更新後に実行して、ウィジェットが完全に構築されるのを待つ
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                // 最初のフレーム後に実行
+                AppLogger.debug('タブ切り替え: 最初のフレーム後');
+
+                // さらに遅延を追加して、ウィジェットが完全に構築されるのを待つ
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  try {
+                    final pageController =
+                        ref.read(calendarPageControllerProvider);
+                    if (pageController.hasClients) {
+                      // jumpToPageではなくanimateToPageを使用して、より確実に移動
+                      pageController.jumpToPage(1200);
+                      AppLogger.debug(
+                          'タブ切り替え: PageControllerの位置を1200にリセットしました');
+
+                      // 追加の検証
+                      Future.delayed(const Duration(milliseconds: 50), () {
+                        if (pageController.hasClients) {
+                          final currentPage =
+                              pageController.page?.round() ?? -1;
+                          AppLogger.debug(
+                              'タブ切り替え: 現在のページ = $currentPage (期待値: 1200)');
+                        }
+                      });
+                    } else {
+                      AppLogger.debug('タブ切り替え: PageControllerにクライアントがありません');
+
+                      // クライアントがない場合は、さらに遅延を追加して再試行
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        try {
+                          final retryController =
+                              ref.read(calendarPageControllerProvider);
+                          if (retryController.hasClients) {
+                            retryController.jumpToPage(1200);
+                            AppLogger.debug(
+                                'タブ切り替え: 再試行 - PageControllerの位置を1200にリセットしました');
+                          } else {
+                            AppLogger.debug(
+                                'タブ切り替え: 再試行 - PageControllerにクライアントがありません');
+                          }
+                        } catch (e) {
+                          AppLogger.error('タブ切り替え: 再試行中にエラーが発生しました: $e');
+                        }
+                      });
+                    }
+                  } catch (e) {
+                    AppLogger.error(
+                        'タブ切り替え: PageControllerのリセット中にエラーが発生しました: $e');
+                  }
+                });
+              });
+              AppLogger.debug('タブ切り替え: カレンダーインデックスをリセットしました');
+            }
+            currentTabIndex.value = tabController.index;
+          }
         }
 
         tabController.addListener(listener);
@@ -146,7 +234,8 @@ class HomePage extends HookConsumerWidget {
                                 data: (scheduleState) => scheduleState.maybeMap(
                                   loaded: (loaded) {
                                     // 本日以降のスケジュールをフィルタリング
-                                    final today = DateTime.now();
+                                    final today =
+                                        DateTime.now().toUtc().toLocal();
                                     final todayStart = DateTime(
                                         today.year, today.month, today.day);
 
@@ -294,7 +383,7 @@ class HomePage extends HookConsumerWidget {
                         ),
                         const SizedBox(
                           height: 50,
-                          child: AdBannerWidget(),
+                          child: BannerAdWidget(uniqueId: 'home_page_ad'),
                         ),
                       ],
                     ),

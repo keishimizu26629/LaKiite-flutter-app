@@ -29,13 +29,35 @@
             {
               "client_id": "472076922540-ecm98ukcmvs1v0othdlq658cdour15fg.apps.googleusercontent.com",
               "client_type": 3
-            },
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:472076922540:android:6a778759d8c9f1cac87909",
+        "android_client_info": {
+          "package_name": "com.inoworl.lakiite"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "472076922540-ecm98ukcmvs1v0othdlq658cdour15fg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwFaBJx7sjU809f4FEECTxj9x2Q3qTeks"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
             {
-              "client_id": "472076922540-2gm8snojea6djj4dn9ensup6e3466m9q.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.tarakite"
-              }
+              "client_id": "472076922540-ecm98ukcmvs1v0othdlq658cdour15fg.apps.googleusercontent.com",
+              "client_type": 3
             }
           ]
         }
