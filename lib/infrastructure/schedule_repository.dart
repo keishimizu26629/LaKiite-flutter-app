@@ -228,20 +228,20 @@ class ScheduleRepository implements IScheduleRepository {
 
   @override
   Stream<List<Schedule>> watchListSchedules(String listId) {
-    // 前月の1日を計算
+    // 6ヶ月前の1日を計算（前月の代わりに6ヶ月前に変更）
     final now = DateTime.now();
-    final previousMonth = DateTime(now.year, now.month - 1, 1);
+    final sixMonthsAgo = DateTime(now.year, now.month - 6, 1);
 
     // 日付形式を正確に整形（必ず2桁になるようにフォーマット）
-    final year = previousMonth.year.toString();
-    final month = previousMonth.month.toString().padLeft(2, '0');
-    final day = previousMonth.day.toString().padLeft(2, '0');
-    final previousMonthIso = "$year-$month-${day}T00:00:00.000";
+    final year = sixMonthsAgo.year.toString();
+    final month = sixMonthsAgo.month.toString().padLeft(2, '0');
+    final day = sixMonthsAgo.day.toString().padLeft(2, '0');
+    final sixMonthsAgoIso = "$year-$month-${day}T00:00:00.000";
 
     return _firestore
         .collection('schedules')
         .where('sharedLists', arrayContains: listId)
-        .where('startDateTime', isGreaterThanOrEqualTo: previousMonthIso)
+        .where('startDateTime', isGreaterThanOrEqualTo: sixMonthsAgoIso)
         .orderBy('startDateTime', descending: false)
         .snapshots()
         .asyncMap((snapshot) async {
@@ -256,20 +256,20 @@ class ScheduleRepository implements IScheduleRepository {
     try {
       await _ensureAuthenticated();
 
-      // 前月の1日を計算
+      // 6ヶ月前の1日を計算（前月の代わりに6ヶ月前に変更）
       final now = DateTime.now();
-      final previousMonth = DateTime(now.year, now.month - 1, 1);
+      final sixMonthsAgo = DateTime(now.year, now.month - 6, 1);
 
       // 日付形式を正確に整形（必ず2桁になるようにフォーマット）
-      final year = previousMonth.year.toString();
-      final month = previousMonth.month.toString().padLeft(2, '0');
-      final day = previousMonth.day.toString().padLeft(2, '0');
-      final previousMonthIso = "$year-$month-${day}T00:00:00.000";
+      final year = sixMonthsAgo.year.toString();
+      final month = sixMonthsAgo.month.toString().padLeft(2, '0');
+      final day = sixMonthsAgo.day.toString().padLeft(2, '0');
+      final sixMonthsAgoIso = "$year-$month-${day}T00:00:00.000";
 
       final stream = _firestore
           .collection('schedules')
           .where('visibleTo', arrayContains: userId)
-          .where('startDateTime', isGreaterThanOrEqualTo: previousMonthIso)
+          .where('startDateTime', isGreaterThanOrEqualTo: sixMonthsAgoIso)
           .orderBy('startDateTime', descending: false)
           .snapshots();
 
@@ -297,23 +297,23 @@ class ScheduleRepository implements IScheduleRepository {
     try {
       await _ensureAuthenticated();
 
-      // 表示月の前月の1日を計算
-      final previousMonth =
-          DateTime(displayMonth.year, displayMonth.month - 1, 1);
+      // 表示月の6ヶ月前の1日を計算（前月の代わりに6ヶ月前に変更）
+      final sixMonthsAgo =
+          DateTime(displayMonth.year, displayMonth.month - 6, 1);
 
       // 日付形式を正確に整形（必ず2桁になるようにフォーマット）
-      final year = previousMonth.year.toString();
-      final month = previousMonth.month.toString().padLeft(2, '0');
-      final day = previousMonth.day.toString().padLeft(2, '0');
-      final previousMonthIso = "$year-$month-${day}T00:00:00.000";
+      final year = sixMonthsAgo.year.toString();
+      final month = sixMonthsAgo.month.toString().padLeft(2, '0');
+      final day = sixMonthsAgo.day.toString().padLeft(2, '0');
+      final sixMonthsAgoIso = "$year-$month-${day}T00:00:00.000";
 
       AppLogger.debug(
-          'Fetching schedules from: $previousMonthIso for display month: ${displayMonth.year}-${displayMonth.month}');
+          'Fetching schedules from: $sixMonthsAgoIso for display month: ${displayMonth.year}-${displayMonth.month}');
 
       final stream = _firestore
           .collection('schedules')
           .where('visibleTo', arrayContains: userId)
-          .where('startDateTime', isGreaterThanOrEqualTo: previousMonthIso)
+          .where('startDateTime', isGreaterThanOrEqualTo: sixMonthsAgoIso)
           .orderBy('startDateTime', descending: false)
           .snapshots();
 
