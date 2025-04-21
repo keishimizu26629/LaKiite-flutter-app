@@ -12,6 +12,7 @@ import 'package:lakiite/presentation/theme/app_theme.dart';
 import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
 import 'package:lakiite/presentation/widgets/default_user_icon.dart';
 import 'package:intl/intl.dart';
+import 'dart:developer' as developer;
 
 /// スケジュールの詳細情報を表示するページ
 ///
@@ -35,6 +36,15 @@ class ScheduleDetailPage extends HookConsumerWidget {
     final interactions = ref.watch(
       scheduleInteractionNotifierProvider(schedule.id),
     );
+
+    // ここでリアクションデータをログ出力
+    developer.log('スケジュールID: ${schedule.id}');
+    developer.log('リアクション数: ${schedule.reactionCount}');
+    developer.log('リアクション一覧: ${interactions.reactions.length}件');
+    for (var reaction in interactions.reactions) {
+      developer.log('リアクション: userId=${reaction.userId}, type=${reaction.type}');
+    }
+
     useFocusNode();
 
     return Scaffold(
@@ -143,33 +153,77 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                     child: Row(
                                       children: [
                                         if (schedule.reactionCount > 0)
-                                          const Row(
+                                          Row(
                                             children: [
                                               SizedBox(
                                                 width: 30,
                                                 height: 30,
-                                                child: Stack(
-                                                  children: [
-                                                    Positioned(
-                                                      right: 2,
-                                                      child: Text(
-                                                        '🤔',
-                                                        style: TextStyle(
-                                                          fontSize: 20,
+                                                child: Builder(
+                                                  builder: (context) {
+                                                    // リアクションの種類を確認
+                                                    final hasGoing =
+                                                        interactions.reactions
+                                                            .any((r) =>
+                                                                r.type ==
+                                                                ReactionType
+                                                                    .going);
+                                                    final hasThinking =
+                                                        interactions
+                                                            .reactions
+                                                            .any((r) =>
+                                                                r.type ==
+                                                                ReactionType
+                                                                    .thinking);
+
+                                                    developer.log(
+                                                        'リアクション表示: hasGoing=$hasGoing, hasThinking=$hasThinking');
+
+                                                    // 両方あるか、種類ごとに表示
+                                                    if (hasGoing &&
+                                                        hasThinking) {
+                                                      return const Stack(
+                                                        children: [
+                                                          Positioned(
+                                                            right: 2,
+                                                            child: Text(
+                                                              '🤔',
+                                                              style: TextStyle(
+                                                                fontSize: 20,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          Positioned(
+                                                            top: -1,
+                                                            left: -2,
+                                                            child: Text(
+                                                              '🙋',
+                                                              style: TextStyle(
+                                                                fontSize: 20,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      );
+                                                    } else if (hasGoing) {
+                                                      return const Center(
+                                                        child: Text(
+                                                          '🙋',
+                                                          style: TextStyle(
+                                                            fontSize: 20,
+                                                          ),
                                                         ),
-                                                      ),
-                                                    ),
-                                                    Positioned(
-                                                      top: -1,
-                                                      left: -2,
-                                                      child: Text(
-                                                        '🙋',
-                                                        style: TextStyle(
-                                                          fontSize: 20,
+                                                      );
+                                                    } else {
+                                                      return const Center(
+                                                        child: Text(
+                                                          '🤔',
+                                                          style: TextStyle(
+                                                            fontSize: 20,
+                                                          ),
                                                         ),
-                                                      ),
-                                                    ),
-                                                  ],
+                                                      );
+                                                    }
+                                                  },
                                                 ),
                                               ),
                                             ],
@@ -436,7 +490,23 @@ class ScheduleDetailPage extends HookConsumerWidget {
     final reactions = await ref
         .read(reactionRepositoryProvider)
         .getReactionsForSchedule(schedule.id);
+
+    // リポジトリから取得したリアクションデータをログ出力
+    developer.log('リポジトリから取得したリアクション: ${reactions.length}件');
+    for (var reaction in reactions) {
+      developer
+          .log('取得したリアクション: userId=${reaction.userId}, type=${reaction.type}');
+    }
+
     if (!context.mounted) return;
+
+    // リアクションが存在しない場合は通知を表示
+    if (reactions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('リアクションがありません')),
+      );
+      return;
+    }
 
     showModalBottomSheet(
       context: context,
@@ -474,7 +544,12 @@ class ScheduleDetailPage extends HookConsumerWidget {
                   return const Center(child: CircularProgressIndicator());
                 }
 
+                if (snapshot.hasError) {
+                  return Center(child: Text('エラー: ${snapshot.error}'));
+                }
+
                 final users = snapshot.data!;
+                developer.log('リアクションユーザー: ${users.length}人');
                 return SizedBox(
                   height: MediaQuery.of(context).size.height * 0.3,
                   child: ListView.builder(
@@ -483,6 +558,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
                     itemBuilder: (context, index) {
                       final user = users[index];
                       final reaction = reactions[index];
+                      developer.log(
+                          '表示するユーザー: ${user.displayName}, リアクション: ${reaction.type}');
                       return ListTile(
                         leading: Stack(
                           children: [
@@ -491,7 +568,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
                               right: 0,
                               bottom: 0,
                               child: Text(
-                                reaction.type == 'going' ? '🙋' : '🤔',
+                                reaction.type == ReactionType.going
+                                    ? '🙋'
+                                    : '🤔',
                                 style: const TextStyle(fontSize: 16),
                               ),
                             ),
