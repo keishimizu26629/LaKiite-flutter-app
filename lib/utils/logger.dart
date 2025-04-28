@@ -1,18 +1,4 @@
-import 'package:logger/logger.dart';
-
 class AppLogger {
-  static final Logger _logger = Logger(
-    printer: PrettyPrinter(
-      methodCount: 0,
-      errorMethodCount: 8,
-      lineLength: 120,
-      colors: true,
-      printEmojis: true,
-      // ignore: deprecated_member_use
-      printTime: true,
-    ),
-  );
-
   // デバッグログを有効にするファイルパスリスト
   static const _enabledPaths = [
     'schedule_form_page.dart',
