@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 enum NotificationType {
   friend,
@@ -139,6 +140,17 @@ class Notification {
   }
 
   factory Notification.fromJson(Map<String, dynamic> json) {
+    // createdAtとupdatedAtのデバッグ出力
+    final createdAtTimestamp = json['createdAt'] as Timestamp;
+    final updatedAtTimestamp = json['updatedAt'] as Timestamp;
+
+    final createdAtDate = createdAtTimestamp.toDate();
+    final updatedAtDate = updatedAtTimestamp.toDate();
+
+    debugPrint(
+        'Notification fromJson - createdAt timestamp: ${createdAtTimestamp.seconds}');
+    debugPrint('Notification fromJson - createdAt date: $createdAtDate');
+
     return Notification(
       id: json['id'] as String,
       type: NotificationType.values.firstWhere(
@@ -153,8 +165,8 @@ class Notification {
             e.name ==
             (json['status'] as String? ?? NotificationStatus.pending.name),
       ),
-      createdAt: (json['createdAt'] as Timestamp).toDate(),
-      updatedAt: (json['updatedAt'] as Timestamp).toDate(),
+      createdAt: createdAtDate,
+      updatedAt: updatedAtDate,
       rejectionCount: json['rejectionCount'] as int? ?? 0,
       isRead: json['isRead'] as bool? ?? false,
       groupId: json['groupId'] as String?,
