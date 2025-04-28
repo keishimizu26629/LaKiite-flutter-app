@@ -1061,11 +1061,24 @@ class DateCell extends ConsumerWidget {
     final isCurrentMonth = date.month == visibleMonth.month;
     final currentUserId = ref.watch(currentUserIdProvider);
 
-    // 祝日データをキャッシュから効率的に取得
-    final cachedHolidays = ref.watch(cachedHolidaysProvider);
+    // 祝日のチェック（コンテキストからProviderScopeを取得）
     final dateString =
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-    final isHoliday = cachedHolidays.containsKey(dateString);
+
+    Map<String, String> cachedHolidays = {};
+    bool isHoliday = false;
+
+    try {
+      // 安全に祝日データを取得
+      if (ProviderScope.containerOf(context).exists(cachedHolidaysProvider)) {
+        cachedHolidays =
+            ProviderScope.containerOf(context).read(cachedHolidaysProvider);
+        isHoliday = cachedHolidays.containsKey(dateString);
+      }
+    } catch (e) {
+      // エラーが発生した場合は祝日ではないとみなす
+      isHoliday = false;
+    }
 
     // キャッシュにない場合は非同期で取得
     if (cachedHolidays.isEmpty) {
