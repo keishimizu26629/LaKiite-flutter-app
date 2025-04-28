@@ -112,36 +112,30 @@ class FirebaseStorageService implements IStorageService {
             AppLogger.debug('FirebaseStorage: アップロード成功 - URL: $downloadUrl');
             return downloadUrl;
           } catch (e) {
-            AppLogger.error('FirebaseStorage: ダウンロードURL取得エラー - $e');
-            throw Exception('ダウンロードURLの取得に失敗しました: $e');
+            AppLogger.error('FirebaseStorage: ダウンロードURL取得エラー', e);
+            throw Exception('ダウンロードURLの取得に失敗しました');
           }
         } else {
           AppLogger.error('FirebaseStorage: 不正な状態 - ${snapshot.state}');
-          throw Exception('アップロードが完了しましたが、状態が不正です: ${snapshot.state}');
+          throw Exception('アップロードが完了しましたが、状態が不正です');
         }
       } catch (e) {
-        AppLogger.error('FirebaseStorage: アップロード処理内部エラー - $e');
+        AppLogger.error('FirebaseStorage: アップロード処理エラー', e,
+            e is FirebaseException ? e.stackTrace : StackTrace.current);
         if (e is FirebaseException) {
-          AppLogger.error('FirebaseStorage: エラーコード - ${e.code}');
-          AppLogger.error('FirebaseStorage: エラーメッセージ - ${e.message}');
-          AppLogger.error('FirebaseStorage: エラー詳細 - ${e.stackTrace}');
+          throw Exception('ファイルのアップロードに失敗しました: ${e.code}');
         }
         rethrow;
       }
     } on FirebaseAuthException catch (e) {
-      AppLogger.error(
-          'FirebaseStorage: 認証エラー - コード: ${e.code}, メッセージ: ${e.message}');
-      AppLogger.error('FirebaseStorage: 認証エラー詳細 - ${e.stackTrace}');
-      throw Exception('認証エラー: ${e.message}');
+      AppLogger.error('FirebaseStorage: 認証エラー', e, e.stackTrace);
+      throw Exception('認証エラー: ${e.code}');
     } on FirebaseException catch (e) {
-      AppLogger.error(
-          'FirebaseStorage: Firebase エラー - コード: ${e.code}, メッセージ: ${e.message}');
-      AppLogger.error('FirebaseStorage: Firebase エラー詳細 - ${e.stackTrace}');
-      throw Exception('ファイルのアップロードに失敗しました: ${e.message}');
+      AppLogger.error('FirebaseStorage: Firebase エラー', e, e.stackTrace);
+      throw Exception('ファイルのアップロードに失敗しました');
     } catch (e) {
-      AppLogger.error('FirebaseStorage: 予期せぬエラー - $e');
-      AppLogger.error('FirebaseStorage: エラースタックトレース - ${StackTrace.current}');
-      throw Exception('ファイルのアップロードに失敗しました: $e');
+      AppLogger.error('FirebaseStorage: 予期せぬエラー', e, StackTrace.current);
+      throw Exception('ファイルのアップロードに失敗しました');
     }
   }
 }
