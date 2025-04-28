@@ -28,6 +28,9 @@ class CalendarIndexNotifier extends StateNotifier<int> {
   }
 }
 
+// 初期表示の最適化フラグ
+bool _isCalendarFirstBuild = true;
+
 // PageControllerをキャッシュするプロバイダー
 final calendarPageControllerProvider = Provider<PageController>((ref) {
   // 現在のインデックスを取得
@@ -116,6 +119,17 @@ class CalendarPageView extends HookConsumerWidget {
 
     // 最適化モードの取得
     final isOptimized = ref.watch(calendarOptimizationProvider);
+
+    // 初期表示時は最適化モードをオフにして通常表示にする
+    if (_isCalendarFirstBuild) {
+      _isCalendarFirstBuild = false;
+      // ビルド完了後に実行
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (ref.exists(calendarOptimizationProvider)) {
+          ref.read(calendarOptimizationProvider.notifier).state = false;
+        }
+      });
+    }
 
     // キャッシュされたPageControllerを使用
     final pageController = ref.watch(calendarPageControllerProvider);
@@ -573,13 +587,53 @@ class CalendarPageView extends HookConsumerWidget {
       final isLoading = ref.read(monthDataLoadingProvider(monthKey));
       final isFirstLoad = lastFetchTime == null;
 
-      // 強制フラグがある、または前回の読み込みから一定時間経過している場合に読み込み
-      if (force ||
-          isFirstLoad ||
-          !isLoading &&
-              (!hasCachedData ||
-                  now.difference(lastFetchTime).inMilliseconds >
-                      _minFetchIntervalMillis)) {
+      // 初期表示時または明示的な強制読み込みの場合は、毎回読み込む
+      if (force || isFirstLoad || _isCalendarFirstBuild) {
+        // 読み込み状態を更新
+        ref.read(monthDataLoadingProvider(monthKey).notifier).state = true;
+        ref.read(lastDataFetchTimeProvider.notifier).state = now;
+
+        try {
+          // APIリクエスト
+          if (ref.exists(scheduleNotifierProvider)) {
+            ref
+                .read(scheduleNotifierProvider.notifier)
+                .watchUserSchedulesForMonth(userId, date);
+
+            // 一定時間後にローディング状態を解除
+            Future.delayed(const Duration(milliseconds: 1000), () {
+              try {
+                if (ref.exists(monthDataLoadingProvider(monthKey))) {
+                  ref.read(monthDataLoadingProvider(monthKey).notifier).state =
+                      false;
+                }
+              } catch (e) {
+                debugPrint('ローディング状態解除エラー: $e');
+              }
+            });
+          }
+        } catch (e) {
+          debugPrint('スケジュールデータ取得エラー: $e');
+          // エラー時も読み込み状態を解除
+          Future.delayed(const Duration(milliseconds: 300), () {
+            try {
+              if (ref.exists(monthDataLoadingProvider(monthKey))) {
+                ref.read(monthDataLoadingProvider(monthKey).notifier).state =
+                    false;
+              }
+            } catch (_) {
+              // 無視
+            }
+          });
+        }
+        return;
+      }
+
+      // 通常時のスロットリング：前回の読み込みから一定時間経過している場合に読み込み
+      if (!isLoading &&
+          (!hasCachedData ||
+              now.difference(lastFetchTime).inMilliseconds >
+                  _minFetchIntervalMillis)) {
         // 読み込み状態を更新
         ref.read(monthDataLoadingProvider(monthKey).notifier).state = true;
         ref.read(lastDataFetchTimeProvider.notifier).state = now;
@@ -1210,7 +1264,7 @@ class OptimizedDateCell extends StatelessWidget {
               MaterialPageRoute(
                 builder: (context) => DailyScheduleView(
                   initialDate: date,
-                  schedules: schedules,
+                  schedules: const [], // 軽量版なのでスケジュールは空で渡す
                 ),
               ),
             );
@@ -1450,37 +1504,59 @@ class LightweightDateCell extends StatelessWidget {
             ? Colors.grey.shade100
             : null;
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: Theme.of(context).dividerColor, width: 1),
-          right: BorderSide(color: Theme.of(context).dividerColor, width: 1),
-        ),
-        color: cellColor,
-      ),
-      padding: const EdgeInsets.all(2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            date.day.toString(),
-            style: TextStyle(
-              color: dayTextColor,
-              fontWeight: isToday ? FontWeight.bold : null,
-              fontSize: 12,
-            ),
-          ),
-          if (hasSchedules)
-            Container(
-              margin: const EdgeInsets.only(top: 2),
-              height: 3,
-              width: 10,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade400,
-                borderRadius: BorderRadius.circular(1.5),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          // 選択された日付をProviderに保存
+          ProviderScope.containerOf(context)
+              .read(selectedDateProvider.notifier)
+              .state = date;
+
+          // DailyScheduleViewに遷移
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => DailyScheduleView(
+                initialDate: date,
+                schedules: const [], // 軽量版なのでスケジュールは空で渡す
               ),
             ),
-        ],
+          );
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(color: Theme.of(context).dividerColor, width: 1),
+              right:
+                  BorderSide(color: Theme.of(context).dividerColor, width: 1),
+            ),
+            color: cellColor,
+          ),
+          padding: const EdgeInsets.all(2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                date.day.toString(),
+                style: TextStyle(
+                  color: dayTextColor,
+                  fontWeight: isToday ? FontWeight.bold : null,
+                  fontSize: 12,
+                ),
+              ),
+              if (hasSchedules)
+                Container(
+                  margin: const EdgeInsets.only(top: 2),
+                  height: 3,
+                  width: 10,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(1.5),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
