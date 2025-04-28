@@ -123,22 +123,28 @@ class CalendarPageView extends HookConsumerWidget {
     // ページの同期処理（初期表示時のみ）
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (pageController.hasClients) {
-          final currentPage = pageController.page?.round() ?? -1;
+        try {
+          if (pageController.hasClients) {
+            final currentPage = pageController.page?.round() ?? -1;
 
-          // ページが期待値と異なる場合は修正
-          if (currentPage != currentIndexValue && currentPage != -1) {
-            pageController.jumpToPage(currentIndexValue);
-          }
+            // ページが期待値と異なる場合は修正
+            if (currentPage != currentIndexValue && currentPage != -1) {
+              pageController.jumpToPage(currentIndexValue);
+            }
 
-          // 初期表示時に前後の月をレンダリング済みとしてマーク
-          final initialRenderedMonths = <int>{currentIndexValue};
-          for (int i = 1; i <= _preRenderMonthsRange; i++) {
-            initialRenderedMonths.add(currentIndexValue - i);
-            initialRenderedMonths.add(currentIndexValue + i);
+            // 初期表示時に前後の月をレンダリング済みとしてマーク
+            final initialRenderedMonths = <int>{currentIndexValue};
+            for (int i = 1; i <= _preRenderMonthsRange; i++) {
+              initialRenderedMonths.add(currentIndexValue - i);
+              initialRenderedMonths.add(currentIndexValue + i);
+            }
+            if (ref.exists(renderedMonthsProvider)) {
+              ref.read(renderedMonthsProvider.notifier).state =
+                  initialRenderedMonths;
+            }
           }
-          ref.read(renderedMonthsProvider.notifier).state =
-              initialRenderedMonths;
+        } catch (e) {
+          debugPrint('初期ページ同期エラー: $e');
         }
       });
       return null;
