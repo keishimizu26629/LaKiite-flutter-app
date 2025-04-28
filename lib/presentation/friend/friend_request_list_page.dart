@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../application/notification/notification_notifier.dart';
 import '../../domain/entity/notification.dart' as domain;
 import '../../utils/logger.dart';
+import '../../presentation/presentation_provider.dart';
 
 class FriendRequestListPage extends ConsumerWidget {
   const FriendRequestListPage({super.key});
@@ -74,7 +75,10 @@ class FriendRequestListPage extends ConsumerWidget {
           onAccept: () {
             AppLogger.debug(
                 'FriendRequestListPage - Accepting request ${request.id}');
-            notifier.acceptNotification(request.id);
+            notifier.acceptNotification(request.id).then((_) {
+              // フレンド申請承認後にフレンドリストを更新
+              ref.invalidate(userFriendsProvider);
+            });
           },
           onReject: () {
             AppLogger.debug(

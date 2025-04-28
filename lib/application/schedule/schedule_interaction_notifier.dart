@@ -67,10 +67,15 @@ class ScheduleInteractionNotifier
   Future<void> toggleReaction(String userId, ReactionType type) async {
     try {
       AppLogger.debug('toggleReaction called - userId: $userId, type: $type');
-      state = state.copyWith(isLoading: true, error: null);
+      AppLogger.debug(
+          'Current state before update: ${state.reactions.length} reactions');
 
+      // isLoading状態を設定する前に現在の状態をキャプチャ
+      final currentReactions = [...state.reactions];
       final currentReaction = state.getUserReaction(userId);
-      AppLogger.debug('Current reaction: $currentReaction');
+      AppLogger.debug('Current reaction before update: $currentReaction');
+
+      state = state.copyWith(isLoading: true, error: null);
 
       final scheduleStream =
           _ref.read(scheduleRepositoryProvider).watchSchedule(_scheduleId);
@@ -86,14 +91,49 @@ class ScheduleInteractionNotifier
         throw Exception('User not found');
       }
 
+      String? notificationId;
+
       if (currentReaction != null) {
         if (currentReaction.type == type) {
-          AppLogger.debug('Removing same reaction');
+          AppLogger.debug(
+              'Removing same reaction - userId: $userId, type: $type');
           await _repository.removeReaction(_scheduleId, userId);
+
+          // リアクション除去後の状態を反映（Stream更新を待たずに反映）
+          final updatedReactions =
+              currentReactions.where((r) => r.userId != userId).toList();
+          AppLogger.debug(
+              'Optimistically updating state after removing reaction: ${updatedReactions.length} reactions');
+          state = state.copyWith(isLoading: false, reactions: updatedReactions);
         } else {
-          AppLogger.debug('Updating to different reaction');
+          AppLogger.debug(
+              'Updating to different reaction - from: ${currentReaction.type}, to: $type');
+          // 前のリアクションを削除
           await _repository.removeReaction(_scheduleId, userId);
-          await _repository.addReaction(_scheduleId, userId, type);
+
+          // 新しいリアクションを追加
+          final reactionId =
+              await _repository.addReaction(_scheduleId, userId, type);
+
+          // 楽観的に状態を更新
+          final updatedReactions = currentReactions.map((r) {
+            if (r.userId == userId) {
+              // 同じユーザーのリアクションを新しいタイプに更新
+              return ScheduleReaction(
+                id: reactionId,
+                userId: userId,
+                type: type,
+                createdAt: DateTime.now(),
+                userDisplayName: userDoc.displayName,
+                userPhotoUrl: userDoc.iconUrl,
+              );
+            }
+            return r;
+          }).toList();
+
+          AppLogger.debug(
+              'Optimistically updating state after changing reaction: ${updatedReactions.length} reactions');
+          state = state.copyWith(isLoading: false, reactions: updatedReactions);
 
           if (userId != schedule.ownerId) {
             AppLogger.debug(
@@ -104,7 +144,7 @@ class ScheduleInteractionNotifier
                   toUserId: schedule.ownerId,
                   fromUserId: userId,
                   scheduleId: _scheduleId,
-                  interactionId: currentReaction.id,
+                  interactionId: reactionId,
                   fromUserDisplayName: userDoc.displayName,
                 );
             AppLogger.debug(
@@ -118,6 +158,21 @@ class ScheduleInteractionNotifier
         AppLogger.debug('Adding new reaction');
         final reactionId =
             await _repository.addReaction(_scheduleId, userId, type);
+
+        // 楽観的に状態を更新
+        final newReaction = ScheduleReaction(
+          id: reactionId,
+          userId: userId,
+          type: type,
+          createdAt: DateTime.now(),
+          userDisplayName: userDoc.displayName,
+          userPhotoUrl: userDoc.iconUrl,
+        );
+
+        final updatedReactions = [...currentReactions, newReaction];
+        AppLogger.debug(
+            'Optimistically updating state after adding reaction: ${updatedReactions.length} reactions');
+        state = state.copyWith(isLoading: false, reactions: updatedReactions);
 
         if (userId != schedule.ownerId) {
           AppLogger.debug(
@@ -138,9 +193,8 @@ class ScheduleInteractionNotifier
         }
       }
 
-      AppLogger.debug('Current state reactions: ${state.reactions}');
-      state = state.copyWith(isLoading: false);
-      AppLogger.debug('Updated state reactions: ${state.reactions}');
+      AppLogger.debug(
+          'Final state after reaction update: ${state.reactions.length} reactions');
     } catch (e, stack) {
       AppLogger.error('Error in toggleReaction: $e');
       AppLogger.error('Stack trace: $stack');
