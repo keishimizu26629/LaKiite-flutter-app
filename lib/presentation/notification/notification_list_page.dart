@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/notification/notification_notifier.dart';
 import '../../domain/entity/notification.dart' as domain;
+import '../../utils/date_formatter.dart';
+import '../../presentation/calendar/schedule_detail_page.dart';
+import '../../presentation/presentation_provider.dart';
+import '../../presentation/friend/friend_profile_page.dart';
+import '../../presentation/group/group_detail_page.dart';
 
 enum NotificationFilter {
   all('すべて'),
@@ -252,53 +257,179 @@ class _NotificationItem extends ConsumerWidget {
 
     // 通知タップ時の処理
     Future<void> handleNotificationTap() async {
-      // 既読にする
+      // ログインユーザーの確認
+      final currentUser = ref.read(authNotifierProvider).value?.user;
+      if (currentUser == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('ログインが必要です'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // このユーザーが受信者であることを確認
+      if (notification.receiveUserId != currentUser.id) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('この通知の受信者ではありません'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // 既読にする（エラーでも続行）
+      bool readSuccess = false;
       if (!notification.isRead) {
         try {
           await notifier.markAsRead(notification.id);
+          readSuccess = true;
         } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('通知の既読処理に失敗しました'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return;
+          // エラーのログ記録のみ行い、画面遷移は続行
+          debugPrint('Warning: Failed to mark notification as read: $e');
         }
       }
 
       // 通知タイプに応じた画面遷移
       if (!context.mounted) return;
 
-      switch (notification.type) {
-        case domain.NotificationType.friend:
-          // フレンドプロフィール画面へ遷移
-          Navigator.of(context).pushNamed(
-            '/friend/profile',
-            arguments: notification.sendUserId,
+      try {
+        switch (notification.type) {
+          case domain.NotificationType.friend:
+            // フレンドプロフィール画面へ遷移
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) =>
+                    FriendProfilePage(userId: notification.sendUserId),
+              ),
+            );
+            break;
+          case domain.NotificationType.groupInvitation:
+            // グループ詳細画面へ遷移
+            if (notification.groupId != null) {
+              // グループIDを使って詳細画面に遷移
+              try {
+                // 代替アプローチ: IDを渡して詳細ページで取得
+                final userGroups = await ref
+                    .read(groupRepositoryProvider)
+                    .watchUserGroups(currentUser.id)
+                    .first;
+
+                final group = userGroups.firstWhere(
+                  (g) => g.id == notification.groupId,
+                  orElse: () => throw Exception('Group not found'),
+                );
+
+                if (context.mounted) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => GroupDetailPage(group: group),
+                    ),
+                  );
+                }
+              } catch (error) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('グループの取得に失敗しました: $error'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            }
+            break;
+          case domain.NotificationType.reaction:
+          case domain.NotificationType.comment:
+            // 投稿詳細画面へ遷移
+            if (notification.relatedItemId != null) {
+              try {
+                // スケジュール情報を取得する前にローディング表示
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('関連する投稿を読み込んでいます...'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                }
+
+                // スケジュール情報を取得
+                final scheduleStream = ref
+                    .read(scheduleRepositoryProvider)
+                    .watchSchedule(notification.relatedItemId!);
+
+                final schedule = await scheduleStream.first;
+
+                if (schedule != null && context.mounted) {
+                  // ScheduleDetailPageに直接遷移
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ScheduleDetailPage(schedule: schedule),
+                    ),
+                  );
+                } else if (context.mounted) {
+                  // スケジュールが見つからない場合
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('予定が見つかりませんでした'),
+                      backgroundColor: Colors.red,
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                }
+              } catch (error) {
+                debugPrint('通知タップ処理でエラー: $error');
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('予定の取得に失敗しました: $error'),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
+              }
+            } else {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('関連する投稿情報がありません'),
+                    backgroundColor: Colors.red,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            }
+            break;
+        }
+
+        // 既読処理に失敗した場合のみユーザーに通知
+        if (!notification.isRead && !readSuccess && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('通知の既読処理に失敗しましたが、操作は続行しました'),
+              duration: Duration(seconds: 3),
+              backgroundColor: Colors.orange,
+            ),
           );
-          break;
-        case domain.NotificationType.groupInvitation:
-          // グループ詳細画面へ遷移
-          if (notification.groupId != null) {
-            Navigator.of(context).pushNamed(
-              '/group/detail',
-              arguments: notification.groupId,
-            );
-          }
-          break;
-        case domain.NotificationType.reaction:
-        case domain.NotificationType.comment:
-          // 投稿詳細画面へ遷移
-          if (notification.relatedItemId != null) {
-            Navigator.of(context).pushNamed(
-              '/schedule/detail',
-              arguments: notification.relatedItemId,
-            );
-          }
-          break;
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('操作の実行中にエラーが発生しました: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
 
@@ -362,6 +493,14 @@ class _NotificationItem extends ConsumerWidget {
                     color: notification.isRead
                         ? Colors.grey[600]
                         : Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  DateFormatter.formatRelativeTime(notification.createdAt),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[500],
                   ),
                 ),
               ],

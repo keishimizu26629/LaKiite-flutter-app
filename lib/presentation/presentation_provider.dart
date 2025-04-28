@@ -215,6 +215,35 @@ final userFriendsStreamProvider =
   );
 });
 
+/// ユーザーのフレンド一覧を取得するFutureプロバイダー
+/// アプリ起動時、承認時、手動更新時にのみデータを再取得する
+final userFriendsProvider =
+    FutureProvider.autoDispose<List<PublicUserModel>>((ref) async {
+  final authState = ref.watch(authNotifierProvider);
+
+  return authState.when(
+    data: (state) async {
+      if (state.status != AuthStatus.authenticated || state.user == null) {
+        return [];
+      }
+
+      final userRepository = ref.watch(userRepositoryProvider);
+
+      // 現在のユーザー情報を取得
+      final user = await userRepository.getUser(state.user!.id);
+      if (user == null || user.friends.isEmpty) {
+        return [];
+      }
+
+      // 一度に全フレンドのプロフィールを取得
+      final profiles = await userRepository.getPublicProfiles(user.friends);
+      return profiles;
+    },
+    loading: () => [],
+    error: (_, __) => [],
+  );
+});
+
 /// ユーザーのスケジュール一覧をリアルタイムで監視するStreamプロバイダー
 ///
 /// [userId] 監視対象のユーザーID

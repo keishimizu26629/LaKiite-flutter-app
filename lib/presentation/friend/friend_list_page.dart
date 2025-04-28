@@ -81,15 +81,26 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
 
   /// フレンドタブの内容を構築します。
   Widget _buildFriendTabContent() {
-    // キャッシュを使用せず、常に最新のデータを表示
-    final friendsAsync = ref.watch(userFriendsStreamProvider);
+    // Futureベースのプロバイダーを使用
+    final friendsAsync = ref.watch(userFriendsProvider);
+
     return friendsAsync.when(
       data: (friends) {
         if (friends.isEmpty) {
-          return const Center(
+          return RefreshIndicator(
+            onRefresh: () async {
+              // プロバイダーを無効化して再取得を強制
+              ref.invalidate(userFriendsProvider);
+              await ref.read(userFriendsProvider.future);
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                      SizedBox(height: 120),
                 Icon(
                   Icons.people_outline,
                   size: 64,
@@ -101,14 +112,25 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
                   style: TextStyle(
                     color: Colors.grey,
                     fontSize: 16,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           );
         }
-        return ListView.builder(
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            // プロバイダーを無効化して再取得を強制
+            ref.invalidate(userFriendsProvider);
+            await ref.read(userFriendsProvider.future);
+          },
+          child: ListView.builder(
           key: const PageStorageKey('friend_list'), // キーを追加してスクロール位置を保持
+            physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.only(
             left: 16,
             right: 16,
@@ -159,6 +181,7 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
               ),
             );
           },
+          ),
         );
       },
       loading: () => const Center(

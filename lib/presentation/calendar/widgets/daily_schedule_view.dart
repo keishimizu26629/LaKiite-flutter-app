@@ -8,6 +8,7 @@ import 'package:lakiite/presentation/presentation_provider.dart'
     hide scheduleNotifierProvider;
 import 'package:lakiite/application/schedule/schedule_notifier.dart';
 import 'package:lakiite/utils/logger.dart';
+import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
 
 class DailyScheduleView extends HookConsumerWidget {
   const DailyScheduleView({
@@ -96,6 +97,18 @@ class DailyScheduleView extends HookConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => CreateSchedulePage(
+                initialDate: currentDate.value,
+              ),
+            ),
+          );
+        },
+        child: const Icon(Icons.add),
+      ),
       body: Column(
         children: [
           // 固定ヘッダー部分

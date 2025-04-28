@@ -24,6 +24,13 @@
         ]
       },
       {
+        "name": "Flutter (No Flavor)",
+        "request": "launch",
+        "type": "dart",
+        "flutterMode": "debug",
+        "program": "lib/main.dart"
+      },
+      {
         "name": "Flutter (Profile Mode)",
         "request": "launch",
         "type": "dart",

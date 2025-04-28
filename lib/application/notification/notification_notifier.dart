@@ -4,6 +4,7 @@ import '../../domain/interfaces/i_notification_repository.dart';
 import '../../infrastructure/notification_repository.dart';
 import '../../utils/logger.dart';
 import '../auth/auth_notifier.dart';
+import '../../infrastructure/user_repository.dart';
 
 typedef Notification = domain.Notification;
 typedef NotificationType = domain.NotificationType;
@@ -163,7 +164,27 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> acceptNotification(String notificationId) async {
     state = const AsyncValue.loading();
     try {
+      // 通知の内容を取得して、通知タイプを確認
+      final notification = await _repository.getNotification(notificationId);
+
+      // 通知を承認
       await _repository.acceptNotification(notificationId);
+
+      // キャッシュクリア処理
+      if (notification != null &&
+          notification.type == NotificationType.friend) {
+        // フレンド申請承認時は明示的にユーザーリポジトリのキャッシュをクリア
+        // これは通常、プロバイダーのinvalidateによって行われるが、
+        // さらに確実に行うためにリポジトリのキャッシュも明示的にクリア
+        try {
+          final userRepository = UserRepository();
+          userRepository.clearCache();
+        } catch (e) {
+          // キャッシュクリアに失敗しても処理は続行
+          AppLogger.error('Failed to clear user repository cache: $e');
+        }
+      }
+
       state = const AsyncValue.data(null);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
