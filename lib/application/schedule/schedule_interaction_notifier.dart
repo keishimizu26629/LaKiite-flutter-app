@@ -91,7 +91,6 @@ class ScheduleInteractionNotifier
         throw Exception('User not found');
       }
 
-      String? notificationId;
 
       if (currentReaction != null) {
         if (currentReaction.type == type) {
