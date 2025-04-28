@@ -11,6 +11,17 @@ class ScheduleRepository implements IScheduleRepository {
   final IFriendListRepository _friendListRepository;
   final FirebaseAuth _auth;
 
+  // スケジュールのエンリッチメント結果をキャッシュ
+  final Map<String, Schedule> _scheduleCache = {};
+  // リアクション数のキャッシュ
+  final Map<String, int> _reactionCountCache = {};
+  // コメント数のキャッシュ
+  final Map<String, int> _commentCountCache = {};
+  // キャッシュの有効期限（10分）
+  static const _cacheExpiryDuration = Duration(minutes: 10);
+  // キャッシュの最終更新時間
+  final Map<String, DateTime> _cacheLastUpdated = {};
+
   ScheduleRepository(this._friendListRepository)
       : _firestore = FirebaseFirestore.instance,
         _auth = FirebaseAuth.instance;
@@ -26,33 +37,104 @@ class ScheduleRepository implements IScheduleRepository {
     }
   }
 
+  // キャッシュが有効かどうかを確認
+  bool _isCacheValid(String scheduleId) {
+    if (!_cacheLastUpdated.containsKey(scheduleId)) {
+      return false;
+    }
+
+    final lastUpdated = _cacheLastUpdated[scheduleId]!;
+    final now = DateTime.now();
+    return now.difference(lastUpdated) < _cacheExpiryDuration;
+  }
+
+  // キャッシュを更新
+  void _updateCache(String scheduleId, Schedule schedule) {
+    _scheduleCache[scheduleId] = schedule;
+    _cacheLastUpdated[scheduleId] = DateTime.now();
+  }
+
+  // リアクション数とコメント数を一括で取得（バッチ処理）
+  Future<(int, int)> _fetchInteractionCounts(DocumentReference docRef) async {
+    final scheduleId = docRef.id;
+
+    // キャッシュが有効な場合はキャッシュから返す
+    if (_isCacheValid(scheduleId) &&
+        _reactionCountCache.containsKey(scheduleId) &&
+        _commentCountCache.containsKey(scheduleId)) {
+      return (
+        _reactionCountCache[scheduleId]!,
+        _commentCountCache[scheduleId]!
+      );
+    }
+
+    // 並列でリアクション数とコメント数を取得
+    final reactionsFuture = docRef.collection('reactions').count().get();
+    final commentsFuture = docRef.collection('comments').count().get();
+
+    final results = await Future.wait([reactionsFuture, commentsFuture]);
+    final reactionCount = results[0].count ?? 0;
+    final commentCount = results[1].count ?? 0;
+
+    // キャッシュを更新
+    _reactionCountCache[scheduleId] = reactionCount;
+    _commentCountCache[scheduleId] = commentCount;
+    _cacheLastUpdated[scheduleId] = DateTime.now();
+
+    return (reactionCount, commentCount);
+  }
+
   Future<Schedule> _enrichSchedule(DocumentSnapshot doc) async {
     await _ensureAuthenticated();
 
+    final scheduleId = doc.id;
+
+    // キャッシュが有効な場合はキャッシュから返す
+    if (_isCacheValid(scheduleId) && _scheduleCache.containsKey(scheduleId)) {
+      return _scheduleCache[scheduleId]!;
+    }
+
     try {
-      // リアクション数を取得
-      final reactionsSnapshot =
-          await doc.reference.collection('reactions').count().get();
-      final reactionCount = reactionsSnapshot.count ?? 0;
-
-      // コメント数を取得
-      final commentsSnapshot =
-          await doc.reference.collection('comments').count().get();
-      final commentCount = commentsSnapshot.count ?? 0;
-
       // 基本的なスケジュール情報を取得
       final schedule = ScheduleMapper.fromFirestore(doc);
 
-      // リアクション数とコメント数を更新
-      return schedule.copyWith(
+      // リアクション数とコメント数を一括取得
+      final (reactionCount, commentCount) =
+          await _fetchInteractionCounts(doc.reference);
+
+      // リアクション数とコメント数を更新したスケジュールを作成
+      final enrichedSchedule = schedule.copyWith(
         reactionCount: reactionCount,
         commentCount: commentCount,
       );
+
+      // キャッシュを更新
+      _updateCache(scheduleId, enrichedSchedule);
+
+      return enrichedSchedule;
     } catch (e) {
       AppLogger.error('Error enriching schedule: $e');
       // エラーが発生した場合でも基本的なスケジュール情報は返す
-      return ScheduleMapper.fromFirestore(doc);
+      final schedule = ScheduleMapper.fromFirestore(doc);
+      _updateCache(scheduleId, schedule);
+      return schedule;
     }
+  }
+
+  // キャッシュをクリア（必要に応じて呼び出す）
+  void clearCache() {
+    _scheduleCache.clear();
+    _reactionCountCache.clear();
+    _commentCountCache.clear();
+    _cacheLastUpdated.clear();
+  }
+
+  // 特定のスケジュールのキャッシュを更新（更新があった場合など）
+  void invalidateScheduleCache(String scheduleId) {
+    _scheduleCache.remove(scheduleId);
+    _reactionCountCache.remove(scheduleId);
+    _commentCountCache.remove(scheduleId);
+    _cacheLastUpdated.remove(scheduleId);
   }
 
   @override
@@ -228,20 +310,20 @@ class ScheduleRepository implements IScheduleRepository {
 
   @override
   Stream<List<Schedule>> watchListSchedules(String listId) {
-    // 前月の1日を計算
+    // 6ヶ月前の1日を計算（前月の代わりに6ヶ月前に変更）
     final now = DateTime.now();
-    final previousMonth = DateTime(now.year, now.month - 1, 1);
+    final sixMonthsAgo = DateTime(now.year, now.month - 6, 1);
 
     // 日付形式を正確に整形（必ず2桁になるようにフォーマット）
-    final year = previousMonth.year.toString();
-    final month = previousMonth.month.toString().padLeft(2, '0');
-    final day = previousMonth.day.toString().padLeft(2, '0');
-    final previousMonthIso = "$year-$month-${day}T00:00:00.000";
+    final year = sixMonthsAgo.year.toString();
+    final month = sixMonthsAgo.month.toString().padLeft(2, '0');
+    final day = sixMonthsAgo.day.toString().padLeft(2, '0');
+    final sixMonthsAgoIso = "$year-$month-${day}T00:00:00.000";
 
     return _firestore
         .collection('schedules')
         .where('sharedLists', arrayContains: listId)
-        .where('startDateTime', isGreaterThanOrEqualTo: previousMonthIso)
+        .where('startDateTime', isGreaterThanOrEqualTo: sixMonthsAgoIso)
         .orderBy('startDateTime', descending: false)
         .snapshots()
         .asyncMap((snapshot) async {
@@ -256,20 +338,20 @@ class ScheduleRepository implements IScheduleRepository {
     try {
       await _ensureAuthenticated();
 
-      // 前月の1日を計算
+      // 6ヶ月前の1日を計算（前月の代わりに6ヶ月前に変更）
       final now = DateTime.now();
-      final previousMonth = DateTime(now.year, now.month - 1, 1);
+      final sixMonthsAgo = DateTime(now.year, now.month - 6, 1);
 
       // 日付形式を正確に整形（必ず2桁になるようにフォーマット）
-      final year = previousMonth.year.toString();
-      final month = previousMonth.month.toString().padLeft(2, '0');
-      final day = previousMonth.day.toString().padLeft(2, '0');
-      final previousMonthIso = "$year-$month-${day}T00:00:00.000";
+      final year = sixMonthsAgo.year.toString();
+      final month = sixMonthsAgo.month.toString().padLeft(2, '0');
+      final day = sixMonthsAgo.day.toString().padLeft(2, '0');
+      final sixMonthsAgoIso = "$year-$month-${day}T00:00:00.000";
 
       final stream = _firestore
           .collection('schedules')
           .where('visibleTo', arrayContains: userId)
-          .where('startDateTime', isGreaterThanOrEqualTo: previousMonthIso)
+          .where('startDateTime', isGreaterThanOrEqualTo: sixMonthsAgoIso)
           .orderBy('startDateTime', descending: false)
           .snapshots();
 
@@ -297,33 +379,58 @@ class ScheduleRepository implements IScheduleRepository {
     try {
       await _ensureAuthenticated();
 
-      // 表示月の前月の1日を計算
-      final previousMonth =
-          DateTime(displayMonth.year, displayMonth.month - 1, 1);
+      // 表示月の6ヶ月前の1日を計算
+      final sixMonthsAgo =
+          DateTime(displayMonth.year, displayMonth.month - 6, 1);
 
       // 日付形式を正確に整形（必ず2桁になるようにフォーマット）
-      final year = previousMonth.year.toString();
-      final month = previousMonth.month.toString().padLeft(2, '0');
-      final day = previousMonth.day.toString().padLeft(2, '0');
-      final previousMonthIso = "$year-$month-${day}T00:00:00.000";
+      final year = sixMonthsAgo.year.toString();
+      final month = sixMonthsAgo.month.toString().padLeft(2, '0');
+      final day = sixMonthsAgo.day.toString().padLeft(2, '0');
+      final sixMonthsAgoIso = "$year-$month-${day}T00:00:00.000";
 
-      AppLogger.debug(
-          'Fetching schedules from: $previousMonthIso for display month: ${displayMonth.year}-${displayMonth.month}');
+      // 最初に素早くキャッシュからデータを取得（データがあれば即時返却）
+      try {
+        final cachedSnapshot = await _firestore
+            .collection('schedules')
+            .where('visibleTo', arrayContains: userId)
+            .where('startDateTime', isGreaterThanOrEqualTo: sixMonthsAgoIso)
+            .orderBy('startDateTime', descending: false)
+            .get(const GetOptions(source: Source.cache));
 
+        if (cachedSnapshot.docs.isNotEmpty) {
+          // キャッシュからのデータを非同期でエンリッチして即時返却
+          final cachedSchedules = await Future.wait(
+            cachedSnapshot.docs.map((doc) async {
+              try {
+                return await _enrichSchedule(doc);
+              } catch (e) {
+                // エンリッチ中のエラーは無視してマッピングのみを行う
+                return ScheduleMapper.fromFirestore(doc);
+              }
+            }),
+          );
+
+          // キャッシュデータを即時返却（早く表示するため）
+          yield cachedSchedules;
+        }
+      } catch (e) {
+        // キャッシュからの取得に失敗しても続行（サーバーから取得）
+        AppLogger.debug('Cache fetch failed, continuing with server fetch: $e');
+      }
+
+      // サーバーからのリアルタイム取得（バックグラウンドで最新データを取得）
       final stream = _firestore
           .collection('schedules')
           .where('visibleTo', arrayContains: userId)
-          .where('startDateTime', isGreaterThanOrEqualTo: previousMonthIso)
+          .where('startDateTime', isGreaterThanOrEqualTo: sixMonthsAgoIso)
           .orderBy('startDateTime', descending: false)
           .snapshots();
 
       await for (final snapshot in stream) {
         try {
-          final schedules = await Future.wait(
-            snapshot.docs.map((doc) => _enrichSchedule(doc)),
-          );
-          AppLogger.debug(
-              'Retrieved ${schedules.length} schedules for month: ${displayMonth.year}-${displayMonth.month}');
+          // バッチ処理でエンリッチメントを高速化
+          final schedules = await _enrichSchedulesInBatches(snapshot.docs);
           yield schedules;
         } catch (e) {
           AppLogger.error('Error processing schedule snapshot for month: $e');
@@ -335,6 +442,38 @@ class ScheduleRepository implements IScheduleRepository {
       AppLogger.error('Error in watchUserSchedulesForMonth: $e');
       yield [];
     }
+  }
+
+  // ドキュメントのバッチをより効率的に処理するヘルパーメソッド
+  Future<List<Schedule>> _enrichSchedulesInBatches(
+      List<DocumentSnapshot> docs) async {
+    // 最大同時処理数（大きすぎると逆に遅くなる）
+    const int batchSize = 10;
+
+    final results = <Schedule>[];
+
+    // バッチ処理
+    for (int i = 0; i < docs.length; i += batchSize) {
+      final end = (i + batchSize < docs.length) ? i + batchSize : docs.length;
+      final batch = docs.sublist(i, end);
+
+      // 並列処理
+      final batchResults = await Future.wait(
+        batch.map((doc) async {
+          try {
+            return await _enrichSchedule(doc);
+          } catch (e) {
+            // エラー時はベーシックな情報だけでスケジュールを作成
+            AppLogger.error('Error enriching schedule in batch: $e');
+            return ScheduleMapper.fromFirestore(doc);
+          }
+        }),
+      );
+
+      results.addAll(batchResults);
+    }
+
+    return results;
   }
 
   @override

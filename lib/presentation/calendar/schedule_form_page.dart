@@ -127,33 +127,49 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog> {
 
 class ScheduleFormPage extends HookConsumerWidget {
   final Schedule? schedule;
-  const ScheduleFormPage({super.key, this.schedule});
+  final DateTime? initialDate;
+
+  const ScheduleFormPage({
+    super.key,
+    this.schedule,
+    this.initialDate,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     AppLogger.debug('ScheduleFormPage: Building form page');
+    AppLogger.debug(
+        'ScheduleFormPage: Initial date: ${initialDate?.toString() ?? "未指定"}');
+
     final titleController = useTextEditingController(text: schedule?.title);
     final descriptionController =
         useTextEditingController(text: schedule?.description);
     final locationController =
         useTextEditingController(text: schedule?.location);
 
-    final selectedStartDate =
-        useState<DateTime>(schedule?.startDateTime ?? DateTime.now());
-    final selectedStartTime = useState<TimeOfDay>(schedule != null
-        ? TimeOfDay(
-            hour: schedule!.startDateTime.hour,
-            minute: schedule!.startDateTime.minute)
-        : TimeOfDay.now());
+    // 初期日付の設定: scheduleがあればその日付、なければinitialDateを使用、どちらもなければ現在日時
+    final initialStartDate = schedule?.startDateTime ??
+        (initialDate != null
+            ? DateTime(initialDate!.year, initialDate!.month, initialDate!.day,
+                TimeOfDay.now().hour, TimeOfDay.now().minute)
+            : DateTime.now());
 
-    final selectedEndDate = useState<DateTime>(schedule?.endDateTime ??
-        (schedule?.startDateTime ?? DateTime.now())
-            .add(const Duration(hours: 1)));
-    final selectedEndTime = useState<TimeOfDay>(schedule != null
-        ? TimeOfDay(
-            hour: schedule!.endDateTime.hour,
-            minute: schedule!.endDateTime.minute)
-        : TimeOfDay.fromDateTime(DateTime.now().add(const Duration(hours: 1))));
+    final selectedStartDate = useState<DateTime>(initialStartDate);
+
+    final selectedStartTime = useState<TimeOfDay>(TimeOfDay(
+        hour: initialStartDate.hour, minute: initialStartDate.minute));
+
+    // 終了日時も同様に設定（開始日時の1時間後）
+    final initialEndDate = schedule?.endDateTime ??
+        (initialDate != null
+            ? DateTime(initialDate!.year, initialDate!.month, initialDate!.day,
+                TimeOfDay.now().hour + 1, TimeOfDay.now().minute)
+            : DateTime.now().add(const Duration(hours: 1)));
+
+    final selectedEndDate = useState<DateTime>(initialEndDate);
+
+    final selectedEndTime = useState<TimeOfDay>(
+        TimeOfDay(hour: initialEndDate.hour, minute: initialEndDate.minute));
 
     final hasTitleError = useState<bool>(false);
     final hasLocationError = useState<bool>(false);

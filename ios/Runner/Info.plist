@@ -53,7 +53,10 @@
 			<key>NSAllowsArbitraryLoadsInWebContent</key>
 			<true/>
 		</dict>
+		<!-- Flutter PlatformViews設定 -->
 		<key>io.flutter.embedded_views_preview</key>
+		<true/>
+		<key>FlutterDestructivelyDisablePlatformViewLayerTree</key>
 		<true/>
 		<!-- AdMobの設定 -->
 		<key>GADApplicationIdentifier</key>
