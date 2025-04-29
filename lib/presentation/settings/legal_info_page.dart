@@ -24,6 +24,7 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
+  bool _isDisposed = false;
 
   @override
   void initState() {
@@ -34,19 +35,29 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
   @override
   void dispose() {
     // メモリリークを防ぐため、明示的にControllerをクリーンアップ
-    // コントローラーのメソッド呼び出し順序に注意
-    _disposeWebView();
-    super.dispose();
-  }
+    _isDisposed = true;
 
-  // Controllerのリソースを適切に解放
-  void _disposeWebView() {
+    // WebViewのリソース解放を安全に行う
     try {
-      _controller.clearCache();
-      _controller.clearLocalStorage();
+      // controllerの各操作を個別のtry-catchで囲む
+      try {
+        _controller.clearCache();
+      } catch (e) {
+        debugPrint('Failed to clear cache: ${e.toString()}');
+      }
+
+      try {
+        _controller.clearLocalStorage();
+      } catch (e) {
+        debugPrint('Failed to clear local storage: ${e.toString()}');
+      }
+
+      // 他のリソース解放処理があれば追加
     } catch (e) {
       debugPrint('WebView disposal error: ${e.toString()}');
     }
+
+    super.dispose();
   }
 
   void _initWebView() {
@@ -57,7 +68,7 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
         ..setNavigationDelegate(
           NavigationDelegate(
             onPageStarted: (String url) {
-              if (mounted) {
+              if (mounted && !_isDisposed) {
                 setState(() {
                   _isLoading = true;
                   _hasError = false;
@@ -65,7 +76,7 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
               }
             },
             onPageFinished: (String url) {
-              if (mounted) {
+              if (mounted && !_isDisposed) {
                 setState(() {
                   _isLoading = false;
                 });
@@ -73,7 +84,7 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
             },
             onWebResourceError: (WebResourceError error) {
               debugPrint('WebView error: ${error.description}');
-              if (mounted) {
+              if (mounted && !_isDisposed) {
                 setState(() {
                   _hasError = true;
                   _isLoading = false;
@@ -89,11 +100,13 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
         );
     } catch (e) {
       debugPrint('WebViewController initialization error: ${e.toString()}');
-      setState(() {
-        _hasError = true;
-        _isLoading = false;
-        _errorMessage = 'WebViewの初期化に失敗しました: ${e.toString()}';
-      });
+      if (mounted && !_isDisposed) {
+        setState(() {
+          _hasError = true;
+          _isLoading = false;
+          _errorMessage = 'WebViewの初期化に失敗しました: ${e.toString()}';
+        });
+      }
     }
   }
 
@@ -121,11 +134,13 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () {
-                          setState(() {
-                            _hasError = false;
-                            _isLoading = true;
-                            _initWebView();
-                          });
+                          if (!_isDisposed) {
+                            setState(() {
+                              _hasError = false;
+                              _isLoading = true;
+                              _initWebView();
+                            });
+                          }
                         },
                         child: const Text('再読み込み'),
                       ),
