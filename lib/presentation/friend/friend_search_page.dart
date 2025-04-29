@@ -99,9 +99,15 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const CircleAvatar(
+                                CircleAvatar(
                                   radius: 40,
-                                  child: Icon(Icons.person, size: 40),
+                                  backgroundImage:
+                                      state.value!.iconUrl.isNotEmpty
+                                          ? NetworkImage(state.value!.iconUrl)
+                                          : null,
+                                  child: state.value!.iconUrl.isEmpty
+                                      ? const Icon(Icons.person, size: 40)
+                                      : null,
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -112,12 +118,17 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                Text(
-                                  'ID: ${state.value!.searchId}',
-                                  style: const TextStyle(
-                                    color: Colors.grey,
+                                if (state.value!.shortBio != null &&
+                                    state.value!.shortBio!.isNotEmpty)
+                                  Text(
+                                    state.value!.shortBio!,
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
                                 const SizedBox(height: 24),
                                 if (state.value!.hasPendingRequest)
                                   ElevatedButton(
