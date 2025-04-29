@@ -11,6 +11,7 @@ class SearchUserModel {
   final String displayName;
   final String searchId;
   final String iconUrl;
+  final String? shortBio;
   final bool hasPendingRequest;
 
   const SearchUserModel({
@@ -18,6 +19,7 @@ class SearchUserModel {
     required this.displayName,
     required this.searchId,
     required this.iconUrl,
+    this.shortBio,
     this.hasPendingRequest = false,
   });
 }
@@ -99,6 +101,7 @@ class FriendSearchViewModel
         displayName: user.displayName,
         searchId: user.searchId,
         iconUrl: user.iconUrl ?? '',
+        shortBio: user.shortBio,
         hasPendingRequest: hasPending,
       );
 
