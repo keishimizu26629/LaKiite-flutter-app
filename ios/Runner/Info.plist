@@ -56,8 +56,6 @@
 		<!-- Flutter PlatformViews設定 -->
 		<key>io.flutter.embedded_views_preview</key>
 		<true/>
-		<key>FlutterDestructivelyDisablePlatformViewLayerTree</key>
-		<true/>
 		<!-- AdMobの設定 -->
 		<key>GADApplicationIdentifier</key>
 		<string>ca-app-pub-3940256099942544~1458002511</string>
