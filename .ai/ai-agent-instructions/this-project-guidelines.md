@@ -281,3 +281,30 @@
    - それぞれのコミットが独立して機能することを確認
 
 以上が本アプリの基本的な要件とデータ設計の概要です。Firebase を活用したリアルタイムデータベース機能を中心に、ユーザーの友人・プライベートリスト管理とスケジュールの共有機能、そしてソーシャル機能を実装していきます。
+
+## Firebase 関連ファイル構成
+
+Firebase 関連のファイル（Security Rules や Cloud Functions）は、別リポジトリで管理されています：
+
+```
+/Users/keisukeshimizu/Development/FlutterApps/LaKiite/lakiite-firebase-commons/
+├── firestore.rules     # Firestoreのセキュリティルール
+├── storage.rules       # Cloud Storageのセキュリティルール
+└── functions/         # Cloud Functions
+    ├── src/           # TypeScriptソースコード
+    ├── lib/           # コンパイル後のJavaScriptコード
+    ├── package.json   # 依存関係の管理
+    └── tsconfig.json  # TypeScript設定
+```
+
+このリポジトリでの変更は、必ず Flutter アプリ側の実装と整合性を取るようにしてください。特に以下の点に注意が必要です：
+
+1. **Security Rules の変更**:
+
+   - アプリ側のデータアクセスパターンと一致していることを確認
+   - テストケースを追加・更新
+
+2. **Cloud Functions の変更**:
+   - アプリ側の呼び出しインターフェースと互換性を維持
+   - エラーハンドリングの整合性を確保
+   - ログ出力を適切に設定
