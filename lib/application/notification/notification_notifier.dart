@@ -208,12 +208,39 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
   ///
   /// [notificationId] 既読にする通知のID
   Future<void> markAsRead(String notificationId) async {
+    AppLogger.debug('markAsRead called - notificationId: $notificationId');
     state = const AsyncValue.loading();
     try {
+      // 最初に通知の情報を取得して詳細をログに出力
+      final notification = await _repository.getNotification(notificationId);
+      if (notification == null) {
+        AppLogger.error('Notification not found: $notificationId');
+        throw Exception('Notification not found');
+      }
+
+      AppLogger.debug('Found notification: id=${notification.id}, '
+          'type=${notification.type.name}, '
+          'isRead=${notification.isRead}, '
+          'relatedItemId=${notification.relatedItemId ?? "null"}, '
+          'interactionId=${notification.interactionId ?? "null"}');
+
+      // すでに既読なら処理をスキップ
+      if (notification.isRead) {
+        AppLogger.debug('Notification already marked as read: $notificationId');
+        state = const AsyncValue.data(null);
+        return;
+      }
+
+      // 既読にする
       await _repository.markAsRead(notificationId);
+      AppLogger.debug(
+          'Notification marked as read successfully: $notificationId');
       state = const AsyncValue.data(null);
     } catch (e, stack) {
+      AppLogger.error('Error marking notification as read: $e');
+      AppLogger.error('Stack trace: $stack');
       state = AsyncValue.error(e, stack);
+      rethrow;
     }
   }
 
