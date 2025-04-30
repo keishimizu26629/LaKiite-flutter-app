@@ -288,13 +288,13 @@ Firebase 関連のファイル（Security Rules や Cloud Functions）は、別�
 
 ```
 /Users/keisukeshimizu/Development/FlutterApps/LaKiite/lakiite-firebase-commons/
-├── firestore.rules     # Firestoreのセキュリティルール
-├── storage.rules       # Cloud Storageのセキュリティルール
+├── firestore.rules     # Firestore のセキュリティルール
+├── storage.rules       # Cloud Storage のセキュリティルール
 └── functions/         # Cloud Functions
-    ├── src/           # TypeScriptソースコード
-    ├── lib/           # コンパイル後のJavaScriptコード
+    ├── src/           # TypeScript ソースコード
+    ├── lib/           # コンパイル後の JavaScript コード
     ├── package.json   # 依存関係の管理
-    └── tsconfig.json  # TypeScript設定
+    └── tsconfig.json  # TypeScript 設定
 ```
 
 このリポジトリでの変更は、必ず Flutter アプリ側の実装と整合性を取るようにしてください。特に以下の点に注意が必要です：
