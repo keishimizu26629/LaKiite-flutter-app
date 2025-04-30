@@ -15,3 +15,4 @@ ScheduleComment _$ScheduleCommentFromJson(Map<String, dynamic> json) =>
       userDisplayName: json['userDisplayName'] as String?,
       userPhotoUrl: json['userPhotoUrl'] as String?,
     );
+
