@@ -45,6 +45,9 @@
 		<true/>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
+		<!-- プッシュ通知設定 -->
+		<key>aps-environment</key>
+		<string>development</string>
 		<!-- WebViewの設定 -->
 		<key>NSAppTransportSecurity</key>
 		<dict>
