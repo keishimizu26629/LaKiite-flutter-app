@@ -52,7 +52,19 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
         debugPrint('Failed to clear local storage: ${e.toString()}');
       }
 
-      // 他のリソース解放処理があれば追加
+      // WebView関連の追加クリーンアップ
+      try {
+        _controller.setNavigationDelegate(NavigationDelegate());
+      } catch (e) {
+        debugPrint('Failed to reset navigation delegate: ${e.toString()}');
+      }
+
+      // バックグラウンドプロセスやリソースを解放
+      try {
+        _controller.setJavaScriptMode(JavaScriptMode.disabled);
+      } catch (e) {
+        debugPrint('Failed to disable JavaScript: ${e.toString()}');
+      }
     } catch (e) {
       debugPrint('WebView disposal error: ${e.toString()}');
     }
@@ -62,6 +74,12 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
 
   void _initWebView() {
     try {
+      // WebViewControllerの初期化チェック
+      if (_isDisposed) {
+        debugPrint('Attempted to initialize WebView after disposal');
+        return;
+      }
+
       _controller = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setBackgroundColor(Colors.white)
@@ -93,11 +111,15 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
               }
             },
           ),
-        )
-        ..loadRequest(
+        );
+
+      // マウント状態を確認してからURLをロード
+      if (mounted && !_isDisposed) {
+        _controller.loadRequest(
           Uri.parse(
               'https://lakiite-flutter-app-prod.web.app/${widget.urlPath}'),
         );
+      }
     } catch (e) {
       debugPrint('WebViewController initialization error: ${e.toString()}');
       if (mounted && !_isDisposed) {
