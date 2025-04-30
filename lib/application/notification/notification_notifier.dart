@@ -5,6 +5,7 @@ import '../../infrastructure/notification_repository.dart';
 import '../../utils/logger.dart';
 import '../auth/auth_notifier.dart';
 import '../../infrastructure/user_repository.dart';
+import '../../infrastructure/firebase/push_notification_sender.dart';
 
 typedef Notification = domain.Notification;
 typedef NotificationType = domain.NotificationType;
@@ -98,8 +99,11 @@ final sentNotificationsByTypeProvider =
 /// エラーが発生した場合はエラー状態を提供する
 class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
   final INotificationRepository _repository;
+  final PushNotificationSender _pushNotificationSender;
 
-  NotificationNotifier(this._repository) : super(const AsyncValue.data(null));
+  NotificationNotifier(this._repository)
+      : _pushNotificationSender = PushNotificationSender(),
+        super(const AsyncValue.data(null));
 
   /// フレンド申請通知を作成する
   ///
@@ -115,6 +119,7 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
+      // アプリ内通知を作成
       final notification = Notification.createFriendRequest(
         fromUserId: fromUserId,
         toUserId: toUserId,
@@ -122,8 +127,18 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
         toUserDisplayName: toUserDisplayName,
       );
       await _repository.createNotification(notification);
+
+      // プッシュ通知を送信
+      await _pushNotificationSender.sendFriendRequestNotification(
+        toUserId: toUserId,
+        fromUserId: fromUserId,
+        fromUserName: fromUserDisplayName ?? fromUserId,
+      );
+
       state = const AsyncValue.data(null);
     } catch (e, stack) {
+      AppLogger.error('友達申請通知作成エラー: $e');
+      AppLogger.error('スタックトレース: $stack');
       state = AsyncValue.error(e, stack);
     }
   }
@@ -139,11 +154,13 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
     required String toUserId,
     required String fromUserId,
     required String groupId,
+    String? groupName,
     String? fromUserDisplayName,
     String? toUserDisplayName,
   }) async {
     state = const AsyncValue.loading();
     try {
+      // アプリ内通知を作成
       final notification = Notification.createGroupInvitation(
         fromUserId: fromUserId,
         toUserId: toUserId,
@@ -152,6 +169,18 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
         toUserDisplayName: toUserDisplayName,
       );
       await _repository.createNotification(notification);
+
+      // グループ名がある場合はプッシュ通知も送信
+      if (groupName != null) {
+        await _pushNotificationSender.sendGroupInvitationNotification(
+          toUserId: toUserId,
+          fromUserId: fromUserId,
+          fromUserName: fromUserDisplayName ?? fromUserId,
+          groupId: groupId,
+          groupName: groupName,
+        );
+      }
+
       state = const AsyncValue.data(null);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
