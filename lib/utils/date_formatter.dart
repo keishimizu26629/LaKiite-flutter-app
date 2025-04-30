@@ -51,11 +51,11 @@ class DateFormatter {
       } else if (difference.inDays < 365) {
         // 月数を概算で計算（30日で割る）
         final months = (difference.inDays / 30).floor();
-        return '${months}ヶ月前';
+        return '$monthsヶ月前';
       } else {
         // 年数を計算（365日で割る）
         final years = (difference.inDays / 365).floor();
-        return '${years}年前';
+        return '$years年前';
       }
     } catch (e) {
       // 例外発生時は年月日で表示
