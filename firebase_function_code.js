@@ -51,6 +51,18 @@ exports.sendNotification = functions.region('us-central1').https.onRequest(async
       return;
     }
 
+    if (type === 'reaction' && (!payload.data.fromUserId || !payload.data.scheduleId || !payload.data.interactionId)) {
+      console.error('リアクション通知に必要なパラメータが不足しています:', payload.data);
+      res.status(400).send('リアクション通知に必要なパラメータが不足しています');
+      return;
+    }
+
+    if (type === 'comment' && (!payload.data.fromUserId || !payload.data.scheduleId || !payload.data.interactionId)) {
+      console.error('コメント通知に必要なパラメータが不足しています:', payload.data);
+      res.status(400).send('コメント通知に必要なパラメータが不足しています');
+      return;
+    }
+
     // FCM通知の送信
     const message = {
       token: payload.token,
@@ -254,6 +266,188 @@ exports.onNewGroupInvitation = functions.firestore
       return null;
     } catch (error) {
       console.error('グループ招待通知送信エラー:', error);
+      return null;
+    }
+  });
+
+/**
+ * 新しいリアクション通知が作成された時に自動的にプッシュ通知を送信する
+ */
+exports.onNewReactionNotification = functions.firestore
+  .document('notifications/{notificationId}')
+  .onCreate(async (snapshot, context) => {
+    try {
+      const notification = snapshot.data();
+
+      // リアクション通知かどうかを確認
+      if (notification.type !== 'reaction') {
+        console.log('リアクション以外の通知のため、処理をスキップします');
+        return null;
+      }
+
+      // 受信者のFCMトークンを取得
+      const userDoc = await admin.firestore()
+        .collection('users')
+        .doc(notification.receiveUserId)
+        .get();
+
+      if (!userDoc.exists) {
+        console.error('受信者が存在しません:', notification.receiveUserId);
+        return null;
+      }
+
+      const userData = userDoc.data();
+      const fcmToken = userData.fcmToken;
+
+      if (!fcmToken) {
+        console.log('受信者のFCMトークンがありません:', notification.receiveUserId);
+        return null;
+      }
+
+      // 通知メッセージを作成
+      const message = {
+        token: fcmToken,
+        notification: {
+          title: '新しいリアクション',
+          body: `${notification.sendUserDisplayName || '新しいユーザー'}さんがあなたの投稿にリアクションしました`,
+        },
+        data: {
+          type: 'reaction',
+          notificationId: context.params.notificationId,
+          fromUserId: notification.sendUserId,
+          toUserId: notification.receiveUserId,
+          relatedItemId: notification.relatedItemId,
+          interactionId: notification.interactionId,
+          timestamp: Date.now().toString(),
+        },
+        android: {
+          notification: {
+            icon: 'notification_icon',
+            color: '#ffa600',
+            clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+          },
+        },
+        apns: {
+          payload: {
+            aps: {
+              badge: 1,
+              sound: 'default',
+            },
+          },
+        },
+      };
+
+      // 通知送信
+      const response = await admin.messaging().send(message);
+      console.log('リアクション通知送信成功:', response);
+
+      return null;
+    } catch (error) {
+      console.error('リアクション通知送信エラー:', error);
+      return null;
+    }
+  });
+
+/**
+ * 新しいコメント通知が作成された時に自動的にプッシュ通知を送信する
+ */
+exports.onNewCommentNotification = functions.firestore
+  .document('notifications/{notificationId}')
+  .onCreate(async (snapshot, context) => {
+    try {
+      const notification = snapshot.data();
+
+      // コメント通知かどうかを確認
+      if (notification.type !== 'comment') {
+        console.log('コメント以外の通知のため、処理をスキップします');
+        return null;
+      }
+
+      // 受信者のFCMトークンを取得
+      const userDoc = await admin.firestore()
+        .collection('users')
+        .doc(notification.receiveUserId)
+        .get();
+
+      if (!userDoc.exists) {
+        console.error('受信者が存在しません:', notification.receiveUserId);
+        return null;
+      }
+
+      const userData = userDoc.data();
+      const fcmToken = userData.fcmToken;
+
+      if (!fcmToken) {
+        console.log('受信者のFCMトークンがありません:', notification.receiveUserId);
+        return null;
+      }
+
+      // コメントのコンテンツを取得
+      let commentContent = '';
+      if (notification.interactionId) {
+        try {
+          const commentDoc = await admin.firestore()
+            .collection('schedules')
+            .doc(notification.relatedItemId)
+            .collection('comments')
+            .doc(notification.interactionId)
+            .get();
+
+          if (commentDoc.exists) {
+            const commentData = commentDoc.data();
+            commentContent = commentData.content || '';
+
+            // コメントが長すぎる場合はトリミング
+            if (commentContent.length > 50) {
+              commentContent = `${commentContent.substring(0, 47)}...`;
+            }
+          }
+        } catch (e) {
+          console.error('コメントデータ取得エラー:', e);
+        }
+      }
+
+      // 通知メッセージを作成
+      const message = {
+        token: fcmToken,
+        notification: {
+          title: '新しいコメント',
+          body: `${notification.sendUserDisplayName || '新しいユーザー'}さんがあなたの投稿にコメントしました${commentContent ? ': ' + commentContent : ''}`,
+        },
+        data: {
+          type: 'comment',
+          notificationId: context.params.notificationId,
+          fromUserId: notification.sendUserId,
+          toUserId: notification.receiveUserId,
+          relatedItemId: notification.relatedItemId,
+          interactionId: notification.interactionId,
+          commentContent: commentContent,
+          timestamp: Date.now().toString(),
+        },
+        android: {
+          notification: {
+            icon: 'notification_icon',
+            color: '#ffa600',
+            clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+          },
+        },
+        apns: {
+          payload: {
+            aps: {
+              badge: 1,
+              sound: 'default',
+            },
+          },
+        },
+      };
+
+      // 通知送信
+      const response = await admin.messaging().send(message);
+      console.log('コメント通知送信成功:', response);
+
+      return null;
+    } catch (error) {
+      console.error('コメント通知送信エラー:', error);
       return null;
     }
   });

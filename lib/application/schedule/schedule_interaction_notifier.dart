@@ -8,6 +8,7 @@ import 'package:lakiite/infrastructure/schedule_interaction_repository.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/application/notification/notification_notifier.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
+import '../../infrastructure/firebase/push_notification_sender.dart';
 
 final scheduleInteractionRepositoryProvider =
     Provider<IScheduleInteractionRepository>(
@@ -30,12 +31,14 @@ class ScheduleInteractionNotifier
   final Ref _ref;
   StreamSubscription<List<ScheduleReaction>>? _reactionsSubscription;
   StreamSubscription<List<ScheduleComment>>? _commentsSubscription;
+  late PushNotificationSender _pushNotificationSender;
 
   ScheduleInteractionNotifier(
     this._repository,
     this._scheduleId,
     this._ref,
   ) : super(const ScheduleInteractionState()) {
+    _pushNotificationSender = PushNotificationSender();
     _initializeSubscriptions();
   }
 
@@ -91,7 +94,6 @@ class ScheduleInteractionNotifier
         throw Exception('User not found');
       }
 
-
       if (currentReaction != null) {
         if (currentReaction.type == type) {
           AppLogger.debug(
@@ -146,6 +148,16 @@ class ScheduleInteractionNotifier
                   interactionId: reactionId,
                   fromUserDisplayName: userDoc.displayName,
                 );
+
+            // プッシュ通知送信
+            await _pushNotificationSender.sendReactionNotification(
+              toUserId: schedule.ownerId,
+              fromUserId: userId,
+              fromUserName: userDoc.displayName ?? 'ユーザー',
+              scheduleId: _scheduleId,
+              interactionId: reactionId,
+            );
+
             AppLogger.debug(
                 'Notification created successfully for reaction update');
           } else {
@@ -185,6 +197,16 @@ class ScheduleInteractionNotifier
                 interactionId: reactionId,
                 fromUserDisplayName: userDoc.displayName,
               );
+
+          // プッシュ通知送信
+          await _pushNotificationSender.sendReactionNotification(
+            toUserId: schedule.ownerId,
+            fromUserId: userId,
+            fromUserName: userDoc.displayName ?? 'ユーザー',
+            scheduleId: _scheduleId,
+            interactionId: reactionId,
+          );
+
           AppLogger.debug('Notification created successfully for new reaction');
         } else {
           AppLogger.debug(
@@ -233,6 +255,16 @@ class ScheduleInteractionNotifier
               interactionId: commentId,
               fromUserDisplayName: userDoc.displayName,
             );
+
+        // プッシュ通知送信
+        await _pushNotificationSender.sendCommentNotification(
+          toUserId: schedule.ownerId,
+          fromUserId: userId,
+          fromUserName: userDoc.displayName ?? 'ユーザー',
+          scheduleId: _scheduleId,
+          interactionId: commentId,
+          commentContent: content,
+        );
       }
 
       state = state.copyWith(isLoading: false);
