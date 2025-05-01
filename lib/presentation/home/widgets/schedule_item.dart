@@ -2,16 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
-import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
+import 'package:lakiite/presentation/widgets/reaction_icon_widget.dart';
 
+/// タイムラインに表示される予定アイテムウィジェット
+///
+/// ホームタブのタイムラインに表示される予定の内容を表示します。
+/// 予定の基本情報とリアクション・コメントの状態を表示します。
 class ScheduleItem extends ConsumerWidget {
+  /// 表示する予定データ
   final Schedule schedule;
+
+  /// 現在のユーザー情報
   final UserModel currentUser;
 
+  /// コンストラクタ
+  ///
+  /// [schedule] 表示する予定データ
+  /// [currentUser] 現在のユーザー情報
   const ScheduleItem({
     super.key,
     required this.schedule,
@@ -141,88 +152,55 @@ class ScheduleItem extends ConsumerWidget {
     );
   }
 
+  /// インタラクションセクション（リアクションとコメント）を構築
+  ///
+  /// 予定に対するリアクション（行きます！/考え中！）の数とアイコン、
+  /// およびコメント数を表示します。
+  ///
+  /// [ReactionIconWidget]を使用してリアクションの種類に応じたアイコンを表示します。
   Widget _buildInteractionSection() {
     return Consumer(
       builder: (context, ref, _) {
         final interactionState = ref.watch(
           scheduleInteractionNotifierProvider(schedule.id),
         );
+        // ローディング中または取得エラー時は何も表示しない
         if (interactionState.isLoading) {
           return const SizedBox();
         }
         if (interactionState.error != null) {
           return const SizedBox();
         }
+
+        // リアクション数の合計を計算
         final reactionCounts = interactionState.reactionCounts;
         final totalReactions =
             reactionCounts.values.fold(0, (sum, count) => sum + count);
+
         return Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            // リアクション表示部分
             Row(
               children: [
                 if (interactionState.reactions.isNotEmpty)
+                  // リアクションがある場合はアイコンを表示
                   SizedBox(
                     width: 30,
                     height: 30,
-                    child: Stack(
-                      children: [
-                        if (interactionState
-                                    .reactionCounts[ReactionType.thinking] !=
-                                null &&
-                            interactionState
-                                    .reactionCounts[ReactionType.thinking]! >
-                                0)
-                          const Positioned(
-                            right: 2,
-                            child: Text(
-                              '🤔',
-                              style: TextStyle(
-                                fontSize: 20,
-                              ),
-                            ),
-                          ),
-                        if (interactionState
-                                    .reactionCounts[ReactionType.going] !=
-                                null &&
-                            interactionState
-                                    .reactionCounts[ReactionType.going]! >
-                                0)
-                          Positioned(
-                            top: -1,
-                            right: interactionState.reactionCounts[
-                                            ReactionType.thinking] !=
-                                        null &&
-                                    interactionState.reactionCounts[
-                                            ReactionType.thinking]! >
-                                        0
-                                ? null
-                                : 2,
-                            left: interactionState.reactionCounts[
-                                            ReactionType.thinking] !=
-                                        null &&
-                                    interactionState.reactionCounts[
-                                            ReactionType.thinking]! >
-                                        0
-                                ? -2
-                                : null,
-                            child: const Text(
-                              '🙋',
-                              style: TextStyle(
-                                fontSize: 20,
-                              ),
-                            ),
-                          ),
-                      ],
+                    child: ReactionIconWidget.fromReactionCounts(
+                      interactionState.reactionCounts,
                     ),
                   )
                 else
+                  // リアクションがない場合はデフォルトアイコンを表示
                   Icon(
                     Icons.people,
                     size: 16,
                     color: Theme.of(context).primaryColor,
                   ),
                 const SizedBox(width: 4),
+                // リアクション数表示
                 Text(
                   '$totalReactions',
                   style: TextStyle(
@@ -236,12 +214,14 @@ class ScheduleItem extends ConsumerWidget {
               ],
             ),
             const SizedBox(width: 16),
+            // コメント表示部分
             Icon(
               Icons.comment,
               size: 16,
               color: Colors.blue[400],
             ),
             const SizedBox(width: 4),
+            // コメント数表示
             Text(
               '${interactionState.commentCount}',
               style: TextStyle(
