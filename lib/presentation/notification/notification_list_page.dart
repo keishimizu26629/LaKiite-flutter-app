@@ -206,25 +206,20 @@ class _NotificationItem extends ConsumerWidget {
     // 通知を既読にする関数
     Future<void> markAsRead() async {
       if (!notification.isRead) {
-        try {
-          await notifier.markAsRead(notification.id);
-        } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('通知の既読処理に失敗しました'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
+        // 非同期で処理を実行し、結果を待たない
+        notifier.markAsRead(notification.id).catchError((e) {
+          debugPrint('既読処理でエラー発生: $e');
+          // エラーが発生しても処理を継続
+        });
       }
     }
 
     // 通知を承認する関数
     Future<void> acceptNotification() async {
       try {
-        await markAsRead();
+        // 既読処理を開始
+        markAsRead();
+        // 承認処理を実行
         await notifier.acceptNotification(notification.id);
       } catch (e) {
         if (context.mounted) {
@@ -241,7 +236,9 @@ class _NotificationItem extends ConsumerWidget {
     // 通知を拒否する関数
     Future<void> rejectNotification() async {
       try {
-        await markAsRead();
+        // 既読処理を開始
+        markAsRead();
+        // 拒否処理を実行
         await notifier.rejectNotification(notification.id);
       } catch (e) {
         if (context.mounted) {
@@ -284,16 +281,12 @@ class _NotificationItem extends ConsumerWidget {
         return;
       }
 
-      // 既読にする（エラーでも続行）
-      bool readSuccess = false;
+      // 既読にする処理を非同期に開始し、結果を待たない
       if (!notification.isRead) {
-        try {
-          await notifier.markAsRead(notification.id);
-          readSuccess = true;
-        } catch (e) {
-          // エラーのログ記録のみ行い、画面遷移は続行
-          debugPrint('Warning: Failed to mark notification as read: $e');
-        }
+        notifier.markAsRead(notification.id).catchError((e) {
+          debugPrint('既読処理でエラー発生: $e');
+          // エラーが発生しても処理を継続する
+        });
       }
 
       // 通知タイプに応じた画面遷移
@@ -350,6 +343,9 @@ class _NotificationItem extends ConsumerWidget {
             // 投稿詳細画面へ遷移
             if (notification.relatedItemId != null) {
               try {
+                debugPrint(
+                    '通知タップ: type=${notification.type.name}, id=${notification.id}, relatedItemId=${notification.relatedItemId}');
+
                 // スケジュール情報を取得する前にローディング表示
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -368,15 +364,22 @@ class _NotificationItem extends ConsumerWidget {
                 final schedule = await scheduleStream.first;
 
                 if (schedule != null && context.mounted) {
-                  // ScheduleDetailPageに直接遷移
+                  debugPrint(
+                      'スケジュール取得成功: ${schedule.id}, 通知ID: ${notification.id}');
+
+                  // 通知IDを明示的に渡してスケジュール詳細ページに遷移
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) =>
-                          ScheduleDetailPage(schedule: schedule),
+                      builder: (context) => ScheduleDetailPage(
+                        schedule: schedule,
+                        fromNotification: true,
+                        notificationId: notification.id,
+                      ),
                     ),
                   );
                 } else if (context.mounted) {
                   // スケジュールが見つからない場合
+                  debugPrint('スケジュールが見つかりません: ${notification.relatedItemId}');
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('予定が見つかりませんでした'),
@@ -398,6 +401,7 @@ class _NotificationItem extends ConsumerWidget {
                 }
               }
             } else {
+              debugPrint('通知の関連アイテムIDがnullです: ${notification.id}');
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -409,17 +413,6 @@ class _NotificationItem extends ConsumerWidget {
               }
             }
             break;
-        }
-
-        // 既読処理に失敗した場合のみユーザーに通知
-        if (!notification.isRead && !readSuccess && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('通知の既読処理に失敗しましたが、操作は続行しました'),
-              duration: Duration(seconds: 3),
-              backgroundColor: Colors.orange,
-            ),
-          );
         }
       } catch (e) {
         if (context.mounted) {

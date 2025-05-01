@@ -13,6 +13,9 @@ class AppConfig {
   /// アプリ名
   final String appName;
 
+  /// プッシュ通知用Cloud FunctionのURL
+  final String pushNotificationUrl;
+
   /// シングルトンインスタンス
   static AppConfig? _instance;
 
@@ -30,6 +33,7 @@ class AppConfig {
   static void initialize(Environment environment) {
     FirebaseOptions options;
     String appName;
+    String pushNotificationUrl;
 
     // 環境変数からFirebaseOptionsクラス名を取得
     const firebaseOptionsClass =
@@ -42,16 +46,21 @@ class AppConfig {
     if (firebaseOptionsClass == 'ProdFirebaseOptions') {
       options = ProdFirebaseOptions.currentPlatform;
       environment = Environment.production;
+      pushNotificationUrl =
+          'https://us-central1-lakiite-flutter-app-prod.cloudfunctions.net/sendNotification';
     } else {
       options = DevFirebaseOptions.currentPlatform;
       environment = Environment.development;
+      pushNotificationUrl =
+          'https://us-central1-tarakite-flutter-app-dev.cloudfunctions.net/sendNotification';
     }
 
-    _instance = AppConfig._(environment, options, appName);
+    _instance = AppConfig._(environment, options, appName, pushNotificationUrl);
   }
 
   /// プライベートコンストラクタ
-  AppConfig._(this.environment, this.firebaseOptions, this.appName);
+  AppConfig._(this.environment, this.firebaseOptions, this.appName,
+      this.pushNotificationUrl);
 
   /// 開発環境かどうか
   bool get isDevelopment => environment == Environment.development;

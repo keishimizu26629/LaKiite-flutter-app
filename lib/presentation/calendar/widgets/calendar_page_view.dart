@@ -7,8 +7,10 @@ import 'package:lakiite/presentation/calendar/widgets/daily_schedule_view.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
 import 'dart:convert';
+import 'dart:async'; // Timerのインポートを追加
 import 'package:flutter/gestures.dart' show DragStartBehavior;
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:lakiite/utils/logger.dart'; // AppLoggerのインポートを追加
 
 // 現在表示中のカレンダーページインデックスを保持するプロバイダー
 final calendarCurrentIndexProvider =
@@ -27,6 +29,13 @@ class CalendarIndexNotifier extends StateNotifier<int> {
     state = 1200;
   }
 }
+
+// 初期表示の最適化フラグ
+bool _isCalendarFirstBuild = true;
+
+// スライド中かどうかを管理するフラグ
+bool _isSliding = false;
+Timer? _slidingTimer;
 
 // PageControllerをキャッシュするプロバイダー
 final calendarPageControllerProvider = Provider<PageController>((ref) {
@@ -115,10 +124,24 @@ class CalendarPageView extends HookConsumerWidget {
     final currentUserId = ref.watch(currentUserIdProvider);
 
     // 最適化モードの取得
-    final isOptimized = ref.watch(calendarOptimizationProvider);
+    ref.watch(calendarOptimizationProvider);
+
+    // 初期表示時は最適化モードをオフにして通常表示にする
+    if (_isCalendarFirstBuild) {
+      _isCalendarFirstBuild = false;
+      // ビルド完了後に実行
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (ref.exists(calendarOptimizationProvider)) {
+          ref.read(calendarOptimizationProvider.notifier).state = false;
+        }
+      });
+    }
 
     // キャッシュされたPageControllerを使用
     final pageController = ref.watch(calendarPageControllerProvider);
+
+    // スクロール状態を管理するためのコントローラ
+    final scrollStarted = useRef(false);
 
     // ページの同期処理（初期表示時のみ）
     useEffect(() {
@@ -144,7 +167,7 @@ class CalendarPageView extends HookConsumerWidget {
             }
           }
         } catch (e) {
-          debugPrint('初期ページ同期エラー: $e');
+          AppLogger.error('初期ページ同期エラー: $e');
         }
       });
       return null;
@@ -162,7 +185,7 @@ class CalendarPageView extends HookConsumerWidget {
               ref.read(cachedHolidaysProvider.notifier).state = holidays;
             }
           } catch (e) {
-            debugPrint('祝日データキャッシュエラー: $e');
+            AppLogger.error('祝日データキャッシュエラー: $e');
           }
         });
       });
@@ -203,7 +226,7 @@ class CalendarPageView extends HookConsumerWidget {
                   _fetchDataWithThrottle(ref, currentUserId, nextDate, false);
                 }
               } catch (e) {
-                debugPrint('祝日データ反映エラー: $e');
+                AppLogger.error('祝日データ反映エラー: $e');
               }
             });
 
@@ -221,7 +244,7 @@ class CalendarPageView extends HookConsumerWidget {
             // 定期的なクリーンアップを開始
             _scheduleCleanup(ref, currentIndexValue);
           } catch (e) {
-            debugPrint('初期データ読み込みエラー: $e');
+            AppLogger.error('初期データ読み込みエラー: $e');
           }
         });
       }
@@ -286,219 +309,237 @@ class CalendarPageView extends HookConsumerWidget {
             },
           ),
           Expanded(
-            child: PageView.builder(
-              controller: pageController,
-              physics: const OptimizedScrollPhysics(),
-              // スクロール開始時に最適化モードを有効化
-              dragStartBehavior: DragStartBehavior.start,
-              itemBuilder: (context, index) {
-                // インデックスが事前レンダリング範囲外で未レンダリングの場合は空のプレースホルダーを表示
-                final isPreRendered =
-                    (index >= currentIndexValue - _preRenderMonthsRange &&
-                        index <= currentIndexValue + _preRenderMonthsRange);
-                final isAlreadyRendered = renderedMonths.contains(index);
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                // スクロール開始時
+                if (notification is ScrollStartNotification) {
+                  _isSliding = true;
+                  scrollStarted.value = true;
 
-                if (!isPreRendered && !isAlreadyRendered) {
-                  // 事前レンダリング範囲外で未レンダリングの場合は時間差でレンダリングをスケジュール
-                  Future.delayed(const Duration(milliseconds: 100), () {
-                    if (ref.exists(renderedMonthsProvider)) {
-                      final current = ref.read(renderedMonthsProvider);
-                      if (!current.contains(index)) {
-                        ref.read(renderedMonthsProvider.notifier).state = {
-                          ...current,
-                          index
-                        };
-                      }
+                  // スクロール中は最適化モードを有効にして軽量レンダリング
+                  if (ref.exists(calendarOptimizationProvider)) {
+                    ref.read(calendarOptimizationProvider.notifier).state =
+                        true;
+                  }
+                }
+                // スクロール終了時
+                else if (notification is ScrollEndNotification &&
+                    scrollStarted.value) {
+                  scrollStarted.value = false;
+
+                  // タイマーをキャンセルして再設定
+                  _slidingTimer?.cancel();
+                  _slidingTimer = Timer(const Duration(milliseconds: 300), () {
+                    _isSliding = false;
+
+                    // スライド完了後に最適化モードを無効化
+                    if (ref.exists(calendarOptimizationProvider)) {
+                      ref.read(calendarOptimizationProvider.notifier).state =
+                          false;
+                    }
+
+                    // スライド完了後にデータを再取得（必要な場合のみ）
+                    if (currentUserId != null) {
+                      final currentIndex =
+                          ref.read(calendarCurrentIndexProvider);
+                      final visibleDate = _getVisibleDateTime(currentIndex);
+                      _fetchDataWithThrottle(
+                          ref, currentUserId, visibleDate, true);
                     }
                   });
-
-                  // 軽量なプレースホルダーを表示
-                  return CalendarPlaceholder(
-                    key: ValueKey('calendar_placeholder_$index'),
-                    index: index,
-                  );
                 }
-
-                final dateTime = _getVisibleDateTime(index);
-                final monthKey = getMonthKey(dateTime);
-
-                // アクティブな範囲内のページにキープアライブを適用
-                final shouldCache = activeMonthIndices.contains(index);
-
-                // キーを追加して再構築を防止
-                return shouldCache
-                    ? KeepAliveCalendarPage(
-                        key: ValueKey(
-                            'calendar_page_${dateTime.year}_${dateTime.month}'),
-                        visiblePageDate: dateTime,
-                        monthKey: monthKey,
-                      )
-                    : CalendarPageFrame(
-                        key: ValueKey(
-                            'calendar_page_${dateTime.year}_${dateTime.month}'),
-                        visiblePageDate: dateTime,
-                        monthKey: monthKey,
-                      );
+                return false;
               },
-              onPageChanged: (index) {
-                // ビルド中に状態を変更しないよう、非同期処理で実行
-                Future.microtask(() {
-                  try {
-                    // 前回のインデックスと大きく異なる場合はジャンプを制限
-                    final currentIndex = ref.read(calendarCurrentIndexProvider);
-                    if ((index - currentIndex).abs() > 15) {
-                      // 極端なジャンプを制限し、制御された移動を行う
-                      final safeIndex = index > currentIndex
-                          ? currentIndex + 15
-                          : currentIndex - 15;
+              child: PageView.builder(
+                controller: pageController,
+                physics: const OptimizedScrollPhysics(),
+                // スクロール開始時に最適化モードを有効化
+                dragStartBehavior: DragStartBehavior.start,
+                itemBuilder: (context, index) {
+                  // インデックスが事前レンダリング範囲外で未レンダリングの場合は空のプレースホルダーを表示
+                  final isPreRendered =
+                      (index >= currentIndexValue - _preRenderMonthsRange &&
+                          index <= currentIndexValue + _preRenderMonthsRange);
+                  final isAlreadyRendered = renderedMonths.contains(index);
 
-                      // 安全なインデックスに更新
-                      if (ref.exists(calendarCurrentIndexProvider)) {
-                        ref
-                            .read(calendarCurrentIndexProvider.notifier)
-                            .update(safeIndex);
-                      }
-
-                      // ページコントローラーを安全なインデックスに合わせる
-                      Future.delayed(const Duration(milliseconds: 50), () {
-                        if (pageController.hasClients) {
-                          try {
-                            pageController.jumpToPage(safeIndex);
-                          } catch (e) {
-                            debugPrint('ページジャンプエラー: $e');
-                          }
-                        }
-                      });
-
-                      return; // 極端なジャンプを防止
-                    }
-
-                    // インデックスを状態プロバイダーに保存
-                    if (index >= 800 && index <= 1600) {
-                      if (ref.exists(calendarCurrentIndexProvider)) {
-                        ref
-                            .read(calendarCurrentIndexProvider.notifier)
-                            .update(index);
-                      }
-
-                      // 表示する月を取得
-                      final visibleDate = _getVisibleDateTime(index);
-
-                      // 祝日データを確実に先読み - 新しいアプローチ（軽量化）
-                      if (ref.exists(holidaysProvider) &&
-                          ref.exists(cachedHolidaysProvider)) {
-                        final cachedHolidays = ref.read(cachedHolidaysProvider);
-                        if (cachedHolidays.isEmpty) {
-                          ref.read(holidaysProvider).whenData((holidays) {
-                            try {
-                              ref.read(cachedHolidaysProvider.notifier).state =
-                                  holidays;
-                            } catch (e) {
-                              debugPrint('ページ変更時祝日キャッシュエラー: $e');
-                            }
-                          });
-                        }
-                      }
-
-                      // アクティブな月インデックスの集合を更新
-                      final newIndices = <int>{index};
-                      for (int i = 1; i <= _prefetchMonthsRange; i++) {
-                        newIndices.add(index - i);
-                        newIndices.add(index + i);
-                      }
-
-                      if (ref.exists(activeMonthIndicesProvider)) {
-                        ref.read(activeMonthIndicesProvider.notifier).state =
-                            newIndices;
-                      }
-
-                      // 新しく表示される月を先読みでレンダリング
+                  if (!isPreRendered && !isAlreadyRendered) {
+                    // 事前レンダリング範囲外で未レンダリングの場合は時間差でレンダリングをスケジュール
+                    Future.delayed(const Duration(milliseconds: 100), () {
                       if (ref.exists(renderedMonthsProvider)) {
-                        final currentRendered =
-                            ref.read(renderedMonthsProvider);
-                        final additionalMonths = <int>{};
-
-                        for (int i = 1; i <= _preRenderMonthsRange; i++) {
-                          if (!currentRendered.contains(index + i)) {
-                            additionalMonths.add(index + i);
-                          }
-                          if (!currentRendered.contains(index - i)) {
-                            additionalMonths.add(index - i);
-                          }
-                        }
-
-                        if (additionalMonths.isNotEmpty) {
+                        final current = ref.read(renderedMonthsProvider);
+                        if (!current.contains(index)) {
                           ref.read(renderedMonthsProvider.notifier).state = {
-                            ...currentRendered,
-                            ...additionalMonths
+                            ...current,
+                            index
                           };
                         }
                       }
+                    });
 
-                      // スクロール中は最適化モードを有効にして軽量レンダリング
-                      if (ref.exists(calendarOptimizationProvider)) {
-                        ref.read(calendarOptimizationProvider.notifier).state =
-                            true;
-                      }
-
-                      // スロットリングを適用してデータ取得
-                      if (currentUserId != null) {
-                        _fetchDataWithThrottle(ref, currentUserId, visibleDate);
-
-                        // 前後の月のデータも時間差で取得
-                        Future.delayed(const Duration(milliseconds: 300), () {
-                          try {
-                            final prefetchIndices = <int>[];
-                            for (int i = 1; i <= _prefetchMonthsRange; i++) {
-                              prefetchIndices.add(index - i);
-                              prefetchIndices.add(index + i);
-                            }
-
-                            for (final prefetchIndex in prefetchIndices) {
-                              final date = _getVisibleDateTime(prefetchIndex);
-                              _fetchDataWithThrottle(
-                                  ref, currentUserId, date, false);
-                            }
-                          } catch (e) {
-                            debugPrint('前後の月データ取得エラー: $e');
-                          }
-                        });
-
-                        // スクロール完了500ms後に最適化モードを無効化
-                        Future.delayed(const Duration(milliseconds: 500), () {
-                          try {
-                            if (ref.exists(calendarOptimizationProvider)) {
-                              ref
-                                  .read(calendarOptimizationProvider.notifier)
-                                  .state = false;
-                            }
-                          } catch (e) {
-                            debugPrint('最適化モード更新エラー: $e');
-                          }
-                        });
-
-                        // データ取得後にクリーンアップをスケジュール
-                        _scheduleCleanup(ref, index);
-                      }
-                    } else {
-                      // 異常なインデックスの場合はリセット
-                      if (ref.exists(calendarCurrentIndexProvider)) {
-                        ref.read(calendarCurrentIndexProvider.notifier).reset();
-                      }
-                    }
-                  } catch (e, stack) {
-                    debugPrint('ページ変更エラー: $e');
-                    // エラーが発生した場合は現在のインデックスに戻る
-                    try {
-                      if (ref.exists(calendarCurrentIndexProvider)) {
-                        ref.read(calendarCurrentIndexProvider.notifier).reset();
-                      }
-                    } catch (_) {
-                      // リセット自体が失敗した場合は無視
-                    }
+                    // 軽量なプレースホルダーを表示
+                    return CalendarPlaceholder(
+                      key: ValueKey('calendar_placeholder_$index'),
+                      index: index,
+                    );
                   }
-                });
-              },
+
+                  final dateTime = _getVisibleDateTime(index);
+                  final monthKey = getMonthKey(dateTime);
+
+                  // アクティブな範囲内のページにキープアライブを適用
+                  final shouldCache = activeMonthIndices.contains(index);
+
+                  // キーを追加して再構築を防止
+                  return RepaintBoundary(
+                    child: shouldCache
+                        ? KeepAliveCalendarPage(
+                            key: ValueKey(
+                                'calendar_page_${dateTime.year}_${dateTime.month}'),
+                            visiblePageDate: dateTime,
+                            monthKey: monthKey,
+                          )
+                        : CalendarPageFrame(
+                            key: ValueKey(
+                                'calendar_page_${dateTime.year}_${dateTime.month}'),
+                            visiblePageDate: dateTime,
+                            monthKey: monthKey,
+                          ),
+                  );
+                },
+                onPageChanged: (index) {
+                  // ビルド中に状態を変更しないよう、非同期処理で実行
+                  Future.microtask(() {
+                    try {
+                      // 前回のインデックスと大きく異なる場合はジャンプを制限
+                      final currentIndex =
+                          ref.read(calendarCurrentIndexProvider);
+                      if ((index - currentIndex).abs() > 15) {
+                        // 極端なジャンプを制限し、制御された移動を行う
+                        final safeIndex = index > currentIndex
+                            ? currentIndex + 15
+                            : currentIndex - 15;
+
+                        // 安全なインデックスに更新
+                        if (ref.exists(calendarCurrentIndexProvider)) {
+                          ref
+                              .read(calendarCurrentIndexProvider.notifier)
+                              .update(safeIndex);
+                        }
+
+                        // ページコントローラーを安全なインデックスに合わせる
+                        Future.delayed(const Duration(milliseconds: 50), () {
+                          if (pageController.hasClients) {
+                            try {
+                              pageController.jumpToPage(safeIndex);
+                            } catch (e) {
+                              AppLogger.error('ページジャンプエラー: $e');
+                            }
+                          }
+                        });
+
+                        return; // 極端なジャンプを防止
+                      }
+
+                      // インデックスを状態プロバイダーに保存
+                      if (index >= 800 && index <= 1600) {
+                        if (ref.exists(calendarCurrentIndexProvider)) {
+                          ref
+                              .read(calendarCurrentIndexProvider.notifier)
+                              .update(index);
+                        }
+
+                        // 表示する月を取得
+                        final visibleDate = _getVisibleDateTime(index);
+
+                        // 祝日データを確実に先読み - 新しいアプローチ（軽量化）
+                        if (!_isSliding &&
+                            ref.exists(holidaysProvider) &&
+                            ref.exists(cachedHolidaysProvider)) {
+                          final cachedHolidays =
+                              ref.read(cachedHolidaysProvider);
+                          if (cachedHolidays.isEmpty) {
+                            ref.read(holidaysProvider).whenData((holidays) {
+                              try {
+                                ref
+                                    .read(cachedHolidaysProvider.notifier)
+                                    .state = holidays;
+                              } catch (e) {
+                                AppLogger.error('ページ変更時祝日キャッシュエラー: $e');
+                              }
+                            });
+                          }
+                        }
+
+                        // スライド中でなければアクティブな月インデックスの集合を更新
+                        if (!_isSliding) {
+                          final newIndices = <int>{index};
+                          for (int i = 1; i <= _prefetchMonthsRange; i++) {
+                            newIndices.add(index - i);
+                            newIndices.add(index + i);
+                          }
+
+                          if (ref.exists(activeMonthIndicesProvider)) {
+                            ref
+                                .read(activeMonthIndicesProvider.notifier)
+                                .state = newIndices;
+                          }
+                        }
+
+                        // スライド中でなければ新しく表示される月を先読みでレンダリング
+                        if (!_isSliding && ref.exists(renderedMonthsProvider)) {
+                          final currentRendered =
+                              ref.read(renderedMonthsProvider);
+                          final additionalMonths = <int>{};
+
+                          for (int i = 1; i <= _preRenderMonthsRange; i++) {
+                            if (!currentRendered.contains(index + i)) {
+                              additionalMonths.add(index + i);
+                            }
+                            if (!currentRendered.contains(index - i)) {
+                              additionalMonths.add(index - i);
+                            }
+                          }
+
+                          if (additionalMonths.isNotEmpty) {
+                            ref.read(renderedMonthsProvider.notifier).state = {
+                              ...currentRendered,
+                              ...additionalMonths
+                            };
+                          }
+                        }
+
+                        // スライド中でない場合のみデータ取得を実行
+                        if (!_isSliding && currentUserId != null) {
+                          _fetchDataWithThrottle(
+                              ref, currentUserId, visibleDate);
+
+                          // データ取得後にクリーンアップをスケジュール
+                          _scheduleCleanup(ref, index);
+                        }
+                      } else {
+                        // 異常なインデックスの場合はリセット
+                        if (ref.exists(calendarCurrentIndexProvider)) {
+                          ref
+                              .read(calendarCurrentIndexProvider.notifier)
+                              .reset();
+                        }
+                      }
+                    } catch (e) {
+                      AppLogger.error('ページ変更エラー: $e');
+                      // エラーが発生した場合は現在のインデックスに戻る
+                      try {
+                        if (ref.exists(calendarCurrentIndexProvider)) {
+                          ref
+                              .read(calendarCurrentIndexProvider.notifier)
+                              .reset();
+                        }
+                      } catch (_) {
+                        // リセット自体が失敗した場合は無視
+                      }
+                    }
+                  });
+                },
+              ),
             ),
           ),
         ],
@@ -523,7 +564,7 @@ class CalendarPageView extends HookConsumerWidget {
         final renderedIndices = ref.read(renderedMonthsProvider);
 
         // 拡張された保持範囲（前後6ヶ月は保持）
-        final retainRange = 6;
+        const retainRange = 6;
         final retainIndices = <int>{currentIndex};
         for (int i = 1; i <= retainRange; i++) {
           retainIndices.add(currentIndex - i);
@@ -573,6 +614,11 @@ class CalendarPageView extends HookConsumerWidget {
       final isLoading = ref.read(monthDataLoadingProvider(monthKey));
       final isFirstLoad = lastFetchTime == null;
 
+      // スライド中は不要なデータ取得をスキップ
+      if (_isSliding && !force) {
+        return;
+      }
+
       // 強制フラグがある、または前回の読み込みから一定時間経過している場合に読み込み
       if (force ||
           isFirstLoad ||
@@ -599,12 +645,12 @@ class CalendarPageView extends HookConsumerWidget {
                       false;
                 }
               } catch (e) {
-                debugPrint('ローディング状態解除エラー: $e');
+                AppLogger.error('ローディング状態解除エラー: $e');
               }
             });
           }
         } catch (e) {
-          debugPrint('スケジュールデータ取得エラー: $e');
+          AppLogger.error('スケジュールデータ取得エラー: $e');
           // エラー時も読み込み状態を解除
           Future.delayed(const Duration(milliseconds: 300), () {
             try {
@@ -618,31 +664,12 @@ class CalendarPageView extends HookConsumerWidget {
           });
         }
       }
-    } catch (e, stack) {
-      debugPrint('データ取得処理エラー: $e');
+    } catch (e) {
+      AppLogger.error('データ取得処理エラー: $e');
     }
   }
 
   // 指定した範囲の月の祝日データを先読み
-  void _preloadHolidaysForMonthRange(
-      WidgetRef ref, DateTime baseDate, int range) {
-    try {
-      final holidaysAsync = ref.read(holidaysProvider);
-
-      holidaysAsync.whenData((allHolidays) {
-        // 即座にキャッシュに追加
-        try {
-          if (ref.exists(cachedHolidaysProvider)) {
-            ref.read(cachedHolidaysProvider.notifier).state = allHolidays;
-          }
-        } catch (e) {
-          debugPrint('祝日データキャッシュエラー: $e');
-        }
-      });
-    } catch (e) {
-      debugPrint('祝日データ先読みエラー: $e');
-    }
-  }
 
   String _getMonthName(int month) {
     final monthNames = [
@@ -780,6 +807,84 @@ class CalendarPageContent extends HookConsumerWidget {
     return Duration(days: (weekday == 7) ? 0 : -weekday);
   }
 
+  // より効率的なスケジュールマップの生成
+  Map<String, List<Schedule>> _generateOptimizedScheduleMap(
+      List<DateTime> dates,
+      List<Schedule> schedules,
+      DateTime visibleMonth,
+      bool optimized) {
+    final Map<String, List<Schedule>> result = {};
+
+    // 日付キーを事前に作成
+    for (final date in dates) {
+      final dateKey =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      result[dateKey] = [];
+    }
+
+    // 表示する最大スケジュール数を制限
+    final maxSchedules = optimized ? 30 : schedules.length;
+    final schedulesToProcess = schedules.take(maxSchedules).toList();
+
+    // 各スケジュールの日付範囲をあらかじめ計算
+    final scheduleDateRanges = <Schedule, (DateTime, DateTime)>{};
+    for (final schedule in schedulesToProcess) {
+      final startDate = DateTime(
+        schedule.startDateTime.year,
+        schedule.startDateTime.month,
+        schedule.startDateTime.day,
+      );
+
+      final endDate = DateTime(
+        schedule.endDateTime.year,
+        schedule.endDateTime.month,
+        schedule.endDateTime.day,
+      );
+
+      scheduleDateRanges[schedule] = (startDate, endDate);
+    }
+
+    // 最適化モード時は表示月のみ処理
+    if (optimized) {
+      final relevantDates =
+          dates.where((date) => date.month == visibleMonth.month).toList();
+
+      for (final date in relevantDates) {
+        final targetDate = DateTime(date.year, date.month, date.day);
+        final dateKey =
+            '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+        for (final entry in scheduleDateRanges.entries) {
+          final schedule = entry.key;
+          final (startDate, endDate) = entry.value;
+
+          if (!targetDate.isBefore(startDate) && !targetDate.isAfter(endDate)) {
+            result[dateKey]?.add(schedule);
+          }
+        }
+      }
+      return result;
+    }
+
+    // 通常モードでは全ての日付を処理
+    for (final date in dates) {
+      final targetDate = DateTime(date.year, date.month, date.day);
+      final dateKey =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+      for (final entry in scheduleDateRanges.entries) {
+        final schedule = entry.key;
+        final (startDate, endDate) = entry.value;
+
+        if (!targetDate.isBefore(startDate) && !targetDate.isAfter(endDate)) {
+          result[dateKey]?.add(schedule);
+        }
+      }
+    }
+
+    return result;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 最適化モードの取得
@@ -802,7 +907,40 @@ class CalendarPageContent extends HookConsumerWidget {
         return scheduleState.maybeWhen(
           data: (state) => state.maybeMap(
             loaded: (loaded) {
-              // キャッシュを更新（ビルド中に更新しないよう遅延実行）
+              // スライド中でなければキャッシュを更新
+              if (!_isSliding) {
+                Future.microtask(() {
+                  try {
+                    ref.read(cachedSchedulesProvider.notifier).state = {
+                      ...cachedSchedules,
+                      ...loaded.schedules.fold<Map<String, List<Schedule>>>(
+                        {},
+                        (map, schedule) {
+                          final key =
+                              '${schedule.startDateTime.year}-${schedule.startDateTime.month}';
+                          map[key] = [...(map[key] ?? []), schedule];
+                          return map;
+                        },
+                      ),
+                    };
+                  } catch (e) {
+                    AppLogger.error('キャッシュ更新エラー: $e');
+                  }
+                });
+              }
+              return loaded.schedules;
+            },
+            orElse: () => <Schedule>[],
+          ),
+          orElse: () => <Schedule>[],
+        );
+      }
+
+      return scheduleState.when(
+        data: (state) => state.maybeMap(
+          loaded: (loaded) {
+            // スライド中でなければキャッシュを更新
+            if (!_isSliding) {
               Future.microtask(() {
                 try {
                   ref.read(cachedSchedulesProvider.notifier).state = {
@@ -817,40 +955,11 @@ class CalendarPageContent extends HookConsumerWidget {
                       },
                     ),
                   };
-                } catch (e, stack) {
-                  debugPrint('キャッシュ更新エラー: $e');
+                } catch (e) {
+                  AppLogger.error('キャッシュ更新エラー: $e');
                 }
               });
-              return loaded.schedules;
-            },
-            orElse: () => <Schedule>[],
-          ),
-          orElse: () => <Schedule>[],
-        );
-      }
-
-      return scheduleState.when(
-        data: (state) => state.maybeMap(
-          loaded: (loaded) {
-            // 通常モードではキャッシュを更新して返す（ビルド中に更新しないよう遅延実行）
-            Future.microtask(() {
-              try {
-                ref.read(cachedSchedulesProvider.notifier).state = {
-                  ...cachedSchedules,
-                  ...loaded.schedules.fold<Map<String, List<Schedule>>>(
-                    {},
-                    (map, schedule) {
-                      final key =
-                          '${schedule.startDateTime.year}-${schedule.startDateTime.month}';
-                      map[key] = [...(map[key] ?? []), schedule];
-                      return map;
-                    },
-                  ),
-                };
-              } catch (e, stack) {
-                debugPrint('キャッシュ更新エラー: $e');
-              }
-            });
+            }
             return loaded.schedules;
           },
           orElse: () => <Schedule>[],
@@ -858,87 +967,12 @@ class CalendarPageContent extends HookConsumerWidget {
         loading: () => <Schedule>[],
         error: (_, __) => <Schedule>[],
       );
-    }, [scheduleState, isOptimized, cachedSchedules]);
+    }, [scheduleState, isOptimized, cachedSchedules, _isSliding]);
 
-    // 日付ごとにスケジュールをフィルタリング（最適化）
+    // 日付ごとにスケジュールをフィルタリング（最適化）- 高速アルゴリズムを使用
     final dateSchedulesMap = useMemoized(() {
-      // 日付ごとのスケジュールマップ
-      final Map<String, List<Schedule>> result = {};
-
-      // 日付キーを事前に作成（最適化モードではシンプルなマップ生成）
-      if (isOptimized) {
-        for (final date in currentDates) {
-          final dateKey =
-              '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-          result[dateKey] = [];
-        }
-
-        // 重要なスケジュールのみを表示
-        for (final schedule
-            in schedules.take(isOptimized ? 30 : schedules.length)) {
-          final startDate = DateTime(
-            schedule.startDateTime.year,
-            schedule.startDateTime.month,
-            schedule.startDateTime.day,
-          );
-
-          final endDate = DateTime(
-            schedule.endDateTime.year,
-            schedule.endDateTime.month,
-            schedule.endDateTime.day,
-          );
-
-          // 表示中の月のみをフィルタリング（最適化モード）
-          for (final date in currentDates) {
-            if (date.month != visiblePageDate.month) continue;
-
-            final targetDate = DateTime(date.year, date.month, date.day);
-            if (!targetDate.isBefore(startDate) &&
-                !targetDate.isAfter(endDate)) {
-              final dateKey =
-                  '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-              result[dateKey]?.add(schedule);
-            }
-          }
-        }
-        return result;
-      }
-
-      // 通常モードでは完全なフィルタリング
-      for (final date in currentDates) {
-        final dateKey =
-            '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-        result[dateKey] = [];
-      }
-
-      // スケジュールを日付ごとに振り分け
-      for (final schedule in schedules) {
-        final startDate = DateTime(
-          schedule.startDateTime.year,
-          schedule.startDateTime.month,
-          schedule.startDateTime.day,
-        );
-
-        final endDate = DateTime(
-          schedule.endDateTime.year,
-          schedule.endDateTime.month,
-          schedule.endDateTime.day,
-        );
-
-        // 現在のカレンダー表示範囲でフィルタリング
-        for (final date in currentDates) {
-          final targetDate = DateTime(date.year, date.month, date.day);
-
-          // 開始日から終了日の範囲内か確認
-          if (!targetDate.isBefore(startDate) && !targetDate.isAfter(endDate)) {
-            final dateKey =
-                '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-            result[dateKey]?.add(schedule);
-          }
-        }
-      }
-
-      return result;
+      return _generateOptimizedScheduleMap(
+          currentDates, schedules, visiblePageDate, isOptimized);
     }, [currentDates, schedules, visiblePageDate, isOptimized]);
 
     // 日付別セルを事前に計算してパフォーマンスを向上（最適化モードではシンプルなセル）
@@ -966,13 +1000,15 @@ class CalendarPageContent extends HookConsumerWidget {
         [currentDates, dateSchedulesMap, visiblePageDate, isOptimized]);
 
     // パフォーマンス最適化のためのコンテナ
-    return isOptimized
-        ? OptimizedCalendarLayout(
-            children: [const DaysOfTheWeek(), ...dateCells],
-          )
-        : Column(
-            children: [const DaysOfTheWeek(), ...dateCells],
-          );
+    return RepaintBoundary(
+      child: isOptimized
+          ? OptimizedCalendarLayout(
+              children: [const DaysOfTheWeek(), ...dateCells],
+            )
+          : Column(
+              children: [const DaysOfTheWeek(), ...dateCells],
+            ),
+    );
   }
 }
 
@@ -1210,7 +1246,7 @@ class OptimizedDateCell extends StatelessWidget {
               MaterialPageRoute(
                 builder: (context) => DailyScheduleView(
                   initialDate: date,
-                  schedules: schedules,
+                  schedules: const [], // 軽量版なのでスケジュールは空で渡す
                 ),
               ),
             );
@@ -1319,19 +1355,19 @@ class OptimizedScrollPhysics extends ScrollPhysics {
 
   @override
   SpringDescription get spring => const SpringDescription(
-        mass: 0.3, // より軽く
-        stiffness: 300.0, // より硬く
-        damping: 25.0, // 減衰を強化
+        mass: 0.25, // さらに軽く
+        stiffness: 350.0, // 剛性を上げる
+        damping: 30.0, // 減衰をさらに強化
       );
 
   @override
-  double get maxFlingVelocity => 1000.0; // 速度上限をさらに下げる
+  double get maxFlingVelocity => 800.0; // 速度上限をさらに下げる
 
   @override
-  double get minFlingVelocity => 60.0; // 最小速度を上げる
+  double get minFlingVelocity => 70.0; // 最小速度を上げる
 
   @override
-  double get dragStartDistanceMotionThreshold => 8.0; // ドラッグ開始しきい値を上げる
+  double get dragStartDistanceMotionThreshold => 10.0; // ドラッグ開始しきい値を上げる
 }
 
 // スクロール中の軽量表示用ウィジェット
@@ -1450,37 +1486,59 @@ class LightweightDateCell extends StatelessWidget {
             ? Colors.grey.shade100
             : null;
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: Theme.of(context).dividerColor, width: 1),
-          right: BorderSide(color: Theme.of(context).dividerColor, width: 1),
-        ),
-        color: cellColor,
-      ),
-      padding: const EdgeInsets.all(2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            date.day.toString(),
-            style: TextStyle(
-              color: dayTextColor,
-              fontWeight: isToday ? FontWeight.bold : null,
-              fontSize: 12,
-            ),
-          ),
-          if (hasSchedules)
-            Container(
-              margin: const EdgeInsets.only(top: 2),
-              height: 3,
-              width: 10,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade400,
-                borderRadius: BorderRadius.circular(1.5),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          // 選択された日付をProviderに保存
+          ProviderScope.containerOf(context)
+              .read(selectedDateProvider.notifier)
+              .state = date;
+
+          // DailyScheduleViewに遷移
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => DailyScheduleView(
+                initialDate: date,
+                schedules: const [], // 軽量版なのでスケジュールは空で渡す
               ),
             ),
-        ],
+          );
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(color: Theme.of(context).dividerColor, width: 1),
+              right:
+                  BorderSide(color: Theme.of(context).dividerColor, width: 1),
+            ),
+            color: cellColor,
+          ),
+          padding: const EdgeInsets.all(2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                date.day.toString(),
+                style: TextStyle(
+                  color: dayTextColor,
+                  fontWeight: isToday ? FontWeight.bold : null,
+                  fontSize: 12,
+                ),
+              ),
+              if (hasSchedules)
+                Container(
+                  margin: const EdgeInsets.only(top: 2),
+                  height: 3,
+                  width: 10,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(1.5),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

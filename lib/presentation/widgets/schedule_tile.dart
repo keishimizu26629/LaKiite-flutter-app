@@ -6,17 +6,55 @@ import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
+import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
+import 'package:lakiite/presentation/widgets/reaction_icon_widget.dart';
 
+/// 予定タイルを表示するウィジェット
+///
+/// カレンダー、タイムライン、プロフィールなど様々な箇所で使用される
+/// 予定情報を表示するためのカードUIです。表示内容や見た目をカスタマイズできます。
+///
+/// 予定の詳細情報（タイトル、説明、日時、場所、作成者）とリアクション・コメント情報を表示します。
+/// また、オプションで編集ボタンを表示したり、タイムラインビューでの特別なスタイルを適用できます。
 class ScheduleTile extends ConsumerWidget {
+  /// 表示する予定のデータ
   final Schedule schedule;
+
+  /// 現在のユーザーID
   final String currentUserId;
+
+  /// 作成者情報を表示するかどうか
   final bool showOwner;
+
+  /// 編集ボタンを表示するかどうか（自分の予定の場合のみ有効）
   final bool showEditButton;
+
+  /// タイムラインビューとして表示するかどうか（スタイルに影響）
   final bool isTimelineView;
+
+  /// 区切り線を表示するかどうか
   final bool showDivider;
+
+  /// 編集ボタンがタップされた時のコールバック
   final VoidCallback? onEditPressed;
+
+  /// リアクション部分がタップされた時のコールバック
+  final VoidCallback? onReactionTap;
+
+  /// カードのマージン
   final EdgeInsetsGeometry? margin;
 
+  /// コンストラクタ
+  ///
+  /// [schedule] 表示する予定データ
+  /// [currentUserId] 現在のユーザーID
+  /// [showOwner] 作成者情報を表示するかどうか（デフォルト: true）
+  /// [showEditButton] 編集ボタンを表示するかどうか（デフォルト: false）
+  /// [isTimelineView] タイムラインビューとして表示するかどうか（デフォルト: false）
+  /// [showDivider] 区切り線を表示するかどうか（デフォルト: false）
+  /// [onEditPressed] 編集ボタンがタップされた時のコールバック
+  /// [onReactionTap] リアクション部分がタップされた時のコールバック
+  /// [margin] カードのマージン
   const ScheduleTile({
     super.key,
     required this.schedule,
@@ -26,6 +64,7 @@ class ScheduleTile extends ConsumerWidget {
     this.isTimelineView = false,
     this.showDivider = false,
     this.onEditPressed,
+    this.onReactionTap,
     this.margin,
   });
 
@@ -184,48 +223,52 @@ class ScheduleTile extends ConsumerWidget {
                   },
                 ),
               ],
+              // インタラクションセクション（リアクションとコメント）
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  // リアクション表示部分
                   if (schedule.reactionCount > 0)
-                    const Row(
-                      children: [
-                        SizedBox(
-                          width: 30,
-                          height: 30,
-                          child: Stack(
-                            children: [
-                              Positioned(
-                                right: 2,
-                                child: Text(
-                                  '🤔',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                  ),
-                                ),
+                    // リアクションアイコンをタップすると詳細ページに遷移（または指定されたコールバックを実行）
+                    GestureDetector(
+                      onTap: onReactionTap ??
+                          () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    ScheduleDetailPage(schedule: schedule),
                               ),
-                              Positioned(
-                                top: -1,
-                                left: -2,
-                                child: Text(
-                                  '🙋',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                            );
+                          },
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          // 予定のインタラクション情報（リアクション、コメント）を取得
+                          final interactionState = ref.watch(
+                            scheduleInteractionNotifierProvider(schedule.id),
+                          );
+
+                          // リアクションアイコンを表示
+                          return SizedBox(
+                            width: 30,
+                            height: 30,
+                            child: ReactionIconWidget.fromReactionCounts(
+                              interactionState.reactionCounts,
+                              isLoading: interactionState.isLoading ||
+                                  interactionState.error != null,
+                            ),
+                          );
+                        },
+                      ),
                     )
                   else
+                    // リアクションがない場合はデフォルトのピープルアイコンを表示
                     Icon(
                       Icons.people,
                       size: 16,
                       color: Theme.of(context).primaryColor,
                     ),
                   const SizedBox(width: 4),
+                  // リアクション数を表示
                   Text(
                     '${schedule.reactionCount}',
                     style: TextStyle(
@@ -236,12 +279,14 @@ class ScheduleTile extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
+                  // コメントアイコン
                   Icon(
                     Icons.comment,
                     size: 16,
                     color: Colors.blue[400],
                   ),
                   const SizedBox(width: 4),
+                  // コメント数を表示
                   Text(
                     '${schedule.commentCount}',
                     style: TextStyle(

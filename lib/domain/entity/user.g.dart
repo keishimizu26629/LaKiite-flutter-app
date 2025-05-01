@@ -37,6 +37,7 @@ _$PrivateUserModelImpl _$$PrivateUserModelImplFromJson(
           (json['groups'] as List<dynamic>).map((e) => e as String).toList(),
       lists: (json['lists'] as List<dynamic>).map((e) => e as String).toList(),
       createdAt: DateTime.parse(json['createdAt'] as String),
+      fcmToken: json['fcmToken'] as String?,
     );
 
 Map<String, dynamic> _$$PrivateUserModelImplToJson(
@@ -48,6 +49,7 @@ Map<String, dynamic> _$$PrivateUserModelImplToJson(
       'groups': instance.groups,
       'lists': instance.lists,
       'createdAt': instance.createdAt.toIso8601String(),
+      'fcmToken': instance.fcmToken,
     };
 
 _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>

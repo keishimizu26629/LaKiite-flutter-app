@@ -4,12 +4,14 @@ import '../../domain/interfaces/i_user_repository.dart';
 import '../../infrastructure/notification_repository.dart';
 import '../../application/auth/auth_notifier.dart' as auth;
 import '../../presentation/presentation_provider.dart';
+import '../../utils/logger.dart';
 
 class SearchUserModel {
   final String id;
   final String displayName;
   final String searchId;
   final String iconUrl;
+  final String? shortBio;
   final bool hasPendingRequest;
 
   const SearchUserModel({
@@ -17,12 +19,14 @@ class SearchUserModel {
     required this.displayName,
     required this.searchId,
     required this.iconUrl,
+    this.shortBio,
     this.hasPendingRequest = false,
   });
 }
 
 final friendSearchViewModelProvider =
-    StateNotifierProvider<FriendSearchViewModel, AsyncValue<SearchUserModel?>>((ref) {
+    StateNotifierProvider<FriendSearchViewModel, AsyncValue<SearchUserModel?>>(
+        (ref) {
   final userRepository = ref.watch(userRepositoryProvider);
   final notificationRepository = NotificationRepository();
   final currentUser = ref.watch(auth.authNotifierProvider).value?.user;
@@ -34,7 +38,8 @@ final friendSearchViewModelProvider =
   );
 });
 
-class FriendSearchViewModel extends StateNotifier<AsyncValue<SearchUserModel?>> {
+class FriendSearchViewModel
+    extends StateNotifier<AsyncValue<SearchUserModel?>> {
   String? _message;
   String? get message => _message;
   final IUserRepository _userRepository;
@@ -72,20 +77,22 @@ class FriendSearchViewModel extends StateNotifier<AsyncValue<SearchUserModel?>> 
       bool hasPending = false;
       try {
         // 自分が送信した申請を確認
-        final hasSentPending = await _notificationRepository.hasPendingFriendRequest(
+        final hasSentPending =
+            await _notificationRepository.hasPendingFriendRequest(
           _currentUserId,
           user.id,
         );
 
         // 相手から受信した申請を確認
-        final hasReceivedPending = await _notificationRepository.hasPendingFriendRequest(
+        final hasReceivedPending =
+            await _notificationRepository.hasPendingFriendRequest(
           user.id,
           _currentUserId,
         );
 
         hasPending = hasSentPending || hasReceivedPending;
       } catch (e) {
-        print('Friend request check error: $e');
+        AppLogger.error('Friend request check error: $e');
       }
 
       // SearchUserModelを作成
@@ -94,6 +101,7 @@ class FriendSearchViewModel extends StateNotifier<AsyncValue<SearchUserModel?>> 
         displayName: user.displayName,
         searchId: user.searchId,
         iconUrl: user.iconUrl ?? '',
+        shortBio: user.shortBio,
         hasPendingRequest: hasPending,
       );
 

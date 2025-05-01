@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart';
+import 'logger.dart';
 
 /// 日付を相対的な時間（何分前、何時間前など）の形式で表示するためのユーティリティクラス
 class DateFormatter {
@@ -20,9 +21,9 @@ class DateFormatter {
 
       // デバッグ情報
       if (kDebugMode) {
-        print('処理対象の日付: $date');
-        print('現在の日付: $now');
-        print('差: ${now.difference(date).inSeconds}秒');
+        AppLogger.debug('処理対象の日付: $date');
+        AppLogger.debug('現在の日付: $now');
+        AppLogger.debug('差: ${now.difference(date).inSeconds}秒');
       }
 
       // UTCとローカルタイムの調整（必要に応じて）
@@ -50,16 +51,16 @@ class DateFormatter {
       } else if (difference.inDays < 365) {
         // 月数を概算で計算（30日で割る）
         final months = (difference.inDays / 30).floor();
-        return '${months}ヶ月前';
+        return '$monthsヶ月前';
       } else {
         // 年数を計算（365日で割る）
         final years = (difference.inDays / 365).floor();
-        return '${years}年前';
+        return '$years年前';
       }
     } catch (e) {
       // 例外発生時は年月日で表示
       if (kDebugMode) {
-        print('DateFormatter.formatRelativeTime エラー: $e');
+        AppLogger.error('DateFormatter.formatRelativeTime エラー: $e');
       }
       try {
         final formatter = DateFormat('yyyy/MM/dd');

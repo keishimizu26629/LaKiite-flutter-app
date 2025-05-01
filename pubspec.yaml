@@ -27,6 +27,7 @@ dependencies:
   firebase_auth: ^4.17.4
   firebase_storage: ^11.7.7
   cloud_firestore: ^4.15.4
+  firebase_messaging: ^14.7.16
 
   # Code Generation & Annotations
   json_annotation: ^4.8.1
@@ -45,11 +46,12 @@ dependencies:
 
   # Utilities
   logger: ^2.0.2+1
+  http: ^1.1.0
 
   # App Configuration
   flutter_launcher_icons: ^0.14.3
   flutter_native_splash: ^2.3.10
-  webview_flutter: ^4.8.0
+  webview_flutter: 4.2.4
   url_launcher: ^6.2.5
 
 dev_dependencies:
@@ -100,3 +102,4 @@ json_serializable:
 # Dependency Resolution
 dependency_overrides:
   watcher: ^1.1.0
+  webview_flutter_wkwebview: 3.4.0

@@ -16,12 +16,3 @@ ScheduleComment _$ScheduleCommentFromJson(Map<String, dynamic> json) =>
       userPhotoUrl: json['userPhotoUrl'] as String?,
     );
 
-Map<String, dynamic> _$ScheduleCommentToJson(ScheduleComment instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'userId': instance.userId,
-      'content': instance.content,
-      'createdAt': instance.createdAt.toIso8601String(),
-      'userDisplayName': instance.userDisplayName,
-      'userPhotoUrl': instance.userPhotoUrl,
-    };
