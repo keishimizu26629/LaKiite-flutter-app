@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lakiite/utils/logger.dart';
 
 part 'schedule_reaction.freezed.dart';
 part 'schedule_reaction.g.dart';
@@ -27,13 +28,13 @@ class ScheduleReaction with _$ScheduleReaction {
     final createdAt = json['createdAt'];
 
     // デバッグ用ログ追加
-    print(
+    AppLogger.debug(
         'ScheduleReaction.fromJson: createdAt=$createdAt (${createdAt?.runtimeType})');
-    print('Full JSON: $json');
+    AppLogger.debug('Full JSON: $json');
 
     if (createdAt == null) {
       // createdAtがnullの場合は現在時刻を使用
-      print('createdAt is null, using current time');
+      AppLogger.debug('createdAt is null, using current time');
       return _$ScheduleReactionFromJson({
         ...json,
         'createdAt': DateTime.now().toIso8601String(),
@@ -43,23 +44,23 @@ class ScheduleReaction with _$ScheduleReaction {
     String isoDateString;
     try {
       if (createdAt is DateTime) {
-        print('createdAt is DateTime');
+        AppLogger.debug('createdAt is DateTime');
         isoDateString = createdAt.toIso8601String();
       } else if (createdAt is Timestamp) {
-        print('createdAt is Timestamp');
+        AppLogger.debug('createdAt is Timestamp');
         isoDateString = createdAt.toDate().toIso8601String();
       } else if (createdAt is String) {
-        print('createdAt is String');
+        AppLogger.debug('createdAt is String');
         // すでに文字列形式の場合はそのまま使用
         isoDateString = createdAt;
       } else {
-        print('createdAt is unknown type: ${createdAt.runtimeType}');
+        AppLogger.debug('createdAt is unknown type: ${createdAt.runtimeType}');
         // 未知の型の場合は現在時刻を使用
         isoDateString = DateTime.now().toIso8601String();
       }
     } catch (e, stack) {
-      print('Error processing createdAt: $e');
-      print('Stack: $stack');
+      AppLogger.error('Error processing createdAt: $e');
+      AppLogger.error('Stack: $stack');
       // エラーが発生した場合は現在時刻を使用
       isoDateString = DateTime.now().toIso8601String();
     }
@@ -69,7 +70,7 @@ class ScheduleReaction with _$ScheduleReaction {
       'createdAt': isoDateString,
     });
 
-    print('Created ScheduleReaction: $result');
+    AppLogger.debug('Created ScheduleReaction: $result');
     return result;
   }
 }

@@ -267,15 +267,43 @@ class NotificationRepository implements INotificationRepository {
   /// [notificationId] 既読にする通知のID
   @override
   Future<void> markAsRead(String notificationId) async {
-    debugPrint('Marking notification as read: $notificationId');
+    AppLogger.debug(
+        'Repository - Marking notification as read: $notificationId');
     try {
+      // 通知ドキュメントが存在するか確認
+      final docSnapshot = await _firestore
+          .collection('notifications')
+          .doc(notificationId)
+          .get();
+
+      if (!docSnapshot.exists) {
+        AppLogger.error(
+            'Repository - Notification not found for marking as read: $notificationId');
+        throw Exception('Notification document not found');
+      }
+
+      // 現在のデータをログに記録
+      final currentData = docSnapshot.data();
+      AppLogger.debug('Repository - Current notification data: $currentData');
+
+      // すでに既読なら何もしない
+      if (currentData?['isRead'] == true) {
+        AppLogger.debug(
+            'Repository - Notification is already marked as read: $notificationId');
+        return;
+      }
+
+      // 更新処理実行 - 既読フラグとタイムスタンプだけ更新
       await _firestore.collection('notifications').doc(notificationId).update({
         'isRead': true,
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      debugPrint('Notification marked as read successfully: $notificationId');
-    } catch (e) {
-      debugPrint('Error marking notification as read: $e');
+
+      AppLogger.debug(
+          'Repository - Notification marked as read successfully: $notificationId');
+    } catch (e, stack) {
+      AppLogger.error('Repository - Error marking notification as read: $e');
+      AppLogger.error('Repository - Stack trace: $stack');
       rethrow;
     }
   }

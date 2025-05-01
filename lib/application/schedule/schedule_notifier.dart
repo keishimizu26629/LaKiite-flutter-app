@@ -243,7 +243,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
 
   // 隣接する月のスケジュールを事前読み込み
   void _preloadAdjacentMonths(String userId, DateTime month) {
-    if (userId == null || _isDisposed) return;
+    if (_isDisposed) return;
 
     // 前後1ヶ月を事前読み込み
     final prevMonth = DateTime(month.year, month.month - 1, 1);
