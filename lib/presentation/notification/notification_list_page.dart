@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/notification/notification_notifier.dart';
 import '../../domain/entity/notification.dart' as domain;
+import '../../utils/date_formatter.dart';
+import '../../presentation/calendar/schedule_detail_page.dart';
+import '../../presentation/presentation_provider.dart';
+import '../../presentation/friend/friend_profile_page.dart';
+import '../../presentation/group/group_detail_page.dart';
 
 enum NotificationFilter {
   all('すべて'),
@@ -201,25 +206,20 @@ class _NotificationItem extends ConsumerWidget {
     // 通知を既読にする関数
     Future<void> markAsRead() async {
       if (!notification.isRead) {
-        try {
-          await notifier.markAsRead(notification.id);
-        } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('通知の既読処理に失敗しました'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
+        // 非同期で処理を実行し、結果を待たない
+        notifier.markAsRead(notification.id).catchError((e) {
+          debugPrint('既読処理でエラー発生: $e');
+          // エラーが発生しても処理を継続
+        });
       }
     }
 
     // 通知を承認する関数
     Future<void> acceptNotification() async {
       try {
-        await markAsRead();
+        // 既読処理を開始
+        markAsRead();
+        // 承認処理を実行
         await notifier.acceptNotification(notification.id);
       } catch (e) {
         if (context.mounted) {
@@ -236,7 +236,9 @@ class _NotificationItem extends ConsumerWidget {
     // 通知を拒否する関数
     Future<void> rejectNotification() async {
       try {
-        await markAsRead();
+        // 既読処理を開始
+        markAsRead();
+        // 拒否処理を実行
         await notifier.rejectNotification(notification.id);
       } catch (e) {
         if (context.mounted) {
@@ -252,53 +254,175 @@ class _NotificationItem extends ConsumerWidget {
 
     // 通知タップ時の処理
     Future<void> handleNotificationTap() async {
-      // 既読にする
-      if (!notification.isRead) {
-        try {
-          await notifier.markAsRead(notification.id);
-        } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('通知の既読処理に失敗しました'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return;
+      // ログインユーザーの確認
+      final currentUser = ref.read(authNotifierProvider).value?.user;
+      if (currentUser == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('ログインが必要です'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
+        return;
+      }
+
+      // このユーザーが受信者であることを確認
+      if (notification.receiveUserId != currentUser.id) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('この通知の受信者ではありません'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // 既読にする処理を非同期に開始し、結果を待たない
+      if (!notification.isRead) {
+        notifier.markAsRead(notification.id).catchError((e) {
+          debugPrint('既読処理でエラー発生: $e');
+          // エラーが発生しても処理を継続する
+        });
       }
 
       // 通知タイプに応じた画面遷移
       if (!context.mounted) return;
 
-      switch (notification.type) {
-        case domain.NotificationType.friend:
-          // フレンドプロフィール画面へ遷移
-          Navigator.of(context).pushNamed(
-            '/friend/profile',
-            arguments: notification.sendUserId,
+      try {
+        switch (notification.type) {
+          case domain.NotificationType.friend:
+            // フレンドプロフィール画面へ遷移
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) =>
+                    FriendProfilePage(userId: notification.sendUserId),
+              ),
+            );
+            break;
+          case domain.NotificationType.groupInvitation:
+            // グループ詳細画面へ遷移
+            if (notification.groupId != null) {
+              // グループIDを使って詳細画面に遷移
+              try {
+                // 代替アプローチ: IDを渡して詳細ページで取得
+                final userGroups = await ref
+                    .read(groupRepositoryProvider)
+                    .watchUserGroups(currentUser.id)
+                    .first;
+
+                final group = userGroups.firstWhere(
+                  (g) => g.id == notification.groupId,
+                  orElse: () => throw Exception('Group not found'),
+                );
+
+                if (context.mounted) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => GroupDetailPage(group: group),
+                    ),
+                  );
+                }
+              } catch (error) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('グループの取得に失敗しました: $error'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            }
+            break;
+          case domain.NotificationType.reaction:
+          case domain.NotificationType.comment:
+            // 投稿詳細画面へ遷移
+            if (notification.relatedItemId != null) {
+              try {
+                debugPrint(
+                    '通知タップ: type=${notification.type.name}, id=${notification.id}, relatedItemId=${notification.relatedItemId}');
+
+                // スケジュール情報を取得する前にローディング表示
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('関連する投稿を読み込んでいます...'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                }
+
+                // スケジュール情報を取得
+                final scheduleStream = ref
+                    .read(scheduleRepositoryProvider)
+                    .watchSchedule(notification.relatedItemId!);
+
+                final schedule = await scheduleStream.first;
+
+                if (schedule != null && context.mounted) {
+                  debugPrint(
+                      'スケジュール取得成功: ${schedule.id}, 通知ID: ${notification.id}');
+
+                  // 通知IDを明示的に渡してスケジュール詳細ページに遷移
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ScheduleDetailPage(
+                        schedule: schedule,
+                        fromNotification: true,
+                        notificationId: notification.id,
+                      ),
+                    ),
+                  );
+                } else if (context.mounted) {
+                  // スケジュールが見つからない場合
+                  debugPrint('スケジュールが見つかりません: ${notification.relatedItemId}');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('予定が見つかりませんでした'),
+                      backgroundColor: Colors.red,
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                }
+              } catch (error) {
+                debugPrint('通知タップ処理でエラー: $error');
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('予定の取得に失敗しました: $error'),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
+              }
+            } else {
+              debugPrint('通知の関連アイテムIDがnullです: ${notification.id}');
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('関連する投稿情報がありません'),
+                    backgroundColor: Colors.red,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            }
+            break;
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('操作の実行中にエラーが発生しました: $e'),
+              backgroundColor: Colors.red,
+            ),
           );
-          break;
-        case domain.NotificationType.groupInvitation:
-          // グループ詳細画面へ遷移
-          if (notification.groupId != null) {
-            Navigator.of(context).pushNamed(
-              '/group/detail',
-              arguments: notification.groupId,
-            );
-          }
-          break;
-        case domain.NotificationType.reaction:
-        case domain.NotificationType.comment:
-          // 投稿詳細画面へ遷移
-          if (notification.relatedItemId != null) {
-            Navigator.of(context).pushNamed(
-              '/schedule/detail',
-              arguments: notification.relatedItemId,
-            );
-          }
-          break;
+        }
       }
     }
 
@@ -362,6 +486,14 @@ class _NotificationItem extends ConsumerWidget {
                     color: notification.isRead
                         ? Colors.grey[600]
                         : Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  DateFormatter.formatRelativeTime(notification.createdAt),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[500],
                   ),
                 ),
               ],

@@ -102,14 +102,14 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
         AppLogger.debug('画像が選択されませんでした');
       }
     } on PlatformException catch (e) {
-      AppLogger.error('プラットフォームエラー発生: ${e.code} - ${e.message}');
+      AppLogger.error('プラットフォームエラー発生', e);
       if (e.code == 'photo_access_denied') {
         throw Exception('設定から、このアプリに端末内の画像の操作を許可してください。');
       }
-      throw Exception('画像の選択に失敗しました: ${e.message}');
+      throw Exception('画像の選択に失敗しました');
     } catch (e) {
-      AppLogger.error('エラー発生: $e');
-      throw Exception('画像の選択に失敗しました: $e');
+      AppLogger.error('画像選択エラー', e);
+      throw Exception('画像の選択に失敗しました');
     }
   }
 
@@ -176,17 +176,15 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
             );
             AppLogger.debug('画像のアップロードが完了しました: $iconUrl');
           } catch (uploadError) {
-            AppLogger.error('StorageService.uploadFile内部エラー: $uploadError');
+            AppLogger.error('StorageService.uploadFile内部エラー', uploadError);
             if (uploadError is FirebaseException) {
-              AppLogger.error('Firebase エラーコード: ${uploadError.code}');
-              AppLogger.error('Firebase エラーメッセージ: ${uploadError.message}');
+              throw Exception('画像のアップロードに失敗しました: ${uploadError.code}');
             }
             rethrow;
           }
         } catch (e) {
-          AppLogger.error('画像アップロードエラー: $e');
-          AppLogger.error('エラースタックトレース: ${StackTrace.current}');
-          throw Exception('画像のアップロードに失敗しました: $e');
+          AppLogger.error('画像アップロードエラー', e, StackTrace.current);
+          throw Exception('画像のアップロードに失敗しました');
         }
       }
 
@@ -203,8 +201,8 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
         await _userRepository.updateUser(updatedUser);
         AppLogger.debug('ユーザー情報の更新が完了しました');
       } catch (e) {
-        AppLogger.error('ユーザー情報更新エラー: $e');
-        throw Exception('ユーザー情報の更新に失敗しました: $e');
+        AppLogger.error('ユーザー情報更新エラー', e);
+        throw Exception('ユーザー情報の更新に失敗しました');
       }
 
       // キャッシュを更新
@@ -224,13 +222,13 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
           AppLogger.debug('一時ファイルを削除しました');
         } catch (e) {
           // 一時ファイルの削除に失敗しても処理は続行
-          AppLogger.warning('一時ファイルの削除に失敗しました: $e');
+          AppLogger.warning('一時ファイルの削除に失敗しました');
         }
       }
       AppLogger.debug('プロフィール更新が完了しました');
     } catch (e) {
-      AppLogger.error('プロフィール更新エラー: $e');
-      throw Exception('プロフィールの更新に失敗しました: $e');
+      AppLogger.error('プロフィール更新エラー', e);
+      throw Exception('プロフィールの更新に失敗しました');
     }
   }
 
@@ -259,7 +257,8 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
     try {
       return await _scheduleRepository.getUserSchedules(userId);
     } catch (e) {
-      throw Exception('予定の取得に失敗しました: $e');
+      AppLogger.error('予定取得エラー', e);
+      throw Exception('予定の取得に失敗しました');
     }
   }
 }

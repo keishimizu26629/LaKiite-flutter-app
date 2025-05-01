@@ -62,3 +62,7 @@ ios/Runner/GoogleService-Info.plist
 
 # Nested project directory
 /lakiite-flutter-app/
+android/app/google-services.json
+
+# cursor
+.cursor/

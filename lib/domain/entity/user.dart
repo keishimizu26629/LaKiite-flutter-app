@@ -43,6 +43,7 @@ class PrivateUserModel with _$PrivateUserModel {
     required List<String> groups,
     required List<String> lists,
     required DateTime createdAt,
+    String? fcmToken,
   }) = _PrivateUserModel;
 
   const PrivateUserModel._();
@@ -120,9 +121,29 @@ class UserModel with _$UserModel {
         groups: groups,
         lists: privateProfile.lists,
         createdAt: createdAt,
+        fcmToken: privateProfile.fcmToken,
       ),
     );
   }
+
+  /// FCMトークンを更新したユーザーモデルを返す
+  UserModel updateFcmToken(String? fcmToken) {
+    return UserModel(
+      publicProfile: publicProfile,
+      privateProfile: PrivateUserModel(
+        id: id,
+        name: name,
+        friends: friends,
+        groups: groups,
+        lists: privateProfile.lists,
+        createdAt: createdAt,
+        fcmToken: fcmToken,
+      ),
+    );
+  }
+
+  /// FCMトークンを取得
+  String? get fcmToken => privateProfile.fcmToken;
 }
 
 /// ユーザー検索結果を表現するモデルクラス

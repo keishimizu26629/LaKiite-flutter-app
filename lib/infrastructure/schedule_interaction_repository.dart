@@ -121,7 +121,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       'type': type == ReactionType.going ? 'going' : 'thinking',
       'createdAt': now,
       'userDisplayName': userData?['displayName'],
-      'userPhotoUrl': userData?['photoUrl'],
+      'userPhotoUrl': userData?['iconUrl'],
     };
     AppLogger.debug('Reaction data to save: $reactionData');
 
@@ -163,6 +163,10 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   Stream<List<ScheduleReaction>> watchReactions(String scheduleId) {
     AppLogger.debug(
         'watchReactions: Starting to watch reactions for schedule: $scheduleId');
+
+    // スナップショットごとの変更をカウントするカウンター
+    int snapshotCounter = 0;
+
     return _firestore
         .collection('schedules')
         .doc(scheduleId)
@@ -170,16 +174,43 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
+      snapshotCounter++;
       AppLogger.debug(
-          'watchReactions: Received snapshot with ${snapshot.docs.length} documents');
+          'watchReactions: Snapshot #$snapshotCounter received with ${snapshot.docs.length} documents');
+      AppLogger.debug(
+          'watchReactions: Document changes: ${snapshot.docChanges.length}');
+
+      // 変更の詳細をログ出力
+      for (var change in snapshot.docChanges) {
+        final changeType = change.type.toString();
+        final docId = change.doc.id;
+        final docData = change.doc.data();
+        AppLogger.debug('Document change - type: $changeType, doc ID: $docId');
+        AppLogger.debug('Document data: $docData');
+      }
+
       final reactions = snapshot.docs.map((doc) {
         try {
-          final data = {...doc.data(), 'id': doc.id};
-          AppLogger.debug('Reaction Data from Firestore (Watch): $data');
+          final originalData = doc.data();
+          AppLogger.debug('Original Firestore data: $originalData');
+
+          final data = {...originalData, 'id': doc.id};
+          AppLogger.debug('Reaction Data with ID added: $data');
+
+          // 型情報を詳細に確認
+          final typeValue = data['type'];
+          final typeType = typeValue?.runtimeType;
           AppLogger.debug(
-              'Reaction type from Firestore: ${data['type']} (${data['type'].runtimeType})');
+              'Reaction type value: "$typeValue" (type: $typeType)');
+
+          // createdAtの情報確認
+          final createdAtValue = data['createdAt'];
+          final createdAtType = createdAtValue?.runtimeType;
+          AppLogger.debug('createdAt value type: $createdAtType');
+
           final reaction = ScheduleReaction.fromJson(data);
-          AppLogger.debug('Converted Reaction (Watch): $reaction');
+          AppLogger.debug(
+              'Successfully converted to ScheduleReaction: $reaction');
           return reaction;
         } catch (e, stackTrace) {
           AppLogger.error('Error converting reaction: $e');
@@ -187,8 +218,15 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
           rethrow;
         }
       }).toList();
+
       AppLogger.debug(
           'watchReactions: Converted ${reactions.length} reactions');
+
+      // 結果確認
+      if (reactions.isNotEmpty) {
+        AppLogger.debug('First reaction in list: ${reactions.first}');
+      }
+
       return reactions;
     });
   }
@@ -244,7 +282,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         'content': content,
         'createdAt': now,
         'userDisplayName': userData?['displayName'],
-        'userPhotoUrl': userData?['photoUrl'],
+        'userPhotoUrl': userData?['iconUrl'],
       };
       AppLogger.debug('Comment data to save: $commentData');
 

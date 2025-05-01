@@ -6,6 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'config/app_config.dart';
 import 'infrastructure/go_router_refresh_notifier.dart';
 import 'infrastructure/admob_service.dart';
+import 'infrastructure/firebase/push_notification_service.dart';
 import 'presentation/theme/app_theme.dart';
 import 'presentation/login/login_page.dart';
 import 'presentation/signup/signup.dart';
@@ -49,6 +50,9 @@ Future<void> startApp(
   await Firebase.initializeApp(
     options: AppConfig.instance.firebaseOptions,
   );
+
+  // プッシュ通知サービスの初期化
+  await PushNotificationService.instance.initialize();
 
   // AdMobの初期化
   await AdMobService.initialize();
