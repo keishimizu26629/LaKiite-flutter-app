@@ -1,18 +1,4 @@
-import 'package:logger/logger.dart';
-
 class AppLogger {
-  static final Logger _logger = Logger(
-    printer: PrettyPrinter(
-      methodCount: 0,
-      errorMethodCount: 8,
-      lineLength: 120,
-      colors: true,
-      printEmojis: true,
-      // ignore: deprecated_member_use
-      printTime: true,
-    ),
-  );
-
   // デバッグログを有効にするファイルパスリスト
   static const _enabledPaths = [
     'schedule_form_page.dart',
@@ -46,6 +32,13 @@ class AppLogger {
     return '';
   }
 
+  // スタックトレースを短縮して返す（最初の3行だけ）
+  static String _formatStackTrace(StackTrace stackTrace) {
+    final lines = stackTrace.toString().split('\n');
+    final shortened = lines.take(3).join('\n');
+    return shortened;
+  }
+
   static void debug(dynamic message) {
     final filePath = _getFilePath();
     if (_alwaysShowLogs || _enabledPaths.contains(filePath)) {
@@ -76,13 +69,32 @@ class AppLogger {
   static void error(dynamic message, [dynamic error, StackTrace? stackTrace]) {
     final filePath = _getFilePath();
     if (_alwaysShowLogs || _enabledPaths.contains(filePath)) {
+      // エラーメッセージを簡潔にする
+      String errorMsg = message.toString();
+      // メッセージが長すぎる場合は切り詰める
+      if (errorMsg.length > 150) {
+        errorMsg = '${errorMsg.substring(0, 147)}...';
+      }
+
       // ignore: avoid_print
       print(
-          '🔴 [ERROR] [${filePath.isEmpty ? 'App' : filePath.split('.').first}] $message');
-      // ignore: avoid_print
-      if (error != null) print('Error: $error');
-      // ignore: avoid_print
-      if (stackTrace != null) print('StackTrace: $stackTrace');
+          '🔴 [ERROR] [${filePath.isEmpty ? 'App' : filePath.split('.').first}] $errorMsg');
+
+      // エラーオブジェクトがある場合、短く表示
+      if (error != null) {
+        String errorDetail = error.toString();
+        if (errorDetail.length > 150) {
+          errorDetail = '${errorDetail.substring(0, 147)}...';
+        }
+        // ignore: avoid_print
+        print('Error: $errorDetail');
+      }
+
+      // スタックトレースは最初の数行だけ表示
+      if (stackTrace != null) {
+        // ignore: avoid_print
+        print('StackTrace: ${_formatStackTrace(stackTrace)}');
+      }
     }
   }
 }

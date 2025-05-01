@@ -256,6 +256,7 @@ mixin _$PrivateUserModel {
   List<String> get groups => throw _privateConstructorUsedError;
   List<String> get lists => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
+  String? get fcmToken => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -275,7 +276,8 @@ abstract class $PrivateUserModelCopyWith<$Res> {
       List<String> friends,
       List<String> groups,
       List<String> lists,
-      DateTime createdAt});
+      DateTime createdAt,
+      String? fcmToken});
 }
 
 /// @nodoc
@@ -297,6 +299,7 @@ class _$PrivateUserModelCopyWithImpl<$Res, $Val extends PrivateUserModel>
     Object? groups = null,
     Object? lists = null,
     Object? createdAt = null,
+    Object? fcmToken = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -323,6 +326,10 @@ class _$PrivateUserModelCopyWithImpl<$Res, $Val extends PrivateUserModel>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      fcmToken: freezed == fcmToken
+          ? _value.fcmToken
+          : fcmToken // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -341,7 +348,8 @@ abstract class _$$PrivateUserModelImplCopyWith<$Res>
       List<String> friends,
       List<String> groups,
       List<String> lists,
-      DateTime createdAt});
+      DateTime createdAt,
+      String? fcmToken});
 }
 
 /// @nodoc
@@ -361,6 +369,7 @@ class __$$PrivateUserModelImplCopyWithImpl<$Res>
     Object? groups = null,
     Object? lists = null,
     Object? createdAt = null,
+    Object? fcmToken = freezed,
   }) {
     return _then(_$PrivateUserModelImpl(
       id: null == id
@@ -387,6 +396,10 @@ class __$$PrivateUserModelImplCopyWithImpl<$Res>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      fcmToken: freezed == fcmToken
+          ? _value.fcmToken
+          : fcmToken // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -400,7 +413,8 @@ class _$PrivateUserModelImpl extends _PrivateUserModel {
       required final List<String> friends,
       required final List<String> groups,
       required final List<String> lists,
-      required this.createdAt})
+      required this.createdAt,
+      this.fcmToken})
       : _friends = friends,
         _groups = groups,
         _lists = lists,
@@ -439,10 +453,12 @@ class _$PrivateUserModelImpl extends _PrivateUserModel {
 
   @override
   final DateTime createdAt;
+  @override
+  final String? fcmToken;
 
   @override
   String toString() {
-    return 'PrivateUserModel(id: $id, name: $name, friends: $friends, groups: $groups, lists: $lists, createdAt: $createdAt)';
+    return 'PrivateUserModel(id: $id, name: $name, friends: $friends, groups: $groups, lists: $lists, createdAt: $createdAt, fcmToken: $fcmToken)';
   }
 
   @override
@@ -456,7 +472,9 @@ class _$PrivateUserModelImpl extends _PrivateUserModel {
             const DeepCollectionEquality().equals(other._groups, _groups) &&
             const DeepCollectionEquality().equals(other._lists, _lists) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.fcmToken, fcmToken) ||
+                other.fcmToken == fcmToken));
   }
 
   @JsonKey(ignore: true)
@@ -468,7 +486,8 @@ class _$PrivateUserModelImpl extends _PrivateUserModel {
       const DeepCollectionEquality().hash(_friends),
       const DeepCollectionEquality().hash(_groups),
       const DeepCollectionEquality().hash(_lists),
-      createdAt);
+      createdAt,
+      fcmToken);
 
   @JsonKey(ignore: true)
   @override
@@ -492,7 +511,8 @@ abstract class _PrivateUserModel extends PrivateUserModel {
       required final List<String> friends,
       required final List<String> groups,
       required final List<String> lists,
-      required final DateTime createdAt}) = _$PrivateUserModelImpl;
+      required final DateTime createdAt,
+      final String? fcmToken}) = _$PrivateUserModelImpl;
   const _PrivateUserModel._() : super._();
 
   factory _PrivateUserModel.fromJson(Map<String, dynamic> json) =
@@ -510,6 +530,8 @@ abstract class _PrivateUserModel extends PrivateUserModel {
   List<String> get lists;
   @override
   DateTime get createdAt;
+  @override
+  String? get fcmToken;
   @override
   @JsonKey(ignore: true)
   _$$PrivateUserModelImplCopyWith<_$PrivateUserModelImpl> get copyWith =>

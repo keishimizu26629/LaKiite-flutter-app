@@ -4,6 +4,8 @@ import '../../domain/interfaces/i_notification_repository.dart';
 import '../../infrastructure/notification_repository.dart';
 import '../../utils/logger.dart';
 import '../auth/auth_notifier.dart';
+import '../../infrastructure/user_repository.dart';
+import '../../infrastructure/firebase/push_notification_sender.dart';
 
 typedef Notification = domain.Notification;
 typedef NotificationType = domain.NotificationType;
@@ -97,8 +99,11 @@ final sentNotificationsByTypeProvider =
 /// エラーが発生した場合はエラー状態を提供する
 class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
   final INotificationRepository _repository;
+  final PushNotificationSender _pushNotificationSender;
 
-  NotificationNotifier(this._repository) : super(const AsyncValue.data(null));
+  NotificationNotifier(this._repository)
+      : _pushNotificationSender = PushNotificationSender(),
+        super(const AsyncValue.data(null));
 
   /// フレンド申請通知を作成する
   ///
@@ -114,6 +119,7 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
+      // アプリ内通知を作成
       final notification = Notification.createFriendRequest(
         fromUserId: fromUserId,
         toUserId: toUserId,
@@ -121,8 +127,18 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
         toUserDisplayName: toUserDisplayName,
       );
       await _repository.createNotification(notification);
+
+      // プッシュ通知を送信
+      await _pushNotificationSender.sendFriendRequestNotification(
+        toUserId: toUserId,
+        fromUserId: fromUserId,
+        fromUserName: fromUserDisplayName ?? fromUserId,
+      );
+
       state = const AsyncValue.data(null);
     } catch (e, stack) {
+      AppLogger.error('友達申請通知作成エラー: $e');
+      AppLogger.error('スタックトレース: $stack');
       state = AsyncValue.error(e, stack);
     }
   }
@@ -138,11 +154,13 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
     required String toUserId,
     required String fromUserId,
     required String groupId,
+    String? groupName,
     String? fromUserDisplayName,
     String? toUserDisplayName,
   }) async {
     state = const AsyncValue.loading();
     try {
+      // アプリ内通知を作成
       final notification = Notification.createGroupInvitation(
         fromUserId: fromUserId,
         toUserId: toUserId,
@@ -151,6 +169,18 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
         toUserDisplayName: toUserDisplayName,
       );
       await _repository.createNotification(notification);
+
+      // グループ名がある場合はプッシュ通知も送信
+      if (groupName != null) {
+        await _pushNotificationSender.sendGroupInvitationNotification(
+          toUserId: toUserId,
+          fromUserId: fromUserId,
+          fromUserName: fromUserDisplayName ?? fromUserId,
+          groupId: groupId,
+          groupName: groupName,
+        );
+      }
+
       state = const AsyncValue.data(null);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
@@ -163,7 +193,27 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> acceptNotification(String notificationId) async {
     state = const AsyncValue.loading();
     try {
+      // 通知の内容を取得して、通知タイプを確認
+      final notification = await _repository.getNotification(notificationId);
+
+      // 通知を承認
       await _repository.acceptNotification(notificationId);
+
+      // キャッシュクリア処理
+      if (notification != null &&
+          notification.type == NotificationType.friend) {
+        // フレンド申請承認時は明示的にユーザーリポジトリのキャッシュをクリア
+        // これは通常、プロバイダーのinvalidateによって行われるが、
+        // さらに確実に行うためにリポジトリのキャッシュも明示的にクリア
+        try {
+          final userRepository = UserRepository();
+          userRepository.clearCache();
+        } catch (e) {
+          // キャッシュクリアに失敗しても処理は続行
+          AppLogger.error('Failed to clear user repository cache: $e');
+        }
+      }
+
       state = const AsyncValue.data(null);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
@@ -187,12 +237,39 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
   ///
   /// [notificationId] 既読にする通知のID
   Future<void> markAsRead(String notificationId) async {
+    AppLogger.debug('markAsRead called - notificationId: $notificationId');
     state = const AsyncValue.loading();
     try {
+      // 最初に通知の情報を取得して詳細をログに出力
+      final notification = await _repository.getNotification(notificationId);
+      if (notification == null) {
+        AppLogger.error('Notification not found: $notificationId');
+        throw Exception('Notification not found');
+      }
+
+      AppLogger.debug('Found notification: id=${notification.id}, '
+          'type=${notification.type.name}, '
+          'isRead=${notification.isRead}, '
+          'relatedItemId=${notification.relatedItemId ?? "null"}, '
+          'interactionId=${notification.interactionId ?? "null"}');
+
+      // すでに既読なら処理をスキップ
+      if (notification.isRead) {
+        AppLogger.debug('Notification already marked as read: $notificationId');
+        state = const AsyncValue.data(null);
+        return;
+      }
+
+      // 既読にする
       await _repository.markAsRead(notificationId);
+      AppLogger.debug(
+          'Notification marked as read successfully: $notificationId');
       state = const AsyncValue.data(null);
     } catch (e, stack) {
+      AppLogger.error('Error marking notification as read: $e');
+      AppLogger.error('Stack trace: $stack');
       state = AsyncValue.error(e, stack);
+      rethrow;
     }
   }
 

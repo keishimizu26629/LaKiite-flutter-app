@@ -1,1 +1,36 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"tarakite-flutter-app-dev","appId":"1:472076922540:android:6a778759d8c9f1cac87909","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"tarakite-flutter-app-dev","appId":"1:472076922540:ios:763d5c1e1aad5d2ec87909","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"tarakite-flutter-app-dev","configurations":{"android":"1:472076922540:android:6a778759d8c9f1cac87909","ios":"1:472076922540:ios:763d5c1e1aad5d2ec87909"}}}}}}
+{
+  "functions": {
+    "source": "functions",
+    "predeploy": [
+      "cd \"$RESOURCE_DIR\" && npm --prefer-offline --no-audit --progress=false install"
+    ]
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "tarakite-flutter-app-dev",
+          "appId": "1:472076922540:android:6a778759d8c9f1cac87909",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "tarakite-flutter-app-dev",
+          "appId": "1:472076922540:ios:763d5c1e1aad5d2ec87909",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "tarakite-flutter-app-dev",
+          "configurations": {
+            "android": "1:472076922540:android:6a778759d8c9f1cac87909",
+            "ios": "1:472076922540:ios:763d5c1e1aad5d2ec87909"
+          }
+        }
+      }
+    }
+  }
+}

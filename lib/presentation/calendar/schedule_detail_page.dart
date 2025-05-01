@@ -1,17 +1,21 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:intl/intl.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/application/auth/auth_state.dart';
-import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
+import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
 import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
 import 'package:lakiite/presentation/widgets/default_user_icon.dart';
-import 'package:intl/intl.dart';
+import 'package:lakiite/domain/entity/notification.dart' as domain;
+import 'package:lakiite/application/notification/notification_notifier.dart';
+import 'package:lakiite/presentation/widgets/reaction_icon_widget.dart';
 
 /// スケジュールの詳細情報を表示するページ
 ///
@@ -21,13 +25,23 @@ class ScheduleDetailPage extends HookConsumerWidget {
   /// [ScheduleDetailPage]のコンストラクタ
   ///
   /// 表示する[schedule]の情報を必須パラメータとして受け取ります。
+  /// [fromNotification]は通知からの遷移かどうかを示します。
+  /// [notificationId]は遷移元の通知IDを指定します（通知からの遷移時のみ）。
   const ScheduleDetailPage({
     required this.schedule,
+    this.fromNotification = false,
+    this.notificationId,
     super.key,
   });
 
   /// 表示対象の[Schedule]インスタンス
   final Schedule schedule;
+
+  /// 通知からの遷移かどうか
+  final bool fromNotification;
+
+  /// 遷移元の通知ID（通知からの遷移時のみ）
+  final String? notificationId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -35,6 +49,32 @@ class ScheduleDetailPage extends HookConsumerWidget {
     final interactions = ref.watch(
       scheduleInteractionNotifierProvider(schedule.id),
     );
+
+    // スケジュール詳細ページが開かれたときに関連する通知を既読にする
+    useEffect(() {
+      // 通知からの遷移情報をログ出力
+      developer.log(
+          'スケジュール詳細ページが開かれました - fromNotification: $fromNotification, notificationId: ${notificationId ?? "null"}');
+
+      // 通常の既読処理を実行
+      _markRelatedNotificationsAsRead(ref);
+
+      // 通知からの遷移の場合、特定の通知を既読にする
+      if (fromNotification && notificationId != null) {
+        _markSpecificNotificationAsRead(ref, notificationId!);
+      }
+
+      return null;
+    }, []);
+
+    // ここでリアクションデータをログ出力
+    developer.log('スケジュールID: ${schedule.id}');
+    developer.log('リアクション数: ${schedule.reactionCount}');
+    developer.log('リアクション一覧: ${interactions.reactions.length}件');
+    for (var reaction in interactions.reactions) {
+      developer.log('リアクション: userId=${reaction.userId}, type=${reaction.type}');
+    }
+
     useFocusNode();
 
     return Scaffold(
@@ -143,36 +183,20 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                     child: Row(
                                       children: [
                                         if (schedule.reactionCount > 0)
-                                          const Row(
-                                            children: [
-                                              SizedBox(
-                                                width: 30,
-                                                height: 30,
-                                                child: Stack(
-                                                  children: [
-                                                    Positioned(
-                                                      right: 2,
-                                                      child: Text(
-                                                        '🤔',
-                                                        style: TextStyle(
-                                                          fontSize: 20,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    Positioned(
-                                                      top: -1,
-                                                      left: -2,
-                                                      child: Text(
-                                                        '🙋',
-                                                        style: TextStyle(
-                                                          fontSize: 20,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
+                                          SizedBox(
+                                            width: 30,
+                                            height: 30,
+                                            child: ReactionIconWidget(
+                                              hasGoing: interactions.reactions
+                                                  .any((r) =>
+                                                      r.type ==
+                                                      ReactionType.going),
+                                              hasThinking: interactions
+                                                  .reactions
+                                                  .any((r) =>
+                                                      r.type ==
+                                                      ReactionType.thinking),
+                                            ),
                                           )
                                         else
                                           Icon(
@@ -357,6 +381,14 @@ class ScheduleDetailPage extends HookConsumerWidget {
     );
   }
 
+  /// コメント入力ダイアログを表示します
+  ///
+  /// ユーザーがコメントを入力するためのモーダルボトムシートを表示します。
+  /// 送信ボタンが押されると、入力されたコメントをスケジュールに追加します。
+  ///
+  /// [context] ダイアログを表示するためのビルドコンテキスト
+  /// [ref] Riverpodの参照
+  /// [userId] コメントを投稿するユーザーのID
   void _showCommentDialog(BuildContext context, WidgetRef ref, String userId) {
     final commentController = TextEditingController();
     showModalBottomSheet(
@@ -432,11 +464,36 @@ class ScheduleDetailPage extends HookConsumerWidget {
     );
   }
 
+  /// リアクションしたユーザーの一覧を表示します
+  ///
+  /// スケジュールにリアクションしたユーザーの一覧をモーダルボトムシートで表示します。
+  /// リアクションがない場合はスナックバーで通知します。
+  ///
+  /// [context] ダイアログを表示するためのビルドコンテキスト
+  /// [ref] Riverpodの参照
+  ///
+  /// 返り値: 非同期処理の完了を表す[Future]
   Future<void> _showReactionUsers(BuildContext context, WidgetRef ref) async {
     final reactions = await ref
         .read(reactionRepositoryProvider)
         .getReactionsForSchedule(schedule.id);
+
+    // リポジトリから取得したリアクションデータをログ出力
+    developer.log('リポジトリから取得したリアクション: ${reactions.length}件');
+    for (var reaction in reactions) {
+      developer
+          .log('取得したリアクション: userId=${reaction.userId}, type=${reaction.type}');
+    }
+
     if (!context.mounted) return;
+
+    // リアクションが存在しない場合は通知を表示
+    if (reactions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('リアクションがありません')),
+      );
+      return;
+    }
 
     showModalBottomSheet(
       context: context,
@@ -474,7 +531,12 @@ class ScheduleDetailPage extends HookConsumerWidget {
                   return const Center(child: CircularProgressIndicator());
                 }
 
+                if (snapshot.hasError) {
+                  return Center(child: Text('エラー: ${snapshot.error}'));
+                }
+
                 final users = snapshot.data!;
+                developer.log('リアクションユーザー: ${users.length}人');
                 return SizedBox(
                   height: MediaQuery.of(context).size.height * 0.3,
                   child: ListView.builder(
@@ -483,6 +545,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
                     itemBuilder: (context, index) {
                       final user = users[index];
                       final reaction = reactions[index];
+                      developer.log(
+                          '表示するユーザー: ${user.displayName}, リアクション: ${reaction.type}');
                       return ListTile(
                         leading: Stack(
                           children: [
@@ -491,7 +555,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
                               right: 0,
                               bottom: 0,
                               child: Text(
-                                reaction.type == 'going' ? '🙋' : '🤔',
+                                reaction.type == ReactionType.going
+                                    ? '🙋'
+                                    : '🤔',
                                 style: const TextStyle(fontSize: 16),
                               ),
                             ),
@@ -635,5 +701,123 @@ class ScheduleDetailPage extends HookConsumerWidget {
         }),
       ],
     );
+  }
+
+  /// スケジュールに関連する通知を既読にします
+  ///
+  /// スケジュールに関連するリアクションやコメントの未読通知を既読状態に更新します。
+  /// スケジュールの所有者が現在のユーザーでない場合は何もしません。
+  ///
+  /// [ref] Riverpodの参照
+  ///
+  /// 返り値: 非同期処理の完了を表す[Future]
+  Future<void> _markRelatedNotificationsAsRead(WidgetRef ref) async {
+    try {
+      // 現在のユーザーを取得
+      final authState = ref.read(authNotifierProvider).value;
+      if (authState?.user == null) return;
+
+      final userId = authState!.user!.id;
+
+      // このスケジュールの所有者が自分でなければ何もしない
+      if (schedule.ownerId != userId) return;
+
+      developer.log('スケジュール詳細ページでの通知既読処理を開始: scheduleId=${schedule.id}');
+
+      // 受信した通知を取得
+      final notificationsAsync = ref.read(receivedNotificationsProvider);
+
+      if (!notificationsAsync.hasValue) {
+        developer.log('通知データがまだ読み込まれていません');
+        return;
+      }
+
+      final notifications = notificationsAsync.value ?? [];
+
+      developer.log('受信した通知数: ${notifications.length}件');
+
+      // 全通知の詳細をログ出力
+      for (final notification in notifications) {
+        developer
+            .log('通知: id=${notification.id}, type=${notification.type.name}, '
+                'isRead=${notification.isRead}, '
+                'relatedItemId=${notification.relatedItemId ?? "null"}, '
+                'sendUserId=${notification.sendUserId}, '
+                'receiveUserId=${notification.receiveUserId}, '
+                'status=${notification.status.name}, '
+                'createdAt=${notification.createdAt}');
+      }
+
+      // このスケジュールに関連する未読のリアクション・コメント通知をフィルタリング
+      final unreadRelatedNotifications = notifications
+          .where((notification) =>
+              !notification.isRead &&
+              (notification.type == domain.NotificationType.reaction ||
+                  notification.type == domain.NotificationType.comment) &&
+              notification.relatedItemId == schedule.id)
+          .toList();
+
+      developer.log('未読の関連通知数: ${unreadRelatedNotifications.length}件');
+      developer.log('現在のスケジュールID: ${schedule.id}');
+
+      // フィルタリングされた通知の詳細ログ
+      for (final notification in unreadRelatedNotifications) {
+        developer
+            .log('関連通知: id=${notification.id}, type=${notification.type.name}, '
+                'relatedItemId=${notification.relatedItemId}');
+      }
+
+      // 各通知を既読にする（非同期で実行、結果を待たない）
+      final notifier = ref.read(notificationNotifierProvider.notifier);
+
+      for (final notification in unreadRelatedNotifications) {
+        developer.log(
+            '通知を既読にします: ${notification.id}, type=${notification.type.name}');
+        try {
+          await notifier.markAsRead(notification.id);
+          developer.log('通知を既読にしました: ${notification.id}');
+        } catch (e) {
+          developer.log('通知の既読処理でエラーが発生: $e');
+          // エラーは無視し、処理を継続
+        }
+      }
+
+      developer.log('スケジュール詳細ページでの通知既読処理が完了しました');
+    } catch (e) {
+      developer.log('スケジュール詳細ページでの通知既読処理中にエラーが発生しました: $e');
+    }
+  }
+
+  /// 特定の通知を既読にします
+  ///
+  /// 通知ページからの遷移時に、遷移元の通知を既読状態に更新します。
+  ///
+  /// [ref] Riverpodの参照
+  /// [notificationId] 既読にする通知のID
+  ///
+  /// 返り値: 非同期処理の完了を表す[Future]
+  Future<void> _markSpecificNotificationAsRead(
+      WidgetRef ref, String notificationId) async {
+    try {
+      developer.log('特定の通知を既読にします: notificationId=$notificationId');
+
+      // 特定の通知IDが指定されていることを確認
+      if (notificationId.isEmpty) {
+        developer.log('通知IDが空です');
+        return;
+      }
+
+      final notifier = ref.read(notificationNotifierProvider.notifier);
+
+      // 既読処理を確実に実行（非同期で待機）
+      try {
+        await notifier.markAsRead(notificationId);
+        developer.log('特定の通知を既読にしました: notificationId=$notificationId');
+      } catch (e) {
+        developer.log('特定の通知を既読処理でエラー発生: $e');
+      }
+    } catch (e) {
+      developer.log('特定の通知を既読にする処理の初期化でエラーが発生しました: $e');
+    }
   }
 }
