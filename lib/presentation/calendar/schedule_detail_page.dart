@@ -1,20 +1,21 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:intl/intl.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/application/auth/auth_state.dart';
-import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
+import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
 import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
 import 'package:lakiite/presentation/widgets/default_user_icon.dart';
-import 'package:intl/intl.dart';
-import 'dart:developer' as developer;
 import 'package:lakiite/domain/entity/notification.dart' as domain;
 import 'package:lakiite/application/notification/notification_notifier.dart';
+import 'package:lakiite/presentation/widgets/reaction_icon_widget.dart';
 
 /// スケジュールの詳細情報を表示するページ
 ///
@@ -182,80 +183,20 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                     child: Row(
                                       children: [
                                         if (schedule.reactionCount > 0)
-                                          Row(
-                                            children: [
-                                              SizedBox(
-                                                width: 30,
-                                                height: 30,
-                                                child: Builder(
-                                                  builder: (context) {
-                                                    // リアクションの種類を確認
-                                                    final hasGoing =
-                                                        interactions.reactions
-                                                            .any((r) =>
-                                                                r.type ==
-                                                                ReactionType
-                                                                    .going);
-                                                    final hasThinking =
-                                                        interactions
-                                                            .reactions
-                                                            .any((r) =>
-                                                                r.type ==
-                                                                ReactionType
-                                                                    .thinking);
-
-                                                    developer.log(
-                                                        'リアクション表示: hasGoing=$hasGoing, hasThinking=$hasThinking');
-
-                                                    // 両方あるか、種類ごとに表示
-                                                    if (hasGoing &&
-                                                        hasThinking) {
-                                                      return const Stack(
-                                                        children: [
-                                                          Positioned(
-                                                            right: 2,
-                                                            child: Text(
-                                                              '🤔',
-                                                              style: TextStyle(
-                                                                fontSize: 20,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          Positioned(
-                                                            top: -1,
-                                                            left: -2,
-                                                            child: Text(
-                                                              '🙋',
-                                                              style: TextStyle(
-                                                                fontSize: 20,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      );
-                                                    } else if (hasGoing) {
-                                                      return const Center(
-                                                        child: Text(
-                                                          '🙋',
-                                                          style: TextStyle(
-                                                            fontSize: 20,
-                                                          ),
-                                                        ),
-                                                      );
-                                                    } else {
-                                                      return const Center(
-                                                        child: Text(
-                                                          '🤔',
-                                                          style: TextStyle(
-                                                            fontSize: 20,
-                                                          ),
-                                                        ),
-                                                      );
-                                                    }
-                                                  },
-                                                ),
-                                              ),
-                                            ],
+                                          SizedBox(
+                                            width: 30,
+                                            height: 30,
+                                            child: ReactionIconWidget(
+                                              hasGoing: interactions.reactions
+                                                  .any((r) =>
+                                                      r.type ==
+                                                      ReactionType.going),
+                                              hasThinking: interactions
+                                                  .reactions
+                                                  .any((r) =>
+                                                      r.type ==
+                                                      ReactionType.thinking),
+                                            ),
                                           )
                                         else
                                           Icon(
@@ -440,6 +381,14 @@ class ScheduleDetailPage extends HookConsumerWidget {
     );
   }
 
+  /// コメント入力ダイアログを表示します
+  ///
+  /// ユーザーがコメントを入力するためのモーダルボトムシートを表示します。
+  /// 送信ボタンが押されると、入力されたコメントをスケジュールに追加します。
+  ///
+  /// [context] ダイアログを表示するためのビルドコンテキスト
+  /// [ref] Riverpodの参照
+  /// [userId] コメントを投稿するユーザーのID
   void _showCommentDialog(BuildContext context, WidgetRef ref, String userId) {
     final commentController = TextEditingController();
     showModalBottomSheet(
@@ -515,6 +464,15 @@ class ScheduleDetailPage extends HookConsumerWidget {
     );
   }
 
+  /// リアクションしたユーザーの一覧を表示します
+  ///
+  /// スケジュールにリアクションしたユーザーの一覧をモーダルボトムシートで表示します。
+  /// リアクションがない場合はスナックバーで通知します。
+  ///
+  /// [context] ダイアログを表示するためのビルドコンテキスト
+  /// [ref] Riverpodの参照
+  ///
+  /// 返り値: 非同期処理の完了を表す[Future]
   Future<void> _showReactionUsers(BuildContext context, WidgetRef ref) async {
     final reactions = await ref
         .read(reactionRepositoryProvider)
@@ -745,7 +703,14 @@ class ScheduleDetailPage extends HookConsumerWidget {
     );
   }
 
-  // スケジュールに関連するリアクション・コメント通知を既読にするメソッド
+  /// スケジュールに関連する通知を既読にします
+  ///
+  /// スケジュールに関連するリアクションやコメントの未読通知を既読状態に更新します。
+  /// スケジュールの所有者が現在のユーザーでない場合は何もしません。
+  ///
+  /// [ref] Riverpodの参照
+  ///
+  /// 返り値: 非同期処理の完了を表す[Future]
   Future<void> _markRelatedNotificationsAsRead(WidgetRef ref) async {
     try {
       // 現在のユーザーを取得
@@ -823,7 +788,14 @@ class ScheduleDetailPage extends HookConsumerWidget {
     }
   }
 
-  // 特定の通知を既読にするメソッド（通知ページからの遷移時）
+  /// 特定の通知を既読にします
+  ///
+  /// 通知ページからの遷移時に、遷移元の通知を既読状態に更新します。
+  ///
+  /// [ref] Riverpodの参照
+  /// [notificationId] 既読にする通知のID
+  ///
+  /// 返り値: 非同期処理の完了を表す[Future]
   Future<void> _markSpecificNotificationAsRead(
       WidgetRef ref, String notificationId) async {
     try {

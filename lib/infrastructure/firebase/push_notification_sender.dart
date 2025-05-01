@@ -145,4 +145,145 @@ class PushNotificationSender {
       return false;
     }
   }
+
+  /// リアクション通知を送信する
+  ///
+  /// [toUserId] 通知の送信先ユーザーID（投稿作成者）
+  /// [fromUserId] 送信元ユーザーID（リアクションした人）
+  /// [fromUserName] 送信元ユーザー名
+  /// [scheduleId] スケジュールID
+  /// [interactionId] リアクションID
+  Future<bool> sendReactionNotification({
+    required String toUserId,
+    required String fromUserId,
+    required String fromUserName,
+    required String scheduleId,
+    required String interactionId,
+  }) async {
+    try {
+      // 送信先ユーザーのFCMトークンを取得
+      final token = await _fcmTokenService.getUserFcmToken(toUserId);
+      if (token == null) {
+        AppLogger.warning('プッシュ通知送信エラー: 宛先ユーザーのFCMトークンがありません - $toUserId');
+        return false;
+      }
+
+      // 通知データを準備
+      final notificationData = {
+        'token': token,
+        'notification': {
+          'title': '新しいリアクション',
+          'body': '$fromUserNameさんがあなたの投稿にリアクションしました',
+        },
+        'data': {
+          'type': 'reaction',
+          'fromUserId': fromUserId,
+          'toUserId': toUserId,
+          'fromUserName': fromUserName,
+          'scheduleId': scheduleId,
+          'interactionId': interactionId,
+          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+        },
+      };
+
+      // Cloud Functionに通知データを送信
+      final response = await http.post(
+        Uri.parse(_cloudFunctionUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(notificationData),
+      );
+
+      // レスポンスを確認
+      if (response.statusCode == 200) {
+        AppLogger.debug('リアクション通知送信成功: ${response.body}');
+        return true;
+      } else {
+        AppLogger.error(
+            'リアクション通知送信エラー: ${response.statusCode} - ${response.body}');
+        return false;
+      }
+    } catch (e, stack) {
+      AppLogger.error('リアクション通知送信例外: $e');
+      AppLogger.error('スタックトレース: $stack');
+      return false;
+    }
+  }
+
+  /// コメント通知を送信する
+  ///
+  /// [toUserId] 通知の送信先ユーザーID（投稿作成者）
+  /// [fromUserId] 送信元ユーザーID（コメントした人）
+  /// [fromUserName] 送信元ユーザー名
+  /// [scheduleId] スケジュールID
+  /// [interactionId] コメントID
+  /// [commentContent] コメント内容（オプション）
+  Future<bool> sendCommentNotification({
+    required String toUserId,
+    required String fromUserId,
+    required String fromUserName,
+    required String scheduleId,
+    required String interactionId,
+    String? commentContent,
+  }) async {
+    try {
+      // 送信先ユーザーのFCMトークンを取得
+      final token = await _fcmTokenService.getUserFcmToken(toUserId);
+      if (token == null) {
+        AppLogger.warning('プッシュ通知送信エラー: 宛先ユーザーのFCMトークンがありません - $toUserId');
+        return false;
+      }
+
+      // コメント内容の概要（長すぎる場合はトリミング）
+      final commentPreview = commentContent != null && commentContent.isNotEmpty
+          ? (commentContent.length > 50
+              ? '${commentContent.substring(0, 47)}...'
+              : commentContent)
+          : '';
+
+      // 通知データを準備
+      final notificationData = {
+        'token': token,
+        'notification': {
+          'title': '新しいコメント',
+          'body':
+              '$fromUserNameさんがあなたの投稿にコメントしました${commentPreview.isNotEmpty ? ': $commentPreview' : ''}',
+        },
+        'data': {
+          'type': 'comment',
+          'fromUserId': fromUserId,
+          'toUserId': toUserId,
+          'fromUserName': fromUserName,
+          'scheduleId': scheduleId,
+          'interactionId': interactionId,
+          'commentContent': commentContent ?? '',
+          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+        },
+      };
+
+      // Cloud Functionに通知データを送信
+      final response = await http.post(
+        Uri.parse(_cloudFunctionUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(notificationData),
+      );
+
+      // レスポンスを確認
+      if (response.statusCode == 200) {
+        AppLogger.debug('コメント通知送信成功: ${response.body}');
+        return true;
+      } else {
+        AppLogger.error(
+            'コメント通知送信エラー: ${response.statusCode} - ${response.body}');
+        return false;
+      }
+    } catch (e, stack) {
+      AppLogger.error('コメント通知送信例外: $e');
+      AppLogger.error('スタックトレース: $stack');
+      return false;
+    }
+  }
 }
