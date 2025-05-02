@@ -451,3 +451,57 @@ exports.onNewCommentNotification = functions.firestore
       return null;
     }
   });
+
+/**
+ * スケジュールのリアクションが追加されたときに自動的にカウンターを更新する
+ */
+exports.onCreateReaction = functions.firestore
+  .document('schedules/{scheduleId}/reactions/{reactionId}')
+  .onCreate(async (snapshot, context) => {
+    try {
+      const scheduleId = context.params.scheduleId;
+      console.log(`リアクション追加: scheduleId=${scheduleId}, reactionId=${context.params.reactionId}`);
+
+      // スケジュールドキュメントのリアクション数をインクリメント
+      await admin.firestore()
+        .collection('schedules')
+        .doc(scheduleId)
+        .update({
+          'reactionCount': admin.firestore.FieldValue.increment(1),
+          'updatedAt': admin.firestore.FieldValue.serverTimestamp()
+        });
+
+      console.log(`スケジュール(${scheduleId})のリアクション数を増加しました`);
+      return null;
+    } catch (error) {
+      console.error('リアクション数増加エラー:', error);
+      return null;
+    }
+  });
+
+/**
+ * スケジュールのリアクションが削除されたときに自動的にカウンターを更新する
+ */
+exports.onDeleteReaction = functions.firestore
+  .document('schedules/{scheduleId}/reactions/{reactionId}')
+  .onDelete(async (snapshot, context) => {
+    try {
+      const scheduleId = context.params.scheduleId;
+      console.log(`リアクション削除: scheduleId=${scheduleId}, reactionId=${context.params.reactionId}`);
+
+      // スケジュールドキュメントのリアクション数をデクリメント
+      await admin.firestore()
+        .collection('schedules')
+        .doc(scheduleId)
+        .update({
+          'reactionCount': admin.firestore.FieldValue.increment(-1),
+          'updatedAt': admin.firestore.FieldValue.serverTimestamp()
+        });
+
+      console.log(`スケジュール(${scheduleId})のリアクション数を減少しました`);
+      return null;
+    } catch (error) {
+      console.error('リアクション数減少エラー:', error);
+      return null;
+    }
+  });
