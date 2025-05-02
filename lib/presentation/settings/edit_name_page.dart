@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../my_page/my_page_view_model.dart';
 
 class EditNamePage extends ConsumerStatefulWidget {
+  static const String path = 'name';
+
   const EditNamePage({super.key});
 
   @override

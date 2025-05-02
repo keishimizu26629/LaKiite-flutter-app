@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'signup_view_model.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
+  static const String path = '/signup';
+
   const SignupPage({super.key});
 
   @override

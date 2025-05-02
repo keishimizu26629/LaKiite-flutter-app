@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../presentation_provider.dart';
 
 class SettingsPage extends ConsumerWidget {
+  static const String path = '/settings';
+
   const SettingsPage({super.key});
 
   @override

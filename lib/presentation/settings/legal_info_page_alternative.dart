@@ -4,6 +4,12 @@ import 'package:url_launcher/url_launcher.dart';
 /// 法的情報（プライバシーポリシーや利用規約）を表示するための代替ページ
 /// WebViewの代わりにURLランチャーを使用して外部ブラウザで表示します
 class LegalInfoPageAlternative extends StatelessWidget {
+  /// プライバシーポリシーのパス
+  static const String privacyPolicyPath = 'privacy-policy';
+
+  /// 利用規約のパス
+  static const String termsOfServicePath = 'terms-of-service';
+
   /// 表示するページのタイトル
   final String title;
 
