@@ -129,9 +129,10 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
     AppLogger.debug(
         'addReaction: Successfully added reaction with createdAt: $now');
 
-    // カウンターを更新
-    await _updateScheduleCounters(scheduleId);
-    AppLogger.debug('Schedule counters updated after adding reaction');
+    // カウンターはCloud Functionsで自動的に更新されるため削除
+    // await _updateScheduleCounters(scheduleId);
+    AppLogger.debug(
+        'Reaction added - counter will be updated by Cloud Functions');
 
     return userId;
   }
@@ -151,8 +152,10 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         .delete();
     AppLogger.debug('Successfully removed reaction for user: $userId');
 
-    // カウンターを更新
-    await _updateScheduleCounters(scheduleId);
+    // カウンターはCloud Functionsで自動的に更新されるため削除
+    // await _updateScheduleCounters(scheduleId);
+    AppLogger.debug(
+        'Reaction removed - counter will be updated by Cloud Functions');
   }
 
   /// 指定された[scheduleId]のリアクションをリアルタイムで監視
