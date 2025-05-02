@@ -5,6 +5,8 @@ import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
+  static const String path = '/splash';
+
   const SplashScreen({super.key});
 
   @override
