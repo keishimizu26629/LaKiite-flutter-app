@@ -216,7 +216,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                   onTap: () => _showReactionUsers(context, ref),
                                   child: Row(
                                     children: [
-                                      if (currentSchedule.reactionCount > 0)
+                                      if (interactions.reactions.isNotEmpty)
                                         SizedBox(
                                           width: 30,
                                           height: 30,
@@ -239,10 +239,10 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                         ),
                                       const SizedBox(width: 4),
                                       Text(
-                                        '${currentSchedule.reactionCount}',
+                                        '${interactions.reactions.length}',
                                         style: TextStyle(
-                                          color: currentSchedule.reactionCount >
-                                                  0
+                                          color: interactions
+                                                  .reactions.isNotEmpty
                                               ? Colors.grey
                                               : Theme.of(context).primaryColor,
                                           fontWeight: FontWeight.bold,
@@ -260,7 +260,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '${currentSchedule.commentCount}',
+                                  '${interactions.comments.length}',
                                   style: TextStyle(
                                     color: Colors.blue[400],
                                     fontWeight: FontWeight.bold,
@@ -269,8 +269,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          const Divider(height: 16),
+                          const SizedBox(height: 16),
                           // スケジュールの説明
                           Text(
                             currentSchedule.description,
