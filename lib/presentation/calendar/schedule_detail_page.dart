@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/user.dart';
-import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
@@ -50,6 +49,26 @@ class ScheduleDetailPage extends HookConsumerWidget {
       scheduleInteractionNotifierProvider(schedule.id),
     );
 
+    // スケジュールのリアルタイム監視を行うStreamProviderを作成
+    final scheduleStreamProvider = StreamProvider<Schedule?>((ref) {
+      return ref
+          .read(scheduleNotifierProvider.notifier)
+          .watchSchedule(schedule.id);
+    });
+
+    // 監視中のスケジュール情報
+    final watchedScheduleAsync = ref.watch(scheduleStreamProvider);
+
+    // 現在表示すべきスケジュール情報を取得（最新のデータが取得できたらそれを使用、そうでなければ初期データ）
+    final currentSchedule = watchedScheduleAsync.when(
+      data: (updatedSchedule) => updatedSchedule ?? schedule,
+      loading: () => schedule,
+      error: (_, __) => schedule,
+    );
+
+    // コメント入力用のテキストコントローラー
+    final commentController = useTextEditingController();
+
     // スケジュール詳細ページが開かれたときに関連する通知を既読にする
     useEffect(() {
       // 通知からの遷移情報をログ出力
@@ -68,20 +87,18 @@ class ScheduleDetailPage extends HookConsumerWidget {
     }, []);
 
     // ここでリアクションデータをログ出力
-    developer.log('スケジュールID: ${schedule.id}');
-    developer.log('リアクション数: ${schedule.reactionCount}');
+    developer.log('スケジュールID: ${currentSchedule.id}');
+    developer.log('リアクション数: ${currentSchedule.reactionCount}');
     developer.log('リアクション一覧: ${interactions.reactions.length}件');
     for (var reaction in interactions.reactions) {
       developer.log('リアクション: userId=${reaction.userId}, type=${reaction.type}');
     }
 
-    useFocusNode();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('予定の詳細'),
         actions: [
-          if (schedule.ownerId ==
+          if (currentSchedule.ownerId ==
               ref.watch(authNotifierProvider).value?.user?.id)
             Padding(
               padding: const EdgeInsets.only(right: 8),
@@ -91,7 +108,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => EditSchedulePage(
-                        schedule: schedule,
+                        schedule: currentSchedule,
                       ),
                     ),
                   );
@@ -100,367 +117,364 @@ class ScheduleDetailPage extends HookConsumerWidget {
             ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      schedule.title,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildInfoSection(
-                      icon: Icons.calendar_today,
-                      title: '日時',
-                      content:
-                          '${DateFormat('yyyy年M月d日（E） HH:mm', 'ja_JP').format(schedule.startDateTime)} - ${DateFormat('HH:mm', 'ja_JP').format(schedule.endDateTime)}',
-                    ),
-                    if (schedule.location != null)
-                      _buildInfoSection(
-                        icon: Icons.location_on,
-                        title: '場所',
-                        content: schedule.location!,
-                      ),
-                    _buildInfoSection(
-                      icon: Icons.description,
-                      title: '説明',
-                      content: schedule.description,
-                    ),
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final authState = ref.watch(authNotifierProvider);
-                        return FutureBuilder<UserModel?>(
-                          future: ref
-                              .read(userRepositoryProvider)
-                              .getUser(schedule.ownerId),
-                          builder: (context, snapshot) {
-                            final ownerName = snapshot.hasData
-                                ? snapshot.data!.displayName
-                                : '読み込み中...';
-                            return _buildInfoSection(
-                              icon: Icons.person,
-                              title: '作成者',
-                              content:
-                                  authState.value?.user?.id == schedule.ownerId
-                                      ? '自分'
-                                      : ownerName,
-                            );
-                          },
-                        );
-                      },
-                    ),
-                    // リアクションボタンとコメントボタン
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final authState = ref.watch(authNotifierProvider);
-                        if (authState.value?.status !=
-                                AuthStatus.authenticated ||
-                            authState.value?.user == null) {
-                          return const SizedBox.shrink();
-                        }
-
-                        final userReaction = interactions
-                            .getUserReaction(authState.value!.user!.id);
-
-                        return Column(
-                          children: [
+                    // スケジュール情報ヘッダー
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // スケジュールのタイトル
+                          Text(
+                            currentSchedule.title,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // 日時情報
+                          Row(
+                            children: [
+                              const Icon(Icons.calendar_today,
+                                  color: Colors.indigo),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _formatDateTimeRange(
+                                      currentSchedule.startDateTime,
+                                      currentSchedule.endDateTime),
+                                  style: const TextStyle(
+                                      fontSize: 16, color: Colors.black87),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          // 場所情報（あれば表示）
+                          if (currentSchedule.location != null &&
+                              currentSchedule.location!.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.only(top: 8.0),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
-                                  GestureDetector(
-                                    onTap: () =>
-                                        _showReactionUsers(context, ref),
-                                    child: Row(
-                                      children: [
-                                        if (schedule.reactionCount > 0)
-                                          SizedBox(
-                                            width: 30,
-                                            height: 30,
-                                            child: ReactionIconWidget(
-                                              hasGoing: interactions.reactions
-                                                  .any((r) =>
-                                                      r.type ==
-                                                      ReactionType.going),
-                                              hasThinking: interactions
-                                                  .reactions
-                                                  .any((r) =>
-                                                      r.type ==
-                                                      ReactionType.thinking),
-                                            ),
-                                          )
-                                        else
-                                          Icon(
-                                            Icons.people,
-                                            size: 16,
-                                            color:
-                                                Theme.of(context).primaryColor,
-                                          ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          '${schedule.reactionCount}',
-                                          style: TextStyle(
-                                            color: schedule.reactionCount > 0
-                                                ? Colors.grey
-                                                : Theme.of(context)
-                                                    .primaryColor,
-                                            fontWeight: FontWeight.bold,
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Icon(
-                                    Icons.comment,
-                                    size: 16,
-                                    color: Colors.blue[400],
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${schedule.commentCount}',
-                                    style: TextStyle(
-                                      color: Colors.blue[400],
-                                      fontWeight: FontWeight.bold,
+                                  const Icon(Icons.location_on,
+                                      color: Colors.redAccent),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      currentSchedule.location!,
+                                      style: const TextStyle(
+                                          fontSize: 16, color: Colors.black87),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            const Divider(height: 16),
-                            Row(
+                          const SizedBox(height: 16),
+                          // 作成者情報
+                          Row(
+                            children: [
+                              if (currentSchedule.ownerPhotoUrl != null)
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundImage: NetworkImage(
+                                      currentSchedule.ownerPhotoUrl!),
+                                )
+                              else
+                                const DefaultUserIcon(size: 32),
+                              const SizedBox(width: 8),
+                              Text(
+                                currentSchedule.ownerDisplayName,
+                                style: const TextStyle(
+                                    fontSize: 14, color: Colors.black54),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // インタラクション情報（リアクション数・コメント数）
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Expanded(
-                                  child: PopupMenuButton<ReactionType>(
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 8),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          if (userReaction != null)
-                                            Text(
-                                              userReaction.type ==
-                                                      ReactionType.going
-                                                  ? '🙋'
-                                                  : '🤔',
-                                              style: const TextStyle(
-                                                fontSize: 20,
-                                              ),
-                                            )
-                                          else
-                                            const Icon(
-                                              Icons.add_reaction_outlined,
-                                              color: Colors.grey,
-                                              size: 20,
-                                            ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            userReaction != null
-                                                ? (userReaction.type ==
-                                                        ReactionType.going
-                                                    ? '行きます！'
-                                                    : '考え中！')
-                                                : 'リアクション',
-                                            style: TextStyle(
-                                              color: userReaction != null
-                                                  ? Theme.of(context)
-                                                      .primaryColor
-                                                  : Colors.grey,
-                                            ),
+                                GestureDetector(
+                                  onTap: () => _showReactionUsers(context, ref),
+                                  child: Row(
+                                    children: [
+                                      if (currentSchedule.reactionCount > 0)
+                                        SizedBox(
+                                          width: 30,
+                                          height: 30,
+                                          child: ReactionIconWidget(
+                                            hasGoing: interactions.reactions
+                                                .any((r) =>
+                                                    r.type ==
+                                                    ReactionType.going),
+                                            hasThinking: interactions.reactions
+                                                .any((r) =>
+                                                    r.type ==
+                                                    ReactionType.thinking),
                                           ),
-                                        ],
-                                      ),
-                                    ),
-                                    onSelected: (ReactionType type) {
-                                      ref
-                                          .read(
-                                              scheduleInteractionNotifierProvider(
-                                                      schedule.id)
-                                                  .notifier)
-                                          .toggleReaction(
-                                              authState.value!.user!.id, type);
-                                    },
-                                    itemBuilder: (context) => [
-                                      PopupMenuItem(
-                                        value: ReactionType.going,
-                                        child: Row(
-                                          children: [
-                                            const Text('🙋 '),
-                                            const Text('行きます！'),
-                                            const Spacer(),
-                                            if (userReaction?.type ==
-                                                ReactionType.going)
-                                              const Text('✓',
-                                                  style: TextStyle(
-                                                      color: AppTheme
-                                                          .primaryColor)),
-                                          ],
+                                        )
+                                      else
+                                        Icon(
+                                          Icons.people,
+                                          size: 16,
+                                          color: Theme.of(context).primaryColor,
                                         ),
-                                      ),
-                                      PopupMenuItem(
-                                        value: ReactionType.thinking,
-                                        child: Row(
-                                          children: [
-                                            const Text('🤔 '),
-                                            const Text('考え中！'),
-                                            const Spacer(),
-                                            if (userReaction?.type ==
-                                                ReactionType.thinking)
-                                              const Text('✓',
-                                                  style: TextStyle(
-                                                      color: AppTheme
-                                                          .primaryColor)),
-                                          ],
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${currentSchedule.reactionCount}',
+                                        style: TextStyle(
+                                          color: currentSchedule.reactionCount >
+                                                  0
+                                              ? Colors.grey
+                                              : Theme.of(context).primaryColor,
+                                          fontWeight: FontWeight.bold,
+                                          decoration: TextDecoration.underline,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () {
-                                      _showCommentDialog(context, ref,
-                                          authState.value!.user!.id);
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 8),
-                                      child: const Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.comment_outlined,
-                                            color: Colors.grey,
-                                            size: 20,
-                                          ),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            'コメント',
-                                            style: TextStyle(
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                                const SizedBox(width: 16),
+                                Icon(
+                                  Icons.comment,
+                                  size: 16,
+                                  color: Colors.blue[400],
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${currentSchedule.commentCount}',
+                                  style: TextStyle(
+                                    color: Colors.blue[400],
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                          ],
-                        );
-                      },
+                          ),
+                          const SizedBox(height: 8),
+                          const Divider(height: 16),
+                          // スケジュールの説明
+                          Text(
+                            currentSchedule.description,
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(height: 16),
+                          // リアクションボタン
+                          ref.watch(authNotifierProvider).when(
+                                data: (authState) {
+                                  if (authState.user == null) {
+                                    return Container(); // 未ログイン時は表示しない
+                                  }
+
+                                  // 現在のユーザーのリアクションを取得
+                                  final userReaction = interactions
+                                      .getUserReaction(authState.user!.id);
+
+                                  return Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      PopupMenuButton<ReactionType>(
+                                        elevation: 3.0,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[100],
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            border: Border.all(
+                                                color: Colors.grey[300]!),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.add_reaction,
+                                                size: 20,
+                                                color: userReaction != null
+                                                    ? Theme.of(context)
+                                                        .primaryColor
+                                                    : Colors.grey,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                userReaction != null
+                                                    ? (userReaction.type ==
+                                                            ReactionType.going
+                                                        ? '行きます！'
+                                                        : '考え中！')
+                                                    : 'リアクション',
+                                                style: TextStyle(
+                                                  color: userReaction != null
+                                                      ? Theme.of(context)
+                                                          .primaryColor
+                                                      : Colors.grey,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        onSelected: (ReactionType type) {
+                                          ref
+                                              .read(
+                                                  scheduleInteractionNotifierProvider(
+                                                          currentSchedule.id)
+                                                      .notifier)
+                                              .toggleReaction(
+                                                  authState.user!.id, type);
+                                        },
+                                        itemBuilder: (context) => [
+                                          PopupMenuItem(
+                                            value: ReactionType.going,
+                                            child: Row(
+                                              children: [
+                                                const Text('🙋 '),
+                                                const Text('行きます！'),
+                                                const Spacer(),
+                                                if (userReaction?.type ==
+                                                    ReactionType.going)
+                                                  const Text('✓',
+                                                      style: TextStyle(
+                                                          color: AppTheme
+                                                              .primaryColor)),
+                                              ],
+                                            ),
+                                          ),
+                                          PopupMenuItem(
+                                            value: ReactionType.thinking,
+                                            child: Row(
+                                              children: [
+                                                const Text('🤔 '),
+                                                const Text('考え中！'),
+                                                const Spacer(),
+                                                if (userReaction?.type ==
+                                                    ReactionType.thinking)
+                                                  const Text('✓',
+                                                      style: TextStyle(
+                                                          color: AppTheme
+                                                              .primaryColor)),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  );
+                                },
+                                loading: () => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                                error: (e, st) => Text('エラー: $e'),
+                              ),
+                        ],
+                      ),
                     ),
-                    _buildCommentsSection(context, interactions),
-                    // キーボードが表示された時の余白
-                    const SizedBox(height: 80),
+                    const Divider(height: 1),
+
+                    // コメント一覧
+                    if (interactions.comments.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'コメント',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildCommentsSection(context, interactions),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-      floatingActionButton: null,
-    );
-  }
-
-  /// コメント入力ダイアログを表示します
-  ///
-  /// ユーザーがコメントを入力するためのモーダルボトムシートを表示します。
-  /// 送信ボタンが押されると、入力されたコメントをスケジュールに追加します。
-  ///
-  /// [context] ダイアログを表示するためのビルドコンテキスト
-  /// [ref] Riverpodの参照
-  /// [userId] コメントを投稿するユーザーのID
-  void _showCommentDialog(BuildContext context, WidgetRef ref, String userId) {
-    final commentController = TextEditingController();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    const Text(
-                      'コメントを追加',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+            // コメント入力部分
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: commentController,
+                      decoration: InputDecoration(
+                        hintText: 'コメントを追加...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[200],
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                       ),
                     ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: commentController,
-                  decoration: InputDecoration(
-                    hintText: 'コメントを入力...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.all(16),
                   ),
-                  maxLines: 3,
-                  autofocus: true,
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (commentController.text.isNotEmpty) {
-                        ref
-                            .read(
-                                scheduleInteractionNotifierProvider(schedule.id)
-                                    .notifier)
-                            .addComment(userId, commentController.text);
-                        Navigator.pop(context);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.send,
+                        color: Colors.white,
                       ),
+                      onPressed: () {
+                        // コメント送信処理
+                        final authState = ref.read(authNotifierProvider).value;
+                        if (authState?.user != null &&
+                            commentController.text.isNotEmpty) {
+                          ref
+                              .read(scheduleInteractionNotifierProvider(
+                                      currentSchedule.id)
+                                  .notifier)
+                              .addComment(
+                                  authState!.user!.id, commentController.text);
+                          commentController.clear();
+                        }
+                      },
                     ),
-                    child: const Text('送信'),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 
@@ -545,19 +559,25 @@ class ScheduleDetailPage extends HookConsumerWidget {
                     itemBuilder: (context, index) {
                       final user = users[index];
                       final reaction = reactions[index];
+                      // 追加のデバッグログ
+                      developer.log('リアクションオブジェクト: $reaction');
                       developer.log(
-                          '表示するユーザー: ${user.displayName}, リアクション: ${reaction.type}');
+                          'リアクションタイプ: ${reaction.type} (${reaction.type.runtimeType})');
+
                       return ListTile(
                         leading: Stack(
                           children: [
-                            const DefaultUserIcon(),
+                            user.iconUrl != null
+                                ? CircleAvatar(
+                                    backgroundImage:
+                                        NetworkImage(user.iconUrl!),
+                                  )
+                                : const DefaultUserIcon(),
                             Positioned(
                               right: 0,
                               bottom: 0,
                               child: Text(
-                                reaction.type == ReactionType.going
-                                    ? '🙋'
-                                    : '🤔',
+                                reaction.type == 'going' ? '🙋' : '🤔',
                                 style: const TextStyle(fontSize: 16),
                               ),
                             ),
@@ -576,131 +596,20 @@ class ScheduleDetailPage extends HookConsumerWidget {
     );
   }
 
-  /// 情報セクションを構築する[Widget]を返します
-  ///
-  /// [icon]、[title]、[content]を受け取り、一貫したレイアウトで
-  /// 情報を表示するセクションを構築します。
-  Widget _buildInfoSection({
-    required IconData icon,
-    required String title,
-    required String content,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  content,
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  /// 日時の範囲をフォーマットするヘルパーメソッド
+  String _formatDateTimeRange(DateTime start, DateTime end) {
+    final dateFormat = DateFormat('yyyy年M月d日（E）', 'ja_JP');
+    final timeFormat = DateFormat('HH:mm', 'ja_JP');
 
-  /// コメントセクションを構築する[Widget]を返します
-  ///
-  /// [interactions]から現在のコメント一覧を取得し、
-  /// ユーザー情報、投稿日時、コメント本文を表示します。
-  Widget _buildCommentsSection(
-    BuildContext context,
-    ScheduleInteractionState interactions,
-  ) {
-    // コメントを日時の昇順でソート
-    final sortedComments = [...interactions.comments]
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ...sortedComments.map((comment) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (comment.userPhotoUrl != null)
-                    CircleAvatar(
-                      backgroundImage: NetworkImage(comment.userPhotoUrl!),
-                      radius: 20,
-                    )
-                  else
-                    const DefaultUserIcon(),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceVariant
-                                .withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                comment.userDisplayName ?? 'ユーザー',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                comment.content,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 12, top: 4),
-                          child: Text(
-                            DateFormat('M月d日 HH:mm').format(comment.createdAt),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }),
-      ],
-    );
+    // 同日の場合は日付を1つだけ表示
+    if (start.year == end.year &&
+        start.month == end.month &&
+        start.day == end.day) {
+      return '${dateFormat.format(start)} ${timeFormat.format(start)} - ${timeFormat.format(end)}';
+    } else {
+      // 日付が異なる場合は両方の日付を表示
+      return '${dateFormat.format(start)} ${timeFormat.format(start)} - ${dateFormat.format(end)} ${timeFormat.format(end)}';
+    }
   }
 
   /// スケジュールに関連する通知を既読にします
@@ -819,5 +728,92 @@ class ScheduleDetailPage extends HookConsumerWidget {
     } catch (e) {
       developer.log('特定の通知を既読にする処理の初期化でエラーが発生しました: $e');
     }
+  }
+
+  /// コメントセクションを構築する[Widget]を返します
+  ///
+  /// [interactions]から現在のコメント一覧を取得し、
+  /// ユーザー情報、投稿日時、コメント本文を表示します。
+  Widget _buildCommentsSection(
+    BuildContext context,
+    ScheduleInteractionState interactions,
+  ) {
+    // コメントを日時の昇順でソート
+    final sortedComments = [...interactions.comments]
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...sortedComments.map((comment) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (comment.userPhotoUrl != null)
+                    CircleAvatar(
+                      backgroundImage: NetworkImage(comment.userPhotoUrl!),
+                      radius: 20,
+                    )
+                  else
+                    const DefaultUserIcon(),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceVariant
+                                .withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                comment.userDisplayName ?? 'ユーザー',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                comment.content,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 12, top: 4),
+                          child: Text(
+                            DateFormat('M月d日 HH:mm').format(comment.createdAt),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
   }
 }
