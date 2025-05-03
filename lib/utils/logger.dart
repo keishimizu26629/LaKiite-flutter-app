@@ -9,7 +9,10 @@ class AppLogger {
     'firebase_storage_service.dart',
     'my_page_view_model.dart',
     'storage_service.dart',
-    'image_processor_service.dart'
+    'image_processor_service.dart',
+    'schedule_interaction_repository.dart',
+    'schedule_interaction_notifier.dart',
+    'schedule_detail_page.dart'
   ];
 
   // 常にログを表示するかどうか
