@@ -247,6 +247,26 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         .orderBy('createdAt', descending: true)
         .get();
 
+    // すべてのコメントフィールドの詳細をログ出力
+    AppLogger.debug('========= コメントデータ詳細 =========');
+    AppLogger.debug('スケジュールID: $scheduleId, 取得コメント数: ${snapshot.docs.length}');
+
+    // 各コメントのデータ構造を詳細に記録
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      AppLogger.debug('コメントID: ${doc.id}');
+      AppLogger.debug('フィールド一覧: ${data.keys.join(", ")}');
+      AppLogger.debug('contentフィールドの有無: ${data.containsKey("content")}');
+      AppLogger.debug('textフィールドの有無: ${data.containsKey("text")}');
+      if (data.containsKey("content")) {
+        AppLogger.debug('content値: ${data["content"]}');
+      }
+      if (data.containsKey("text")) {
+        AppLogger.debug('text値: ${data["text"]}');
+      }
+    }
+    AppLogger.debug('===================================');
+
     final comments = snapshot.docs.map((doc) {
       try {
         final data = {...doc.data(), 'id': doc.id};
@@ -361,11 +381,19 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       // 既存のコメントデータをログ出力
       final existingData = commentDoc.data();
       AppLogger.debug('既存コメントデータ: $existingData');
+      AppLogger.debug('コメントID: $commentId, ドキュメントID: ${commentDoc.id}');
 
       // createdAtとupdatedAtの値を確認
-      AppLogger.debug('既存コメントのcreatedAt: ${existingData?['createdAt']}');
-      AppLogger.debug('既存コメントのupdatedAt: ${existingData?['updatedAt']}');
-      AppLogger.debug('既存コメントのisEdited: ${existingData?['isEdited']}');
+      final createdAtValue = existingData?['createdAt'];
+      final updatedAtValue = existingData?['updatedAt'];
+      final isEditedValue = existingData?['isEdited'];
+
+      AppLogger.debug(
+          '既存コメントのcreatedAt: $createdAtValue (${createdAtValue?.runtimeType})');
+      AppLogger.debug(
+          '既存コメントのupdatedAt: $updatedAtValue (${updatedAtValue?.runtimeType})');
+      AppLogger.debug(
+          '既存コメントのisEdited: $isEditedValue (${isEditedValue?.runtimeType})');
 
       // 更新するデータを準備 - セキュリティルールを満たすために必要最小限のフィールドのみ含める
       // セキュリティルールでは ['content', 'updatedAt', 'isEdited'] のみが許可されている
@@ -377,6 +405,20 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       };
 
       AppLogger.debug('更新データ: $updateData');
+      AppLogger.debug(
+          '更新データの型: updatedAt=${updateData['updatedAt']?.runtimeType}, isEdited=${updateData['isEdited']?.runtimeType}');
+
+      // 現在のユーザーIDを取得して権限チェック
+      final currentUserId = await _getCurrentUserId();
+      final commentUserId = existingData?['userId'];
+
+      AppLogger.debug('現在のユーザーID: $currentUserId');
+      AppLogger.debug('コメント所有者ID: $commentUserId');
+
+      if (currentUserId != commentUserId) {
+        AppLogger.error('権限エラー: コメント所有者ではありません');
+        throw Exception('このコメントを編集する権限がありません');
+      }
 
       try {
         await _firestore
@@ -393,8 +435,37 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         // エラーの詳細を確認
         if (updateError.toString().contains('permission-denied')) {
           AppLogger.error('権限エラー: セキュリティルールによりアクセスが拒否されました');
-          AppLogger.error('ユーザーID: ${await _getCurrentUserId()}');
-          AppLogger.error('コメント所有者ID: ${existingData?['userId']}');
+          AppLogger.error('ユーザーID: $currentUserId');
+          AppLogger.error('コメント所有者ID: $commentUserId');
+
+          // 更新データの詳細をログ出力
+          AppLogger.error('更新データの詳細: $updateData');
+          AppLogger.error('更新対象フィールド: ${updateData.keys.join(", ")}');
+
+          // ドキュメントデータを再度取得して確認
+          try {
+            final refetchDoc = await _firestore
+                .collection('schedules')
+                .doc(scheduleId)
+                .collection('comments')
+                .doc(commentId)
+                .get();
+
+            if (refetchDoc.exists) {
+              final currentData = refetchDoc.data();
+              AppLogger.error('現在のドキュメントデータ: $currentData');
+              AppLogger.error(
+                  '現在のドキュメントフィールド: ${currentData?.keys.join(", ")}');
+
+              // content/text フィールドの確認
+              AppLogger.error(
+                  'contentフィールドの有無: ${currentData?.containsKey("content")}');
+              AppLogger.error(
+                  'textフィールドの有無: ${currentData?.containsKey("text")}');
+            }
+          } catch (e) {
+            AppLogger.error('ドキュメント再取得エラー: $e');
+          }
         }
 
         rethrow;

@@ -153,7 +153,7 @@ class ScheduleInteractionNotifier
             await _pushNotificationSender.sendReactionNotification(
               toUserId: schedule.ownerId,
               fromUserId: userId,
-              fromUserName: userDoc.displayName ?? 'ユーザー',
+              fromUserName: userDoc.displayName,
               scheduleId: _scheduleId,
               interactionId: reactionId,
             );
@@ -202,7 +202,7 @@ class ScheduleInteractionNotifier
           await _pushNotificationSender.sendReactionNotification(
             toUserId: schedule.ownerId,
             fromUserId: userId,
-            fromUserName: userDoc.displayName ?? 'ユーザー',
+            fromUserName: userDoc.displayName,
             scheduleId: _scheduleId,
             interactionId: reactionId,
           );
@@ -260,7 +260,7 @@ class ScheduleInteractionNotifier
         await _pushNotificationSender.sendCommentNotification(
           toUserId: schedule.ownerId,
           fromUserId: userId,
-          fromUserName: userDoc.displayName ?? 'ユーザー',
+          fromUserName: userDoc.displayName,
           scheduleId: _scheduleId,
           interactionId: commentId,
           commentContent: content,

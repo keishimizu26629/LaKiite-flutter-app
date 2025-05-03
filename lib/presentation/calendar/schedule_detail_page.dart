@@ -742,7 +742,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
     // 現在のユーザーIDを取得
     final currentUserId = ref.read(authNotifierProvider).value?.user?.id;
 
-    // コメントを日時の昇順でソート（変更不要：すでに昇順になっている）
+    // コメントを日時の昇順でソート
     final sortedComments = [...interactions.comments]
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
@@ -856,8 +856,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
                         Padding(
                           padding: const EdgeInsets.only(left: 12, top: 4),
                           child: Text(
-                            comment.isEdited && comment.updatedAt != null
-                                ? '${DateFormat('M月d日 HH:mm').format(comment.createdAt)} (${DateFormat('M月d日 HH:mm').format(comment.updatedAt!)}に編集済み)'
+                            comment.isEdited
+                                ? '${DateFormat('M月d日 HH:mm').format(comment.createdAt)} (編集済み)'
                                 : DateFormat('M月d日 HH:mm')
                                     .format(comment.createdAt),
                             style: TextStyle(
@@ -922,7 +922,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
     // 編集用テキストコントローラー
     final editController = TextEditingController(text: comment.content);
 
-    developer.log('コメント編集ダイアログを表示: commentId=${comment.id}');
+    developer.log(
+        'コメント編集開始: id=${comment.id}, userId=${comment.userId}, currentAuthUser=${ref.read(authNotifierProvider).value?.user?.id}');
 
     showDialog(
       context: context,
@@ -964,6 +965,16 @@ class ScheduleDetailPage extends HookConsumerWidget {
               );
 
               try {
+                // リクエスト情報をログ出力
+                developer.log(
+                    'コメント更新リクエスト: scheduleId=${schedule.id}, commentId=${comment.id}, commentUserId=${comment.userId}');
+                developer.log(
+                    '認証状態: ${ref.read(authNotifierProvider).value?.user != null ? "ログイン中" : "未ログイン"}');
+                if (ref.read(authNotifierProvider).value?.user != null) {
+                  developer.log(
+                      '現在のユーザーID: ${ref.read(authNotifierProvider).value!.user!.id}');
+                }
+
                 // コメントを更新
                 ref
                     .read(scheduleInteractionNotifierProvider(schedule.id)
@@ -976,11 +987,24 @@ class ScheduleDetailPage extends HookConsumerWidget {
                     const SnackBar(content: Text('コメントを編集しました')),
                   );
                 }).catchError((error) {
-                  developer.log('コメント更新エラー: $error', error: error);
+                  developer.log('コメント更新エラー詳細: $error', error: error);
+                  // スタックトレースも記録
+                  developer.log('スタックトレース: ${StackTrace.current}');
+
+                  // より詳細なエラーメッセージを表示
+                  var errorMsg = 'コメント更新に失敗しました';
+                  if (error.toString().contains('permission-denied')) {
+                    errorMsg += ': 権限エラー - Firebaseルールによりアクセスが拒否されました';
+                  } else if (error.toString().contains('content')) {
+                    errorMsg += ': フィールド名の不一致（contentフィールド）';
+                  } else if (error.toString().contains('text')) {
+                    errorMsg += ': フィールド名の不一致（textフィールド）';
+                  }
+
                   // エラー表示
                   scaffoldMessenger.showSnackBar(
                     SnackBar(
-                      content: Text('エラー: コメントの更新に失敗しました'),
+                      content: Text('エラー: $errorMsg'),
                       backgroundColor: Colors.red,
                       duration: const Duration(seconds: 4),
                     ),
@@ -988,6 +1012,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
                 });
               } catch (e) {
                 developer.log('コメント更新中に例外が発生: $e', error: e);
+                developer.log('スタックトレース: ${StackTrace.current}');
                 // エラー表示
                 scaffoldMessenger.showSnackBar(
                   SnackBar(
