@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../presentation_provider.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
+  static const String path = '/login';
+
   const LoginPage({super.key});
 
   @override
@@ -31,9 +33,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     try {
       await ref.read(authNotifierProvider.notifier).signIn(
-        _emailController.text,
-        _passwordController.text,
-      );
+            _emailController.text,
+            _passwordController.text,
+          );
       if (mounted) {
         context.go('/');
       }

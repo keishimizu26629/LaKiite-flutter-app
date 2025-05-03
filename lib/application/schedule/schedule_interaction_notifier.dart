@@ -153,7 +153,7 @@ class ScheduleInteractionNotifier
             await _pushNotificationSender.sendReactionNotification(
               toUserId: schedule.ownerId,
               fromUserId: userId,
-              fromUserName: userDoc.displayName ?? 'ユーザー',
+              fromUserName: userDoc.displayName,
               scheduleId: _scheduleId,
               interactionId: reactionId,
             );
@@ -202,7 +202,7 @@ class ScheduleInteractionNotifier
           await _pushNotificationSender.sendReactionNotification(
             toUserId: schedule.ownerId,
             fromUserId: userId,
-            fromUserName: userDoc.displayName ?? 'ユーザー',
+            fromUserName: userDoc.displayName,
             scheduleId: _scheduleId,
             interactionId: reactionId,
           );
@@ -260,7 +260,7 @@ class ScheduleInteractionNotifier
         await _pushNotificationSender.sendCommentNotification(
           toUserId: schedule.ownerId,
           fromUserId: userId,
-          fromUserName: userDoc.displayName ?? 'ユーザー',
+          fromUserName: userDoc.displayName,
           scheduleId: _scheduleId,
           interactionId: commentId,
           commentContent: content,
@@ -273,14 +273,74 @@ class ScheduleInteractionNotifier
     }
   }
 
+  /// コメントを削除する
+  ///
+  /// [commentId] 削除するコメントのID
   Future<void> deleteComment(String commentId) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
+      AppLogger.debug(
+          'Deleting comment - scheduleId: $_scheduleId, commentId: $commentId');
       await _repository.deleteComment(_scheduleId, commentId);
-      state = state.copyWith(isLoading: false);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+
+      AppLogger.debug('Successfully deleted comment: $commentId');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error deleting comment: $e');
+      AppLogger.error('Stack trace: $stackTrace');
+      state = state.copyWith(error: e.toString());
+      rethrow;
     }
+  }
+
+  /// コメントを更新する
+  ///
+  /// [commentId] 更新するコメントのID
+  /// [content] 更新するコメント内容
+  Future<void> updateComment(String commentId, String content) async {
+    try {
+      AppLogger.debug('======= コメント更新処理開始 =======');
+      AppLogger.debug('スケジュールID: $_scheduleId, コメントID: $commentId');
+      AppLogger.debug('更新内容: $content');
+
+      // 現在のユーザーIDを確認
+      final authState = await _ref.read(authNotifierProvider.future);
+      if (authState.user == null) {
+        throw Exception('ユーザーが認証されていません');
+      }
+
+      final userId = authState.user!.id;
+      AppLogger.debug('現在のユーザーID: $userId');
+
+      // 既存コメントを確認
+      final comments = await _repository.getComments(_scheduleId);
+      final targetComment = comments.firstWhere(
+        (c) => c.id == commentId,
+        orElse: () => throw Exception('コメントが見つかりません: $commentId'),
+      );
+
+      AppLogger.debug('対象コメント: $targetComment');
+      AppLogger.debug('コメント所有者ID: ${targetComment.userId}');
+
+      if (targetComment.userId != userId) {
+        throw Exception('このコメントを編集する権限がありません');
+      }
+
+      await _repository.updateComment(_scheduleId, commentId, content);
+
+      AppLogger.debug('コメント更新成功: $commentId');
+      AppLogger.debug('======= コメント更新処理完了 =======');
+    } catch (e, stackTrace) {
+      AppLogger.error('コメント更新エラー: $e');
+      AppLogger.error('スタックトレース: $stackTrace');
+      state = state.copyWith(error: e.toString());
+      rethrow;
+    }
+  }
+
+  /// コメントを監視する
+  ///
+  /// コメントの変更を[ScheduleInteractionState]の`comments`に反映します。
+  void _watchComments() {
+    // ... existing code ...
   }
 
   @override
