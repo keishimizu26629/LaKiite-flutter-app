@@ -3,6 +3,7 @@ import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/schedule_comment.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
 import '../utils/logger.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// スケジュールの相互作用（リアクション・コメント）に関するデータアクセスを管理
 ///
@@ -284,6 +285,8 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         'userId': userId,
         'content': content,
         'createdAt': now,
+        'updatedAt': now, // createdAtと同じ値に設定
+        'isEdited': false, // 初期値としてfalseを設定
         'userDisplayName': userData?['displayName'],
         'userPhotoUrl': userData?['iconUrl'],
       };
@@ -322,8 +325,87 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         .delete();
     AppLogger.debug('Successfully deleted comment: $commentId');
 
-    // カウンターを更新
-    await _updateScheduleCounters(scheduleId);
+    // カウンターはCloud Functionsで自動的に更新されるため削除
+    // await _updateScheduleCounters(scheduleId);
+    AppLogger.debug(
+        'Reaction removed - counter will be updated by Cloud Functions');
+  }
+
+  /// 指定された[scheduleId]と[commentId]に対応するコメントを更新
+  ///
+  /// `schedules/{scheduleId}/comments/{commentId}`のドキュメントを更新します。
+  /// createdAtは変更せず、updatedAtを現在の時刻に設定します。
+  @override
+  Future<void> updateComment(
+    String scheduleId,
+    String commentId,
+    String content,
+  ) async {
+    try {
+      AppLogger.debug('====== コメント更新開始 ======');
+      AppLogger.debug('スケジュールID: $scheduleId, コメントID: $commentId');
+
+      // 更新前に既存のコメントを取得して確認
+      final commentDoc = await _firestore
+          .collection('schedules')
+          .doc(scheduleId)
+          .collection('comments')
+          .doc(commentId)
+          .get();
+
+      if (!commentDoc.exists) {
+        AppLogger.error('コメントが見つかりません: $commentId');
+        throw Exception('コメントが見つかりません');
+      }
+
+      // 既存のコメントデータをログ出力
+      final existingData = commentDoc.data();
+      AppLogger.debug('既存コメントデータ: $existingData');
+
+      // createdAtとupdatedAtの値を確認
+      AppLogger.debug('既存コメントのcreatedAt: ${existingData?['createdAt']}');
+      AppLogger.debug('既存コメントのupdatedAt: ${existingData?['updatedAt']}');
+      AppLogger.debug('既存コメントのisEdited: ${existingData?['isEdited']}');
+
+      // 更新するデータを準備 - セキュリティルールを満たすために必要最小限のフィールドのみ含める
+      // セキュリティルールでは ['content', 'updatedAt', 'isEdited'] のみが許可されている
+      final now = Timestamp.now();
+      final updateData = {
+        'content': content,
+        'isEdited': true,
+        'updatedAt': now,
+      };
+
+      AppLogger.debug('更新データ: $updateData');
+
+      try {
+        await _firestore
+            .collection('schedules')
+            .doc(scheduleId)
+            .collection('comments')
+            .doc(commentId)
+            .update(updateData);
+
+        AppLogger.debug('コメント更新成功: $commentId');
+      } catch (updateError) {
+        AppLogger.error('コメント更新中にエラー発生: $updateError');
+
+        // エラーの詳細を確認
+        if (updateError.toString().contains('permission-denied')) {
+          AppLogger.error('権限エラー: セキュリティルールによりアクセスが拒否されました');
+          AppLogger.error('ユーザーID: ${await _getCurrentUserId()}');
+          AppLogger.error('コメント所有者ID: ${existingData?['userId']}');
+        }
+
+        rethrow;
+      }
+
+      AppLogger.debug('====== コメント更新完了 ======');
+    } catch (e, stackTrace) {
+      AppLogger.error('コメント更新エラー: $e');
+      AppLogger.error('スタックトレース: $stackTrace');
+      rethrow;
+    }
   }
 
   /// 指定された[scheduleId]のコメントをリアルタイムで監視
@@ -358,5 +440,11 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       AppLogger.debug('Converted ${comments.length} comments');
       return comments;
     });
+  }
+
+  // 現在のユーザーIDを取得する補助メソッド
+  Future<String?> _getCurrentUserId() async {
+    final auth = FirebaseAuth.instance;
+    return auth.currentUser?.uid;
   }
 }

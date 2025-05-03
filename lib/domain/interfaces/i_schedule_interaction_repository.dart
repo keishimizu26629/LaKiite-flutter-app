@@ -13,5 +13,7 @@ abstract class IScheduleInteractionRepository {
   Future<List<ScheduleComment>> getComments(String scheduleId);
   Future<String> addComment(String scheduleId, String userId, String content);
   Future<void> deleteComment(String scheduleId, String commentId);
+  Future<void> updateComment(
+      String scheduleId, String commentId, String content);
   Stream<List<ScheduleComment>> watchComments(String scheduleId);
 }
