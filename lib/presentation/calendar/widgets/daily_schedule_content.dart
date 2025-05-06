@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
-import 'package:intl/intl.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/application/notification/notification_notifier.dart';
 import 'package:lakiite/utils/logger.dart';
+import 'package:lakiite/presentation/widgets/default_user_icon.dart';
 
 class DailyScheduleContent extends HookConsumerWidget {
   const DailyScheduleContent({
@@ -200,12 +200,30 @@ class DailyScheduleContent extends HookConsumerWidget {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       const SizedBox(height: 2),
-                                      Text(
-                                        '${DateFormat('HH:mm').format(startTime)} - ${DateFormat('HH:mm').format(endTime)}',
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                      // 作成者のアイコンと名前を表示（時間表示の代わりに常に表示）
+                                      Row(
+                                        children: [
+                                          if (schedule.ownerPhotoUrl != null)
+                                            CircleAvatar(
+                                              radius: 8,
+                                              backgroundImage: NetworkImage(
+                                                  schedule.ownerPhotoUrl!),
+                                            )
+                                          else
+                                            const DefaultUserIcon(size: 16),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              schedule.ownerDisplayName,
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: Colors.grey[600],
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                       if (schedule.location != null &&
                                           _calculateHeight(startTime, endTime) >
