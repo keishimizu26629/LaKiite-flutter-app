@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../presentation_provider.dart';
+import 'edit_name_page.dart';
+import 'edit_email_page.dart';
+import 'edit_search_id_page.dart';
+import 'legal_info_page_alternative.dart';
+import '../login/login_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   static const String path = '/settings';
@@ -21,7 +26,7 @@ class SettingsPage extends ConsumerWidget {
             title: const Text('名前'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              context.push('/settings/name');
+              context.push('/settings/${EditNamePage.path}');
             },
           ),
           ListTile(
@@ -29,7 +34,7 @@ class SettingsPage extends ConsumerWidget {
             title: const Text('メールアドレス'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              context.push('/settings/email');
+              context.push('/settings/${EditEmailPage.path}');
             },
           ),
           ListTile(
@@ -37,7 +42,7 @@ class SettingsPage extends ConsumerWidget {
             title: const Text('検索ID'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              context.push('/settings/search-id');
+              context.push('/settings/${EditSearchIdPage.path}');
             },
           ),
           const Divider(),
@@ -46,7 +51,8 @@ class SettingsPage extends ConsumerWidget {
             title: const Text('プライバシーポリシー'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              context.push('/settings/privacy-policy');
+              context.push(
+                  '/settings/${LegalInfoPageAlternative.privacyPolicyPath}');
             },
           ),
           ListTile(
@@ -54,7 +60,8 @@ class SettingsPage extends ConsumerWidget {
             title: const Text('利用規約'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              context.push('/settings/terms-of-service');
+              context.push(
+                  '/settings/${LegalInfoPageAlternative.termsOfServicePath}');
             },
           ),
           const Divider(),
@@ -84,7 +91,7 @@ class SettingsPage extends ConsumerWidget {
                 try {
                   await ref.read(authNotifierProvider.notifier).signOut();
                   if (context.mounted) {
-                    context.go('/login');
+                    context.go(LoginPage.path);
                   }
                 } catch (e) {
                   if (context.mounted) {
