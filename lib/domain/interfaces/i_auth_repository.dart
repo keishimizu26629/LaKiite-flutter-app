@@ -7,6 +7,7 @@ import 'package:lakiite/domain/entity/user.dart';
 /// - ユーザーのサインアウト
 /// - 新規ユーザー登録
 /// - 認証状態の監視
+/// - アカウント削除
 ///
 /// このインターフェースの実装クラスは、
 /// 具体的な認証基盤(例:Firebase Authentication)と
@@ -39,4 +40,12 @@ abstract class IAuthRepository {
   /// 返値: 認証状態が変更されるたびに[UserModel](または未認証時はnull)を
   /// 発行するStream
   Stream<UserModel?> authStateChanges();
+
+  /// 現在のユーザーアカウントを削除する
+  ///
+  /// アカウント関連のデータも全て削除されます。
+  /// この操作は元に戻せません。
+  ///
+  /// 返値: 削除が成功したかどうかを示すbool値
+  Future<bool> deleteAccount();
 }
