@@ -103,6 +103,79 @@ class SettingsPage extends ConsumerWidget {
               }
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.delete_forever, color: Colors.red),
+            title: const Text('アカウント削除', style: TextStyle(color: Colors.red)),
+            onTap: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('アカウント削除'),
+                  content: const Text(
+                    'アカウントを削除すると、すべてのデータが完全に削除され、元に戻すことはできません。\n\n本当にアカウントを削除してもよろしいですか？',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('キャンセル'),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('削除する'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirmed == true && context.mounted) {
+                // 削除処理中の進捗ダイアログを表示
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const AlertDialog(
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('アカウントを削除中...'),
+                      ],
+                    ),
+                  ),
+                );
+
+                try {
+                  await ref.read(authNotifierProvider.notifier).deleteAccount();
+
+                  // 進捗ダイアログを閉じる
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+
+                  // ログイン画面に遷移
+                  if (context.mounted) {
+                    context.go(LoginPage.path);
+                  }
+                } catch (e) {
+                  // 進捗ダイアログを閉じる
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+
+                  // エラーメッセージを表示
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text('アカウント削除に失敗しました: ${e.toString()}')),
+                    );
+                  }
+                }
+              }
+            },
+          ),
         ],
       ),
     );
