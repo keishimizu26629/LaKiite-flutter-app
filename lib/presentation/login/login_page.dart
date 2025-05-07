@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../presentation_provider.dart';
+import '../signup/signup.dart';
+import '../../presentation/bottom_navigation/bottom_navigation.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   static const String path = '/login';
@@ -37,7 +39,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             _passwordController.text,
           );
       if (mounted) {
-        context.go('/');
+        context.go(BottomNavigationPage.path);
       }
     } catch (e) {
       if (mounted) {
@@ -55,7 +57,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void _navigateToSignup() {
-    context.push('/signup');
+    context.push(SignupPage.path);
   }
 
   @override
