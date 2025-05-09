@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/interfaces/i_auth_repository.dart';
 import '../../infrastructure/auth_repository.dart';
 import '../../infrastructure/user_fcm_token_service.dart';
@@ -135,37 +136,98 @@ class AuthNotifier extends _$AuthNotifier {
     state = await AsyncValue.guard(() async {
       try {
         // FCMトークンを削除
-        await _fcmTokenService.removeFcmToken();
+        try {
+          await _fcmTokenService.removeFcmToken();
+        } catch (e) {
+          AppLogger.error('FCMトークン削除エラー（無視して続行）: $e');
+          // トークン削除に失敗しても処理を続行
+        }
 
         // Firestoreのキャッシュをクリア
         try {
           await FirebaseFirestore.instance.terminate();
           await FirebaseFirestore.instance.clearPersistence();
         } catch (e) {
-          AppLogger.error('Firestoreキャッシュクリアエラー: $e');
+          AppLogger.error('Firestoreキャッシュクリアエラー（無視して続行）: $e');
+          // キャッシュクリアに失敗しても処理を続行
         }
 
         // 関連するRiverpodプロバイダーをリセット
-        ref.invalidateSelf();
+        try {
+          // 自身のプロバイダーを無効化
+          ref.invalidateSelf();
 
-        // ユーザー関連のプロバイダーを無効化
-        ref.invalidate(userRepositoryProvider);
+          // ユーザー関連のプロバイダーを無効化
+          try {
+            ref.invalidate(userRepositoryProvider);
+          } catch (e) {
+            AppLogger.warning('userRepositoryProvider無効化エラー: $e');
+          }
 
-        // スケジュール関連のプロバイダーも無効化
-        ref.invalidate(scheduleNotifierProvider);
-        ref.invalidate(scheduleRepositoryProvider);
+          // その他のプロバイダーを個別に無効化し、エラーを捕捉
+          try {
+            ref.invalidate(scheduleNotifierProvider);
+          } catch (e) {
+            // エラーは無視
+          }
 
-        // グループとリスト関連のプロバイダーも無効化
-        ref.invalidate(groupNotifierProvider);
-        ref.invalidate(groupRepositoryProvider);
-        ref.invalidate(listNotifierProvider);
-        ref.invalidate(listRepositoryProvider);
+          try {
+            ref.invalidate(scheduleRepositoryProvider);
+          } catch (e) {
+            // エラーは無視
+          }
 
-        // ストリームプロバイダーも無効化
-        ref.invalidate(userListsStreamProvider);
-        ref.invalidate(userGroupsStreamProvider);
-        ref.invalidate(userFriendsStreamProvider);
-        ref.invalidate(userFriendsProvider);
+          try {
+            ref.invalidate(groupNotifierProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+
+          try {
+            ref.invalidate(groupRepositoryProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+
+          try {
+            ref.invalidate(listNotifierProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+
+          try {
+            ref.invalidate(listRepositoryProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+
+          try {
+            ref.invalidate(userListsStreamProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+
+          try {
+            ref.invalidate(userGroupsStreamProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+
+          try {
+            ref.invalidate(userFriendsStreamProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+
+          try {
+            ref.invalidate(userFriendsProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+        } catch (e) {
+          AppLogger.error('プロバイダー無効化エラー（無視して続行）: $e');
+          // プロバイダー無効化に失敗しても処理を続行
+        }
 
         // 最後に認証をサインアウト
         await _authRepository.signOut();
