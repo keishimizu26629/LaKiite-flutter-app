@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/interfaces/i_auth_repository.dart';
 import '../../infrastructure/auth_repository.dart';
 import '../../infrastructure/user_fcm_token_service.dart';
