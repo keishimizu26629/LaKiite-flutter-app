@@ -136,7 +136,9 @@ class HomePage extends HookConsumerWidget {
             initialized.value = true;
             userId.value = currentUserId;
 
-            WidgetsBinding.instance.addPostFrameCallback((_) {
+            // 認証完了後、少し遅延させてからスケジュールの取得を開始することで
+            // Firebase認証が確実に完了した状態でデータ取得を行う
+            Future.delayed(const Duration(milliseconds: 500), () {
               // 常に全ての予定を取得する
               ref
                   .read(scheduleNotifierProvider.notifier)
@@ -145,6 +147,10 @@ class HomePage extends HookConsumerWidget {
               ref
                   .read(listNotifierProvider.notifier)
                   .watchUserLists(currentUserId);
+
+              // データ取得開始をログ出力
+              AppLogger.debug(
+                  'ホーム画面: 認証完了後のデータ取得を開始しました - userId: $currentUserId');
             });
           }
         }
