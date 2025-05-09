@@ -88,15 +88,51 @@ class SettingsPage extends ConsumerWidget {
               );
 
               if (confirmed == true && context.mounted) {
+                // ローディングインジケータを表示
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const AlertDialog(
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('ログアウト中...'),
+                      ],
+                    ),
+                  ),
+                );
+
                 try {
                   await ref.read(authNotifierProvider.notifier).signOut();
+
+                  // ローディングインジケータを閉じる
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+
+                  // ログイン画面へ遷移
                   if (context.mounted) {
                     context.go(LoginPage.path);
                   }
                 } catch (e) {
+                  // ローディングインジケータを閉じる
                   if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+
+                  if (context.mounted) {
+                    // エラーの種類に応じて適切なメッセージを表示
+                    String errorMessage = 'ログアウトに失敗しました';
+                    if (e.toString().contains('network')) {
+                      errorMessage = 'ネットワーク接続エラー: インターネット接続を確認してください';
+                    } else if (e.toString().contains('permission')) {
+                      errorMessage = '権限エラー: アプリを再起動してください';
+                    }
+
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('ログアウトに失敗しました')),
+                      SnackBar(content: Text(errorMessage)),
                     );
                   }
                 }
