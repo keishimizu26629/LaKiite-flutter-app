@@ -1285,18 +1285,28 @@ class OptimizedDateCell extends StatelessWidget {
                       const SizedBox(height: 1),
                       ...schedules.take(3).map((schedule) {
                         final isOwner = schedule.ownerId == currentUserId;
+                        // デバッグログを追加
+                        AppLogger.debug(
+                            'OptimizedDateCell - 予定: ${schedule.title}, オーナーID: ${schedule.ownerId}, currentUserId: $currentUserId, isOwner: $isOwner');
+
+                        // ユーザーIDが未定義でない場合のみ判定を行う
+                        final isOwnerWithCheck = currentUserId != null &&
+                            schedule.ownerId == currentUserId;
+                        AppLogger.debug(
+                            'OptimizedDateCell - 判定結果: ${schedule.title}, 単純比較=${isOwner}, チェック付き=${isOwnerWithCheck}');
+
                         return Container(
                           margin: const EdgeInsets.only(bottom: 0.5),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 2, vertical: 0.5),
                           decoration: BoxDecoration(
-                            color: isOwner
+                            color: isOwnerWithCheck
                                 ? Colors.grey.shade200
                                 : Theme.of(context)
                                     .primaryColor
                                     .withOpacity(0.15),
                             border: Border.all(
-                              color: isOwner
+                              color: isOwnerWithCheck
                                   ? Colors.grey.shade400
                                   : Theme.of(context)
                                       .primaryColor
@@ -1309,7 +1319,7 @@ class OptimizedDateCell extends StatelessWidget {
                             schedule.title,
                             style: TextStyle(
                               fontSize: 8,
-                              color: isOwner
+                              color: isOwnerWithCheck
                                   ? Colors.grey.shade700
                                   : Theme.of(context)
                                       .primaryColor

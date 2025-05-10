@@ -144,9 +144,18 @@ class DailyScheduleContent extends HookConsumerWidget {
                           final startTime = schedule.startDateTime;
                           final endTime = schedule.endDateTime;
                           final isOwner = schedule.ownerId == currentUserId;
+
+                          // ユーザーIDが未定義でない場合のみ判定を行う
+                          final isOwnerWithCheck = currentUserId != null &&
+                              schedule.ownerId == currentUserId;
+
                           final itemWidth = group.length == 1
                               ? containerWidth
                               : (containerWidth / group.length) - 4;
+
+                          // デバッグログを追加
+                          AppLogger.debug(
+                              'DailyScheduleContent - 予定: ${schedule.title}, オーナーID: ${schedule.ownerId}, currentUserId: $currentUserId, isOwner: $isOwner, isOwnerWithCheck: $isOwnerWithCheck');
 
                           return Positioned(
                             top: _calculateTimePosition(startTime),
@@ -168,13 +177,13 @@ class DailyScheduleContent extends HookConsumerWidget {
                                 margin:
                                     const EdgeInsets.symmetric(horizontal: 2),
                                 decoration: BoxDecoration(
-                                  color: isOwner
+                                  color: isOwnerWithCheck
                                       ? Colors.grey.withOpacity(0.1)
                                       : Theme.of(context)
                                           .primaryColor
                                           .withOpacity(0.1),
                                   border: Border.all(
-                                    color: isOwner
+                                    color: isOwnerWithCheck
                                         ? Colors.grey.withOpacity(0.8)
                                         : Theme.of(context)
                                             .primaryColor
