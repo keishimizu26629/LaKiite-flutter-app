@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'signup_view_model.dart';
+import '../bottom_navigation/bottom_navigation.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
   static const String path = '/signup';
@@ -44,7 +45,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 : _nameController.text,
           );
       if (mounted) {
-        context.go('/');
+        context.go(BottomNavigationPage.path);
       }
     } catch (e) {
       if (mounted) {

@@ -46,6 +46,7 @@ final authStateStreamProvider = StreamProvider.autoDispose<AuthState>((ref) {
 /// - サインイン処理
 /// - サインアップ処理
 /// - サインアウト処理
+/// - アカウント削除処理
 ///
 /// 依存:
 /// - [authRepositoryProvider] 認証操作用
@@ -134,37 +135,98 @@ class AuthNotifier extends _$AuthNotifier {
     state = await AsyncValue.guard(() async {
       try {
         // FCMトークンを削除
-        await _fcmTokenService.removeFcmToken();
+        try {
+          await _fcmTokenService.removeFcmToken();
+        } catch (e) {
+          AppLogger.error('FCMトークン削除エラー（無視して続行）: $e');
+          // トークン削除に失敗しても処理を続行
+        }
 
         // Firestoreのキャッシュをクリア
         try {
           await FirebaseFirestore.instance.terminate();
           await FirebaseFirestore.instance.clearPersistence();
         } catch (e) {
-          AppLogger.error('Firestoreキャッシュクリアエラー: $e');
+          AppLogger.error('Firestoreキャッシュクリアエラー（無視して続行）: $e');
+          // キャッシュクリアに失敗しても処理を続行
         }
 
         // 関連するRiverpodプロバイダーをリセット
-        ref.invalidateSelf();
+        try {
+          // 自身のプロバイダーを無効化
+          ref.invalidateSelf();
 
-        // ユーザー関連のプロバイダーを無効化
-        ref.invalidate(userRepositoryProvider);
+          // ユーザー関連のプロバイダーを無効化
+          try {
+            ref.invalidate(userRepositoryProvider);
+          } catch (e) {
+            AppLogger.warning('userRepositoryProvider無効化エラー: $e');
+          }
 
-        // スケジュール関連のプロバイダーも無効化
-        ref.invalidate(scheduleNotifierProvider);
-        ref.invalidate(scheduleRepositoryProvider);
+          // その他のプロバイダーを個別に無効化し、エラーを捕捉
+          try {
+            ref.invalidate(scheduleNotifierProvider);
+          } catch (e) {
+            // エラーは無視
+          }
 
-        // グループとリスト関連のプロバイダーも無効化
-        ref.invalidate(groupNotifierProvider);
-        ref.invalidate(groupRepositoryProvider);
-        ref.invalidate(listNotifierProvider);
-        ref.invalidate(listRepositoryProvider);
+          try {
+            ref.invalidate(scheduleRepositoryProvider);
+          } catch (e) {
+            // エラーは無視
+          }
 
-        // ストリームプロバイダーも無効化
-        ref.invalidate(userListsStreamProvider);
-        ref.invalidate(userGroupsStreamProvider);
-        ref.invalidate(userFriendsStreamProvider);
-        ref.invalidate(userFriendsProvider);
+          try {
+            ref.invalidate(groupNotifierProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+
+          try {
+            ref.invalidate(groupRepositoryProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+
+          try {
+            ref.invalidate(listNotifierProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+
+          try {
+            ref.invalidate(listRepositoryProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+
+          try {
+            ref.invalidate(userListsStreamProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+
+          try {
+            ref.invalidate(userGroupsStreamProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+
+          try {
+            ref.invalidate(userFriendsStreamProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+
+          try {
+            ref.invalidate(userFriendsProvider);
+          } catch (e) {
+            // エラーは無視
+          }
+        } catch (e) {
+          AppLogger.error('プロバイダー無効化エラー（無視して続行）: $e');
+          // プロバイダー無効化に失敗しても処理を続行
+        }
 
         // 最後に認証をサインアウト
         await _authRepository.signOut();
@@ -175,5 +237,70 @@ class AuthNotifier extends _$AuthNotifier {
         rethrow;
       }
     });
+  }
+
+  /// アカウントを削除する
+  ///
+  /// 処理:
+  /// - ユーザーデータを削除
+  /// - 認証情報を削除
+  /// - 関連するプロバイダーをリセット
+  ///
+  /// 戻り値:
+  /// - 処理が成功した場合は true
+  /// - 失敗した場合は例外をスロー
+  Future<bool> deleteAccount() async {
+    // ローディング状態に設定
+    state = const AsyncLoading();
+
+    // アカウント削除処理を実行
+    try {
+      // FCMトークンを削除
+      await _fcmTokenService.removeFcmToken();
+
+      // Firestoreのキャッシュをクリア
+      try {
+        await FirebaseFirestore.instance.terminate();
+        await FirebaseFirestore.instance.clearPersistence();
+      } catch (e) {
+        AppLogger.error('Firestoreキャッシュクリアエラー: $e');
+      }
+
+      // 関連するRiverpodプロバイダーをリセット
+      ref.invalidateSelf();
+
+      // ユーザー関連のプロバイダーを無効化
+      ref.invalidate(userRepositoryProvider);
+
+      // スケジュール関連のプロバイダーも無効化
+      ref.invalidate(scheduleNotifierProvider);
+      ref.invalidate(scheduleRepositoryProvider);
+
+      // グループとリスト関連のプロバイダーも無効化
+      ref.invalidate(groupNotifierProvider);
+      ref.invalidate(groupRepositoryProvider);
+      ref.invalidate(listNotifierProvider);
+      ref.invalidate(listRepositoryProvider);
+
+      // ストリームプロバイダーも無効化
+      ref.invalidate(userListsStreamProvider);
+      ref.invalidate(userGroupsStreamProvider);
+      ref.invalidate(userFriendsStreamProvider);
+      ref.invalidate(userFriendsProvider);
+
+      // アカウントを削除
+      final success = await _authRepository.deleteAccount();
+
+      // 認証状態を更新
+      if (success) {
+        state = AsyncData(AuthState.unauthenticated());
+      }
+
+      return success;
+    } catch (e) {
+      AppLogger.error('アカウント削除エラー: $e');
+      state = AsyncError(e, StackTrace.current);
+      rethrow;
+    }
   }
 }

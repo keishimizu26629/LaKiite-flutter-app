@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../presentation_provider.dart';
+import 'edit_name_page.dart';
+import 'edit_email_page.dart';
+import 'edit_search_id_page.dart';
+import 'legal_info_page_alternative.dart';
+import '../login/login_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   static const String path = '/settings';
@@ -21,7 +26,7 @@ class SettingsPage extends ConsumerWidget {
             title: const Text('名前'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              context.push('/settings/name');
+              context.push('/settings/${EditNamePage.path}');
             },
           ),
           ListTile(
@@ -29,7 +34,7 @@ class SettingsPage extends ConsumerWidget {
             title: const Text('メールアドレス'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              context.push('/settings/email');
+              context.push('/settings/${EditEmailPage.path}');
             },
           ),
           ListTile(
@@ -37,7 +42,7 @@ class SettingsPage extends ConsumerWidget {
             title: const Text('検索ID'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              context.push('/settings/search-id');
+              context.push('/settings/${EditSearchIdPage.path}');
             },
           ),
           const Divider(),
@@ -46,7 +51,8 @@ class SettingsPage extends ConsumerWidget {
             title: const Text('プライバシーポリシー'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              context.push('/settings/privacy-policy');
+              context.push(
+                  '/settings/${LegalInfoPageAlternative.privacyPolicyPath}');
             },
           ),
           ListTile(
@@ -54,7 +60,8 @@ class SettingsPage extends ConsumerWidget {
             title: const Text('利用規約'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              context.push('/settings/terms-of-service');
+              context.push(
+                  '/settings/${LegalInfoPageAlternative.termsOfServicePath}');
             },
           ),
           const Divider(),
@@ -81,15 +88,124 @@ class SettingsPage extends ConsumerWidget {
               );
 
               if (confirmed == true && context.mounted) {
+                // ローディングインジケータを表示
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const AlertDialog(
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('ログアウト中...'),
+                      ],
+                    ),
+                  ),
+                );
+
                 try {
                   await ref.read(authNotifierProvider.notifier).signOut();
+
+                  // ローディングインジケータを閉じる
                   if (context.mounted) {
-                    context.go('/login');
+                    Navigator.of(context).pop();
+                  }
+
+                  // ログイン画面へ遷移
+                  if (context.mounted) {
+                    context.go(LoginPage.path);
                   }
                 } catch (e) {
+                  // ローディングインジケータを閉じる
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+
+                  if (context.mounted) {
+                    // エラーの種類に応じて適切なメッセージを表示
+                    String errorMessage = 'ログアウトに失敗しました';
+                    if (e.toString().contains('network')) {
+                      errorMessage = 'ネットワーク接続エラー: インターネット接続を確認してください';
+                    } else if (e.toString().contains('permission')) {
+                      errorMessage = '権限エラー: アプリを再起動してください';
+                    }
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(errorMessage)),
+                    );
+                  }
+                }
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete_forever, color: Colors.red),
+            title: const Text('アカウント削除', style: TextStyle(color: Colors.red)),
+            onTap: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('アカウント削除'),
+                  content: const Text(
+                    'アカウントを削除すると、すべてのデータが完全に削除され、元に戻すことはできません。\n\n本当にアカウントを削除してもよろしいですか？',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('キャンセル'),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('削除する'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirmed == true && context.mounted) {
+                // 削除処理中の進捗ダイアログを表示
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const AlertDialog(
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('アカウントを削除中...'),
+                      ],
+                    ),
+                  ),
+                );
+
+                try {
+                  await ref.read(authNotifierProvider.notifier).deleteAccount();
+
+                  // 進捗ダイアログを閉じる
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+
+                  // ログイン画面に遷移
+                  if (context.mounted) {
+                    context.go(LoginPage.path);
+                  }
+                } catch (e) {
+                  // 進捗ダイアログを閉じる
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+
+                  // エラーメッセージを表示
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('ログアウトに失敗しました')),
+                      SnackBar(
+                          content: Text('アカウント削除に失敗しました: ${e.toString()}')),
                     );
                   }
                 }

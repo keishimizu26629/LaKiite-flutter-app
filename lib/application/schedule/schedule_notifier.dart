@@ -40,7 +40,12 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
     ref.listen(authNotifierProvider, (previous, next) {
       next.whenData((authState) {
         if (authState.user != null) {
-          watchUserSchedules(authState.user!.id);
+          // 少し遅延させて認証完了後の安定した状態でスケジュール取得を開始
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (!_isDisposed) {
+              watchUserSchedules(authState.user!.id);
+            }
+          });
         }
       });
     });
@@ -84,6 +89,10 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
       final stream =
           ref.read(scheduleRepositoryProvider).watchUserSchedules(userId);
 
+      // エラー発生時の再試行カウンター
+      int retryCount = 0;
+      const maxRetries = 3;
+
       _scheduleSubscription = stream.listen(
         (schedules) {
           if (_isDisposed) return;
@@ -96,6 +105,47 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
         onError: (error) {
           if (_isDisposed) return;
           AppLogger.error('ScheduleNotifier: Error watching schedules: $error');
+
+          // エラー発生時に再試行する
+          if (retryCount < maxRetries) {
+            retryCount++;
+            AppLogger.debug(
+                'ScheduleNotifier: Retrying (${retryCount}/${maxRetries})...');
+
+            Future.delayed(Duration(milliseconds: 500 * retryCount), () {
+              if (!_isDisposed && _currentUserId == userId) {
+                // 既存の購読をキャンセルして再購読
+                _scheduleSubscription?.cancel();
+
+                final retryStream = ref
+                    .read(scheduleRepositoryProvider)
+                    .watchUserSchedules(userId);
+                _scheduleSubscription = retryStream.listen(
+                  (schedules) {
+                    if (_isDisposed) return;
+                    AppLogger.debug(
+                        'ScheduleNotifier: Retry succeeded, received ${schedules.length} schedules');
+                    if (!_isDisposed) {
+                      state = AsyncValue.data(ScheduleState.loaded(schedules));
+                    }
+                  },
+                  onError: (retryError) {
+                    if (_isDisposed) return;
+                    AppLogger.error(
+                        'ScheduleNotifier: Retry failed: $retryError');
+                    if (retryCount >= maxRetries) {
+                      if (!_isDisposed) {
+                        state =
+                            AsyncValue.error(retryError, StackTrace.current);
+                      }
+                    }
+                  },
+                );
+              }
+            });
+            return;
+          }
+
           Future(() {
             if (!_isDisposed) {
               state = AsyncValue.error(error, StackTrace.current);

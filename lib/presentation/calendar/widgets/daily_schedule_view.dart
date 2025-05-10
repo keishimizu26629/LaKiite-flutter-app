@@ -76,7 +76,11 @@ class DailyScheduleView extends HookConsumerWidget {
     // 初期化時にスケジュールの監視を開始
     useEffect(() {
       if (currentUserId != null) {
-        Future.microtask(() {
+        // 少し遅延させてからスケジュールの取得を開始することで
+        // Firebase認証が確実に完了した状態でデータ取得を行う
+        Future.delayed(const Duration(milliseconds: 300), () {
+          AppLogger.debug(
+              'DailyScheduleView - スケジュール監視開始: userId=$currentUserId');
           ref
               .read(scheduleNotifierProvider.notifier)
               .watchUserSchedules(currentUserId);

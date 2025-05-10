@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'my_page_view_model.dart';
 import '../presentation_provider.dart';
 import '../widgets/banner_ad_widget.dart';
+import '../settings/settings_page.dart';
 import 'widgets/profile_card.dart';
 import 'widgets/section_header.dart';
 import 'widgets/short_bio_card.dart';
@@ -53,7 +54,7 @@ class _MyPageState extends ConsumerState<MyPage> {
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {
-              context.push('/settings');
+              context.push(SettingsPage.path);
             },
           ),
         ],
