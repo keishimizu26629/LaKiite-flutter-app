@@ -3,8 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
+import '../bottom_navigation/bottom_navigation.dart';
+import '../login/login_page.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
+  static const String path = '/splash';
+
   const SplashScreen({super.key});
 
   @override
@@ -26,9 +30,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     authState.whenData((state) {
       if (!mounted) return;
       if (state.status == AuthStatus.authenticated) {
-        context.go('/');
+        context.go(BottomNavigationPage.path);
       } else {
-        context.go('/login');
+        context.go(LoginPage.path);
       }
     });
   }
@@ -39,9 +43,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       next.whenData((state) {
         if (!mounted) return;
         if (state.status == AuthStatus.authenticated) {
-          context.go('/');
+          context.go(BottomNavigationPage.path);
         } else if (state.status == AuthStatus.unauthenticated) {
-          context.go('/login');
+          context.go(LoginPage.path);
         }
       });
     });

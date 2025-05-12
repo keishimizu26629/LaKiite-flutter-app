@@ -6,6 +6,8 @@ import '../../utils/logger.dart';
 import '../auth/auth_notifier.dart';
 import '../../infrastructure/user_repository.dart';
 import '../../infrastructure/firebase/push_notification_sender.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
 
 typedef Notification = domain.Notification;
 typedef NotificationType = domain.NotificationType;
@@ -15,10 +17,36 @@ final notificationRepositoryProvider = Provider<INotificationRepository>((ref) {
   return NotificationRepository();
 });
 
+/// FirebaseAuthの状態変更を監視するStreamプロバイダー
+final firebaseAuthStateProvider = StreamProvider<User?>((ref) {
+  return FirebaseAuth.instance.authStateChanges();
+});
+
 /// 現在のユーザーIDを提供するプロバイダー
 final currentUserIdProvider = Provider<String?>((ref) {
+  // ログ出力を追加
+  AppLogger.debug('currentUserIdProvider - 読み込み開始');
+
+  // まず直接FirebaseAuthからユーザーIDを取得
+  final firebaseAuth = FirebaseAuth.instance;
+  final currentUser = firebaseAuth.currentUser;
+  final directUserId = currentUser?.uid;
+
+  // 次にauthStateからユーザーIDを取得 (一般的にこちらの方が信頼性が高い)
   final authState = ref.watch(authNotifierProvider);
-  return authState.value?.user?.id;
+  final stateUserId = authState.value?.user?.id;
+
+  // FirebaseAuthの状態変更も監視
+  final firebaseAuthState = ref.watch(firebaseAuthStateProvider);
+  final firebaseAuthUserId = firebaseAuthState.value?.uid;
+
+  // 優先順位: authState > firebaseAuthState > directUserId
+  final effectiveUserId = stateUserId ?? firebaseAuthUserId ?? directUserId;
+
+  AppLogger.debug(
+      'currentUserIdProvider - 取得結果比較: FirebaseAuth直接=${directUserId}, authState=${stateUserId}, firebaseAuthStream=${firebaseAuthUserId}, 使用=${effectiveUserId}');
+
+  return effectiveUserId;
 });
 
 /// 未読の通知数を監視するプロバイダー
