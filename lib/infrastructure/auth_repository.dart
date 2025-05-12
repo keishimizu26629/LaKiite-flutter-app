@@ -147,4 +147,42 @@ class AuthRepository implements IAuthRepository {
   Future<void> signOut() async {
     await _auth.signOut();
   }
+
+  @override
+  Future<bool> deleteAccount() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('ユーザーがログインしていません');
+      }
+
+      final userId = user.uid;
+
+      // 1. Firestoreからユーザーデータを削除
+      await _userRepository.deleteUser(userId);
+
+      try {
+        // 2. Firebase Authからユーザーを削除
+        await user.delete();
+      } catch (e) {
+        if (e is FirebaseAuthException && e.code == 'requires-recent-login') {
+          // 再認証が必要な場合はエラーをスロー
+          throw Exception('セキュリティのため再認証が必要です。一度ログアウトして再度ログインした後に操作してください。');
+        }
+        rethrow;
+      }
+
+      return true;
+    } catch (e) {
+      if (e is FirebaseAuthException) {
+        switch (e.code) {
+          case 'requires-recent-login':
+            throw Exception('セキュリティのため再認証が必要です。一度ログアウトして再度ログインした後に操作してください。');
+          default:
+            throw Exception('アカウント削除エラー: ${e.message}');
+        }
+      }
+      throw Exception('アカウント削除に失敗しました: $e');
+    }
+  }
 }

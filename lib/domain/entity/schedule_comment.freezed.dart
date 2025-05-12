@@ -20,6 +20,8 @@ mixin _$ScheduleComment {
   String get userId => throw _privateConstructorUsedError;
   String get content => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
+  DateTime? get updatedAt => throw _privateConstructorUsedError;
+  bool get isEdited => throw _privateConstructorUsedError;
   String? get userDisplayName => throw _privateConstructorUsedError;
   String? get userPhotoUrl => throw _privateConstructorUsedError;
 
@@ -39,6 +41,8 @@ abstract class $ScheduleCommentCopyWith<$Res> {
       String userId,
       String content,
       DateTime createdAt,
+      DateTime? updatedAt,
+      bool isEdited,
       String? userDisplayName,
       String? userPhotoUrl});
 }
@@ -60,6 +64,8 @@ class _$ScheduleCommentCopyWithImpl<$Res, $Val extends ScheduleComment>
     Object? userId = null,
     Object? content = null,
     Object? createdAt = null,
+    Object? updatedAt = freezed,
+    Object? isEdited = null,
     Object? userDisplayName = freezed,
     Object? userPhotoUrl = freezed,
   }) {
@@ -80,6 +86,14 @@ class _$ScheduleCommentCopyWithImpl<$Res, $Val extends ScheduleComment>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      isEdited: null == isEdited
+          ? _value.isEdited
+          : isEdited // ignore: cast_nullable_to_non_nullable
+              as bool,
       userDisplayName: freezed == userDisplayName
           ? _value.userDisplayName
           : userDisplayName // ignore: cast_nullable_to_non_nullable
@@ -105,6 +119,8 @@ abstract class _$$ScheduleCommentImplCopyWith<$Res>
       String userId,
       String content,
       DateTime createdAt,
+      DateTime? updatedAt,
+      bool isEdited,
       String? userDisplayName,
       String? userPhotoUrl});
 }
@@ -124,6 +140,8 @@ class __$$ScheduleCommentImplCopyWithImpl<$Res>
     Object? userId = null,
     Object? content = null,
     Object? createdAt = null,
+    Object? updatedAt = freezed,
+    Object? isEdited = null,
     Object? userDisplayName = freezed,
     Object? userPhotoUrl = freezed,
   }) {
@@ -144,6 +162,14 @@ class __$$ScheduleCommentImplCopyWithImpl<$Res>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      isEdited: null == isEdited
+          ? _value.isEdited
+          : isEdited // ignore: cast_nullable_to_non_nullable
+              as bool,
       userDisplayName: freezed == userDisplayName
           ? _value.userDisplayName
           : userDisplayName // ignore: cast_nullable_to_non_nullable
@@ -164,6 +190,8 @@ class _$ScheduleCommentImpl implements _ScheduleComment {
       required this.userId,
       required this.content,
       required this.createdAt,
+      this.updatedAt,
+      this.isEdited = false,
       this.userDisplayName,
       this.userPhotoUrl});
 
@@ -176,13 +204,18 @@ class _$ScheduleCommentImpl implements _ScheduleComment {
   @override
   final DateTime createdAt;
   @override
+  final DateTime? updatedAt;
+  @override
+  @JsonKey()
+  final bool isEdited;
+  @override
   final String? userDisplayName;
   @override
   final String? userPhotoUrl;
 
   @override
   String toString() {
-    return 'ScheduleComment(id: $id, userId: $userId, content: $content, createdAt: $createdAt, userDisplayName: $userDisplayName, userPhotoUrl: $userPhotoUrl)';
+    return 'ScheduleComment(id: $id, userId: $userId, content: $content, createdAt: $createdAt, updatedAt: $updatedAt, isEdited: $isEdited, userDisplayName: $userDisplayName, userPhotoUrl: $userPhotoUrl)';
   }
 
   @override
@@ -195,6 +228,10 @@ class _$ScheduleCommentImpl implements _ScheduleComment {
             (identical(other.content, content) || other.content == content) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.isEdited, isEdited) ||
+                other.isEdited == isEdited) &&
             (identical(other.userDisplayName, userDisplayName) ||
                 other.userDisplayName == userDisplayName) &&
             (identical(other.userPhotoUrl, userPhotoUrl) ||
@@ -203,7 +240,7 @@ class _$ScheduleCommentImpl implements _ScheduleComment {
 
   @override
   int get hashCode => Object.hash(runtimeType, id, userId, content, createdAt,
-      userDisplayName, userPhotoUrl);
+      updatedAt, isEdited, userDisplayName, userPhotoUrl);
 
   @JsonKey(ignore: true)
   @override
@@ -219,6 +256,8 @@ abstract class _ScheduleComment implements ScheduleComment {
       required final String userId,
       required final String content,
       required final DateTime createdAt,
+      final DateTime? updatedAt,
+      final bool isEdited,
       final String? userDisplayName,
       final String? userPhotoUrl}) = _$ScheduleCommentImpl;
 
@@ -230,6 +269,10 @@ abstract class _ScheduleComment implements ScheduleComment {
   String get content;
   @override
   DateTime get createdAt;
+  @override
+  DateTime? get updatedAt;
+  @override
+  bool get isEdited;
   @override
   String? get userDisplayName;
   @override

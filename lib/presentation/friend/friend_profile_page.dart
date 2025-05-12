@@ -16,10 +16,14 @@ class FriendProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final publicProfileAsync = ref.watch(publicUserStreamProvider(userId));
-    // スケジュールの状態を直接監視
-    final scheduleState = ref.watch(scheduleNotifierProvider);
-    // 自分自身のユーザーIDも取得
-    final currentUserId = ref.watch(authNotifierProvider).value?.user?.id;
+    // 自分自身のユーザーIDを取得
+    final currentUserAsync = ref.watch(authNotifierProvider);
+    final currentUserId = currentUserAsync.value?.user?.id;
+
+    // 自分自身が閲覧可能な予定を取得（マイページと同じ方法）
+    final schedulesAsync = currentUserId != null
+        ? ref.watch(userSchedulesStreamProvider(currentUserId))
+        : const AsyncValue<List<dynamic>>.loading();
 
     AppLogger.debug('FriendProfilePage: 表示中のユーザーID: $userId');
     AppLogger.debug('FriendProfilePage: 現在のユーザーID: $currentUserId');
@@ -36,17 +40,16 @@ class FriendProfilePage extends ConsumerWidget {
 
           return RefreshIndicator(
             onRefresh: () async {
-              // プロバイダーを再読み込み
+              // プロバイダーを再読み込み（StreamProviderは自動更新されるので最小限の更新）
               ref.invalidate(publicUserStreamProvider(userId));
-              ref.invalidate(scheduleNotifierProvider);
 
-              // 完了を待つ
-              await Future.wait([
-                ref.refresh(publicUserStreamProvider(userId).future),
-                ref.refresh(scheduleNotifierProvider.future),
-                // 視覚的にわかりやすくするために少し待つ
-                Future.delayed(const Duration(milliseconds: 300))
-              ]);
+              // 自分が閲覧可能な予定の再読み込み
+              if (currentUserId != null) {
+                ref.invalidate(userSchedulesStreamProvider(currentUserId));
+              }
+
+              // 視覚的なフィードバックのために少し待つ
+              await Future.delayed(const Duration(milliseconds: 500));
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -164,91 +167,83 @@ class FriendProfilePage extends ConsumerWidget {
                     title: '予定一覧',
                   ),
                   const SizedBox(height: 16),
-                  scheduleState.when(
-                    data: (state) => state.maybeWhen(
-                      loaded: (allSchedules) {
-                        AppLogger.debug(
-                            'FriendProfilePage: 全スケジュール数: ${allSchedules.length}');
+                  // StreamProviderを使用した予定一覧表示
+                  schedulesAsync.when(
+                    data: (schedules) {
+                      AppLogger.debug(
+                          'FriendProfilePage: 全スケジュール数: ${schedules.length}');
 
-                        // 本日以降のスケジュールをフィルタリング
-                        final today = DateTime.now().toUtc().toLocal();
-                        final todayStart =
-                            DateTime(today.year, today.month, today.day);
+                      // 本日以降のスケジュールをフィルタリング
+                      final today = DateTime.now().toUtc().toLocal();
+                      final todayStart =
+                          DateTime(today.year, today.month, today.day);
 
-                        // このユーザーが所有者となっている予定だけを表示
-                        // 現在日以降のものだけを絞り込み
-                        final userSchedules = allSchedules
-                            .where((s) =>
-                                // このユーザーが作成した予定
-                                s.ownerId == userId &&
-                                // 現在日以降の予定
-                                s.endDateTime.isAfter(todayStart) &&
-                                // かつ自分が閲覧可能な予定（visibleToに自分のIDが含まれている）
-                                (currentUserId == null ||
-                                    s.visibleTo.contains(currentUserId)))
-                            .toList();
+                      // この友人が所有者となっている予定だけを表示（キーポイント）
+                      final userSchedules = schedules
+                          .where((s) =>
+                              // この友人が作成した予定
+                              s.ownerId == userId &&
+                              // 現在日以降の予定
+                              s.endDateTime.isAfter(todayStart))
+                          .toList();
 
-                        AppLogger.debug(
-                            'FriendProfilePage: フィルタリング後のスケジュール数: ${userSchedules.length}');
+                      AppLogger.debug(
+                          'FriendProfilePage: フィルタリング後のスケジュール数: ${userSchedules.length}');
 
-                        if (userSchedules.isEmpty) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.event_busy,
-                                  size: 64,
-                                  color: Colors.grey[400],
+                      if (userSchedules.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.event_busy,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                '現在表示できる予定がありません',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  '現在表示できる予定がありません',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '今後の予定が登録されると表示されます',
+                                style: TextStyle(
+                                  color: Colors.grey[500],
+                                  fontSize: 14,
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '今後の予定が登録されると表示されます',
-                                  style: TextStyle(
-                                    color: Colors.grey[500],
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
-                        // 日付でソート
-                        userSchedules.sort((a, b) =>
-                            a.startDateTime.compareTo(b.startDateTime));
-
-                        return ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: userSchedules.length,
-                          itemBuilder: (context, index) {
-                            final schedule = userSchedules[index];
-                            return ScheduleTile(
-                              schedule: schedule,
-                              currentUserId: currentUserId ?? '',
-                              showOwner: false,
-                              showEditButton: false,
-                              isTimelineView: false,
-                              margin: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 6),
-                            );
-                          },
+                              ),
+                            ],
+                          ),
                         );
-                      },
-                      orElse: () => const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
+                      }
+
+                      // 日付でソート
+                      userSchedules.sort(
+                          (a, b) => a.startDateTime.compareTo(b.startDateTime));
+
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: userSchedules.length,
+                        itemBuilder: (context, index) {
+                          final schedule = userSchedules[index];
+                          return ScheduleTile(
+                            schedule: schedule,
+                            currentUserId: currentUserId ?? '',
+                            showOwner: false,
+                            showEditButton: false,
+                            isTimelineView: false,
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 6),
+                          );
+                        },
+                      );
+                    },
                     loading: () => const Center(
                       child: CircularProgressIndicator(),
                     ),

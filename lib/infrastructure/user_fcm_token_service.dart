@@ -55,14 +55,49 @@ class UserFcmTokenService {
 
       AppLogger.debug('FCMトークン削除: ユーザーID=${user.uid}');
 
-      await _firestore.collection('users').doc(user.uid).update({
-        'fcmToken': FieldValue.delete(),
-      });
+      try {
+        // Firestoreのユーザードキュメントを取得して存在確認
+        final docRef = _firestore.collection('users').doc(user.uid);
+        final docSnapshot = await docRef.get();
 
-      AppLogger.debug('FCMトークン削除: 完了');
+        if (!docSnapshot.exists) {
+          AppLogger.warning('FCMトークン削除: ユーザードキュメントが存在しません');
+          return;
+        }
+
+        // fcmTokenフィールドが存在するか確認
+        final data = docSnapshot.data();
+        if (data == null || !data.containsKey('fcmToken')) {
+          AppLogger.warning('FCMトークン削除: fcmTokenフィールドが存在しません');
+          return; // 既に削除されているか存在しない場合は何もしない
+        }
+
+        // トークンを削除
+        await docRef.update({
+          'fcmToken': FieldValue.delete(),
+        });
+
+        AppLogger.debug('FCMトークン削除: 完了');
+      } catch (e) {
+        // 特定のエラーをより詳細にハンドリング
+        if (e is FirebaseException) {
+          if (e.code == 'permission-denied') {
+            AppLogger.error('FCMトークン削除エラー: アクセス権限がありません - ${e.message}');
+          } else if (e.code == 'unavailable') {
+            AppLogger.error('FCMトークン削除エラー: ネットワーク接続の問題 - ${e.message}');
+          } else {
+            AppLogger.error(
+                'FCMトークン削除エラー: Firebase例外 - ${e.code}: ${e.message}');
+          }
+        } else {
+          AppLogger.error('FCMトークン削除エラー: $e');
+        }
+        // エラーはログに記録するだけで例外は投げない（ログアウト処理を続行させるため）
+      }
     } catch (e, stack) {
       AppLogger.error('FCMトークン削除エラー: $e');
       AppLogger.error('スタックトレース: $stack');
+      // 例外は投げずにログのみ
     }
   }
 

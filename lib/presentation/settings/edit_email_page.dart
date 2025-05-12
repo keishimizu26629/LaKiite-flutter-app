@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class EditEmailPage extends ConsumerStatefulWidget {
+  static const String path = 'email';
+
   const EditEmailPage({super.key});
 
   @override
@@ -42,7 +44,8 @@ class _EditEmailPageState extends ConsumerState<EditEmailPage> {
       return;
     }
 
-    if (!RegExp(r'^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[\w-]{2,}$').hasMatch(newEmail)) {
+    if (!RegExp(r'^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[\w-]{2,}$')
+        .hasMatch(newEmail)) {
       setState(() {
         _errorText = '有効なメールアドレスを入力してください';
       });
