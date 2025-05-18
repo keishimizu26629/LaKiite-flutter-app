@@ -34,67 +34,59 @@ target 'Runner' do
   use_frameworks!
   use_modular_headers!
 
-  # Firebaseの依存関係を直接指定
-  pod 'Firebase', '10.25.0'
-  pod 'FirebaseCore', '10.25.0'
-
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
-
-    # iOS 18のサポートとARM64シミュレータのサポート
     target.build_configurations.each do |config|
-      # BitcodeをOFFに設定
-      config.build_settings['ENABLE_BITCODE'] = 'NO'
+      # Apple Silicon でシミュレータを動かすとき arm64 を除外
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
 
-      # iOS 12のサポートを確保
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
-
-      # Apple Silicon (ARM64) シミュレータのサポート - 明示的にサポート
-      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = ''
-      config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES'
-      config.build_settings['VALID_ARCHS'] = 'arm64 arm64e x86_64'
-
-      # Swift関連の設定
-      config.build_settings['SWIFT_VERSION'] = '5.0'
-      if config.name.include?('Debug')
-        config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-Onone'
-      end
-
-      # gRPC関連のエラーを修正
+      # For gRPC-related pods
       if target.name.include?('gRPC') || target.name.include?('abseil')
-        # 警告をエラーとして扱わない
-        config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
-        # 問題のあるコンパイラフラグを削除
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+        # Remove problematic compiler flags
         if config.build_settings['OTHER_CFLAGS'].present?
           config.build_settings['OTHER_CFLAGS'] = config.build_settings['OTHER_CFLAGS'].reject { |f| f == '-G' }
         end
       end
 
-      # Firebase関連の設定
-      if target.name.include?('Firebase')
-        config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
+      if target.name == 'BoringSSL-GRPC'
+        target.source_build_phase.files.each do |file|
+          if file.settings && file.settings['COMPILER_FLAGS']
+            flags = file.settings['COMPILER_FLAGS'].split
+            flags.reject! { |flag| flag == '-GCC_WARN_INHIBIT_ALL_WARNINGS' }
+            file.settings['COMPILER_FLAGS'] = flags.join(' ')
+          end
+        end
       end
 
-      # Xcode 15/16の新しいビルド設定への対応
-      config.build_settings['DEAD_CODE_STRIPPING'] = 'YES'
+      config.build_settings['ENABLE_BITCODE'] = 'NO'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
-      # アーキテクチャやSDKへのフレームワーク検索パスを設定
-      config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= [
-        '$(inherited)',
-        '${PODS_ROOT}/**',
-        '${PODS_XCFRAMEWORKS_BUILD_DIR}/**'
-      ]
+      # Xcode 15 specific settings
+      config.build_settings['DEAD_CODE_STRIPPING'] = 'YES'
+      config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES'
+      config.build_settings['ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS'] = 'YES'
 
-      # ヘッダー検索パスの設定
-      config.build_settings['HEADER_SEARCH_PATHS'] ||= [
+      # PlatformViews関連の問題を修正するための設定
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
         '$(inherited)',
-        '${PODS_ROOT}/**'
+        'WEBKIT_WITHOUT_WEBKIT_INTERNALS=1',
       ]
     end
   end
+
+  installer.generated_projects.each do |project|
+    project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+      end
+    end
+  end
+
+  flutter_post_install(installer) if defined?(flutter_post_install)
 end
