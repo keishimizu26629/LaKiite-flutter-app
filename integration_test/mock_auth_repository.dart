@@ -39,4 +39,10 @@ class MockAuthRepository implements IAuthRepository {
       displayName: 'Test User Display Name',
     );
   }
+
+  @override
+  Future<bool> deleteAccount() {
+    // TODO: implement deleteAccount
+    throw UnimplementedError();
+  }
 }
