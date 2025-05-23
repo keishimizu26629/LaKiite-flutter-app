@@ -71,6 +71,7 @@ class ScheduleList extends ConsumerWidget {
               currentUserId: userId,
               showOwner: false,
               showEditButton: true,
+              showDeleteButton: true,
               isTimelineView: false,
               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               onEditPressed: () {
