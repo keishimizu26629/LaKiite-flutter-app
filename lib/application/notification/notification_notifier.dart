@@ -44,7 +44,7 @@ final currentUserIdProvider = Provider<String?>((ref) {
   final effectiveUserId = stateUserId ?? firebaseAuthUserId ?? directUserId;
 
   AppLogger.debug(
-      'currentUserIdProvider - 取得結果比較: FirebaseAuth直接=${directUserId}, authState=${stateUserId}, firebaseAuthStream=${firebaseAuthUserId}, 使用=${effectiveUserId}');
+      'currentUserIdProvider - 取得結果比較: FirebaseAuth直接=$directUserId, authState=$stateUserId, firebaseAuthStream=$firebaseAuthUserId, 使用=$effectiveUserId');
 
   return effectiveUserId;
 });
