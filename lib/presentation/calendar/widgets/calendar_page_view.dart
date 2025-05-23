@@ -1293,7 +1293,7 @@ class OptimizedDateCell extends StatelessWidget {
                         final isOwnerWithCheck = currentUserId != null &&
                             schedule.ownerId == currentUserId;
                         AppLogger.debug(
-                            'OptimizedDateCell - 判定結果: ${schedule.title}, 単純比較=${isOwner}, チェック付き=${isOwnerWithCheck}');
+                            'OptimizedDateCell - 判定結果: ${schedule.title}, 単純比較=$isOwner, チェック付き=$isOwnerWithCheck');
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 0.5),

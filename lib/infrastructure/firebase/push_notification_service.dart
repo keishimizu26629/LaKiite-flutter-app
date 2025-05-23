@@ -1,5 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import '../../utils/logger.dart';
 import '../../firebase_options.dart';
 
@@ -46,6 +47,19 @@ class PushNotificationService {
         badge: true,
         sound: true,
       );
+
+      // APNsトークンを取得（iOS）
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        try {
+          final apnsToken = await _messaging.getAPNSToken();
+          AppLogger.debug('APNSトークン: $apnsToken');
+          if (apnsToken == null) {
+            AppLogger.error('APNSトークンがnullです。プッシュ通知が機能しない可能性があります。');
+          }
+        } catch (e) {
+          AppLogger.error('APNSトークン取得エラー: $e');
+        }
+      }
 
       // APNsの設定を待機（iOS）
       await Future.delayed(const Duration(seconds: 1));
