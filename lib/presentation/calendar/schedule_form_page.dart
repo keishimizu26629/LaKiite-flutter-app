@@ -264,14 +264,6 @@ class ScheduleFormPage extends HookConsumerWidget {
         return;
       }
 
-      if (descriptionController.text.isEmpty) {
-        AppLogger.warning('ScheduleFormPage: Description is empty');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('説明を入力してください')),
-        );
-        return;
-      }
-
       final startDateTime = DateTime(
         selectedStartDate.value.year,
         selectedStartDate.value.month,

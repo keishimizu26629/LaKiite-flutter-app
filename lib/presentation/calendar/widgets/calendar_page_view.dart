@@ -556,36 +556,43 @@ class CalendarPageView extends HookConsumerWidget {
     if (lastCleanup == null ||
         now.difference(lastCleanup).inMilliseconds > _cleanupIntervalMillis) {
       Future.delayed(const Duration(seconds: 3), () {
-        if (!ref.exists(renderedMonthsProvider) ||
-            !ref.exists(lastCleanupTimeProvider)) return;
+        // ウィジェットが破棄されていないかチェック
+        try {
+          if (!ref.exists(renderedMonthsProvider) ||
+              !ref.exists(lastCleanupTimeProvider) ||
+              !ref.exists(activeMonthIndicesProvider)) return;
 
-        // 現在のアクティブ範囲を取得
-        final activeIndices = ref.read(activeMonthIndicesProvider);
-        final renderedIndices = ref.read(renderedMonthsProvider);
+          // 現在のアクティブ範囲を取得
+          final activeIndices = ref.read(activeMonthIndicesProvider);
+          final renderedIndices = ref.read(renderedMonthsProvider);
 
-        // 拡張された保持範囲（前後6ヶ月は保持）
-        const retainRange = 6;
-        final retainIndices = <int>{currentIndex};
-        for (int i = 1; i <= retainRange; i++) {
-          retainIndices.add(currentIndex - i);
-          retainIndices.add(currentIndex + i);
+          // 拡張された保持範囲（前後6ヶ月は保持）
+          const retainRange = 6;
+          final retainIndices = <int>{currentIndex};
+          for (int i = 1; i <= retainRange; i++) {
+            retainIndices.add(currentIndex - i);
+            retainIndices.add(currentIndex + i);
+          }
+
+          // アクティブ範囲外かつ保持範囲外のインデックスをフィルタリング
+          final toRemove = renderedIndices
+              .where((idx) =>
+                  !activeIndices.contains(idx) && !retainIndices.contains(idx))
+              .toSet();
+
+          // 削除対象がある場合、レンダリング済みセットから除外
+          if (toRemove.isNotEmpty) {
+            ref.read(renderedMonthsProvider.notifier).state = {
+              ...renderedIndices.difference(toRemove)
+            };
+          }
+
+          // クリーンアップ時間を更新
+          ref.read(lastCleanupTimeProvider.notifier).state = now;
+        } catch (e) {
+          // ウィジェットが破棄された場合は何もしない
+          AppLogger.debug('クリーンアップ処理でエラー（ウィジェット破棄済み）: $e');
         }
-
-        // アクティブ範囲外かつ保持範囲外のインデックスをフィルタリング
-        final toRemove = renderedIndices
-            .where((idx) =>
-                !activeIndices.contains(idx) && !retainIndices.contains(idx))
-            .toSet();
-
-        // 削除対象がある場合、レンダリング済みセットから除外
-        if (toRemove.isNotEmpty) {
-          ref.read(renderedMonthsProvider.notifier).state = {
-            ...renderedIndices.difference(toRemove)
-          };
-        }
-
-        // クリーンアップ時間を更新
-        ref.read(lastCleanupTimeProvider.notifier).state = now;
       });
     }
   }
