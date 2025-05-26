@@ -85,10 +85,20 @@ class AuthNotifier extends _$AuthNotifier {
       final user = await _authRepository.signIn(email, password);
       // サインイン結果に応じて状態を更新
       if (user != null) {
-        // FCMトークンを更新
-        await _fcmTokenService.updateCurrentUserFcmToken();
+        AppLogger.debug('サインイン成功: ユーザーID=${user.id}');
+
+        // FCMトークンを更新（リトライ付き）
+        try {
+          AppLogger.debug('サインイン: FCMトークン更新を開始');
+          await _fcmTokenService.updateCurrentUserFcmToken();
+          AppLogger.debug('サインイン: FCMトークン更新完了');
+        } catch (e) {
+          AppLogger.error('サインイン: FCMトークン更新エラー - $e');
+          // FCMトークンの更新に失敗してもサインインは継続
+        }
         return AuthState.authenticated(user);
       } else {
+        AppLogger.warning('サインイン失敗: ユーザーがnull');
         return AuthState.unauthenticated();
       }
     });
@@ -113,10 +123,20 @@ class AuthNotifier extends _$AuthNotifier {
       final user = await _authRepository.signUp(email, password, name);
       // 登録結果に応じて状態を更新
       if (user != null) {
-        // FCMトークンを更新
-        await _fcmTokenService.updateCurrentUserFcmToken();
+        AppLogger.debug('サインアップ成功: ユーザーID=${user.id}');
+
+        // FCMトークンを更新（リトライ付き）
+        try {
+          AppLogger.debug('サインアップ: FCMトークン更新を開始');
+          await _fcmTokenService.updateCurrentUserFcmToken();
+          AppLogger.debug('サインアップ: FCMトークン更新完了');
+        } catch (e) {
+          AppLogger.error('サインアップ: FCMトークン更新エラー - $e');
+          // FCMトークンの更新に失敗してもサインアップは継続
+        }
         return AuthState.authenticated(user);
       } else {
+        AppLogger.warning('サインアップ失敗: ユーザーがnull');
         return AuthState.unauthenticated();
       }
     });

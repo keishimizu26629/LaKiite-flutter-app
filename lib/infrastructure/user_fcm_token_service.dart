@@ -33,9 +33,11 @@ class UserFcmTokenService {
 
       AppLogger.debug('FCMトークン更新: ユーザーID=${user.uid}, トークン=$token');
 
-      await _firestore.collection('users').doc(user.uid).update({
+      // Firebase Functionsが参照する場所（users/{userId}直下）に保存
+      // updateではなくsetを使用してドキュメントが存在しない場合でも確実に保存
+      await _firestore.collection('users').doc(user.uid).set({
         'fcmToken': token,
-      });
+      }, SetOptions(merge: true));
 
       AppLogger.debug('FCMトークン更新: 完了');
     } catch (e, stack) {
@@ -72,7 +74,7 @@ class UserFcmTokenService {
           return; // 既に削除されているか存在しない場合は何もしない
         }
 
-        // トークンを削除
+        // トークンを削除（Firebase Functionsが参照する場所）
         await docRef.update({
           'fcmToken': FieldValue.delete(),
         });
