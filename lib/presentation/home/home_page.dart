@@ -225,15 +225,26 @@ class HomePage extends HookConsumerWidget {
                             children: [
                               // カレンダー表示タブ
                               scheduleState.when(
-                                data: (_) => const Column(
-                                  children: [
-                                    Expanded(child: CalendarPageView()),
-                                  ],
-                                ),
-                                error: (error, _) => _buildErrorWidget(
-                                    context, ref, state, error),
-                                loading: () => const Center(
-                                    child: CircularProgressIndicator()),
+                                data: (state) {
+                                  AppLogger.debug(
+                                      'ホーム画面: カレンダータブ - スケジュール状態: ${state.runtimeType}');
+                                  return const Column(
+                                    children: [
+                                      Expanded(child: CalendarPageView()),
+                                    ],
+                                  );
+                                },
+                                error: (error, _) {
+                                  AppLogger.error(
+                                      'ホーム画面: カレンダータブ - エラー: $error');
+                                  return _buildErrorWidget(
+                                      context, ref, state, error);
+                                },
+                                loading: () {
+                                  AppLogger.debug('ホーム画面: カレンダータブ - 読み込み中');
+                                  return const Center(
+                                      child: CircularProgressIndicator());
+                                },
                               ),
                               // タイムライン表示タブ
                               scheduleState.when(
