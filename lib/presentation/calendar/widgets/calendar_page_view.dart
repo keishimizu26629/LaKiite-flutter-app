@@ -126,13 +126,15 @@ class CalendarPageView extends HookConsumerWidget {
     // 最適化モードの取得
     ref.watch(calendarOptimizationProvider);
 
-    // 初期表示時は最適化モードをオフにして通常表示にする
+    // 初期表示時は最適化モードを一時的にオフにして通常表示にする
     if (_isCalendarFirstBuild) {
       _isCalendarFirstBuild = false;
+      AppLogger.debug('カレンダー初期表示: 初回ビルド - 最適化モード一時無効化');
       // ビルド完了後に実行
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (ref.exists(calendarOptimizationProvider)) {
           ref.read(calendarOptimizationProvider.notifier).state = false;
+          AppLogger.debug('カレンダー初期表示: 初期最適化モード無効化完了');
         }
       });
     }
@@ -201,34 +203,38 @@ class CalendarPageView extends HookConsumerWidget {
         // ビルド完了後に実行（ウィジェットツリーの構築中に状態を変更しないため）
         WidgetsBinding.instance.addPostFrameCallback((_) {
           try {
-            // まず祝日データを確実に読み込む
+            AppLogger.debug('カレンダー初期表示: データ取得開始 - userId: $currentUserId');
+
+            // 祝日データとスケジュールデータを並列で取得（祝日データ待ちを解消）
+            // 祝日データの読み込み
             final holidaysAsync = ref.read(holidaysProvider);
             holidaysAsync.whenData((holidays) {
               try {
                 if (ref.exists(cachedHolidaysProvider)) {
                   ref.read(cachedHolidaysProvider.notifier).state = holidays;
-                }
-
-                // 祝日データが読み込まれた後でスケジュールデータを取得
-                // ページ初期表示時は常にデータを取得
-                _fetchDataWithThrottle(ref, currentUserId, visibleDate, true);
-
-                // 前後の月のデータも事前に取得
-                for (int i = 1; i <= _prefetchMonthsRange; i++) {
-                  // 前の月
-                  final prevDate =
-                      DateTime(visibleDate.year, visibleDate.month - i, 1);
-                  _fetchDataWithThrottle(ref, currentUserId, prevDate, false);
-
-                  // 次の月
-                  final nextDate =
-                      DateTime(visibleDate.year, visibleDate.month + i, 1);
-                  _fetchDataWithThrottle(ref, currentUserId, nextDate, false);
+                  AppLogger.debug('カレンダー初期表示: 祝日データキャッシュ完了');
                 }
               } catch (e) {
                 AppLogger.error('祝日データ反映エラー: $e');
               }
             });
+
+            // スケジュールデータの取得（祝日データと並列実行）
+            AppLogger.debug('カレンダー初期表示: スケジュールデータ取得開始');
+            _fetchDataWithThrottle(ref, currentUserId, visibleDate, true);
+
+            // 前後の月のデータも事前に取得
+            for (int i = 1; i <= _prefetchMonthsRange; i++) {
+              // 前の月
+              final prevDate =
+                  DateTime(visibleDate.year, visibleDate.month - i, 1);
+              _fetchDataWithThrottle(ref, currentUserId, prevDate, false);
+
+              // 次の月
+              final nextDate =
+                  DateTime(visibleDate.year, visibleDate.month + i, 1);
+              _fetchDataWithThrottle(ref, currentUserId, nextDate, false);
+            }
 
             // 前後の月のインデックス集合を初期化
             final newIndices = <int>{currentIndexValue};
@@ -240,6 +246,28 @@ class CalendarPageView extends HookConsumerWidget {
             if (ref.exists(activeMonthIndicesProvider)) {
               ref.read(activeMonthIndicesProvider.notifier).state = newIndices;
             }
+
+            // ★重要: ログイン時にスライド完了処理と同等の処理を実行
+            // 少し遅延させてからデータ表示を確実にする
+            Future.delayed(const Duration(milliseconds: 500), () {
+              try {
+                AppLogger.debug('カレンダー初期表示: 最適化モード無効化とデータ再取得開始');
+
+                // 最適化モードを無効化（スライド完了時と同じ処理）
+                if (ref.exists(calendarOptimizationProvider)) {
+                  ref.read(calendarOptimizationProvider.notifier).state = false;
+                  AppLogger.debug('カレンダー初期表示: 最適化モード無効化完了');
+                }
+
+                // データを強制再取得（スライド完了時と同じ処理）
+                if (ref.exists(scheduleNotifierProvider)) {
+                  AppLogger.debug('カレンダー初期表示: データ強制再取得実行');
+                  _fetchDataWithThrottle(ref, currentUserId, visibleDate, true);
+                }
+              } catch (e) {
+                AppLogger.error('カレンダー初期表示: 最適化モード制御エラー: $e');
+              }
+            });
 
             // 定期的なクリーンアップを開始
             _scheduleCleanup(ref, currentIndexValue);
@@ -907,13 +935,19 @@ class CalendarPageContent extends HookConsumerWidget {
     // スケジュールデータを取得（ローディング中はプレースホルダーを表示）
     final scheduleState = ref.watch(scheduleNotifierProvider);
 
-    // スケジュールデータを取得（キャッシュ優先）
+    // スケジュールデータを取得（改善版：初期表示時の問題を解決）
     final schedules = useMemoized(() {
-      // 最適化モード時はキャッシュを優先
-      if (isOptimized && cachedSchedules.isNotEmpty) {
-        return scheduleState.maybeWhen(
+      AppLogger.debug(
+          'カレンダーページ: スケジュール表示ロジック実行 - 最適化モード: $isOptimized, キャッシュ有無: ${cachedSchedules.isNotEmpty}');
+
+      // 初期表示時やキャッシュが空の場合は、scheduleStateを直接使用
+      if (cachedSchedules.isEmpty || !isOptimized) {
+        AppLogger.debug('カレンダーページ: 直接scheduleStateを使用');
+        return scheduleState.when(
           data: (state) => state.maybeMap(
             loaded: (loaded) {
+              AppLogger.debug(
+                  'カレンダーページ: スケジュールデータ取得成功 - ${loaded.schedules.length}件');
               // スライド中でなければキャッシュを更新
               if (!_isSliding) {
                 Future.microtask(() {
@@ -930,6 +964,7 @@ class CalendarPageContent extends HookConsumerWidget {
                         },
                       ),
                     };
+                    AppLogger.debug('カレンダーページ: キャッシュ更新完了');
                   } catch (e) {
                     AppLogger.error('キャッシュ更新エラー: $e');
                   }
@@ -937,13 +972,25 @@ class CalendarPageContent extends HookConsumerWidget {
               }
               return loaded.schedules;
             },
-            orElse: () => <Schedule>[],
+            orElse: () {
+              AppLogger.debug('カレンダーページ: スケジュールデータなし（orElse）');
+              return <Schedule>[];
+            },
           ),
-          orElse: () => <Schedule>[],
+          loading: () {
+            AppLogger.debug('カレンダーページ: スケジュールデータ読み込み中');
+            return <Schedule>[];
+          },
+          error: (_, __) {
+            AppLogger.debug('カレンダーページ: スケジュールデータ取得エラー');
+            return <Schedule>[];
+          },
         );
       }
 
-      return scheduleState.when(
+      // 最適化モード時でキャッシュがある場合
+      AppLogger.debug('カレンダーページ: 最適化モード - キャッシュ優先使用');
+      return scheduleState.maybeWhen(
         data: (state) => state.maybeMap(
           loaded: (loaded) {
             // スライド中でなければキャッシュを更新
@@ -971,8 +1018,7 @@ class CalendarPageContent extends HookConsumerWidget {
           },
           orElse: () => <Schedule>[],
         ),
-        loading: () => <Schedule>[],
-        error: (_, __) => <Schedule>[],
+        orElse: () => <Schedule>[],
       );
     }, [scheduleState, isOptimized, cachedSchedules, _isSliding]);
 
