@@ -4,7 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/interfaces/i_auth_repository.dart';
 import '../../infrastructure/auth_repository.dart';
 import '../../infrastructure/user_fcm_token_service.dart';
+import '../../infrastructure/user_repository.dart';
+import '../../infrastructure/schedule_repository.dart';
 import '../../presentation/presentation_provider.dart';
+import '../../presentation/calendar/widgets/calendar_page_view.dart';
+import '../../presentation/my_page/my_page_view_model.dart';
 import '../../utils/logger.dart';
 import 'auth_state.dart';
 
@@ -85,10 +89,20 @@ class AuthNotifier extends _$AuthNotifier {
       final user = await _authRepository.signIn(email, password);
       // サインイン結果に応じて状態を更新
       if (user != null) {
-        // FCMトークンを更新
-        await _fcmTokenService.updateCurrentUserFcmToken();
+        AppLogger.debug('サインイン成功: ユーザーID=${user.id}');
+
+        // FCMトークンを更新（リトライ付き）
+        try {
+          AppLogger.debug('サインイン: FCMトークン更新を開始');
+          await _fcmTokenService.updateCurrentUserFcmToken();
+          AppLogger.debug('サインイン: FCMトークン更新完了');
+        } catch (e) {
+          AppLogger.error('サインイン: FCMトークン更新エラー - $e');
+          // FCMトークンの更新に失敗してもサインインは継続
+        }
         return AuthState.authenticated(user);
       } else {
+        AppLogger.warning('サインイン失敗: ユーザーがnull');
         return AuthState.unauthenticated();
       }
     });
@@ -113,10 +127,20 @@ class AuthNotifier extends _$AuthNotifier {
       final user = await _authRepository.signUp(email, password, name);
       // 登録結果に応じて状態を更新
       if (user != null) {
-        // FCMトークンを更新
-        await _fcmTokenService.updateCurrentUserFcmToken();
+        AppLogger.debug('サインアップ成功: ユーザーID=${user.id}');
+
+        // FCMトークンを更新（リトライ付き）
+        try {
+          AppLogger.debug('サインアップ: FCMトークン更新を開始');
+          await _fcmTokenService.updateCurrentUserFcmToken();
+          AppLogger.debug('サインアップ: FCMトークン更新完了');
+        } catch (e) {
+          AppLogger.error('サインアップ: FCMトークン更新エラー - $e');
+          // FCMトークンの更新に失敗してもサインアップは継続
+        }
         return AuthState.authenticated(user);
       } else {
+        AppLogger.warning('サインアップ失敗: ユーザーがnull');
         return AuthState.unauthenticated();
       }
     });
@@ -127,6 +151,7 @@ class AuthNotifier extends _$AuthNotifier {
   /// 処理:
   /// - 現在のユーザーをサインアウト
   /// - 認証状態を未認証に更新
+  /// - 全てのキャッシュをクリア
   Future<void> signOut() async {
     // ローディング状態に設定
     state = const AsyncLoading();
@@ -134,24 +159,71 @@ class AuthNotifier extends _$AuthNotifier {
     // サインアウト処理を実行
     state = await AsyncValue.guard(() async {
       try {
-        // FCMトークンを削除
+        AppLogger.debug('サインアウト処理を開始します');
+
+        // 1. 既存のリポジトリインスタンスのキャッシュを明示的にクリア
+        try {
+          final userRepo = ref.read(userRepositoryProvider);
+          if (userRepo is UserRepository) {
+            userRepo.clearCache();
+            AppLogger.debug('UserRepositoryキャッシュをクリアしました');
+          }
+        } catch (e) {
+          AppLogger.warning('UserRepositoryキャッシュクリアエラー（無視して続行）: $e');
+        }
+
+        try {
+          final scheduleRepo = ref.read(scheduleRepositoryProvider);
+          if (scheduleRepo is ScheduleRepository) {
+            scheduleRepo.clearCache();
+            AppLogger.debug('ScheduleRepositoryキャッシュをクリアしました');
+          }
+        } catch (e) {
+          AppLogger.warning('ScheduleRepositoryキャッシュクリアエラー（無視して続行）: $e');
+        }
+
+        // 2. カレンダー関連のStateProviderキャッシュをクリア
+        try {
+          ref.invalidate(cachedHolidaysProvider);
+          ref.invalidate(cachedSchedulesProvider);
+          ref.invalidate(monthDataLoadingProvider);
+          ref.invalidate(calendarOptimizationProvider);
+          ref.invalidate(renderedMonthsProvider);
+          ref.invalidate(lastCleanupTimeProvider);
+          ref.invalidate(activeMonthIndicesProvider);
+          AppLogger.debug('カレンダー関連キャッシュをクリアしました');
+        } catch (e) {
+          AppLogger.warning('カレンダーキャッシュクリアエラー（無視して続行）: $e');
+        }
+
+        // 3. MyPageのキャッシュをクリア
+        try {
+          ref.invalidate(cachedUserProvider);
+          AppLogger.debug('MyPageキャッシュをクリアしました');
+        } catch (e) {
+          AppLogger.warning('MyPageキャッシュクリアエラー（無視して続行）: $e');
+        }
+
+        // 4. FCMトークンを削除
         try {
           await _fcmTokenService.removeFcmToken();
+          AppLogger.debug('FCMトークンを削除しました');
         } catch (e) {
           AppLogger.error('FCMトークン削除エラー（無視して続行）: $e');
           // トークン削除に失敗しても処理を続行
         }
 
-        // Firestoreのキャッシュをクリア
+        // 5. Firestoreのキャッシュをクリア
         try {
           await FirebaseFirestore.instance.terminate();
           await FirebaseFirestore.instance.clearPersistence();
+          AppLogger.debug('Firestoreキャッシュをクリアしました');
         } catch (e) {
           AppLogger.error('Firestoreキャッシュクリアエラー（無視して続行）: $e');
           // キャッシュクリアに失敗しても処理を続行
         }
 
-        // 関連するRiverpodプロバイダーをリセット
+        // 6. 関連するRiverpodプロバイダーをリセット
         try {
           // 自身のプロバイダーを無効化
           ref.invalidateSelf();
@@ -223,14 +295,18 @@ class AuthNotifier extends _$AuthNotifier {
           } catch (e) {
             // エラーは無視
           }
+
+          AppLogger.debug('プロバイダーを無効化しました');
         } catch (e) {
           AppLogger.error('プロバイダー無効化エラー（無視して続行）: $e');
           // プロバイダー無効化に失敗しても処理を続行
         }
 
-        // 最後に認証をサインアウト
+        // 7. 最後に認証をサインアウト
         await _authRepository.signOut();
+        AppLogger.debug('認証サインアウトが完了しました');
 
+        AppLogger.debug('サインアウト処理が正常に完了しました');
         return AuthState.unauthenticated();
       } catch (e) {
         AppLogger.error('サインアウトエラー: $e');
@@ -245,6 +321,7 @@ class AuthNotifier extends _$AuthNotifier {
   /// - ユーザーデータを削除
   /// - 認証情報を削除
   /// - 関連するプロバイダーをリセット
+  /// - 全てのキャッシュをクリア
   ///
   /// 戻り値:
   /// - 処理が成功した場合は true
@@ -255,18 +332,69 @@ class AuthNotifier extends _$AuthNotifier {
 
     // アカウント削除処理を実行
     try {
-      // FCMトークンを削除
-      await _fcmTokenService.removeFcmToken();
+      AppLogger.debug('アカウント削除処理を開始します');
 
-      // Firestoreのキャッシュをクリア
+      // 1. 既存のリポジトリインスタンスのキャッシュを明示的にクリア
+      try {
+        final userRepo = ref.read(userRepositoryProvider);
+        if (userRepo is UserRepository) {
+          userRepo.clearCache();
+          AppLogger.debug('UserRepositoryキャッシュをクリアしました');
+        }
+      } catch (e) {
+        AppLogger.warning('UserRepositoryキャッシュクリアエラー（無視して続行）: $e');
+      }
+
+      try {
+        final scheduleRepo = ref.read(scheduleRepositoryProvider);
+        if (scheduleRepo is ScheduleRepository) {
+          scheduleRepo.clearCache();
+          AppLogger.debug('ScheduleRepositoryキャッシュをクリアしました');
+        }
+      } catch (e) {
+        AppLogger.warning('ScheduleRepositoryキャッシュクリアエラー（無視して続行）: $e');
+      }
+
+      // 2. カレンダー関連のStateProviderキャッシュをクリア
+      try {
+        ref.invalidate(cachedHolidaysProvider);
+        ref.invalidate(cachedSchedulesProvider);
+        ref.invalidate(monthDataLoadingProvider);
+        ref.invalidate(calendarOptimizationProvider);
+        ref.invalidate(renderedMonthsProvider);
+        ref.invalidate(lastCleanupTimeProvider);
+        ref.invalidate(activeMonthIndicesProvider);
+        AppLogger.debug('カレンダー関連キャッシュをクリアしました');
+      } catch (e) {
+        AppLogger.warning('カレンダーキャッシュクリアエラー（無視して続行）: $e');
+      }
+
+      // 3. MyPageのキャッシュをクリア
+      try {
+        ref.invalidate(cachedUserProvider);
+        AppLogger.debug('MyPageキャッシュをクリアしました');
+      } catch (e) {
+        AppLogger.warning('MyPageキャッシュクリアエラー（無視して続行）: $e');
+      }
+
+      // 4. FCMトークンを削除
+      try {
+        await _fcmTokenService.removeFcmToken();
+        AppLogger.debug('FCMトークンを削除しました');
+      } catch (e) {
+        AppLogger.warning('FCMトークン削除エラー（無視して続行）: $e');
+      }
+
+      // 5. Firestoreのキャッシュをクリア
       try {
         await FirebaseFirestore.instance.terminate();
         await FirebaseFirestore.instance.clearPersistence();
+        AppLogger.debug('Firestoreキャッシュをクリアしました');
       } catch (e) {
         AppLogger.error('Firestoreキャッシュクリアエラー: $e');
       }
 
-      // 関連するRiverpodプロバイダーをリセット
+      // 6. 関連するRiverpodプロバイダーをリセット
       ref.invalidateSelf();
 
       // ユーザー関連のプロバイダーを無効化
@@ -288,12 +416,15 @@ class AuthNotifier extends _$AuthNotifier {
       ref.invalidate(userFriendsStreamProvider);
       ref.invalidate(userFriendsProvider);
 
-      // アカウントを削除
+      AppLogger.debug('プロバイダーを無効化しました');
+
+      // 7. アカウントを削除
       final success = await _authRepository.deleteAccount();
 
       // 認証状態を更新
       if (success) {
         state = AsyncData(AuthState.unauthenticated());
+        AppLogger.debug('アカウント削除処理が正常に完了しました');
       }
 
       return success;
