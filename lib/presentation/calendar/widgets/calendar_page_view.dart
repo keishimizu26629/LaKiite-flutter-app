@@ -129,12 +129,10 @@ class CalendarPageView extends HookConsumerWidget {
     // 初期表示時は最適化モードを一時的にオフにして通常表示にする
     if (_isCalendarFirstBuild) {
       _isCalendarFirstBuild = false;
-      AppLogger.debug('カレンダー初期表示: 初回ビルド - 最適化モード一時無効化');
       // ビルド完了後に実行
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (ref.exists(calendarOptimizationProvider)) {
           ref.read(calendarOptimizationProvider.notifier).state = false;
-          AppLogger.debug('カレンダー初期表示: 初期最適化モード無効化完了');
         }
       });
     }
@@ -251,12 +249,9 @@ class CalendarPageView extends HookConsumerWidget {
             // 少し遅延させてからデータ表示を確実にする
             Future.delayed(const Duration(milliseconds: 500), () {
               try {
-                AppLogger.debug('カレンダー初期表示: 最適化モード無効化とデータ再取得開始');
-
                 // 最適化モードを無効化（スライド完了時と同じ処理）
                 if (ref.exists(calendarOptimizationProvider)) {
                   ref.read(calendarOptimizationProvider.notifier).state = false;
-                  AppLogger.debug('カレンダー初期表示: 最適化モード無効化完了');
                 }
 
                 // データを強制再取得（スライド完了時と同じ処理）
@@ -937,9 +932,6 @@ class CalendarPageContent extends HookConsumerWidget {
 
     // スケジュールデータを取得（改善版：初期表示時の問題を解決）
     final schedules = useMemoized(() {
-      AppLogger.debug(
-          'カレンダーページ: スケジュール表示ロジック実行 - 最適化モード: $isOptimized, キャッシュ有無: ${cachedSchedules.isNotEmpty}');
-
       // 初期表示時やキャッシュが空の場合は、scheduleStateを直接使用
       if (cachedSchedules.isEmpty || !isOptimized) {
         AppLogger.debug('カレンダーページ: 直接scheduleStateを使用');
@@ -989,7 +981,6 @@ class CalendarPageContent extends HookConsumerWidget {
       }
 
       // 最適化モード時でキャッシュがある場合
-      AppLogger.debug('カレンダーページ: 最適化モード - キャッシュ優先使用');
       return scheduleState.maybeWhen(
         data: (state) => state.maybeMap(
           loaded: (loaded) {
