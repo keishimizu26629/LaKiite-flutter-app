@@ -126,7 +126,7 @@ class CalendarPageView extends HookConsumerWidget {
     // 最適化モードの取得
     ref.watch(calendarOptimizationProvider);
 
-    // 初期表示時は最適化モードをオフにして通常表示にする
+    // 初期表示時は最適化モードを一時的にオフにして通常表示にする
     if (_isCalendarFirstBuild) {
       _isCalendarFirstBuild = false;
       // ビルド完了後に実行
@@ -201,34 +201,38 @@ class CalendarPageView extends HookConsumerWidget {
         // ビルド完了後に実行（ウィジェットツリーの構築中に状態を変更しないため）
         WidgetsBinding.instance.addPostFrameCallback((_) {
           try {
-            // まず祝日データを確実に読み込む
+            AppLogger.debug('カレンダー初期表示: データ取得開始 - userId: $currentUserId');
+
+            // 祝日データとスケジュールデータを並列で取得（祝日データ待ちを解消）
+            // 祝日データの読み込み
             final holidaysAsync = ref.read(holidaysProvider);
             holidaysAsync.whenData((holidays) {
               try {
                 if (ref.exists(cachedHolidaysProvider)) {
                   ref.read(cachedHolidaysProvider.notifier).state = holidays;
-                }
-
-                // 祝日データが読み込まれた後でスケジュールデータを取得
-                // ページ初期表示時は常にデータを取得
-                _fetchDataWithThrottle(ref, currentUserId, visibleDate, true);
-
-                // 前後の月のデータも事前に取得
-                for (int i = 1; i <= _prefetchMonthsRange; i++) {
-                  // 前の月
-                  final prevDate =
-                      DateTime(visibleDate.year, visibleDate.month - i, 1);
-                  _fetchDataWithThrottle(ref, currentUserId, prevDate, false);
-
-                  // 次の月
-                  final nextDate =
-                      DateTime(visibleDate.year, visibleDate.month + i, 1);
-                  _fetchDataWithThrottle(ref, currentUserId, nextDate, false);
+                  AppLogger.debug('カレンダー初期表示: 祝日データキャッシュ完了');
                 }
               } catch (e) {
                 AppLogger.error('祝日データ反映エラー: $e');
               }
             });
+
+            // スケジュールデータの取得（祝日データと並列実行）
+            AppLogger.debug('カレンダー初期表示: スケジュールデータ取得開始');
+            _fetchDataWithThrottle(ref, currentUserId, visibleDate, true);
+
+            // 前後の月のデータも事前に取得
+            for (int i = 1; i <= _prefetchMonthsRange; i++) {
+              // 前の月
+              final prevDate =
+                  DateTime(visibleDate.year, visibleDate.month - i, 1);
+              _fetchDataWithThrottle(ref, currentUserId, prevDate, false);
+
+              // 次の月
+              final nextDate =
+                  DateTime(visibleDate.year, visibleDate.month + i, 1);
+              _fetchDataWithThrottle(ref, currentUserId, nextDate, false);
+            }
 
             // 前後の月のインデックス集合を初期化
             final newIndices = <int>{currentIndexValue};
@@ -240,6 +244,25 @@ class CalendarPageView extends HookConsumerWidget {
             if (ref.exists(activeMonthIndicesProvider)) {
               ref.read(activeMonthIndicesProvider.notifier).state = newIndices;
             }
+
+            // ★重要: ログイン時にスライド完了処理と同等の処理を実行
+            // 少し遅延させてからデータ表示を確実にする
+            Future.delayed(const Duration(milliseconds: 500), () {
+              try {
+                // 最適化モードを無効化（スライド完了時と同じ処理）
+                if (ref.exists(calendarOptimizationProvider)) {
+                  ref.read(calendarOptimizationProvider.notifier).state = false;
+                }
+
+                // データを強制再取得（スライド完了時と同じ処理）
+                if (ref.exists(scheduleNotifierProvider)) {
+                  AppLogger.debug('カレンダー初期表示: データ強制再取得実行');
+                  _fetchDataWithThrottle(ref, currentUserId, visibleDate, true);
+                }
+              } catch (e) {
+                AppLogger.error('カレンダー初期表示: 最適化モード制御エラー: $e');
+              }
+            });
 
             // 定期的なクリーンアップを開始
             _scheduleCleanup(ref, currentIndexValue);
@@ -556,36 +579,43 @@ class CalendarPageView extends HookConsumerWidget {
     if (lastCleanup == null ||
         now.difference(lastCleanup).inMilliseconds > _cleanupIntervalMillis) {
       Future.delayed(const Duration(seconds: 3), () {
-        if (!ref.exists(renderedMonthsProvider) ||
-            !ref.exists(lastCleanupTimeProvider)) return;
+        // ウィジェットが破棄されていないかチェック
+        try {
+          if (!ref.exists(renderedMonthsProvider) ||
+              !ref.exists(lastCleanupTimeProvider) ||
+              !ref.exists(activeMonthIndicesProvider)) return;
 
-        // 現在のアクティブ範囲を取得
-        final activeIndices = ref.read(activeMonthIndicesProvider);
-        final renderedIndices = ref.read(renderedMonthsProvider);
+          // 現在のアクティブ範囲を取得
+          final activeIndices = ref.read(activeMonthIndicesProvider);
+          final renderedIndices = ref.read(renderedMonthsProvider);
 
-        // 拡張された保持範囲（前後6ヶ月は保持）
-        const retainRange = 6;
-        final retainIndices = <int>{currentIndex};
-        for (int i = 1; i <= retainRange; i++) {
-          retainIndices.add(currentIndex - i);
-          retainIndices.add(currentIndex + i);
+          // 拡張された保持範囲（前後6ヶ月は保持）
+          const retainRange = 6;
+          final retainIndices = <int>{currentIndex};
+          for (int i = 1; i <= retainRange; i++) {
+            retainIndices.add(currentIndex - i);
+            retainIndices.add(currentIndex + i);
+          }
+
+          // アクティブ範囲外かつ保持範囲外のインデックスをフィルタリング
+          final toRemove = renderedIndices
+              .where((idx) =>
+                  !activeIndices.contains(idx) && !retainIndices.contains(idx))
+              .toSet();
+
+          // 削除対象がある場合、レンダリング済みセットから除外
+          if (toRemove.isNotEmpty) {
+            ref.read(renderedMonthsProvider.notifier).state = {
+              ...renderedIndices.difference(toRemove)
+            };
+          }
+
+          // クリーンアップ時間を更新
+          ref.read(lastCleanupTimeProvider.notifier).state = now;
+        } catch (e) {
+          // ウィジェットが破棄された場合は何もしない
+          AppLogger.debug('クリーンアップ処理でエラー（ウィジェット破棄済み）: $e');
         }
-
-        // アクティブ範囲外かつ保持範囲外のインデックスをフィルタリング
-        final toRemove = renderedIndices
-            .where((idx) =>
-                !activeIndices.contains(idx) && !retainIndices.contains(idx))
-            .toSet();
-
-        // 削除対象がある場合、レンダリング済みセットから除外
-        if (toRemove.isNotEmpty) {
-          ref.read(renderedMonthsProvider.notifier).state = {
-            ...renderedIndices.difference(toRemove)
-          };
-        }
-
-        // クリーンアップ時間を更新
-        ref.read(lastCleanupTimeProvider.notifier).state = now;
       });
     }
   }
@@ -900,13 +930,16 @@ class CalendarPageContent extends HookConsumerWidget {
     // スケジュールデータを取得（ローディング中はプレースホルダーを表示）
     final scheduleState = ref.watch(scheduleNotifierProvider);
 
-    // スケジュールデータを取得（キャッシュ優先）
+    // スケジュールデータを取得（改善版：初期表示時の問題を解決）
     final schedules = useMemoized(() {
-      // 最適化モード時はキャッシュを優先
-      if (isOptimized && cachedSchedules.isNotEmpty) {
-        return scheduleState.maybeWhen(
+      // 初期表示時やキャッシュが空の場合は、scheduleStateを直接使用
+      if (cachedSchedules.isEmpty || !isOptimized) {
+        AppLogger.debug('カレンダーページ: 直接scheduleStateを使用');
+        return scheduleState.when(
           data: (state) => state.maybeMap(
             loaded: (loaded) {
+              AppLogger.debug(
+                  'カレンダーページ: スケジュールデータ取得成功 - ${loaded.schedules.length}件');
               // スライド中でなければキャッシュを更新
               if (!_isSliding) {
                 Future.microtask(() {
@@ -923,6 +956,7 @@ class CalendarPageContent extends HookConsumerWidget {
                         },
                       ),
                     };
+                    AppLogger.debug('カレンダーページ: キャッシュ更新完了');
                   } catch (e) {
                     AppLogger.error('キャッシュ更新エラー: $e');
                   }
@@ -930,13 +964,24 @@ class CalendarPageContent extends HookConsumerWidget {
               }
               return loaded.schedules;
             },
-            orElse: () => <Schedule>[],
+            orElse: () {
+              AppLogger.debug('カレンダーページ: スケジュールデータなし（orElse）');
+              return <Schedule>[];
+            },
           ),
-          orElse: () => <Schedule>[],
+          loading: () {
+            AppLogger.debug('カレンダーページ: スケジュールデータ読み込み中');
+            return <Schedule>[];
+          },
+          error: (_, __) {
+            AppLogger.debug('カレンダーページ: スケジュールデータ取得エラー');
+            return <Schedule>[];
+          },
         );
       }
 
-      return scheduleState.when(
+      // 最適化モード時でキャッシュがある場合
+      return scheduleState.maybeWhen(
         data: (state) => state.maybeMap(
           loaded: (loaded) {
             // スライド中でなければキャッシュを更新
@@ -964,8 +1009,7 @@ class CalendarPageContent extends HookConsumerWidget {
           },
           orElse: () => <Schedule>[],
         ),
-        loading: () => <Schedule>[],
-        error: (_, __) => <Schedule>[],
+        orElse: () => <Schedule>[],
       );
     }, [scheduleState, isOptimized, cachedSchedules, _isSliding]);
 

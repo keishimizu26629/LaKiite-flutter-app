@@ -47,12 +47,12 @@ class AppConfig {
       options = ProdFirebaseOptions.currentPlatform;
       environment = Environment.production;
       pushNotificationUrl =
-          'https://us-central1-lakiite-flutter-app-prod.cloudfunctions.net/sendNotification';
+          'https://asia-northeast1-lakiite-flutter-app-prod.cloudfunctions.net/sendNotification';
     } else {
       options = DevFirebaseOptions.currentPlatform;
       environment = Environment.development;
       pushNotificationUrl =
-          'https://us-central1-tarakite-flutter-app-dev.cloudfunctions.net/sendNotification';
+          'https://asia-northeast1-tarakite-flutter-app-dev.cloudfunctions.net/sendNotification';
     }
 
     _instance = AppConfig._(environment, options, appName, pushNotificationUrl);
