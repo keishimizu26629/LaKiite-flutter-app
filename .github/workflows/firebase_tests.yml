@@ -45,7 +45,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.19.0"
+          flutter-version: "3.19.3"
           channel: "stable"
           cache: true
 
@@ -67,10 +67,10 @@ jobs:
           sleep 10
 
       - name: Run Firebase-related unit tests
-        run: flutter test test/ --dart-define=USE_FIREBASE_EMULATOR=true
+        run: flutter test test/ --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FLUTTER_TEST=true
 
       - name: Run Firebase integration tests
-        run: flutter test integration_test/firebase_test_utils.dart --dart-define=USE_FIREBASE_EMULATOR=true
+        run: flutter test integration_test/firebase_test_utils.dart --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FLUTTER_TEST=true
 
       - name: Stop Firebase Emulators
         if: always()
