@@ -75,8 +75,4 @@ class AuthState with _$AuthState {
 /// 用途:
 /// - [AuthState]クラス内で認証状態を表現するために使用
 /// - 認証フローの制御に使用
-enum AuthStatus {
-  authenticated,
-  unauthenticated,
-  loading
-}
+enum AuthStatus { authenticated, unauthenticated, loading }

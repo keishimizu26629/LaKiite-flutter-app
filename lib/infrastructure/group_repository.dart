@@ -20,15 +20,14 @@ class GroupRepository implements IGroupRepository {
     final timestamp = data['createdAt'] as Timestamp?;
     final modifiedData = Map<String, dynamic>.from(data);
     modifiedData['id'] = doc.id;
-    modifiedData['createdAt'] = timestamp?.toDate().toIso8601String() ?? DateTime.now().toIso8601String();
+    modifiedData['createdAt'] = timestamp?.toDate().toIso8601String() ??
+        DateTime.now().toIso8601String();
     return Group.fromJson(modifiedData);
   }
 
   @override
   Future<List<Group>> getGroups() async {
-    final snapshot = await _firestore
-        .collectionGroup('items')
-        .get();
+    final snapshot = await _firestore.collectionGroup('items').get();
     return snapshot.docs.map(_fromFirestore).toList();
   }
 
@@ -39,14 +38,15 @@ class GroupRepository implements IGroupRepository {
     required String ownerId,
   }) async {
     final group = Group(
-      id: '',  // 一時的な空のID
+      id: '', // 一時的な空のID
       groupName: groupName,
       memberIds: memberIds,
       ownerId: ownerId,
       createdAt: DateTime.now(),
     );
 
-    final docRef = await _firestore.collection('groups').add(_toFirestore(group));
+    final docRef =
+        await _firestore.collection('groups').add(_toFirestore(group));
 
     final doc = await docRef.get();
     return _fromFirestore(doc);
