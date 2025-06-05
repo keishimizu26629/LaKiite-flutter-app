@@ -24,9 +24,8 @@ class UserSearchDialog extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 40,
-              backgroundImage: user.iconUrl.isNotEmpty
-                  ? NetworkImage(user.iconUrl)
-                  : null,
+              backgroundImage:
+                  user.iconUrl.isNotEmpty ? NetworkImage(user.iconUrl) : null,
               child: user.iconUrl.isEmpty
                   ? const Icon(Icons.person, size: 40)
                   : null,

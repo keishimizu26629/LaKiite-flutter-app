@@ -174,7 +174,7 @@ class _GroupDetailPageState extends ConsumerState<GroupDetailPage>
             ),
           );
         },
-        tooltip: 'メンバーを招待',  // ツールチップを追加
+        tooltip: 'メンバーを招待', // ツールチップを追加
         child: const Icon(Icons.person_add),
       ),
     );
