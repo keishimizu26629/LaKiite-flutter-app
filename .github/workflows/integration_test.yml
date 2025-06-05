@@ -2,68 +2,117 @@ name: Integration Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main, develop]
 
 jobs:
   android:
+    name: Android Integration Tests
     runs-on: macos-latest
+    timeout-minutes: 45
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: subosito/flutter-action@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.0'
-          channel: 'stable'
+          flutter-version: "3.19.0"
+          channel: "stable"
+          cache: true
+
       - name: Install dependencies
+        run: flutter pub get
+
+      - name: Enable KVM group perms
         run: |
-          cd lakiite-flutter-app
-          flutter pub get
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
       - name: AVD cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: avd-cache
         with:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-29
+          key: avd-api-30-${{ runner.os }}
+
       - name: Create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 29
+          api-level: 30
+          target: google_apis
+          arch: x86_64
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: false
           script: echo "Generated AVD snapshot for caching."
+
       - name: Run integration tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 29
+          api-level: 30
+          target: google_apis
+          arch: x86_64
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
-            cd lakiite-flutter-app
             flutter test integration_test
 
-  ios:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: subosito/flutter-action@v2
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
         with:
-          flutter-version: '3.19.0'
-          channel: 'stable'
+          name: android-integration-test-results
+          path: |
+            integration_test/screenshots/
+            test-results/
+
+  ios:
+    name: iOS Integration Tests
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.19.0"
+          channel: "stable"
+          cache: true
+
       - name: Install dependencies
-        run: |
-          cd lakiite-flutter-app
-          flutter pub get
+        run: flutter pub get
+
+      - name: List available simulators
+        run: xcrun simctl list devices
+
       - name: Start iOS Simulator
         run: |
-          DEVICE_ID=$(xcrun xctrace list devices 2>&1 | grep -oE 'iPhone.*?[^\(]+' | head -1 | awk '{$1=$1;print}')
-          xcrun simctl boot "${DEVICE_ID:?No iPhone device found}"
+          DEVICE_ID=$(xcrun simctl list devices | grep -E 'iPhone 14|iPhone 13' | grep -v 'unavailable' | head -1 | grep -oE '[0-9A-F-]{36}')
+          if [ -z "$DEVICE_ID" ]; then
+            DEVICE_ID=$(xcrun simctl list devices | grep iPhone | grep -v 'unavailable' | head -1 | grep -oE '[0-9A-F-]{36}')
+          fi
+          echo "Starting simulator with ID: $DEVICE_ID"
+          xcrun simctl boot "$DEVICE_ID"
+
       - name: Run integration tests
-        run: |
-          cd lakiite-flutter-app
-          flutter test integration_test
+        run: flutter test integration_test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ios-integration-test-results
+          path: |
+            integration_test/screenshots/
+            test-results/
