@@ -66,3 +66,15 @@ android/app/google-services.json
 
 # cursor
 .cursor/
+
+# Test related
+coverage/
+test-results/
+test_driver/screenshots/
+integration_test/screenshots/
+*.coverage
+*.lcov
+
+# Flutter test coverage
+coverage/lcov.info
+coverage/html/
