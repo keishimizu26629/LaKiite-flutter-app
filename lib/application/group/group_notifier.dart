@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lakiite/application/group/group_state.dart';
 import 'package:lakiite/domain/entity/group.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
+import 'package:lakiite/domain/service/service_provider.dart';
 
 part 'group_notifier.g.dart';
 
@@ -35,26 +35,13 @@ class GroupNotifier extends AutoDisposeAsyncNotifier<GroupState> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      await ref.read(groupRepositoryProvider).createGroup(
-            groupName: groupName,
-            memberIds: memberIds,
-            ownerId: ownerId,
-          );
-      await fetchGroups();
-    } catch (e) {
-      state = AsyncValue.data(GroupState.error(e.toString()));
-    }
-  }
-
-  /// 全てのグループ情報を取得する
-  ///
-  /// 取得成功時は[GroupState.loaded]を、
-  /// エラー発生時は[GroupState.error]を返します。
-  Future<void> fetchGroups() async {
-    state = const AsyncValue.loading();
-    try {
-      final groups = await ref.read(groupRepositoryProvider).getGroups();
-      state = AsyncValue.data(GroupState.loaded(groups));
+      final group =
+          await ref.read(groupManagerProvider).createGroupWithNotifications(
+                groupName: groupName,
+                memberIds: memberIds,
+                ownerId: ownerId,
+              );
+      state = AsyncValue.data(GroupState.loaded([group]));
     } catch (e) {
       state = AsyncValue.data(GroupState.error(e.toString()));
     }
@@ -68,8 +55,9 @@ class GroupNotifier extends AutoDisposeAsyncNotifier<GroupState> {
   Future<void> updateGroup(Group group) async {
     state = const AsyncValue.loading();
     try {
-      await ref.read(groupRepositoryProvider).updateGroup(group);
-      await fetchGroups();
+      await ref.read(groupManagerProvider).updateGroup(group);
+      // 更新後、現在の状態を維持するか、再取得するかは要件次第
+      state = AsyncValue.data(GroupState.loaded([group]));
     } catch (e) {
       state = AsyncValue.data(GroupState.error(e.toString()));
     }
@@ -83,8 +71,9 @@ class GroupNotifier extends AutoDisposeAsyncNotifier<GroupState> {
   Future<void> deleteGroup(String groupId) async {
     state = const AsyncValue.loading();
     try {
-      await ref.read(groupRepositoryProvider).deleteGroup(groupId);
-      await fetchGroups();
+      await ref.read(groupManagerProvider).deleteGroup(groupId);
+      // 削除後は空の状態にするか、残りのグループを表示するかは要件次第
+      state = const AsyncValue.data(GroupState.loaded([]));
     } catch (e) {
       state = AsyncValue.data(GroupState.error(e.toString()));
     }
@@ -94,13 +83,20 @@ class GroupNotifier extends AutoDisposeAsyncNotifier<GroupState> {
   ///
   /// [groupId] メンバーを追加するグループのID
   /// [userId] 追加するユーザーのID
+  /// [invitedByUserId] 招待者のユーザーID
   ///
   /// エラー発生時は[GroupState.error]を返します。
-  Future<void> addMember(String groupId, String userId) async {
+  Future<void> addMember(
+      String groupId, String userId, String invitedByUserId) async {
     state = const AsyncValue.loading();
     try {
-      await ref.read(groupRepositoryProvider).addMember(groupId, userId);
-      await fetchGroups();
+      await ref.read(groupManagerProvider).addMemberWithNotification(
+            groupId: groupId,
+            userId: userId,
+            invitedByUserId: invitedByUserId,
+          );
+      // 成功時の状態更新は要件に応じて実装
+      state = const AsyncValue.data(GroupState.loaded([]));
     } catch (e) {
       state = AsyncValue.data(GroupState.error(e.toString()));
     }
@@ -115,8 +111,12 @@ class GroupNotifier extends AutoDisposeAsyncNotifier<GroupState> {
   Future<void> removeMember(String groupId, String userId) async {
     state = const AsyncValue.loading();
     try {
-      await ref.read(groupRepositoryProvider).removeMember(groupId, userId);
-      await fetchGroups();
+      await ref.read(groupManagerProvider).removeMember(
+            groupId: groupId,
+            userId: userId,
+          );
+      // 成功時の状態更新は要件に応じて実装
+      state = const AsyncValue.data(GroupState.loaded([]));
     } catch (e) {
       state = AsyncValue.data(GroupState.error(e.toString()));
     }
@@ -129,7 +129,7 @@ class GroupNotifier extends AutoDisposeAsyncNotifier<GroupState> {
   /// グループリストの変更を[GroupState.loaded]として通知し、
   /// エラー発生時は[GroupState.error]を返します。
   void watchUserGroups(String userId) {
-    ref.read(groupRepositoryProvider).watchUserGroups(userId).listen(
+    ref.read(groupManagerProvider).watchUserGroups(userId).listen(
       (groups) {
         state = AsyncValue.data(GroupState.loaded(groups));
       },
