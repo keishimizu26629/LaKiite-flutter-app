@@ -91,6 +91,7 @@ jobs:
           mkdir -p lib
           cat > lib/firebase_options.dart << 'EOF'
           import 'package:firebase_core/firebase_core.dart';
+
           class DefaultFirebaseOptions {
             static FirebaseOptions get currentPlatform => const FirebaseOptions(
               apiKey: 'dummy-api-key',
@@ -102,6 +103,7 @@ jobs:
           EOF
           cat > lib/firebase_options_dev.dart << 'EOF'
           import 'package:firebase_core/firebase_core.dart';
+
           class DevFirebaseOptions {
             static FirebaseOptions get currentPlatform => const FirebaseOptions(
               apiKey: 'dummy-api-key',
@@ -113,6 +115,7 @@ jobs:
           EOF
           cat > lib/firebase_options_prod.dart << 'EOF'
           import 'package:firebase_core/firebase_core.dart';
+
           class ProdFirebaseOptions {
             static FirebaseOptions get currentPlatform => const FirebaseOptions(
               apiKey: 'dummy-api-key',
