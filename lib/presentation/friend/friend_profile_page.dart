@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/entity/user.dart';
 import '../../presentation/presentation_provider.dart';
 import '../widgets/schedule_tile.dart';
 import '../../utils/logger.dart';
@@ -15,7 +16,6 @@ class FriendProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final publicProfileAsync = ref.watch(publicUserStreamProvider(userId));
     // 自分自身のユーザーIDを取得
     final currentUserAsync = ref.watch(authNotifierProvider);
     final currentUserId = currentUserAsync.value?.user?.id;
@@ -32,17 +32,24 @@ class FriendProfilePage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('プロフィール'),
       ),
-      body: publicProfileAsync.when(
-        data: (user) {
+      body: FutureBuilder<PublicUserModel?>(
+        future: ref.read(userRepositoryProvider).getFriendPublicProfile(userId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(child: Text('エラーが発生しました: ${snapshot.error}'));
+          }
+
+          final user = snapshot.data;
           if (user == null) {
             return const Center(child: Text('ユーザーが見つかりません'));
           }
 
           return RefreshIndicator(
             onRefresh: () async {
-              // プロバイダーを再読み込み（StreamProviderは自動更新されるので最小限の更新）
-              ref.invalidate(publicUserStreamProvider(userId));
-
               // 自分が閲覧可能な予定の再読み込み
               if (currentUserId != null) {
                 ref.invalidate(userSchedulesStreamProvider(currentUserId));
@@ -256,10 +263,6 @@ class FriendProfilePage extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Text('エラーが発生しました: $error'),
-        ),
       ),
     );
   }

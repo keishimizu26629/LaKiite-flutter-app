@@ -13,6 +13,7 @@ import 'package:lakiite/domain/interfaces/i_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
 import 'package:lakiite/domain/interfaces/i_notification_repository.dart';
 import 'package:lakiite/domain/interfaces/i_user_repository.dart';
+import 'package:lakiite/domain/service/service_provider.dart';
 import 'package:lakiite/infrastructure/group_repository.dart';
 import 'package:lakiite/infrastructure/list_repository.dart';
 import 'package:lakiite/infrastructure/schedule_repository.dart';
@@ -99,82 +100,52 @@ final listNotifierProvider =
   ListNotifier.new,
 );
 
-/// ユーザーのリストをリアルタイムで監視するStreamプロバイダー
+/// 認証済みユーザーのリストを監視するStreamプロバイダー
+///
+/// 認証状態に基づいて適切にリストを提供します。
+/// Application層のビジネスロジックに依存しません。
 final userListsStreamProvider =
-    StreamProvider.autoDispose<List<UserList>>((ref) {
-  final authState = ref.watch(authNotifierProvider);
-  return authState.when(
-    data: (state) {
-      if (state.status == AuthStatus.authenticated && state.user != null) {
-        return ref.watch(listRepositoryProvider).watchUserLists(state.user!.id);
-      }
-      return Stream.value([]);
-    },
-    loading: () => Stream.value([]),
-    error: (_, __) => Stream.value([]),
-  );
+    StreamProvider.autoDispose<List<UserList>>((ref) async* {
+  final authState = await ref.watch(authNotifierProvider.future);
+
+  if (authState.status == AuthStatus.authenticated && authState.user != null) {
+    await for (final lists in ref
+        .watch(listManagerProvider)
+        .watchAuthenticatedUserLists(authState.user!.id)) {
+      yield lists;
+    }
+  } else {
+    yield [];
+  }
 });
 
-/// ユーザーのグループをリアルタイムで監視するStreamプロバイダー
-final userGroupsStreamProvider = StreamProvider.autoDispose<List<Group>>((ref) {
-  final authState = ref.watch(authNotifierProvider);
-  return authState.when(
-    data: (state) {
-      if (state.status == AuthStatus.authenticated && state.user != null) {
-        return ref
-            .watch(groupRepositoryProvider)
-            .watchUserGroups(state.user!.id);
-      }
-      return Stream.value([]);
-    },
-    loading: () => Stream.value([]),
-    error: (_, __) => Stream.value([]),
-  );
-});
-
-/// ユーザーの公開プロフィールをリアルタイムで監視するStreamプロバイダー
+/// 認証済みユーザーのグループを監視するStreamプロバイダー
 ///
-/// [userId] 監視対象のユーザーID
-final publicUserStreamProvider =
-    StreamProvider.family<PublicUserModel?, String>((ref, userId) {
-  final userRepository = ref.watch(userRepositoryProvider);
-  return userRepository.watchPublicProfile(userId);
-});
+/// 認証状態に基づいて適切にグループを提供します。
+/// Application層のビジネスロジックに依存しません。
+final userGroupsStreamProvider =
+    StreamProvider.autoDispose<List<Group>>((ref) async* {
+  final authState = await ref.watch(authNotifierProvider.future);
 
-/// ユーザーの非公開プロフィールをリアルタイムで監視するStreamプロバイダー
-///
-/// [userId] 監視対象のユーザーID
-final privateUserStreamProvider =
-    StreamProvider.family<PrivateUserModel?, String>((ref, userId) {
-  final userRepository = ref.watch(userRepositoryProvider);
-  return userRepository.watchPrivateProfile(userId);
+  if (authState.status == AuthStatus.authenticated && authState.user != null) {
+    await for (final groups in ref
+        .watch(groupManagerProvider)
+        .watchUserGroups(authState.user!.id)) {
+      yield groups;
+    }
+  } else {
+    yield [];
+  }
 });
 
 /// 統合されたユーザー情報をリアルタイムで監視するStreamプロバイダー
 ///
 /// [userId] 監視対象のユーザーID
 ///
-/// 公開プロフィールと非公開プロフィールを統合して[UserModel]として提供します。
+/// UserManagerを使用して統合されたユーザー情報を提供します。
 final userStreamProvider =
-    StreamProvider.family<UserModel?, String>((ref, userId) async* {
-  final publicProfileAsync = ref.watch(publicUserStreamProvider(userId));
-  final privateProfileAsync = ref.watch(privateUserStreamProvider(userId));
-
-  if (publicProfileAsync is AsyncData && privateProfileAsync is AsyncData) {
-    final publicProfile = publicProfileAsync.value;
-    final privateProfile = privateProfileAsync.value;
-
-    if (publicProfile != null && privateProfile != null) {
-      yield UserModel(
-        publicProfile: publicProfile,
-        privateProfile: privateProfile,
-      );
-    } else {
-      yield null;
-    }
-  } else {
-    yield null;
-  }
+    StreamProvider.family<UserModel?, String>((ref, userId) {
+  return ref.watch(userManagerProvider).watchIntegratedUser(userId);
 });
 
 /// 特定のリストをリアルタイムで監視するStreamプロバイダー
@@ -182,66 +153,40 @@ final userStreamProvider =
 /// [listId] 監視対象のリストID
 final listStreamProvider =
     StreamProvider.family<UserList?, String>((ref, listId) {
-  final listRepository = ref.watch(listRepositoryProvider);
-  return listRepository.watchList(listId);
+  return ref.watch(listManagerProvider).watchList(listId);
 });
 
-/// ユーザーのフレンド一覧をリアルタイムで監視するStreamプロバイダー
+/// 認証済みユーザーのフレンド一覧を監視するStreamプロバイダー
+///
+/// UserManagerを使用してフレンド情報を提供します。
 final userFriendsStreamProvider =
-    StreamProvider.autoDispose<List<PublicUserModel>>((ref) {
-  final authState = ref.watch(authNotifierProvider);
+    StreamProvider.autoDispose<List<PublicUserModel>>((ref) async* {
+  final authState = await ref.watch(authNotifierProvider.future);
 
-  return authState.when(
-    data: (state) {
-      if (state.status != AuthStatus.authenticated || state.user == null) {
-        return Stream.value([]);
-      }
-
-      final userRepository = ref.watch(userRepositoryProvider);
-
-      // ユーザー情報のストリームを監視
-      return userRepository.watchUser(state.user!.id).asyncMap((user) async {
-        if (user == null || user.friends.isEmpty) {
-          return [];
-        }
-
-        // 一度に全フレンドのプロフィールを取得
-        final profiles = await userRepository.getPublicProfiles(user.friends);
-        return profiles;
-      });
-    },
-    loading: () => Stream.value([]),
-    error: (_, __) => Stream.value([]),
-  );
+  if (authState.status == AuthStatus.authenticated && authState.user != null) {
+    await for (final friends in ref
+        .watch(userManagerProvider)
+        .watchAuthenticatedUserFriends(authState.user!.id)) {
+      yield friends;
+    }
+  } else {
+    yield [];
+  }
 });
 
-/// ユーザーのフレンド一覧を取得するFutureプロバイダー
+/// 認証済みユーザーのフレンド一覧を取得するFutureプロバイダー
 /// アプリ起動時、承認時、手動更新時にのみデータを再取得する
 final userFriendsProvider =
     FutureProvider.autoDispose<List<PublicUserModel>>((ref) async {
-  final authState = ref.watch(authNotifierProvider);
+  final authState = await ref.watch(authNotifierProvider.future);
 
-  return authState.when(
-    data: (state) async {
-      if (state.status != AuthStatus.authenticated || state.user == null) {
-        return [];
-      }
-
-      final userRepository = ref.watch(userRepositoryProvider);
-
-      // 現在のユーザー情報を取得
-      final user = await userRepository.getUser(state.user!.id);
-      if (user == null || user.friends.isEmpty) {
-        return [];
-      }
-
-      // 一度に全フレンドのプロフィールを取得
-      final profiles = await userRepository.getPublicProfiles(user.friends);
-      return profiles;
-    },
-    loading: () => [],
-    error: (_, __) => [],
-  );
+  if (authState.status == AuthStatus.authenticated && authState.user != null) {
+    return await ref
+        .watch(userManagerProvider)
+        .getAuthenticatedUserFriends(authState.user!.id);
+  } else {
+    return [];
+  }
 });
 
 /// ユーザーのスケジュール一覧をリアルタイムで監視するStreamプロバイダー
