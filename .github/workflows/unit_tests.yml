@@ -25,6 +25,43 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Create dummy Firebase config files for CI
+        run: |
+          mkdir -p lib
+          cat > lib/firebase_options.dart << 'EOF'
+          import 'package:firebase_core/firebase_core.dart';
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform => const FirebaseOptions(
+              apiKey: 'dummy-api-key',
+              appId: 'dummy-app-id',
+              messagingSenderId: 'dummy-sender-id',
+              projectId: 'dummy-project-id',
+            );
+          }
+          EOF
+          cat > lib/firebase_options_dev.dart << 'EOF'
+          import 'package:firebase_core/firebase_core.dart';
+          class DevFirebaseOptions {
+            static FirebaseOptions get currentPlatform => const FirebaseOptions(
+              apiKey: 'dummy-api-key',
+              appId: 'dummy-app-id',
+              messagingSenderId: 'dummy-sender-id',
+              projectId: 'dummy-project-id',
+            );
+          }
+          EOF
+          cat > lib/firebase_options_prod.dart << 'EOF'
+          import 'package:firebase_core/firebase_core.dart';
+          class ProdFirebaseOptions {
+            static FirebaseOptions get currentPlatform => const FirebaseOptions(
+              apiKey: 'dummy-api-key',
+              appId: 'dummy-app-id',
+              messagingSenderId: 'dummy-sender-id',
+              projectId: 'dummy-project-id',
+            );
+          }
+          EOF
+
       - name: Analyze project source (ignore Firebase missing files)
         run: flutter analyze --no-fatal-infos 2>&1 | grep -v "firebase_options" | grep -v "Target of URI doesn't exist" | grep -v "Undefined name.*FirebaseOptions" || echo "Analysis completed (Firebase errors ignored)"
 

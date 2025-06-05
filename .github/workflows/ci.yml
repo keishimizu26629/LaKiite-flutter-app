@@ -86,8 +86,72 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Create dummy Firebase config files for CI
+        run: |
+          mkdir -p lib
+          cat > lib/firebase_options.dart << 'EOF'
+          import 'package:firebase_core/firebase_core.dart';
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform => const FirebaseOptions(
+              apiKey: 'dummy-api-key',
+              appId: 'dummy-app-id',
+              messagingSenderId: 'dummy-sender-id',
+              projectId: 'dummy-project-id',
+            );
+          }
+          EOF
+          cat > lib/firebase_options_dev.dart << 'EOF'
+          import 'package:firebase_core/firebase_core.dart';
+          class DevFirebaseOptions {
+            static FirebaseOptions get currentPlatform => const FirebaseOptions(
+              apiKey: 'dummy-api-key',
+              appId: 'dummy-app-id',
+              messagingSenderId: 'dummy-sender-id',
+              projectId: 'dummy-project-id',
+            );
+          }
+          EOF
+          cat > lib/firebase_options_prod.dart << 'EOF'
+          import 'package:firebase_core/firebase_core.dart';
+          class ProdFirebaseOptions {
+            static FirebaseOptions get currentPlatform => const FirebaseOptions(
+              apiKey: 'dummy-api-key',
+              appId: 'dummy-app-id',
+              messagingSenderId: 'dummy-sender-id',
+              projectId: 'dummy-project-id',
+            );
+          }
+          EOF
+
       - name: Build Android APK
         run: flutter build apk --debug
+
+  # iOSビルド検証（オプション）
+  build_ios:
+    name: Build iOS (No Code Sign)
+    runs-on: macos-latest
+    needs: analyze
+    if: false # 通常は無効化、必要時にtrueに変更
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: "stable"
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate iOS configuration files
+        run: flutter build ios --config-only
+
+      - name: Build iOS (debug, no codesign)
+        run: flutter build ios --debug --no-codesign
 
   # 結果の集約
   ci_success:
