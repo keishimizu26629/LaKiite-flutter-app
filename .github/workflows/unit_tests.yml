@@ -18,7 +18,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.19.0"
+          flutter-version: "3.19.3"
           channel: "stable"
           cache: true
 
@@ -35,7 +35,7 @@ jobs:
         run: dart format --output=none --set-exit-if-changed .
 
       - name: Run unit tests
-        run: flutter test --coverage
+        run: flutter test --coverage --dart-define=FLUTTER_TEST=true
 
       - name: Generate coverage report
         run: |
@@ -44,14 +44,15 @@ jobs:
           genhtml coverage/lcov.info -o coverage/html
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           files: ./coverage/lcov.info
           fail_ci_if_error: false
           verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage/html/
@@ -67,7 +68,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.19.0"
+          flutter-version: "3.19.3"
           channel: "stable"
           cache: true
 
@@ -91,7 +92,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.19.0"
+          flutter-version: "3.19.3"
           channel: "stable"
           cache: true
 
