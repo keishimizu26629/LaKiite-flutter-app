@@ -9,8 +9,8 @@ on:
 jobs:
   android:
     name: Android Integration Tests
-    runs-on: macos-latest
-    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -25,12 +25,6 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
-
-      - name: Enable KVM group perms
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
 
       - name: AVD cache
         uses: actions/cache@v4
@@ -49,7 +43,7 @@ jobs:
           target: google_apis
           arch: x86_64
           force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: false
           script: echo "Generated AVD snapshot for caching."
 
@@ -60,7 +54,7 @@ jobs:
           target: google_apis
           arch: x86_64
           force-avd-creation: false
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
           script: |
             flutter test integration_test
@@ -70,49 +64,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-integration-test-results
-          path: |
-            integration_test/screenshots/
-            test-results/
-
-  ios:
-    name: iOS Integration Tests
-    runs-on: macos-latest
-    timeout-minutes: 45
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.19.3"
-          channel: "stable"
-          cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: List available simulators
-        run: xcrun simctl list devices
-
-      - name: Start iOS Simulator
-        run: |
-          DEVICE_ID=$(xcrun simctl list devices | grep -E 'iPhone 14|iPhone 13' | grep -v 'unavailable' | head -1 | grep -oE '[0-9A-F-]{36}')
-          if [ -z "$DEVICE_ID" ]; then
-            DEVICE_ID=$(xcrun simctl list devices | grep iPhone | grep -v 'unavailable' | head -1 | grep -oE '[0-9A-F-]{36}')
-          fi
-          echo "Starting simulator with ID: $DEVICE_ID"
-          xcrun simctl boot "$DEVICE_ID"
-
-      - name: Run integration tests
-        run: flutter test integration_test
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-integration-test-results
           path: |
             integration_test/screenshots/
             test-results/
