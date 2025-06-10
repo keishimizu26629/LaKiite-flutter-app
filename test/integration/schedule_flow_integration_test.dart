@@ -10,7 +10,17 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('スケジュール管理フロー統合テスト', () {
+    setUpAll(() async {
+      // 統合テスト用の初期設定
+      TestProviders.reset();
+    });
+
     setUp(() {
+      TestProviders.reset();
+    });
+
+    tearDownAll(() async {
+      // 統合テスト後のクリーンアップ
       TestProviders.reset();
     });
 
