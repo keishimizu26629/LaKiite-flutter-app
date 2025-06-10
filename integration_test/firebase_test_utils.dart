@@ -54,7 +54,8 @@ class FirebaseTestUtils {
   // テスト用のProviderContainerを取得
   static ProviderContainer get container {
     if (_container == null) {
-      throw StateError('Provider container not initialized. Call setupFirebaseForTesting() first.');
+      throw StateError(
+          'Provider container not initialized. Call setupFirebaseForTesting() first.');
     }
     return _container!;
   }

@@ -934,12 +934,9 @@ class CalendarPageContent extends HookConsumerWidget {
     final schedules = useMemoized(() {
       // 初期表示時やキャッシュが空の場合は、scheduleStateを直接使用
       if (cachedSchedules.isEmpty || !isOptimized) {
-        AppLogger.debug('カレンダーページ: 直接scheduleStateを使用');
         return scheduleState.when(
           data: (state) => state.maybeMap(
             loaded: (loaded) {
-              AppLogger.debug(
-                  'カレンダーページ: スケジュールデータ取得成功 - ${loaded.schedules.length}件');
               // スライド中でなければキャッシュを更新
               if (!_isSliding) {
                 Future.microtask(() {
@@ -956,7 +953,6 @@ class CalendarPageContent extends HookConsumerWidget {
                         },
                       ),
                     };
-                    AppLogger.debug('カレンダーページ: キャッシュ更新完了');
                   } catch (e) {
                     AppLogger.error('キャッシュ更新エラー: $e');
                   }
@@ -965,16 +961,13 @@ class CalendarPageContent extends HookConsumerWidget {
               return loaded.schedules;
             },
             orElse: () {
-              AppLogger.debug('カレンダーページ: スケジュールデータなし（orElse）');
               return <Schedule>[];
             },
           ),
           loading: () {
-            AppLogger.debug('カレンダーページ: スケジュールデータ読み込み中');
             return <Schedule>[];
           },
           error: (_, __) {
-            AppLogger.debug('カレンダーページ: スケジュールデータ取得エラー');
             return <Schedule>[];
           },
         );

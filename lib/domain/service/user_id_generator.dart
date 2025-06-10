@@ -13,7 +13,8 @@ import '../value/user_id.dart';
 class UserIdGenerator {
   /// ID生成に使用する文字セット
   /// 英大文字、英小文字、数字を含みます
-  static const _chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  static const _chars =
+      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
   /// セキュアな乱数生成器
   static final _random = Random.secure();
