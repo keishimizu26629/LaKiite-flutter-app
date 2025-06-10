@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lakiite/main.dart';
 import 'package:lakiite/config/app_config.dart';
 
@@ -10,10 +11,32 @@ class TestUtils {
     required Widget child,
     List<Override> overrides = const [],
   }) {
+    // テスト用のGoRouterを作成
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => child,
+        ),
+        GoRoute(
+          path: '/signup',
+          builder: (context, state) => const Scaffold(
+            body: Center(child: Text('サインアップページ')),
+          ),
+        ),
+        GoRoute(
+          path: '/main',
+          builder: (context, state) => const Scaffold(
+            body: Center(child: Text('メインページ')),
+          ),
+        ),
+      ],
+    );
+
     return ProviderScope(
       overrides: overrides,
-      child: MaterialApp(
-        home: child,
+      child: MaterialApp.router(
+        routerConfig: router,
       ),
     );
   }

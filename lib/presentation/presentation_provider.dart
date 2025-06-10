@@ -31,6 +31,8 @@ import 'package:lakiite/infrastructure/repository/reaction_repository_impl.dart'
 
 export 'package:lakiite/application/notification/notification_notifier.dart'
     show currentUserIdProvider;
+export 'package:lakiite/application/auth/auth_notifier.dart'
+    show authRepositoryProvider;
 
 /// Firebase認証インスタンスを提供するプロバイダー
 final firebaseAuthProvider = Provider((ref) => FirebaseAuth.instance);
