@@ -18,6 +18,18 @@ class AppLogger {
   // 常にログを表示するかどうか
   static const bool _alwaysShowLogs = true;
 
+  // テスト環境かどうかを判定
+  static bool get _isTestEnvironment {
+    try {
+      // Flutter Test環境では特定の条件をチェック
+      return const bool.fromEnvironment('flutter.inspector.structuredErrors') ||
+          const bool.fromEnvironment('FLUTTER_TEST') ||
+          StackTrace.current.toString().contains('flutter_test');
+    } catch (e) {
+      return false;
+    }
+  }
+
   // スタックトレースからファイルパスを取得
   static String _getFilePath() {
     try {
@@ -43,6 +55,9 @@ class AppLogger {
   }
 
   static void debug(dynamic message) {
+    // テスト環境ではdebugログを出力しない
+    if (_isTestEnvironment) return;
+
     final filePath = _getFilePath();
     if (_alwaysShowLogs || _enabledPaths.contains(filePath)) {
       // ignore: avoid_print
@@ -52,6 +67,9 @@ class AppLogger {
   }
 
   static void info(dynamic message) {
+    // テスト環境ではinfoログを出力しない
+    if (_isTestEnvironment) return;
+
     final filePath = _getFilePath();
     if (_alwaysShowLogs || _enabledPaths.contains(filePath)) {
       // ignore: avoid_print

@@ -19,12 +19,13 @@ class DateFormatter {
     try {
       final now = DateTime.now();
 
-      // デバッグ情報
-      if (kDebugMode) {
-        AppLogger.debug('処理対象の日付: $date');
-        AppLogger.debug('現在の日付: $now');
-        AppLogger.debug('差: ${now.difference(date).inSeconds}秒');
-      }
+      // デバッグ情報（テスト時には出力を制限）
+      // テスト時の大量ログを防ぐため一時的にコメントアウト
+      // if (kDebugMode && !_isInTest()) {
+      //   AppLogger.debug('処理対象の日付: $date');
+      //   AppLogger.debug('現在の日付: $now');
+      //   AppLogger.debug('差: ${now.difference(date).inSeconds}秒');
+      // }
 
       // UTCとローカルタイムの調整（必要に応じて）
       DateTime adjustedDate = date;

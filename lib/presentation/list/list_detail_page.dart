@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entity/list.dart';
+import '../../domain/entity/user.dart';
 import '../presentation_provider.dart';
 import 'list_member_invite_page.dart';
 import 'list_edit_page.dart';
@@ -65,7 +66,7 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                       try {
                         await ref
                             .read(listNotifierProvider.notifier)
-                            .deleteList(list.id, list.ownerId);
+                            .deleteList(list.id);
                         if (mounted) {
                           navigator.pop();
                         }
@@ -102,10 +103,10 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                       // リストアイコン
                       CircleAvatar(
                         radius: 40,
-                        backgroundImage: list.iconUrl != null
-                            ? NetworkImage(list.iconUrl!)
+                        backgroundImage: widget.list.iconUrl != null
+                            ? NetworkImage(widget.list.iconUrl!)
                             : null,
-                        child: list.iconUrl == null
+                        child: widget.list.iconUrl == null
                             ? const Icon(Icons.list, size: 40)
                             : null,
                       ),
@@ -115,7 +116,7 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              list.listName,
+                              widget.list.listName,
                               style: theme.textTheme.headlineSmall,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -125,7 +126,7 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                        ListEditPage(list: list),
+                                        ListEditPage(list: widget.list),
                                   ),
                                 );
                               },
@@ -139,11 +140,11 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                   ),
                 ),
                 // リストの説明
-                if (list.description != null)
+                if (widget.list.description != null)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Text(
-                      list.description!,
+                      widget.list.description!,
                       style: theme.textTheme.bodyLarge,
                     ),
                   ),
@@ -158,14 +159,14 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                         style: theme.textTheme.titleLarge,
                       ),
                       const SizedBox(width: 8),
-                      Text('${list.memberIds.length}人'),
+                      Text('${widget.list.memberIds.length}人'),
                       const Spacer(),
                       OutlinedButton.icon(
                         onPressed: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) =>
-                                  ListMemberInvitePage(list: list),
+                                  ListMemberInvitePage(list: widget.list),
                             ),
                           );
                         },
@@ -181,56 +182,68 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  itemCount: list.memberIds.length,
+                  itemCount: widget.list.memberIds.length,
                   itemBuilder: (context, index) {
-                    final memberId = list.memberIds[index];
-                    return ref.watch(publicUserStreamProvider(memberId)).when(
-                          data: (member) {
-                            if (member == null) {
-                              return const SizedBox.shrink();
-                            }
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundImage: member.iconUrl != null
-                                      ? NetworkImage(member.iconUrl!)
-                                      : null,
-                                  child: member.iconUrl == null
-                                      ? const Icon(Icons.person)
-                                      : null,
-                                ),
-                                title: Text(member.displayName),
-                                subtitle: member.shortBio != null &&
-                                        member.shortBio!.isNotEmpty
-                                    ? Text(
-                                        member.shortBio!,
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 14,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      )
-                                    : null,
-                              ),
-                            );
-                          },
-                          loading: () => const Card(
+                    final memberId = widget.list.memberIds[index];
+                    return FutureBuilder<PublicUserModel?>(
+                      future: ref
+                          .read(userRepositoryProvider)
+                          .getFriendPublicProfile(memberId),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Card(
                             margin: EdgeInsets.only(bottom: 8),
                             child: ListTile(
                               leading: CircularProgressIndicator(),
                               title: Text('読み込み中...'),
                             ),
-                          ),
-                          error: (error, _) => Card(
+                          );
+                        }
+
+                        if (snapshot.hasError) {
+                          return Card(
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
                               leading: const Icon(Icons.error),
-                              title: Text('エラーが発生しました: $error'),
+                              title: Text('エラーが発生しました: ${snapshot.error}'),
                             ),
+                          );
+                        }
+
+                        final member = snapshot.data;
+                        if (member == null) {
+                          return const SizedBox.shrink();
+                        }
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage: member.iconUrl != null
+                                  ? NetworkImage(member.iconUrl!)
+                                  : null,
+                              child: member.iconUrl == null
+                                  ? const Icon(Icons.person)
+                                  : null,
+                            ),
+                            title: Text(member.displayName),
+                            subtitle: member.shortBio != null &&
+                                    member.shortBio!.isNotEmpty
+                                ? Text(
+                                    member.shortBio!,
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  )
+                                : null,
                           ),
                         );
+                      },
+                    );
                   },
                 ),
                 const SizedBox(height: 16),

@@ -42,5 +42,6 @@ class UserList with _$UserList {
   /// [json] リスト情報を含むJSON Map
   ///
   /// 返値: JSONから生成された[UserList]インスタンス
-  factory UserList.fromJson(Map<String, dynamic> json) => _$UserListFromJson(json);
+  factory UserList.fromJson(Map<String, dynamic> json) =>
+      _$UserListFromJson(json);
 }

@@ -34,7 +34,6 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
         }
 
         final friendsAsync = ref.watch(userFriendsStreamProvider);
-        final currentUser = state.user;
 
         return Scaffold(
           appBar: AppBar(
@@ -42,39 +41,28 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
           ),
           body: friendsAsync.when(
             data: (friends) {
-              // 現在のユーザーのプライベートプロフィールを取得
-              final privateProfileAsync =
-                  ref.watch(privateUserStreamProvider(currentUser!.id));
+              return ListView.builder(
+                itemCount: friends.length,
+                itemBuilder: (context, index) {
+                  final friend = friends[index];
+                  final friendId = friend.id;
+                  final isSelected = selectedFriends.contains(friendId);
+                  final isInList = widget.list.memberIds.contains(friendId);
 
-              return privateProfileAsync.when(
-                data: (privateProfile) {
-                  if (privateProfile == null) {
-                    return const Center(child: Text('ユーザー情報の取得に失敗しました'));
-                  }
-
-                  return ListView.builder(
-                    itemCount: friends.length,
-                    itemBuilder: (context, index) {
-                      final friend = friends[index];
-                      final friendId = friend.id;
-                      final isSelected = selectedFriends.contains(friendId);
-                      final isInList = widget.list.memberIds.contains(friendId);
-
-                      return ListTile(
-                        enabled: !isInList,
-                        tileColor:
-                            isInList ? Colors.grey.withOpacity(0.1) : null,
-                        leading: CircleAvatar(
-                          backgroundImage: friend.iconUrl != null
-                              ? NetworkImage(friend.iconUrl!)
-                              : null,
-                          child: friend.iconUrl == null
-                              ? const Icon(Icons.person)
-                              : null,
-                        ),
-                        title: Text(friend.displayName),
-                        subtitle: friend.shortBio != null &&
-                                friend.shortBio!.isNotEmpty
+                  return ListTile(
+                    enabled: !isInList,
+                    tileColor: isInList ? Colors.grey.withOpacity(0.1) : null,
+                    leading: CircleAvatar(
+                      backgroundImage: friend.iconUrl != null
+                          ? NetworkImage(friend.iconUrl!)
+                          : null,
+                      child: friend.iconUrl == null
+                          ? const Icon(Icons.person)
+                          : null,
+                    ),
+                    title: Text(friend.displayName),
+                    subtitle:
+                        friend.shortBio != null && friend.shortBio!.isNotEmpty
                             ? Text(
                                 friend.shortBio!,
                                 style: TextStyle(
@@ -85,39 +73,33 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
                                 overflow: TextOverflow.ellipsis,
                               )
                             : null,
-                        trailing: Checkbox(
-                          value: isSelected,
-                          onChanged: isInList
-                              ? null
-                              : (bool? value) {
-                                  setState(() {
-                                    if (value == true) {
-                                      selectedFriends.add(friendId);
-                                    } else {
-                                      selectedFriends.remove(friendId);
-                                    }
-                                  });
-                                },
-                        ),
-                        onTap: isInList
-                            ? null
-                            : () {
-                                setState(() {
-                                  if (selectedFriends.contains(friendId)) {
-                                    selectedFriends.remove(friendId);
-                                  } else {
-                                    selectedFriends.add(friendId);
-                                  }
-                                });
-                              },
-                      );
-                    },
+                    trailing: Checkbox(
+                      value: isSelected,
+                      onChanged: isInList
+                          ? null
+                          : (bool? value) {
+                              setState(() {
+                                if (value == true) {
+                                  selectedFriends.add(friendId);
+                                } else {
+                                  selectedFriends.remove(friendId);
+                                }
+                              });
+                            },
+                    ),
+                    onTap: isInList
+                        ? null
+                        : () {
+                            setState(() {
+                              if (selectedFriends.contains(friendId)) {
+                                selectedFriends.remove(friendId);
+                              } else {
+                                selectedFriends.add(friendId);
+                              }
+                            });
+                          },
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => Center(
-                  child: Text('エラーが発生しました: $error'),
-                ),
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -142,13 +124,6 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
                                 .read(listNotifierProvider.notifier)
                                 .addMember(
                                   widget.list.id,
-                                  friendId,
-                                  widget.list.ownerId,
-                                );
-
-                            // ユーザーのプライベートプロフィールのlistsフィールドを更新
-                            await ref.read(userRepositoryProvider).addToList(
-                                  currentUser!.id,
                                   friendId,
                                 );
                           }
