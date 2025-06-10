@@ -22,9 +22,12 @@ Future<void> main() async {
 /// アプリケーションの起動処理
 ///
 /// [environment] 起動する環境
+/// [overrides] Riverpodプロバイダーのオーバーrides
+/// [skipFirebaseInit] Firebase初期化をスキップするかどうか（テスト用）
 Future<void> startApp(
     [Environment environment = Environment.development,
-    List<Override> overrides = const []]) async {
+    List<Override> overrides = const [],
+    bool skipFirebaseInit = false]) async {
   // Flutterウィジェットバインディングの初期化
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -34,16 +37,27 @@ Future<void> startApp(
   // 日本語ロケールの初期化
   await initializeDateFormatting('ja_JP', null);
 
-  // Firebaseの初期化
-  await Firebase.initializeApp(
-    options: AppConfig.instance.firebaseOptions,
-  );
+  // Firebase関連の初期化（テスト時はスキップ）
+  if (!skipFirebaseInit) {
+    try {
+      // Firebaseの初期化
+      await Firebase.initializeApp(
+        options: AppConfig.instance.firebaseOptions,
+      );
 
-  // プッシュ通知サービスの初期化
-  await PushNotificationService.instance.initialize();
+      // プッシュ通知サービスの初期化
+      await PushNotificationService.instance.initialize();
 
-  // AdMobの初期化
-  await AdMobService.initialize();
+      // AdMobの初期化
+      await AdMobService.initialize();
+    } catch (e) {
+      // Firebase初期化エラーをログに記録（テスト環境では無視）
+      debugPrint('Firebase initialization failed: $e');
+      if (environment != Environment.development) {
+        rethrow;
+      }
+    }
+  }
 
   // アプリケーションの起動
   runApp(

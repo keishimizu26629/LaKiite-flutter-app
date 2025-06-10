@@ -103,11 +103,12 @@ class TestUtils {
   static Future<void> performSignUp({
     required WidgetTester tester,
     String name = 'テストユーザー',
+    String displayName = 'テストニックネーム',
     String email = 'test@example.com',
     String password = 'password123',
   }) async {
-    // 名前入力
-    final nameField = find.widgetWithText(TextField, '名前');
+    // 名前入力（実際のラベルに合わせて修正）
+    final nameField = find.widgetWithText(TextField, '名前(フルネーム)');
     if (nameField.evaluate().isNotEmpty) {
       await tester.enterText(nameField, name);
     } else {
@@ -115,6 +116,12 @@ class TestUtils {
       if (nameFieldByKey.evaluate().isNotEmpty) {
         await tester.enterText(nameFieldByKey, name);
       }
+    }
+
+    // 表示名入力（実際のラベルに合わせて修正）
+    final displayNameField = find.widgetWithText(TextField, '表示名(ニックネーム)');
+    if (displayNameField.evaluate().isNotEmpty) {
+      await tester.enterText(displayNameField, displayName);
     }
 
     // メールアドレス入力
@@ -141,8 +148,8 @@ class TestUtils {
 
     await tester.pumpAndSettle();
 
-    // サインアップボタンをタップ
-    final signUpButton = find.text('登録');
+    // サインアップボタンをタップ（実際のボタンテキストに合わせて修正）
+    final signUpButton = find.text('新規登録');
     if (signUpButton.evaluate().isNotEmpty) {
       await tester.tap(signUpButton);
     } else {
@@ -160,33 +167,44 @@ class TestUtils {
     required WidgetTester tester,
     String title = 'テストスケジュール',
     String description = 'テスト用の説明',
+    String location = '未定',
   }) async {
-    // スケジュール作成ボタンをタップ
-    final createButton = find.byIcon(Icons.add);
-    if (createButton.evaluate().isNotEmpty) {
-      await tester.tap(createButton);
-      await tester.pumpAndSettle();
-    }
-
     // タイトル入力
     final titleField = find.widgetWithText(TextField, 'タイトル');
     if (titleField.evaluate().isNotEmpty) {
       await tester.enterText(titleField, title);
+      await tester.pumpAndSettle();
     }
 
     // 説明入力
     final descriptionField = find.widgetWithText(TextField, '説明');
     if (descriptionField.evaluate().isNotEmpty) {
       await tester.enterText(descriptionField, description);
+      await tester.pumpAndSettle();
     }
 
-    await tester.pumpAndSettle();
+    // 場所入力
+    final locationField = find.widgetWithText(TextField, '場所');
+    if (locationField.evaluate().isNotEmpty) {
+      await tester.enterText(locationField, location);
+      await tester.pumpAndSettle();
+    }
 
-    // 保存ボタンをタップ
-    final saveButton = find.text('保存');
+    // 保存ボタンをタップ（実際のボタンは画面下部にあるElevatedButton）
+    final saveButton = find.descendant(
+      of: find.byType(ElevatedButton),
+      matching: find.text('保存'),
+    );
     if (saveButton.evaluate().isNotEmpty) {
       await tester.tap(saveButton);
       await tester.pumpAndSettle();
+    } else {
+      // フローティングアクションボタンの場合もある
+      final fabSave = find.byType(FloatingActionButton);
+      if (fabSave.evaluate().isNotEmpty) {
+        await tester.tap(fabSave);
+        await tester.pumpAndSettle();
+      }
     }
   }
 
