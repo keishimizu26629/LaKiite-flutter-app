@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "472076922540",
-    "project_id": "tarakite-flutter-app-dev",
-    "storage_bucket": "tarakite-flutter-app-dev.firebasestorage.app"
+    "project_number": "3311967889",
+    "project_id": "lakiite-flutter-app-dev",
+    "storage_bucket": "lakiite-flutter-app-dev.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:472076922540:android:f4b8b7b583f18ecdc87909",
+        "mobilesdk_app_id": "1:3311967889:android:6e3182d1b0e0c49038a930",
         "android_client_info": {
-          "package_name": "com.example.tarakite"
+          "package_name": "com.inoworl.lakiite"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBwFaBJx7sjU809f4FEECTxj9x2Q3qTeks"
+          "current_key": "AIzaSyCMXO18k3ZOYpQPdRB6w-3iZ0Rws0wW5Sg"
         }
       ],
       "services": {
@@ -26,15 +26,15 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:472076922540:android:6a778759d8c9f1cac87909",
+        "mobilesdk_app_id": "1:3311967889:android:70d7247f19e5f65438a930",
         "android_client_info": {
-          "package_name": "com.inoworl.lakiite"
+          "package_name": "com.inoworl.lakiite.dev"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBwFaBJx7sjU809f4FEECTxj9x2Q3qTeks"
+          "current_key": "AIzaSyCMXO18k3ZOYpQPdRB6w-3iZ0Rws0wW5Sg"
         }
       ],
       "services": {
