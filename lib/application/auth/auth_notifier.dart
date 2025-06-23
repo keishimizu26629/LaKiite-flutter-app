@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/interfaces/i_auth_repository.dart';
+import '../../domain/entity/user.dart';
 import '../../infrastructure/auth_repository.dart';
 import '../../infrastructure/user_fcm_token_service.dart';
 import '../../infrastructure/user_repository.dart';
@@ -114,20 +115,33 @@ class AuthNotifier extends _$AuthNotifier {
   /// - [email] 登録するメールアドレス
   /// - [password] 設定するパスワード
   /// - [name] ユーザー名
+  /// - [displayName] 表示名（省略時はnameを使用）
   ///
   /// 戻り値:
   /// - 登録成功時は[AuthState.authenticated]
   /// - 失敗時は[AuthState.unauthenticated]
-  Future<void> signUp(String email, String password, String name) async {
+  Future<void> signUp(String email, String password, String name,
+      {String? displayName}) async {
     // ローディング状態に設定
     state = const AsyncLoading();
 
     // ユーザー登録処理を実行
     state = await AsyncValue.guard(() async {
+      // AuthRepositoryは従来通りnameのみを受け取るため、
+      // displayNameの処理は後でupdateProfileで対応する
       final user = await _authRepository.signUp(email, password, name);
-      // 登録結果に応じて状態を更新
+
       if (user != null) {
-        AppLogger.debug('サインアップ成功: ユーザーID=${user.id}');
+        // displayNameが指定されている場合はプロフィールを更新
+        UserModel finalUser = user;
+        if (displayName != null &&
+            displayName.isNotEmpty &&
+            displayName != name) {
+          finalUser = user.updateProfile(displayName: displayName);
+          await ref.read(userRepositoryProvider).updateUser(finalUser);
+        }
+
+        AppLogger.debug('サインアップ成功: ユーザーID=${finalUser.id}');
 
         // FCMトークンを更新（リトライ付き）
         try {
@@ -138,7 +152,7 @@ class AuthNotifier extends _$AuthNotifier {
           AppLogger.error('サインアップ: FCMトークン更新エラー - $e');
           // FCMトークンの更新に失敗してもサインアップは継続
         }
-        return AuthState.authenticated(user);
+        return AuthState.authenticated(finalUser);
       } else {
         AppLogger.warning('サインアップ失敗: ユーザーがnull');
         return AuthState.unauthenticated();
