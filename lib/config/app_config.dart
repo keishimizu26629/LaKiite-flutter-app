@@ -52,7 +52,7 @@ class AppConfig {
       options = DevFirebaseOptions.currentPlatform;
       environment = Environment.development;
       pushNotificationUrl =
-          'https://asia-northeast1-tarakite-flutter-app-dev.cloudfunctions.net/sendNotification';
+          'https://asia-northeast1-lakiite-flutter-app-dev.cloudfunctions.net/sendNotification';
     }
 
     _instance = AppConfig._(environment, options, appName, pushNotificationUrl);

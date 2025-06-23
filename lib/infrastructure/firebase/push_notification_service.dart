@@ -39,7 +39,8 @@ class PushNotificationService {
 
       // バックグラウンド処理の設定
       FirebaseMessaging.onBackgroundMessage(
-          _firebaseMessagingBackgroundHandler);
+        _firebaseMessagingBackgroundHandler,
+      );
 
       // iOSの場合、APNsトークンに接続
       await _messaging.setForegroundNotificationPresentationOptions(
@@ -147,6 +148,56 @@ class PushNotificationService {
       return token;
     } catch (e) {
       AppLogger.error('FCMトークンのリフレッシュエラー: $e');
+      return null;
+    }
+  }
+
+  /// FCMトークンを強制的に更新（削除→再取得）
+  /// registration-token-not-registered エラーの解決用
+  Future<String?> forceUpdateFCMToken() async {
+    try {
+      AppLogger.debug('FCMトークンの強制更新を開始');
+
+      // 既存トークンを削除
+      await _messaging.deleteToken();
+      AppLogger.debug('既存FCMトークンを削除しました');
+
+      // 短時間待機してからトークンを再取得
+      await Future.delayed(const Duration(seconds: 2));
+
+      // 新しいトークンを取得（リトライロジック付き）
+      String? newToken;
+      int retryCount = 0;
+      const maxRetries = 5;
+
+      while (newToken == null && retryCount < maxRetries) {
+        try {
+          newToken = await _messaging.getToken();
+          if (newToken != null) {
+            AppLogger.debug('新しいFCMトークンを取得: $newToken');
+          }
+        } catch (e) {
+          retryCount++;
+          AppLogger.error('FCMトークン強制更新エラー (試行 $retryCount/$maxRetries): $e');
+
+          if (retryCount < maxRetries) {
+            // 指数バックオフでリトライ
+            await Future.delayed(Duration(seconds: retryCount * 2));
+          }
+        }
+      }
+
+      if (newToken == null) {
+        AppLogger.error('FCMトークンの強制更新に失敗しました。最大リトライ回数に達しました。');
+      } else {
+        AppLogger.debug('FCMトークンの強制更新が完了しました');
+        // TODO: 新しいトークンをFirestoreに保存する処理を呼び出し
+        // await _userRepository.updateFCMToken(newToken);
+      }
+
+      return newToken;
+    } catch (e) {
+      AppLogger.error('FCMトークン強制更新エラー: $e');
       return null;
     }
   }

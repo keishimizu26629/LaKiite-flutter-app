@@ -24,10 +24,11 @@ Future<void> main() async {
 /// [environment] 起動する環境
 /// [overrides] Riverpodプロバイダーのオーバーrides
 /// [skipFirebaseInit] Firebase初期化をスキップするかどうか（テスト用）
-Future<void> startApp(
-    [Environment environment = Environment.development,
-    List<Override> overrides = const [],
-    bool skipFirebaseInit = false]) async {
+Future<void> startApp([
+  Environment environment = Environment.development,
+  List<Override> overrides = const [],
+  bool skipFirebaseInit = false,
+]) async {
   // Flutterウィジェットバインディングの初期化
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -41,12 +42,13 @@ Future<void> startApp(
   if (!skipFirebaseInit) {
     try {
       // Firebaseの初期化
-      await Firebase.initializeApp(
-        options: AppConfig.instance.firebaseOptions,
-      );
+      await Firebase.initializeApp(options: AppConfig.instance.firebaseOptions);
 
       // プッシュ通知サービスの初期化
       await PushNotificationService.instance.initialize();
+
+      // FCMトークンの強制更新（registration-token-not-registered エラー対策）
+      await PushNotificationService.instance.forceUpdateFCMToken();
 
       // AdMobの初期化
       await AdMobService.initialize();
@@ -63,12 +65,7 @@ Future<void> startApp(
   }
 
   // アプリケーションの起動
-  runApp(
-    ProviderScope(
-      overrides: overrides,
-      child: const MyApp(),
-    ),
-  );
+  runApp(ProviderScope(overrides: overrides, child: const MyApp()));
 }
 
 /// アプリケーションのルートウィジェット
