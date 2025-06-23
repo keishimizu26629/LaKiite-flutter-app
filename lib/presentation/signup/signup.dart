@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'signup_view_model.dart';
-import '../bottom_navigation/bottom_navigation.dart';
+import '../presentation_provider.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
   static const String path = '/signup';
@@ -36,17 +35,16 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     });
 
     try {
-      await ref.read(signupViewModelProvider).signUp(
-            email: _emailController.text,
-            password: _passwordController.text,
-            name: _nameController.text,
+      await ref.read(authNotifierProvider.notifier).signUp(
+            _emailController.text,
+            _passwordController.text,
+            _nameController.text,
             displayName: _displayNameController.text.isNotEmpty
                 ? _displayNameController.text
-                : _nameController.text,
+                : null,
           );
-      if (mounted) {
-        context.go(BottomNavigationPage.path);
-      }
+      // AuthNotifier経由で認証状態が更新されるため、
+      // GoRouterのリダイレクト処理により自動的にホーム画面に遷移する
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
