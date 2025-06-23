@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lakiite/application/list/list_state.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/service/service_provider.dart';
+import 'package:lakiite/presentation/presentation_provider.dart';
 
 part 'list_notifier.g.dart';
 
@@ -39,14 +40,19 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      final list = await ref.read(listManagerProvider).createList(
+      await ref.read(listManagerProvider).createList(
             userId: ownerId,
             listName: listName,
             memberIds: memberIds,
             description: description,
             iconUrl: iconUrl,
           );
-      state = AsyncValue.data(ListState.loaded([list]));
+
+      // リスト作成後、リスト一覧表示用のStreamProviderを無効化して再読み込みを促す
+      ref.invalidate(userListsStreamProvider);
+
+      // 成功状態に更新
+      state = const AsyncValue.data(ListState.initial());
     } catch (e) {
       state = AsyncValue.data(ListState.error(e.toString()));
     }
@@ -61,7 +67,11 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
     state = const AsyncValue.loading();
     try {
       await ref.read(listManagerProvider).updateList(list);
-      state = AsyncValue.data(ListState.loaded([list]));
+
+      // リスト更新後、リスト一覧表示用のStreamProviderを無効化して再読み込みを促す
+      ref.invalidate(userListsStreamProvider);
+
+      state = const AsyncValue.data(ListState.initial());
     } catch (e) {
       state = AsyncValue.data(ListState.error(e.toString()));
     }
@@ -76,7 +86,11 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
     state = const AsyncValue.loading();
     try {
       await ref.read(listManagerProvider).deleteList(listId);
-      state = const AsyncValue.data(ListState.loaded([]));
+
+      // リスト削除後、リスト一覧表示用のStreamProviderを無効化して再読み込みを促す
+      ref.invalidate(userListsStreamProvider);
+
+      state = const AsyncValue.data(ListState.initial());
     } catch (e) {
       state = AsyncValue.data(ListState.error(e.toString()));
     }
