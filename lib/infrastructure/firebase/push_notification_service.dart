@@ -27,6 +27,14 @@ class PushNotificationService {
     try {
       AppLogger.debug('プッシュ通知サービスの初期化を開始');
 
+      // テスト時は通知権限をリクエストしない
+      const bool kIsTest =
+          bool.fromEnvironment('TEST_MODE', defaultValue: false);
+      if (kIsTest) {
+        AppLogger.debug('テスト時のため通知権限のリクエストをスキップします');
+        return;
+      }
+
       // 通知権限をリクエスト
       final settings = await _messaging.requestPermission(
         alert: true,
