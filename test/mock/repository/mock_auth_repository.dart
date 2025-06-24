@@ -29,6 +29,19 @@ class MockAuthRepository extends BaseMock implements IAuthRepository {
     _currentUser = user;
   }
 
+  /// テスト用ユーザーを作成するファクトリーメソッド
+  static UserModel createTestUser({
+    String? id,
+    required String name,
+    required String displayName,
+  }) {
+    return UserModel.create(
+      id: id ?? 'test-user-${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      displayName: displayName,
+    );
+  }
+
   @override
   Stream<UserModel?> authStateChanges() {
     return Stream.value(_currentUser);
@@ -56,21 +69,16 @@ class MockAuthRepository extends BaseMock implements IAuthRepository {
 
     if (password.length < 6) {
       throw FirebaseAuthException(
-        code: 'weak-password',
-        message: 'パスワードが短すぎます',
+        code: 'wrong-password',
+        message: 'パスワードが間違っています',
       );
     }
 
-    // テスト用の有効な認証情報
-    if (email == BaseMock.testEmail && password == 'password123') {
-      _currentUser = BaseMock.createTestUser();
-      return _currentUser;
-    }
-
-    throw FirebaseAuthException(
-      code: 'user-not-found',
-      message: 'ユーザーが見つかりません',
+    _currentUser = BaseMock.createTestUser(
+      name: 'テストユーザー',
+      displayName: 'テスト表示名',
     );
+    return _currentUser;
   }
 
   @override
@@ -121,10 +129,14 @@ class MockAuthRepository extends BaseMock implements IAuthRepository {
   Future<bool> deleteAccount() async {
     await Future.delayed(const Duration(milliseconds: 400));
 
+    if (_currentUser == null) {
+      throw Exception('ユーザーがログインしていません');
+    }
+
     if (_shouldFailDelete) {
       throw FirebaseAuthException(
         code: 'requires-recent-login',
-        message: 'テスト用削除失敗',
+        message: 'セキュリティのため再認証が必要です。一度ログアウトして再度ログインした後に操作してください。',
       );
     }
 
