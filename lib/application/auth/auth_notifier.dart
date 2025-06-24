@@ -57,12 +57,17 @@ final authStateStreamProvider = StreamProvider.autoDispose<AuthState>((ref) {
 /// - [authRepositoryProvider] 認証操作用
 @riverpod
 class AuthNotifier extends _$AuthNotifier {
-  late final UserFcmTokenService _fcmTokenService;
+  UserFcmTokenService? _fcmTokenService;
 
   @override
   FutureOr<AuthState> build() async {
-    // FCMトークンサービスを初期化
-    _fcmTokenService = UserFcmTokenService();
+    // FCMトークンサービスを初期化（テスト環境での例外処理を含む）
+    try {
+      _fcmTokenService = UserFcmTokenService();
+    } catch (e) {
+      // テスト環境やFirebase未初期化の場合は警告ログを出して続行
+      AppLogger.warning('FCMトークンサービス初期化エラー（テスト環境の可能性）: $e');
+    }
 
     // authStateStreamProviderの最新の値を監視
     final authState = await ref.watch(authStateStreamProvider.future);
@@ -95,7 +100,7 @@ class AuthNotifier extends _$AuthNotifier {
         // FCMトークンを更新（リトライ付き）
         try {
           AppLogger.debug('サインイン: FCMトークン更新を開始');
-          await _fcmTokenService.updateCurrentUserFcmToken();
+          await _fcmTokenService!.updateCurrentUserFcmToken();
           AppLogger.debug('サインイン: FCMトークン更新完了');
         } catch (e) {
           AppLogger.error('サインイン: FCMトークン更新エラー - $e');
@@ -146,7 +151,7 @@ class AuthNotifier extends _$AuthNotifier {
         // FCMトークンを更新（リトライ付き）
         try {
           AppLogger.debug('サインアップ: FCMトークン更新を開始');
-          await _fcmTokenService.updateCurrentUserFcmToken();
+          await _fcmTokenService!.updateCurrentUserFcmToken();
           AppLogger.debug('サインアップ: FCMトークン更新完了');
         } catch (e) {
           AppLogger.error('サインアップ: FCMトークン更新エラー - $e');
@@ -220,11 +225,14 @@ class AuthNotifier extends _$AuthNotifier {
 
         // 4. FCMトークンを削除
         try {
-          await _fcmTokenService.removeFcmToken();
-          AppLogger.debug('FCMトークンを削除しました');
+          if (_fcmTokenService != null) {
+            await _fcmTokenService!.removeFcmToken();
+            AppLogger.debug('FCMトークンを削除しました');
+          } else {
+            AppLogger.debug('FCMトークンサービスが初期化されていないため、FCMトークン削除をスキップします');
+          }
         } catch (e) {
-          AppLogger.error('FCMトークン削除エラー（無視して続行）: $e');
-          // トークン削除に失敗しても処理を続行
+          AppLogger.warning('FCMトークン削除エラー（無視して続行）: $e');
         }
 
         // 5. Firestoreのキャッシュをクリア
@@ -393,8 +401,12 @@ class AuthNotifier extends _$AuthNotifier {
 
       // 4. FCMトークンを削除
       try {
-        await _fcmTokenService.removeFcmToken();
-        AppLogger.debug('FCMトークンを削除しました');
+        if (_fcmTokenService != null) {
+          await _fcmTokenService!.removeFcmToken();
+          AppLogger.debug('FCMトークンを削除しました');
+        } else {
+          AppLogger.debug('FCMトークンサービスが初期化されていないため、FCMトークン削除をスキップします');
+        }
       } catch (e) {
         AppLogger.warning('FCMトークン削除エラー（無視して続行）: $e');
       }

@@ -63,6 +63,12 @@ class AuthState with _$AuthState {
   factory AuthState.loading() => const AuthState(
         status: AuthStatus.loading,
       );
+
+  /// 認証済みかどうかを判定するゲッター
+  ///
+  /// 戻り値:
+  /// - [bool] 認証済みの場合はtrue、そうでなければfalse
+  bool get isAuthenticated => status == AuthStatus.authenticated;
 }
 
 /// 認証状態を表現する列挙型
