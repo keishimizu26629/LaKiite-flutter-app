@@ -16,6 +16,8 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen> {
+  bool _hasNavigated = false;
+
   @override
   void initState() {
     super.initState();
@@ -23,25 +25,68 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _initialize() async {
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
+    // 最低限のスプラッシュ表示時間を確保
+    await Future.delayed(const Duration(seconds: 1));
 
-    final authState = ref.read(authNotifierProvider);
-    authState.whenData((state) {
-      if (!mounted) return;
-      if (state.status == AuthStatus.authenticated) {
-        context.go(BottomNavigationPage.path);
-      } else {
-        context.go(LoginPage.path);
-      }
-    });
+    if (!mounted || _hasNavigated) return;
+
+    // 認証状態を確認して画面遷移
+    await _checkAuthAndNavigate();
+  }
+
+  Future<void> _checkAuthAndNavigate() async {
+    if (_hasNavigated) return;
+
+    try {
+      // 認証状態が確定するまで待機
+      final authStateAsync = ref.read(authNotifierProvider);
+
+      await authStateAsync.when(
+        data: (authState) async {
+          if (!mounted || _hasNavigated) return;
+
+          _hasNavigated = true;
+
+          if (authState.status == AuthStatus.authenticated) {
+            context.go(BottomNavigationPage.path);
+          } else {
+            context.go(LoginPage.path);
+          }
+        },
+        loading: () async {
+          // Loading状態の場合は少し待ってからリトライ
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (!mounted || _hasNavigated) return;
+          _checkAuthAndNavigate();
+        },
+        error: (error, stackTrace) async {
+          // エラーの場合はログイン画面に遷移
+          if (!mounted || _hasNavigated) return;
+
+          _hasNavigated = true;
+          context.go(LoginPage.path);
+        },
+      );
+    } catch (e) {
+      // エラーハンドリング
+      if (!mounted || _hasNavigated) return;
+
+      _hasNavigated = true;
+      context.go(LoginPage.path);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // 認証状態の変化を監視
     ref.listen<AsyncValue<AuthState>>(authNotifierProvider, (previous, next) {
+      if (_hasNavigated) return;
+
       next.whenData((state) {
-        if (!mounted) return;
+        if (!mounted || _hasNavigated) return;
+
+        _hasNavigated = true;
+
         if (state.status == AuthStatus.authenticated) {
           context.go(BottomNavigationPage.path);
         } else if (state.status == AuthStatus.unauthenticated) {
@@ -53,10 +98,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFffa600),
       body: Center(
-        child: Image.asset(
-          'assets/icon/icon.png',
-          width: 150,
-          height: 150,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/icon/icon.png',
+              width: 150,
+              height: 150,
+            ),
+            const SizedBox(height: 32),
+            const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ],
         ),
       ),
     );

@@ -6,7 +6,7 @@ part of 'auth_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$authNotifierHash() => r'a67ddbfa1dae98c5d3fa465674d32459dcbe22f3';
+String _$authNotifierHash() => r'6018ca1dee08180d0ae4716e7bcdd7682592eaf6';
 
 /// 認証状態を管理するNotifierクラス
 ///
@@ -15,6 +15,7 @@ String _$authNotifierHash() => r'a67ddbfa1dae98c5d3fa465674d32459dcbe22f3';
 /// - サインイン処理
 /// - サインアップ処理
 /// - サインアウト処理
+/// - アカウント削除処理
 ///
 /// 依存:
 /// - [authRepositoryProvider] 認証操作用

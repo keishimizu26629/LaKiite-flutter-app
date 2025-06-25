@@ -32,17 +32,23 @@ class MockAuthRepository implements IAuthRepository {
     _currentUser = null;
   }
 
+  @override
+  Future<bool> deleteAccount() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    if (_currentUser == null) {
+      throw Exception('ユーザーがログインしていません');
+    }
+
+    _currentUser = null;
+    return true;
+  }
+
   UserModel _createMockUser() {
     return UserModel.create(
       id: 'test-user-id',
       name: 'Test User',
       displayName: 'Test User Display Name',
     );
-  }
-
-  @override
-  Future<bool> deleteAccount() {
-    // TODO: implement deleteAccount
-    throw UnimplementedError();
   }
 }
