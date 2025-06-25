@@ -42,17 +42,46 @@ class AppConfig {
     // 環境変数からアプリ名を取得
     appName = const String.fromEnvironment('APP_NAME', defaultValue: 'LaKiite');
 
-    // FirebaseOptionsクラス名に基づいて適切なFirebaseOptionsを選択
-    if (firebaseOptionsClass == 'ProdFirebaseOptions') {
-      options = ProdFirebaseOptions.currentPlatform;
-      environment = Environment.production;
-      pushNotificationUrl =
-          'https://asia-northeast1-lakiite-flutter-app-prod.cloudfunctions.net/sendNotification';
-    } else {
-      options = DevFirebaseOptions.currentPlatform;
+    // テスト環境の場合はダミーのFirebaseOptionsを使用
+    const isTestEnvironment =
+        bool.fromEnvironment('FLUTTER_TEST', defaultValue: false);
+
+    if (isTestEnvironment) {
+      options = const FirebaseOptions(
+        apiKey: 'test-api-key',
+        appId: 'test-app-id',
+        messagingSenderId: 'test-sender-id',
+        projectId: 'test-project-id',
+        storageBucket: 'test-bucket',
+      );
       environment = Environment.development;
-      pushNotificationUrl =
-          'https://asia-northeast1-lakiite-flutter-app-dev.cloudfunctions.net/sendNotification';
+      pushNotificationUrl = 'https://test-functions.net/sendNotification';
+    } else {
+      // FirebaseOptionsクラス名に基づいて適切なFirebaseOptionsを選択
+      try {
+        if (firebaseOptionsClass == 'ProdFirebaseOptions') {
+          options = ProdFirebaseOptions.currentPlatform;
+          environment = Environment.production;
+          pushNotificationUrl =
+              'https://asia-northeast1-lakiite-flutter-app-prod.cloudfunctions.net/sendNotification';
+        } else {
+          options = DevFirebaseOptions.currentPlatform;
+          environment = Environment.development;
+          pushNotificationUrl =
+              'https://asia-northeast1-lakiite-flutter-app-dev.cloudfunctions.net/sendNotification';
+        }
+      } catch (e) {
+        // Firebase設定ファイルが見つからない場合のフォールバック
+        options = const FirebaseOptions(
+          apiKey: 'fallback-api-key',
+          appId: 'fallback-app-id',
+          messagingSenderId: 'fallback-sender-id',
+          projectId: 'fallback-project-id',
+          storageBucket: 'fallback-bucket',
+        );
+        environment = Environment.development;
+        pushNotificationUrl = 'https://fallback-functions.net/sendNotification';
+      }
     }
 
     _instance = AppConfig._(environment, options, appName, pushNotificationUrl);
