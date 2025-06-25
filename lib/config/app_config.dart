@@ -80,3 +80,15 @@ enum Environment {
   /// 本番環境
   production,
 }
+
+/// WebViewの有効/無効を制御する設定
+/// 現在はiOSでのクラッシュ回避のため無効化
+class WebViewConfig {
+  /// WebViewを有効にするかどうか
+  /// 環境変数 ENABLE_WEBVIEW で制御可能（デフォルト: false）
+  static bool get isEnabled =>
+      const bool.fromEnvironment('ENABLE_WEBVIEW', defaultValue: false);
+
+  /// WebViewが無効な理由を取得
+  static String get disabledReason => 'iOS Simulatorでのクラッシュ回避のため無効化されています';
+}

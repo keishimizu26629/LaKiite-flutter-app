@@ -1,10 +1,12 @@
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:lakiite/infrastructure/auth_repository.dart';
 import 'package:lakiite/domain/interfaces/i_user_repository.dart';
-import 'package:lakiite/domain/entity/user.dart';
+import 'package:lakiite/domain/entity/user.dart' as domain;
+import 'package:lakiite/domain/value/user_id.dart';
 
-class MockUser extends Mock implements User {
+class MockUser extends Mock implements firebase_auth.User {
   @override
   String uid = 'test-user-id';
 
@@ -14,15 +16,18 @@ class MockUser extends Mock implements User {
   }
 }
 
-class MockFirebaseAuth extends Mock implements FirebaseAuth {
-  User? _currentUser;
+class MockFirebaseAuth extends Mock implements firebase_auth.FirebaseAuth {
+  firebase_auth.User? _currentUser;
 
   @override
-  User? get currentUser => _currentUser;
+  firebase_auth.User? get currentUser => _currentUser;
 
-  void setCurrentUser(User? user) {
+  void setCurrentUser(firebase_auth.User? user) {
     _currentUser = user;
   }
+
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class MockUserRepository extends Mock implements IUserRepository {
@@ -32,37 +37,37 @@ class MockUserRepository extends Mock implements IUserRepository {
   }
 
   @override
-  Future<UserModel?> getUser(String id) async {
+  Future<domain.UserModel?> getUser(String id) async {
     throw UnimplementedError('テストでは使用しません');
   }
 
   @override
-  Future<void> createUser(UserModel user) async {
+  Future<void> createUser(domain.UserModel user) async {
     throw UnimplementedError('テストでは使用しません');
   }
 
   @override
-  Future<void> updateUser(UserModel user) async {
+  Future<void> updateUser(domain.UserModel user) async {
     throw UnimplementedError('テストでは使用しません');
   }
 
   @override
-  Future<List<UserModel>> getUsers(List<String> userIds) async {
+  Future<List<domain.UserModel>> getUsers(List<String> userIds) async {
     throw UnimplementedError('テストでは使用しません');
   }
 
   @override
-  Future<List<UserModel>> searchUsersByName(String query) async {
+  Future<List<domain.UserModel>> searchUsersByName(String query) async {
     throw UnimplementedError('テストでは使用しません');
   }
 
   @override
-  Future<UserModel?> getUserBySearchId(String searchId) async {
+  Future<domain.UserModel?> getUserBySearchId(String searchId) async {
     throw UnimplementedError('テストでは使用しません');
   }
 
   @override
-  Future<List<UserModel>> getFriends(String userId) async {
+  Future<List<domain.UserModel>> getFriends(String userId) async {
     throw UnimplementedError('テストでは使用しません');
   }
 
@@ -70,10 +75,68 @@ class MockUserRepository extends Mock implements IUserRepository {
   Future<String?> uploadUserIcon(String userId, Uint8List imageBytes) async {
     throw UnimplementedError('テストでは使用しません');
   }
+
+  @override
+  Future<domain.PublicUserModel?> getFriendPublicProfile(String id) async {
+    throw UnimplementedError('テストでは使用しません');
+  }
+
+  @override
+  Future<domain.SearchUserModel?> findByUserId(UserId userId) async {
+    throw UnimplementedError('テストでは使用しません');
+  }
+
+  @override
+  Future<bool> isUserIdUnique(UserId userId) async {
+    throw UnimplementedError('テストでは使用しません');
+  }
+
+  @override
+  Stream<domain.PublicUserModel?> watchPublicProfile(String id) {
+    throw UnimplementedError('テストでは使用しません');
+  }
+
+  @override
+  Stream<domain.PrivateUserModel?> watchPrivateProfile(String id) {
+    throw UnimplementedError('テストでは使用しません');
+  }
+
+  @override
+  Stream<domain.UserModel?> watchUser(String id) {
+    throw UnimplementedError('テストでは使用しません');
+  }
+
+  @override
+  Future<domain.SearchUserModel?> findBySearchId(String searchId) async {
+    throw UnimplementedError('テストでは使用しません');
+  }
+
+  @override
+  Future<void> addToList(String userId, String memberId) async {
+    throw UnimplementedError('テストでは使用しません');
+  }
+
+  @override
+  Future<void> removeFromList(String userId, String memberId) async {
+    throw UnimplementedError('テストでは使用しません');
+  }
+
+  @override
+  Future<List<domain.PublicUserModel>> getPublicProfiles(
+      List<String> userIds) async {
+    throw UnimplementedError('テストでは使用しません');
+  }
+
+  @override
+  Future<void> deleteUserIcon(String userId) async {
+    throw UnimplementedError('テストでは使用しません');
+  }
 }
 
 class Mock {
   // モック用のベースクラス
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
@@ -133,13 +196,13 @@ void main() {
   });
 }
 
-class MockUserWithReauthError extends Mock implements User {
+class MockUserWithReauthError extends Mock implements firebase_auth.User {
   @override
   String uid = 'test-user-id';
 
   @override
   Future<void> delete() async {
-    throw FirebaseAuthException(
+    throw firebase_auth.FirebaseAuthException(
       code: 'requires-recent-login',
       message: '再認証が必要です',
     );

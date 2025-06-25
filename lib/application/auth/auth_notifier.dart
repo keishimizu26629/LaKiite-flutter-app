@@ -1,6 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
+import 'dart:io';
 import '../../domain/interfaces/i_auth_repository.dart';
 import '../../domain/entity/user.dart';
 import '../../infrastructure/auth_repository.dart';
@@ -11,6 +13,7 @@ import '../../presentation/presentation_provider.dart';
 import '../../presentation/calendar/widgets/calendar_page_view.dart';
 import '../../presentation/my_page/my_page_view_model.dart';
 import '../../utils/logger.dart';
+import '../../utils/webview_monitor.dart';
 import 'auth_state.dart';
 
 part 'auth_notifier.g.dart';
@@ -235,7 +238,28 @@ class AuthNotifier extends _$AuthNotifier {
           AppLogger.warning('FCMトークン削除エラー（無視して続行）: $e');
         }
 
-        // 5. Firestoreのキャッシュをクリア
+        // 5. WebView 関連の強制クリーンアップ
+        try {
+          // WebView インスタンスの状態を確認
+          WebViewMonitor.printStatus();
+          if (WebViewMonitor.hasUnreleasedInstances()) {
+            AppLogger.warning('未解放のWebViewインスタンスが検出されました');
+          }
+
+          // iOS WebView のキャッシュを強制クリア
+          if (Platform.isIOS) {
+            await _clearWebViewCaches();
+            await _resetPlatformViews();
+          }
+
+          // WebView インスタンスモニターをクリア
+          WebViewMonitor.clearAll();
+          AppLogger.debug('WebView インスタンスモニターをクリアしました');
+        } catch (e) {
+          AppLogger.warning('WebView キャッシュクリアエラー（無視して続行）: $e');
+        }
+
+        // 6. Firestoreのキャッシュをクリア
         try {
           await FirebaseFirestore.instance.terminate();
           await FirebaseFirestore.instance.clearPersistence();
@@ -337,6 +361,35 @@ class AuthNotifier extends _$AuthNotifier {
     });
   }
 
+  /// WebViewキャッシュをクリアする（iOS用）
+  Future<void> _clearWebViewCaches() async {
+    try {
+      // iOS の場合のみ実行
+      if (Platform.isIOS) {
+        // WKWebView のキャッシュを完全にクリア
+        const MethodChannel('flutter/webview')
+            .invokeMethod('clearWebViewCache');
+        AppLogger.debug('WebViewキャッシュをクリアしました');
+      }
+    } catch (e) {
+      AppLogger.warning('WebView キャッシュクリア失敗: $e');
+    }
+  }
+
+  /// プラットフォームビューをリセットする（iOS用）
+  Future<void> _resetPlatformViews() async {
+    try {
+      if (Platform.isIOS) {
+        // iOS WebView プラットフォームビューのリセット
+        const MethodChannel('flutter/platform_views')
+            .setMethodCallHandler(null);
+        AppLogger.debug('プラットフォームビューをリセットしました');
+      }
+    } catch (e) {
+      AppLogger.warning('プラットフォームビューリセット失敗: $e');
+    }
+  }
+
   /// アカウントを削除する
   ///
   /// 処理:
@@ -420,37 +473,39 @@ class AuthNotifier extends _$AuthNotifier {
         AppLogger.error('Firestoreキャッシュクリアエラー: $e');
       }
 
-      // 6. 関連するRiverpodプロバイダーをリセット
-      ref.invalidateSelf();
-
-      // ユーザー関連のプロバイダーを無効化
-      ref.invalidate(userRepositoryProvider);
-
-      // スケジュール関連のプロバイダーも無効化
-      ref.invalidate(scheduleNotifierProvider);
-      ref.invalidate(scheduleRepositoryProvider);
-
-      // グループとリスト関連のプロバイダーも無効化
-      ref.invalidate(groupNotifierProvider);
-      ref.invalidate(groupRepositoryProvider);
-      ref.invalidate(listNotifierProvider);
-      ref.invalidate(listRepositoryProvider);
-
-      // ストリームプロバイダーも無効化
-      ref.invalidate(userListsStreamProvider);
-      ref.invalidate(userGroupsStreamProvider);
-      ref.invalidate(userFriendsStreamProvider);
-      ref.invalidate(userFriendsProvider);
-
-      AppLogger.debug('プロバイダーを無効化しました');
-
-      // 7. アカウントを削除
+      // 6. アカウントを削除
       final success = await _authRepository.deleteAccount();
 
-      // 認証状態を更新
+      // 7. 認証状態を更新
       if (success) {
         state = AsyncData(AuthState.unauthenticated());
         AppLogger.debug('アカウント削除処理が正常に完了しました');
+
+        // 削除成功後に関連するRiverpodプロバイダーをリセット
+        try {
+          // ユーザー関連のプロバイダーを無効化
+          ref.invalidate(userRepositoryProvider);
+
+          // スケジュール関連のプロバイダーも無効化
+          ref.invalidate(scheduleNotifierProvider);
+          ref.invalidate(scheduleRepositoryProvider);
+
+          // グループとリスト関連のプロバイダーも無効化
+          ref.invalidate(groupNotifierProvider);
+          ref.invalidate(groupRepositoryProvider);
+          ref.invalidate(listNotifierProvider);
+          ref.invalidate(listRepositoryProvider);
+
+          // ストリームプロバイダーも無効化
+          ref.invalidate(userListsStreamProvider);
+          ref.invalidate(userGroupsStreamProvider);
+          ref.invalidate(userFriendsStreamProvider);
+          ref.invalidate(userFriendsProvider);
+
+          AppLogger.debug('プロバイダーを無効化しました');
+        } catch (e) {
+          AppLogger.warning('プロバイダー無効化エラー（無視して続行）: $e');
+        }
       }
 
       return success;

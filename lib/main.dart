@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -7,6 +9,7 @@ import 'config/router/app_router.dart';
 import 'infrastructure/admob_service.dart';
 import 'infrastructure/firebase/push_notification_service.dart';
 import 'presentation/theme/app_theme.dart';
+import 'utils/logger.dart';
 
 /// アプリケーションのエントリーポイント
 Future<void> main() async {
@@ -31,6 +34,11 @@ Future<void> startApp([
 ]) async {
   // Flutterウィジェットバインディングの初期化
   WidgetsFlutterBinding.ensureInitialized();
+
+  // iOS でのプラットフォームビュー問題を予防
+  if (Platform.isIOS) {
+    await _resetPlatformViews();
+  }
 
   // 環境設定の初期化
   AppConfig.initialize(environment);
@@ -66,6 +74,18 @@ Future<void> startApp([
 
   // アプリケーションの起動
   runApp(ProviderScope(overrides: overrides, child: const MyApp()));
+}
+
+/// iOS でのプラットフォームビューリセット処理
+/// WebView クラッシュを予防するため
+Future<void> _resetPlatformViews() async {
+  try {
+    // iOS WebView プラットフォームビューのリセット
+    const MethodChannel('flutter/platform_views').setMethodCallHandler(null);
+    AppLogger.debug('プラットフォームビューをリセットしました');
+  } catch (e) {
+    AppLogger.warning('プラットフォームビューリセットエラー: $e');
+  }
 }
 
 /// アプリケーションのルートウィジェット
