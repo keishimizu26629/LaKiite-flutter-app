@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:lakiite/domain/interfaces/i_auth_repository.dart';
 import 'package:lakiite/domain/entity/user.dart';
-import 'package:lakiite/domain/value/user_id.dart';
 
 class MockAuthRepository implements IAuthRepository {
   UserModel? _currentUser;

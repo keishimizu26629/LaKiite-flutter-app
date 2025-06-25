@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import '../domain/entity/notification.dart';
 import '../domain/interfaces/i_notification_repository.dart';
 import '../utils/logger.dart';
@@ -37,15 +36,15 @@ class NotificationRepository implements INotificationRepository {
   @override
   Future<void> updateNotification(Notification notification) async {
     // 更新する通知IDをログ
-    debugPrint('Updating notification: ${notification.id}');
+    AppLogger.debug('Updating notification: ${notification.id}');
     try {
       await _firestore
           .collection('notifications')
           .doc(notification.id)
           .update(notification.toFirestore());
-      debugPrint('Notification updated successfully: ${notification.id}');
+      AppLogger.debug('Notification updated successfully: ${notification.id}');
     } catch (e) {
-      debugPrint('Error updating notification: $e');
+      AppLogger.error('Error updating notification: $e');
       rethrow;
     }
   }
@@ -56,22 +55,22 @@ class NotificationRepository implements INotificationRepository {
   /// 通知が存在しない場合はnullを返す
   @override
   Future<Notification?> getNotification(String notificationId) async {
-    debugPrint('Getting notification: $notificationId');
+    AppLogger.debug('Getting notification: $notificationId');
     try {
       final doc = await _firestore
           .collection('notifications')
           .doc(notificationId)
           .get();
       if (!doc.exists) {
-        debugPrint('Notification not found: $notificationId');
+        AppLogger.debug('Notification not found: $notificationId');
         return null;
       }
       final data = doc.data()!;
       data['id'] = doc.id;
-      debugPrint('Notification retrieved successfully: $notificationId');
+      AppLogger.debug('Notification retrieved successfully: $notificationId');
       return Notification.fromJson(data);
     } catch (e) {
-      debugPrint('Error getting notification: $e');
+      AppLogger.error('Error getting notification: $e');
       rethrow;
     }
   }
@@ -82,7 +81,7 @@ class NotificationRepository implements INotificationRepository {
   /// createdAtの降順でソートされた通知リストのストリームを返す
   @override
   Stream<List<Notification>> watchReceivedNotifications(String userId) {
-    debugPrint('Watching received notifications for user: $userId');
+    AppLogger.debug('Watching received notifications for user: $userId');
     return _firestore
         .collection('notifications')
         .where('receiveUserId', isEqualTo: userId)
@@ -103,7 +102,7 @@ class NotificationRepository implements INotificationRepository {
     String userId,
     NotificationType type,
   ) {
-    debugPrint(
+    AppLogger.debug(
         'Watching received notifications for user: $userId, type: ${type.name}');
     return _firestore
         .collection('notifications')
@@ -122,7 +121,7 @@ class NotificationRepository implements INotificationRepository {
   /// createdAtの降順でソートされた通知リストのストリームを返す
   @override
   Stream<List<Notification>> watchSentNotifications(String userId) {
-    debugPrint('Watching sent notifications for user: $userId');
+    AppLogger.debug('Watching sent notifications for user: $userId');
     return _firestore
         .collection('notifications')
         .where('sendUserId', isEqualTo: userId)
@@ -143,7 +142,7 @@ class NotificationRepository implements INotificationRepository {
     String userId,
     NotificationType type,
   ) {
-    debugPrint(
+    AppLogger.debug(
         'Watching sent notifications for user: $userId, type: ${type.name}');
     return _firestore
         .collection('notifications')
@@ -163,7 +162,7 @@ class NotificationRepository implements INotificationRepository {
       data['id'] = doc.id;
       return Notification.fromJson(data);
     }).toList();
-    debugPrint('Received ${notifications.length} notifications');
+    AppLogger.debug('Received ${notifications.length} notifications');
     return notifications;
   }
 
@@ -175,7 +174,8 @@ class NotificationRepository implements INotificationRepository {
   @override
   Future<bool> hasPendingFriendRequest(
       String fromUserId, String toUserId) async {
-    debugPrint('Checking pending friend request from $fromUserId to $toUserId');
+    AppLogger.debug(
+        'Checking pending friend request from $fromUserId to $toUserId');
     try {
       final snapshot = await _firestore
           .collection('notifications')
@@ -185,10 +185,10 @@ class NotificationRepository implements INotificationRepository {
           .where('status', isEqualTo: NotificationStatus.pending.name)
           .get();
       final hasPending = snapshot.docs.isNotEmpty;
-      debugPrint('Pending friend request check result: $hasPending');
+      AppLogger.debug('Pending friend request check result: $hasPending');
       return hasPending;
     } catch (e) {
-      debugPrint('Error checking pending friend request: $e');
+      AppLogger.error('Error checking pending friend request: $e');
       rethrow;
     }
   }
@@ -205,7 +205,7 @@ class NotificationRepository implements INotificationRepository {
     String toUserId,
     String groupId,
   ) async {
-    debugPrint(
+    AppLogger.debug(
         'Checking pending group invitation from $fromUserId to $toUserId for group $groupId');
     try {
       final snapshot = await _firestore
@@ -217,10 +217,10 @@ class NotificationRepository implements INotificationRepository {
           .where('sendUserId', isEqualTo: fromUserId)
           .get();
       final hasPending = snapshot.docs.isNotEmpty;
-      debugPrint('Pending group invitation check result: $hasPending');
+      AppLogger.debug('Pending group invitation check result: $hasPending');
       return hasPending;
     } catch (e) {
-      debugPrint('Error checking pending group invitation: $e');
+      AppLogger.error('Error checking pending group invitation: $e');
       rethrow;
     }
   }
@@ -230,15 +230,15 @@ class NotificationRepository implements INotificationRepository {
   /// [notificationId] 承認する通知のID
   @override
   Future<void> acceptNotification(String notificationId) async {
-    debugPrint('Accepting notification: $notificationId');
+    AppLogger.debug('Accepting notification: $notificationId');
     try {
       await _firestore.collection('notifications').doc(notificationId).update({
         'status': NotificationStatus.accepted.name,
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      debugPrint('Notification accepted successfully: $notificationId');
+      AppLogger.debug('Notification accepted successfully: $notificationId');
     } catch (e) {
-      debugPrint('Error accepting notification: $e');
+      AppLogger.error('Error accepting notification: $e');
       rethrow;
     }
   }
@@ -248,16 +248,16 @@ class NotificationRepository implements INotificationRepository {
   /// [notificationId] 拒否する通知のID
   @override
   Future<void> rejectNotification(String notificationId) async {
-    debugPrint('Rejecting notification: $notificationId');
+    AppLogger.debug('Rejecting notification: $notificationId');
     try {
       await _firestore.collection('notifications').doc(notificationId).update({
         'status': NotificationStatus.rejected.name,
         'rejectionCount': FieldValue.increment(1),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      debugPrint('Notification rejected successfully: $notificationId');
+      AppLogger.debug('Notification rejected successfully: $notificationId');
     } catch (e) {
-      debugPrint('Error rejecting notification: $e');
+      AppLogger.error('Error rejecting notification: $e');
       rethrow;
     }
   }
@@ -314,7 +314,7 @@ class NotificationRepository implements INotificationRepository {
   /// 未読通知数のストリームを返す
   @override
   Stream<int> watchUnreadCount(String userId) {
-    debugPrint('Watching unread count for user: $userId');
+    AppLogger.debug('Watching unread count for user: $userId');
     return _firestore
         .collection('notifications')
         .where('receiveUserId', isEqualTo: userId)
@@ -330,7 +330,8 @@ class NotificationRepository implements INotificationRepository {
   /// 未読通知数のストリームを返す
   @override
   Stream<int> watchUnreadCountByType(String userId, NotificationType type) {
-    debugPrint('Watching unread count for user: $userId, type: ${type.name}');
+    AppLogger.debug(
+        'Watching unread count for user: $userId, type: ${type.name}');
     return _firestore
         .collection('notifications')
         .where('receiveUserId', isEqualTo: userId)
@@ -347,7 +348,7 @@ class NotificationRepository implements INotificationRepository {
   /// 保留中の招待を持つユーザーIDのリストを返す
   Future<List<String>> getPendingGroupInvitations(
       String groupId, List<String> friendIds) async {
-    debugPrint(
+    AppLogger.debug(
         'Getting pending group invitations for group: $groupId and friends: $friendIds');
     if (friendIds.isEmpty) {
       return [];
@@ -365,7 +366,7 @@ class NotificationRepository implements INotificationRepository {
           .map((doc) => (doc.data())['receiveUserId'] as String)
           .toList();
     } catch (e) {
-      debugPrint('Error getting pending group invitations: $e');
+      AppLogger.error('Error getting pending group invitations: $e');
       rethrow;
     }
   }
@@ -377,7 +378,7 @@ class NotificationRepository implements INotificationRepository {
   /// 保留中の招待を持つユーザーIDのリストのストリームを返す
   Stream<List<String>> watchPendingGroupInvitations(
       String groupId, List<String> friendIds) {
-    debugPrint(
+    AppLogger.debug(
         'Watching pending group invitations for group: $groupId and friends: $friendIds');
     if (friendIds.isEmpty) {
       return Stream.value([]);

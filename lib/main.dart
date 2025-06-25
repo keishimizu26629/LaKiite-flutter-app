@@ -62,7 +62,7 @@ Future<void> startApp([
       await AdMobService.initialize();
     } catch (e) {
       // Firebase初期化エラーをログに記録
-      debugPrint('Firebase initialization failed: $e');
+      AppLogger.error('Firebase initialization failed: $e');
 
       // テスト環境またはCI環境ではエラーを無視
       const isTest = bool.fromEnvironment('FLUTTER_TEST', defaultValue: false);

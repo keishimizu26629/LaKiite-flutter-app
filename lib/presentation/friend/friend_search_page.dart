@@ -87,7 +87,7 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
                       barrierDismissible: true,
                       builder: (context) => PopScope(
                         canPop: true,
-                        onPopInvoked: (didPop) {
+                        onPopInvokedWithResult: (didPop, result) {
                           setState(() {
                             isDialogShowing = false;
                           });

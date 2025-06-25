@@ -171,7 +171,7 @@ class PushNotificationService {
       if (kIsWeb ||
           defaultTargetPlatform == TargetPlatform.iOS && !_isPhysicalDevice()) {
         AppLogger.debug('🔧 シミュレータ環境を検出: FCMトークン取得はスキップします');
-        print('🔧 シミュレータではプッシュ通知が制限されています。実機でテストしてください。');
+        AppLogger.info('🔧 シミュレータではプッシュ通知が制限されています。実機でテストしてください。');
         return;
       }
 
@@ -191,18 +191,15 @@ class PushNotificationService {
       final token = await messaging.getToken();
 
       // デバッグ用の表示
-      AppLogger.debug('🐯 FCM TOKEN: $token');
-      print('🐯 FCM TOKEN: $token'); // コンソールにも表示
+      AppLogger.info('🐯 FCM TOKEN: $token');
 
       // iOSの場合、APNsトークンも表示
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         final apnsToken = await messaging.getAPNSToken();
-        AppLogger.debug('🍎 APNs TOKEN: $apnsToken');
-        print('🍎 APNs TOKEN: $apnsToken');
+        AppLogger.info('🍎 APNs TOKEN: $apnsToken');
       }
     } catch (e) {
-      AppLogger.error('トークン表示エラー: $e');
-      print('❌ トークン取得エラー: $e');
+      AppLogger.error('❌ トークン取得エラー: $e');
     }
   }
 
@@ -211,21 +208,18 @@ class PushNotificationService {
     try {
       final token = await _messaging.getToken();
 
-      // コンソールとログの両方に表示
-      print('🐯 FCM TOKEN: $token');
-      AppLogger.debug('手動取得したFCMトークン: $token');
+      // ログに表示
+      AppLogger.info('🐯 手動取得したFCMトークン: $token');
 
       // iOSの場合、APNsトークンも表示
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         final apnsToken = await _messaging.getAPNSToken();
-        print('🍎 APNs TOKEN: $apnsToken');
-        AppLogger.debug('APNsトークン: $apnsToken');
+        AppLogger.info('🍎 APNsトークン: $apnsToken');
       }
 
       return token;
     } catch (e) {
-      print('❌ トークン取得エラー: $e');
-      AppLogger.error('手動トークン取得エラー: $e');
+      AppLogger.error('❌ 手動トークン取得エラー: $e');
       return null;
     }
   }

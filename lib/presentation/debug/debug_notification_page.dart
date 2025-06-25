@@ -15,7 +15,6 @@ class DebugNotificationPage extends StatefulWidget {
 
 class _DebugNotificationPageState extends State<DebugNotificationPage> {
   String? _fcmToken;
-  String? _apnsToken;
   bool _isLoading = false;
   bool _isSimulator = false;
 
