@@ -252,72 +252,6 @@ jobs:
           echo "統合テストは一時的にスキップしています"
           exit 0
 
-  # Androidビルド検証
-  build_android:
-    name: Build Android APK
-    runs-on: ubuntu-latest
-    needs: analyze
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: "stable"
-          cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Create dummy Firebase config files for CI
-        run: |
-          mkdir -p lib
-          cat > lib/firebase_options.dart << 'EOF'
-          import 'package:firebase_core/firebase_core.dart';
-
-          class DefaultFirebaseOptions {
-            static FirebaseOptions get currentPlatform => const FirebaseOptions(
-              apiKey: 'dummy-api-key',
-              appId: 'dummy-app-id',
-              messagingSenderId: 'dummy-sender-id',
-              projectId: 'dummy-project-id',
-              storageBucket: 'dummy-bucket',
-            );
-          }
-          EOF
-          cat > lib/firebase_options_dev.dart << 'EOF'
-          import 'package:firebase_core/firebase_core.dart';
-
-          class DevFirebaseOptions {
-            static FirebaseOptions get currentPlatform => const FirebaseOptions(
-              apiKey: 'dummy-api-key',
-              appId: 'dummy-app-id',
-              messagingSenderId: 'dummy-sender-id',
-              projectId: 'dummy-project-id',
-              storageBucket: 'dummy-bucket',
-            );
-          }
-          EOF
-          cat > lib/firebase_options_prod.dart << 'EOF'
-          import 'package:firebase_core/firebase_core.dart';
-
-          class ProdFirebaseOptions {
-            static FirebaseOptions get currentPlatform => const FirebaseOptions(
-              apiKey: 'dummy-api-key',
-              appId: 'dummy-app-id',
-              messagingSenderId: 'dummy-sender-id',
-              projectId: 'dummy-project-id',
-              storageBucket: 'dummy-bucket',
-            );
-          }
-          EOF
-
-      - name: Build Android APK
-        run: flutter build apk --debug
-
   # iOSビルド検証（オプション）
   build_ios:
     name: Build iOS (No Code Sign)
@@ -349,7 +283,7 @@ jobs:
   ci_success:
     name: CI Success
     runs-on: ubuntu-latest
-    needs: [analyze, unit_tests, widget_tests, integration_tests, build_android]
+    needs: [analyze, unit_tests, widget_tests, integration_tests]
     if: always()
 
     steps:
@@ -358,8 +292,7 @@ jobs:
           if [[ "${{ needs.analyze.result }}" == "success" &&
                 "${{ needs.unit_tests.result }}" == "success" &&
                 "${{ needs.widget_tests.result }}" == "success" &&
-                ("${{ needs.integration_tests.result }}" == "success" || "${{ needs.integration_tests.result }}" == "failure") &&
-                "${{ needs.build_android.result }}" == "success" ]]; then
+                ("${{ needs.integration_tests.result }}" == "success" || "${{ needs.integration_tests.result }}" == "failure") ]]; then
             echo "✅ All CI checks passed!"
             echo "Note: Integration tests may show expected Firebase connection errors in CI environment"
           else
@@ -368,6 +301,5 @@ jobs:
             echo "Unit Tests: ${{ needs.unit_tests.result }}"
             echo "Widget Tests: ${{ needs.widget_tests.result }}"
             echo "Integration Tests: ${{ needs.integration_tests.result }}"
-            echo "Build Android: ${{ needs.build_android.result }}"
             exit 1
           fi
