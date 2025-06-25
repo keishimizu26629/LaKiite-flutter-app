@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../presentation_provider.dart';
+import '../../config/app_config.dart';
 import 'edit_name_page.dart';
 import 'edit_email_page.dart';
 import 'edit_search_id_page.dart';
@@ -51,8 +52,15 @@ class SettingsPage extends ConsumerWidget {
             title: const Text('プライバシーポリシー'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              context.push(
-                  '/settings/${LegalInfoPageAlternative.privacyPolicyPath}');
+              // WebView 設定をチェック（現在は常に外部ブラウザ版を使用）
+              if (WebViewConfig.isEnabled) {
+                // WebView 版（現在は無効化推奨）
+                context.push('/settings/legal-info-webview');
+              } else {
+                // 外部ブラウザ版（安全）
+                context.push(
+                    '/settings/${LegalInfoPageAlternative.privacyPolicyPath}');
+              }
             },
           ),
           ListTile(
@@ -60,8 +68,15 @@ class SettingsPage extends ConsumerWidget {
             title: const Text('利用規約'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              context.push(
-                  '/settings/${LegalInfoPageAlternative.termsOfServicePath}');
+              // WebView 設定をチェック（現在は常に外部ブラウザ版を使用）
+              if (WebViewConfig.isEnabled) {
+                // WebView 版（現在は無効化推奨）
+                context.push('/settings/legal-info-webview');
+              } else {
+                // 外部ブラウザ版（安全）
+                context.push(
+                    '/settings/${LegalInfoPageAlternative.termsOfServicePath}');
+              }
             },
           ),
           const Divider(),

@@ -37,6 +37,10 @@ class TestUtils {
       overrides: overrides,
       child: MaterialApp.router(
         routerConfig: router,
+        theme: ThemeData(
+          // InkSparkleのレンダリング問題を回避するため、テスト環境では従来のsplashFactoryを使用
+          splashFactory: InkRipple.splashFactory,
+        ),
       ),
     );
   }
@@ -148,8 +152,11 @@ class TestUtils {
 
     await tester.pumpAndSettle();
 
-    // サインアップボタンをタップ（実際のボタンテキストに合わせて修正）
-    final signUpButton = find.text('新規登録');
+    // サインアップボタンをタップ（ElevatedButtonの「新規登録」テキストを特定）
+    final signUpButton = find.descendant(
+      of: find.byType(ElevatedButton),
+      matching: find.text('新規登録'),
+    );
     if (signUpButton.evaluate().isNotEmpty) {
       await tester.tap(signUpButton);
     } else {

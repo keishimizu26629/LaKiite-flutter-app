@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:lakiite/domain/interfaces/i_auth_repository.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,6 +9,9 @@ class MockAuthRepository extends BaseMock implements IAuthRepository {
   bool _shouldFailLogin = false;
   bool _shouldFailSignUp = false;
   bool _shouldFailDelete = false;
+
+  final StreamController<UserModel?> _authStateController =
+      StreamController<UserModel?>.broadcast();
 
   /// ログイン失敗のテストケース用
   void setShouldFailLogin(bool shouldFail) {
@@ -27,11 +31,27 @@ class MockAuthRepository extends BaseMock implements IAuthRepository {
   /// 現在のユーザーを手動で設定（テスト用）
   void setCurrentUser(UserModel? user) {
     _currentUser = user;
+    _authStateController.add(user);
+  }
+
+  /// テスト用ユーザーを作成するファクトリーメソッド
+  static UserModel createTestUser({
+    String? id,
+    required String name,
+    required String displayName,
+  }) {
+    return UserModel.create(
+      id: id ?? 'test-user-${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      displayName: displayName,
+    );
   }
 
   @override
   Stream<UserModel?> authStateChanges() {
-    return Stream.value(_currentUser);
+    // 初期値をすぐに送信
+    _authStateController.add(_currentUser);
+    return _authStateController.stream;
   }
 
   @override
@@ -56,21 +76,17 @@ class MockAuthRepository extends BaseMock implements IAuthRepository {
 
     if (password.length < 6) {
       throw FirebaseAuthException(
-        code: 'weak-password',
-        message: 'パスワードが短すぎます',
+        code: 'wrong-password',
+        message: 'パスワードが間違っています',
       );
     }
 
-    // テスト用の有効な認証情報
-    if (email == BaseMock.testEmail && password == 'password123') {
-      _currentUser = BaseMock.createTestUser();
-      return _currentUser;
-    }
-
-    throw FirebaseAuthException(
-      code: 'user-not-found',
-      message: 'ユーザーが見つかりません',
+    _currentUser = BaseMock.createTestUser(
+      name: 'テストユーザー',
+      displayName: 'テスト表示名',
     );
+    _authStateController.add(_currentUser);
+    return _currentUser;
   }
 
   @override
@@ -108,6 +124,7 @@ class MockAuthRepository extends BaseMock implements IAuthRepository {
       name: name,
       displayName: name,
     );
+    _authStateController.add(_currentUser);
     return _currentUser;
   }
 
@@ -115,20 +132,26 @@ class MockAuthRepository extends BaseMock implements IAuthRepository {
   Future<void> signOut() async {
     await Future.delayed(const Duration(milliseconds: 200));
     _currentUser = null;
+    _authStateController.add(null);
   }
 
   @override
   Future<bool> deleteAccount() async {
     await Future.delayed(const Duration(milliseconds: 400));
 
+    if (_currentUser == null) {
+      throw Exception('ユーザーがログインしていません');
+    }
+
     if (_shouldFailDelete) {
       throw FirebaseAuthException(
         code: 'requires-recent-login',
-        message: 'テスト用削除失敗',
+        message: 'セキュリティのため再認証が必要です。一度ログアウトして再度ログインした後に操作してください。',
       );
     }
 
     _currentUser = null;
+    _authStateController.add(null);
     return true;
   }
 
@@ -138,5 +161,11 @@ class MockAuthRepository extends BaseMock implements IAuthRepository {
     _shouldFailLogin = false;
     _shouldFailSignUp = false;
     _shouldFailDelete = false;
+    _authStateController.add(null);
+  }
+
+  /// リソースの解放
+  void dispose() {
+    _authStateController.close();
   }
 }

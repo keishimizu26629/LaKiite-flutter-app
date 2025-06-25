@@ -12,28 +12,35 @@ import UserNotifications
   ) -> Bool {
     FirebaseApp.configure()
 
-    // プッシュ通知用の設定
-    if #available(iOS 10.0, *) {
-      UNUserNotificationCenter.current().delegate = self
-      let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-      UNUserNotificationCenter.current().requestAuthorization(
-        options: authOptions,
-        completionHandler: { granted, error in
-          print("通知許可ステータス: \(granted), エラー: \(String(describing: error))")
-          if !granted {
-            print("⚠️ プッシュ通知の許可が拒否されました")
-          } else {
-            print("✅ プッシュ通知の許可が得られました")
-          }
-        }
-      )
+    // テスト時は通知許可をリクエストしない
+    let isTestMode = ProcessInfo.processInfo.environment["TEST_MODE"] == "true"
+    if isTestMode {
+      print("🧪 テスト時のため通知許可のリクエストをスキップします")
     } else {
-      let settings: UIUserNotificationSettings =
-        UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
-      application.registerUserNotificationSettings(settings)
+      // プッシュ通知用の設定
+      if #available(iOS 10.0, *) {
+        UNUserNotificationCenter.current().delegate = self
+        let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+        UNUserNotificationCenter.current().requestAuthorization(
+          options: authOptions,
+          completionHandler: { granted, error in
+            print("通知許可ステータス: \(granted), エラー: \(String(describing: error))")
+            if !granted {
+              print("⚠️ プッシュ通知の許可が拒否されました")
+            } else {
+              print("✅ プッシュ通知の許可が得られました")
+            }
+          }
+        )
+      } else {
+        let settings: UIUserNotificationSettings =
+          UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
+        application.registerUserNotificationSettings(settings)
+      }
+
+      application.registerForRemoteNotifications()
     }
 
-    application.registerForRemoteNotifications()
     Messaging.messaging().delegate = self
 
     // 起動オプションに通知が含まれている場合をログ出力

@@ -6,7 +6,7 @@ part of 'group_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$groupNotifierHash() => r'fc97531d9e579b47ce34a2d550bda2304c45f603';
+String _$groupNotifierHash() => r'ab28286f092336505ff3f9cdf38a82adc5002113';
 
 /// グループ状態を管理するNotifierクラス
 ///
