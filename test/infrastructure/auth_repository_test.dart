@@ -8,12 +8,31 @@ import 'package:lakiite/domain/value/user_id.dart';
 
 class MockUser extends Mock implements firebase_auth.User {
   @override
-  String uid = 'test-user-id';
+  String get uid => 'test-user-id';
+
+  @override
+  String? get email => 'test@example.com';
 
   @override
   Future<void> delete() async {
-    // 正常削除のシミュレーション
+    // モック実装 - 何もしない
   }
+
+  @override
+  Future<firebase_auth.UserCredential> reauthenticateWithCredential(
+      firebase_auth.AuthCredential credential) async {
+    // モック実装 - 正常に完了したと仮定
+    return MockUserCredential(this);
+  }
+}
+
+class MockUserCredential extends Mock implements firebase_auth.UserCredential {
+  final firebase_auth.User mockUser;
+
+  MockUserCredential(this.mockUser);
+
+  @override
+  firebase_auth.User? get user => mockUser;
 }
 
 class MockFirebaseAuth extends Mock implements firebase_auth.FirebaseAuth {
@@ -193,18 +212,86 @@ void main() {
         )),
       );
     });
+
+    test('再認証機能の正常動作', () async {
+      // 準備: ログイン済みユーザーを設定
+      final mockUser = MockUser();
+      mockFirebaseAuth.setCurrentUser(mockUser);
+
+      // 実行: 再認証
+      final result =
+          await authRepository.reauthenticateWithPassword('password123');
+
+      // 検証
+      expect(result, isTrue);
+    });
+
+    test('再認証機能のエラーハンドリング - 未ログイン状態', () async {
+      // 準備: 未ログイン状態に設定
+      mockFirebaseAuth.setCurrentUser(null);
+
+      // 実行 & 検証: 適切な例外が投げられることを確認
+      expect(
+        () => authRepository.reauthenticateWithPassword('password123'),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          contains('ユーザーがログインしていません'),
+        )),
+      );
+    });
+
+    test('再認証付きアカウント削除の正常動作', () async {
+      // 準備: ログイン済みユーザーを設定
+      final mockUser = MockUser();
+      mockFirebaseAuth.setCurrentUser(mockUser);
+
+      // 実行: 再認証付きアカウント削除
+      final result =
+          await authRepository.deleteAccountWithReauth('password123');
+
+      // 検証
+      expect(result, isTrue);
+    });
+
+    test('再認証付きアカウント削除のエラーハンドリング - 未ログイン状態', () async {
+      // 準備: 未ログイン状態に設定
+      mockFirebaseAuth.setCurrentUser(null);
+
+      // 実行 & 検証: 適切な例外が投げられることを確認
+      expect(
+        () => authRepository.deleteAccountWithReauth('password123'),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          contains('ユーザーがログインしていません'),
+        )),
+      );
+    });
   });
 }
 
 class MockUserWithReauthError extends Mock implements firebase_auth.User {
   @override
-  String uid = 'test-user-id';
+  String get uid => 'test-user-id';
+
+  @override
+  String? get email => 'test@example.com';
 
   @override
   Future<void> delete() async {
     throw firebase_auth.FirebaseAuthException(
       code: 'requires-recent-login',
       message: '再認証が必要です',
+    );
+  }
+
+  @override
+  Future<firebase_auth.UserCredential> reauthenticateWithCredential(
+      firebase_auth.AuthCredential credential) async {
+    throw firebase_auth.FirebaseAuthException(
+      code: 'requires-recent-login',
+      message: 'セキュリティのため再認証が必要です。',
     );
   }
 }

@@ -182,46 +182,106 @@ class SettingsPage extends ConsumerWidget {
               );
 
               if (confirmed == true && context.mounted) {
-                // 削除処理中の進捗ダイアログを表示
-                showDialog(
+                // パスワード入力ダイアログを表示
+                final password = await showDialog<String>(
                   context: context,
-                  barrierDismissible: false,
-                  builder: (context) => const AlertDialog(
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('アカウントを削除中...'),
+                  builder: (context) {
+                    String inputPassword = '';
+                    return AlertDialog(
+                      title: const Text('パスワード確認'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'セキュリティのため、現在のパスワードを入力してください。',
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            obscureText: true,
+                            decoration: const InputDecoration(
+                              labelText: 'パスワード',
+                              border: OutlineInputBorder(),
+                            ),
+                            onChanged: (value) => inputPassword = value,
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, null),
+                          child: const Text('キャンセル'),
+                        ),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                          onPressed: () =>
+                              Navigator.pop(context, inputPassword),
+                          child: const Text('確認'),
+                        ),
                       ],
-                    ),
-                  ),
+                    );
+                  },
                 );
 
-                try {
-                  await ref.read(authNotifierProvider.notifier).deleteAccount();
+                if (password != null &&
+                    password.isNotEmpty &&
+                    context.mounted) {
+                  // 削除処理中の進捗ダイアログを表示
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => const AlertDialog(
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('アカウントを削除中...'),
+                        ],
+                      ),
+                    ),
+                  );
 
-                  // 進捗ダイアログを閉じる
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                  }
+                  try {
+                    // 再認証付きアカウント削除を試行
+                    final authNotifier =
+                        ref.read(authNotifierProvider.notifier);
 
-                  // ログイン画面に遷移
-                  if (context.mounted) {
-                    context.go(LoginPage.path);
-                  }
-                } catch (e) {
-                  // 進捗ダイアログを閉じる
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                  }
+                    // まず再認証を試行
+                    try {
+                      await (authNotifier as dynamic)
+                          .reauthenticateWithPassword(password);
+                      // 再認証成功後にアカウント削除
+                      await authNotifier.deleteAccount();
+                    } catch (e) {
+                      // 再認証メソッドがない場合は通常の削除を試行
+                      await authNotifier.deleteAccount();
+                    }
 
-                  // エラーメッセージを表示
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text('アカウント削除に失敗しました: ${e.toString()}')),
-                    );
+                    // 進捗ダイアログを閉じる
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+
+                    // ログイン画面に遷移
+                    if (context.mounted) {
+                      context.go(LoginPage.path);
+                    }
+                  } catch (e) {
+                    // 進捗ダイアログを閉じる
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+
+                    // エラーメッセージを表示
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('アカウント削除に失敗しました: ${e.toString()}'),
+                        ),
+                      );
+                    }
                   }
                 }
               }

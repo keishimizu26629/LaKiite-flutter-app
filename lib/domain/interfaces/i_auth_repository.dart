@@ -48,4 +48,24 @@ abstract class IAuthRepository {
   ///
   /// 返値: 削除が成功したかどうかを示すbool値
   Future<bool> deleteAccount();
+
+  /// パスワードで再認証を行う
+  ///
+  /// セキュリティの観点から、アカウント削除前に再認証が必要な場合に使用します。
+  ///
+  /// パラメータ:
+  /// - [password] 現在のパスワード
+  ///
+  /// 返値: 再認証が成功したかどうかを示すbool値
+  Future<bool> reauthenticateWithPassword(String password);
+
+  /// 再認証を行ってからアカウントを削除する
+  ///
+  /// セキュリティの観点から、再認証後にアカウント削除を実行します。
+  ///
+  /// パラメータ:
+  /// - [password] 現在のパスワード
+  ///
+  /// 返値: 削除が成功したかどうかを示すbool値
+  Future<bool> deleteAccountWithReauth(String password);
 }

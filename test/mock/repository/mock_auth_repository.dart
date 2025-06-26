@@ -137,7 +137,7 @@ class MockAuthRepository extends BaseMock implements IAuthRepository {
 
   @override
   Future<bool> deleteAccount() async {
-    await Future.delayed(const Duration(milliseconds: 400));
+    await Future.delayed(const Duration(milliseconds: 200));
 
     if (_currentUser == null) {
       throw Exception('ユーザーがログインしていません');
@@ -150,6 +150,41 @@ class MockAuthRepository extends BaseMock implements IAuthRepository {
       );
     }
 
+    _currentUser = null;
+    _authStateController.add(null);
+    return true;
+  }
+
+  @override
+  Future<bool> reauthenticateWithPassword(String password) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    if (_currentUser == null) {
+      throw Exception('ユーザーがログインしていません');
+    }
+
+    // テスト用の簡単な再認証シミュレーション
+    if (password.isEmpty) {
+      throw Exception('パスワードが正しくありません');
+    }
+
+    return true;
+  }
+
+  @override
+  Future<bool> deleteAccountWithReauth(String password) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (_currentUser == null) {
+      throw Exception('ユーザーがログインしていません');
+    }
+
+    // 再認証をシミュレート
+    if (password.isEmpty) {
+      throw Exception('パスワードが正しくありません');
+    }
+
+    // アカウント削除をシミュレート
     _currentUser = null;
     _authStateController.add(null);
     return true;
