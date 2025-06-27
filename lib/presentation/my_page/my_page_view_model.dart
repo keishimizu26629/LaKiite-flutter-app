@@ -234,22 +234,88 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
 
   Future<void> loadUser(String userId) async {
     try {
+      // ユーザーIDの妥当性チェック
+      if (userId.isEmpty) {
+        throw Exception('ユーザーIDが無効です');
+      }
+
+      AppLogger.debug('ユーザーデータの読み込みを開始: $userId');
+
       // キャッシュされたデータがあればそれを使用
       final cachedUser = _ref.read(cachedUserProvider(userId));
       if (cachedUser != null) {
-        state = AsyncValue.data(cachedUser);
-        return;
+        // キャッシュされたデータの妥当性チェック
+        if (_isUserDataValid(cachedUser)) {
+          AppLogger.debug('キャッシュからユーザーデータを取得: $userId');
+          state = AsyncValue.data(cachedUser);
+          return;
+        } else {
+          AppLogger.warning('キャッシュされたユーザーデータが無効です: $userId');
+          // 無効なキャッシュをクリア
+          _ref.read(cachedUserProvider(userId).notifier).state = null;
+        }
       }
 
       state = const AsyncValue.loading();
-      final user = await _userRepository.getUser(userId);
+
+      // リポジトリからユーザーデータを取得
+      UserModel? user;
+      try {
+        user = await _userRepository.getUser(userId);
+      } catch (e) {
+        AppLogger.error('ユーザーデータ取得エラー: $userId', e);
+        state = AsyncValue.error('ユーザー情報の取得に失敗しました', StackTrace.current);
+        return;
+      }
+
+      // 取得したユーザーデータの妥当性チェック
+      if (user == null) {
+        AppLogger.warning('ユーザーが見つかりません: $userId');
+        state = AsyncValue.error('ユーザーが見つかりません', StackTrace.current);
+        return;
+      }
+
+      if (!_isUserDataValid(user)) {
+        AppLogger.error('取得したユーザーデータが無効です: $userId');
+        state = AsyncValue.error('ユーザーデータに問題があります', StackTrace.current);
+        return;
+      }
+
+      AppLogger.debug('ユーザーデータの読み込みが完了: $userId');
 
       // キャッシュを更新
       _ref.read(cachedUserProvider(userId).notifier).state = user;
-
       state = AsyncValue.data(user);
+    } catch (e, stackTrace) {
+      AppLogger.error('loadUser エラー: $userId', e);
+      state = AsyncValue.error('ユーザー情報の読み込みに失敗しました', stackTrace);
+    }
+  }
+
+  /// ユーザーデータの妥当性を検証
+  bool _isUserDataValid(UserModel? user) {
+    if (user == null) return false;
+
+    try {
+      // 必須フィールドの存在チェック
+      if (user.id.isEmpty) return false;
+      if (user.displayName.isEmpty) return false;
+
+      // アイコンURLが設定されている場合、その妥当性をチェック
+      final iconUrl = user.iconUrl;
+      if (iconUrl != null && iconUrl.isNotEmpty) {
+        try {
+          Uri.parse(iconUrl);
+        } catch (e) {
+          AppLogger.warning('無効なアイコンURL: $iconUrl');
+          // アイコンURLが無効でもユーザーデータ自体は有効とみなす
+        }
+      }
+
+      return true;
     } catch (e) {
-      state = AsyncValue.error(e, StackTrace.current);
+      AppLogger.error('ユーザーデータ妥当性チェックエラー', e);
+      return false;
     }
   }
 
