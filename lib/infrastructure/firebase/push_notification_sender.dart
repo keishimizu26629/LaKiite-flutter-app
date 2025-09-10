@@ -33,12 +33,17 @@ class PushNotificationSender {
     required String fromUserName,
   }) async {
     try {
+      AppLogger.info('👥 友達申請通知の送信を開始');
+      AppLogger.info('👥 送信先: $toUserId, 送信元: $fromUserId ($fromUserName)');
+
       // 送信先ユーザーのFCMトークンを取得
+      AppLogger.info('🔍 送信先ユーザーのFCMトークンを取得中...');
       final token = await _fcmTokenService.getUserFcmToken(toUserId);
       if (token == null) {
-        AppLogger.warning('プッシュ通知送信エラー: 宛先ユーザーのFCMトークンがありません - $toUserId');
+        AppLogger.warning('❌ プッシュ通知送信エラー: 宛先ユーザーのFCMトークンがありません - $toUserId');
         return false;
       }
+      AppLogger.info('✅ FCMトークン取得成功: ${token.substring(0, 20)}...');
 
       // 通知データを準備
       final notificationData = {

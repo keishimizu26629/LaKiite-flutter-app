@@ -39,8 +39,7 @@ class AppTheme {
         colorScheme: const ColorScheme.light(
           primary: primaryColor,
           secondary: secondaryColor,
-          background: backgroundColor,
-          surface: surfaceColor,
+          surface: backgroundColor,
           onSurface: onSurfaceColor,
         ),
         scaffoldBackgroundColor: backgroundColor,
@@ -96,11 +95,11 @@ class AppTheme {
         ),
         textButtonTheme: const TextButtonThemeData(
           style: ButtonStyle(
-            foregroundColor: MaterialStatePropertyAll(primaryColor),
-            padding: MaterialStatePropertyAll(
+            foregroundColor: WidgetStatePropertyAll(primaryColor),
+            padding: WidgetStatePropertyAll(
               EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             ),
-            shape: MaterialStatePropertyAll(
+            shape: WidgetStatePropertyAll(
               RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(6)),
               ),
@@ -129,34 +128,34 @@ class AppTheme {
           color: primaryColor,
         ),
         checkboxTheme: CheckboxThemeData(
-          fillColor: MaterialStateProperty.resolveWith<Color>(
-              (Set<MaterialState> states) {
-            if (states.contains(MaterialState.disabled)) {
+          fillColor:
+              WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
+            if (states.contains(WidgetState.disabled)) {
               return disabledColor;
             }
-            if (states.contains(MaterialState.selected)) {
+            if (states.contains(WidgetState.selected)) {
               return primaryColor;
             }
             return disabledColor;
           }),
         ),
         switchTheme: SwitchThemeData(
-          thumbColor: MaterialStateProperty.resolveWith<Color>(
-              (Set<MaterialState> states) {
-            if (states.contains(MaterialState.disabled)) {
+          thumbColor:
+              WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
+            if (states.contains(WidgetState.disabled)) {
               return disabledColor;
             }
-            if (states.contains(MaterialState.selected)) {
+            if (states.contains(WidgetState.selected)) {
               return primaryColor;
             }
             return disabledColor;
           }),
-          trackColor: MaterialStateProperty.resolveWith<Color>(
-              (Set<MaterialState> states) {
-            if (states.contains(MaterialState.disabled)) {
+          trackColor:
+              WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
+            if (states.contains(WidgetState.disabled)) {
               return disabledColor.withOpacity(0.3);
             }
-            if (states.contains(MaterialState.selected)) {
+            if (states.contains(WidgetState.selected)) {
               return primaryColor.withOpacity(0.5);
             }
             return disabledColor.withOpacity(0.3);

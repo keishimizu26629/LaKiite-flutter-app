@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lakiite/main.dart';
 import 'package:lakiite/config/app_config.dart';
@@ -91,11 +90,11 @@ void _printCurrentScreenState(WidgetTester tester) {
   final elevatedButtonCount = find.byType(ElevatedButton).evaluate().length;
   final bottomNavCount = find.byType(BottomNavigationBar).evaluate().length;
 
-  print('  Scaffold: ${scaffoldCount}個');
-  print('  AppBar: ${appBarCount}個');
-  print('  TextField: ${textFieldCount}個');
-  print('  ElevatedButton: ${elevatedButtonCount}個');
-  print('  BottomNavigationBar: ${bottomNavCount}個');
+  print('  Scaffold: $scaffoldCount個');
+  print('  AppBar: $appBarCount個');
+  print('  TextField: $textFieldCount個');
+  print('  ElevatedButton: $elevatedButtonCount個');
+  print('  BottomNavigationBar: $bottomNavCount個');
 
   // AppBarのタイトルを確認
   if (appBarCount > 0) {

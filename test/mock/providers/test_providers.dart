@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
-import 'package:lakiite/domain/service/service_provider.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/notification.dart';
 import 'package:lakiite/domain/interfaces/i_auth_repository.dart';
