@@ -1,49 +1,49 @@
-# LaKiite ドキュメント
+# LaKiite GitHub Pages
 
-このフォルダには、LaKiite アプリ全般に関する文書が整理されています。
+このフォルダには、GitHub Pages で公開予定の法的文書が含まれています。
 
-## 📁 フォルダ構成
+## 📄 ファイル一覧
 
-### 📋 setup/
-
-アプリのセットアップや設定に関する文書
-
-- `FIREBASE_CONFIG_FIX_NEEDED.md` - Firebase 設定の修正が必要な項目
-- `USER_ACTION_REQUIRED.md` - ユーザーが対応すべき作業リスト
-
-### 🚀 release/
-
-リリースに関する文書
-
-- `TESTFLIGHT_RELEASE_SUMMARY.md` - TestFlight リリース準備の完了サマリー
-
-### 📊 reviews/
-
-コードレビューや品質管理に関する文書
-
-- `コードレビューレポート_LaKiite_Flutter.md` - Flutter/Riverpod アーキテクチャレビューレポート
-
-## 🔗 関連フォルダ
-
-### `.ai/` フォルダ
-
-開発・実装に関する詳細な指示やガイドは `.ai/` フォルダ内に整理されています：
-
-- `.ai/docs/` - 技術ドキュメント・ガイド
-- `.ai/plan/` - 計画・チェックリスト
-- `.ai/coding-rules/` - コーディング規約・ルール
-
-### `github-pages/` フォルダ
-
-GitHub Pages で公開予定の法的文書：
-
+- `index.html` - メインランディングページ
 - `privacy-policy.html` - プライバシーポリシー
 - `terms-of-service.html` - 利用規約
-- `index.html` - ランディングページ
 
-## 📝 使い方
+## 🌐 GitHub Pages 設定
 
-1. **セットアップ時**: `setup/` フォルダの文書を確認
-2. **リリース時**: `release/` フォルダの文書を参照
-3. **コードレビュー時**: `reviews/` フォルダの文書を活用
-4. **開発時**: `.ai/` フォルダの技術文書を参照
+### 1. GitHub リポジトリ設定
+
+1. GitHub リポジトリの「Settings」タブに移動
+2. 左サイドバーの「Pages」をクリック
+3. Source で「Deploy from a branch」を選択
+4. Branch で「main」を選択
+5. Folder で「/ (root)」または「/github-pages」を選択
+6. 「Save」をクリック
+
+### 2. カスタムドメイン（任意）
+
+独自ドメインを使用する場合：
+
+1. `github-pages/CNAME` ファイルを作成
+2. ファイルにドメイン名を記載（例：`lakiite.com`）
+3. DNS 設定で GitHub Pages を指すよう設定
+
+### 3. アクセス URL
+
+設定完了後、以下の URL でアクセス可能：
+
+- メインページ: `https://[ユーザー名].github.io/[リポジトリ名]/github-pages/`
+- プライバシーポリシー: `https://[ユーザー名].github.io/[リポジトリ名]/github-pages/privacy-policy.html`
+- 利用規約: `https://[ユーザー名].github.io/[リポジトリ名]/github-pages/terms-of-service.html`
+
+## 📱 アプリでの使用
+
+App Store Connect や Google Play Console でのアプリ申請時に、上記 URL を使用してください：
+
+- **プライバシーポリシー URL**: `https://[ユーザー名].github.io/[リポジトリ名]/github-pages/privacy-policy.html`
+- **利用規約 URL**: `https://[ユーザー名].github.io/[リポジトリ名]/github-pages/terms-of-service.html`
+
+## ⚠️ 注意事項
+
+1. **法的確認**: テンプレートの内容は一般的なものです。実際の公開前に法的専門家による確認を受けることをお勧めします。
+2. **内容の更新**: 実際のサービス内容に合わせて文書を更新してください。
+3. **連絡先情報**: `support@lakiite.com` を実際のサポート用メールアドレスに変更してください。
