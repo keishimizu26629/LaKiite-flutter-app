@@ -26,7 +26,8 @@ class LegalInfoPageAlternative extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = 'https://keishimizu26629.github.io/LaKiite-flutter-app/$urlPath.html';
+    final url =
+        'https://keishimizu26629.github.io/LaKiite-flutter-app/$urlPath.html';
 
     return Scaffold(
       appBar: AppBar(
