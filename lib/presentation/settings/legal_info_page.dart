@@ -119,7 +119,7 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
       if (mounted && !_isDisposed) {
         _controller.loadRequest(
           Uri.parse(
-              'https://lakiite-flutter-app-prod.web.app/${widget.urlPath}'),
+              'https://keishimizu26629.github.io/LaKiite-flutter-app/${widget.urlPath}.html'),
         );
       }
     } catch (e) {
