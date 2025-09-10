@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/foundation.dart';
 import '../presentation_provider.dart';
 import '../../config/app_config.dart';
 import 'edit_name_page.dart';
@@ -8,6 +9,7 @@ import 'edit_email_page.dart';
 import 'edit_search_id_page.dart';
 import 'legal_info_page_alternative.dart';
 import '../login/login_page.dart';
+import '../debug/debug_notification_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   static const String path = '/settings';
@@ -47,6 +49,28 @@ class SettingsPage extends ConsumerWidget {
             },
           ),
           const Divider(),
+
+          // デバッグ機能（デバッグモードまたは開発環境でのみ表示）
+          // TestFlight配信時にコメントアウト
+          /*
+          if (kDebugMode)
+            ListTile(
+              leading: const Icon(Icons.bug_report, color: Colors.orange),
+              title: const Text('🐯 プッシュ通知デバッグ'),
+              subtitle: const Text('FCMトークンの確認・テスト'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DebugNotificationPage(),
+                  ),
+                );
+              },
+            ),
+          if (kDebugMode) const Divider(),
+          */
+
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text('プライバシーポリシー'),

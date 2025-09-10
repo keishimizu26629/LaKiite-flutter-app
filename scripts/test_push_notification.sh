@@ -1,80 +1,125 @@
 #!/bin/bash
 
-echo "📱 プッシュ通知テストガイド"
-echo "================================================"
+# プッシュ通知テスト用スクリプト
+# 使用方法: ./scripts/test_push_notification.sh
 
-# カラーコードの定義
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+set -e
 
-echo -e "\n${BLUE}🔧 準備手順${NC}"
-echo "----------------------------------------"
-echo "1. アプリをTestFlightでインストール"
-echo "2. アプリを起動してログイン"
-echo "3. プッシュ通知の許可をタップ"
-echo "4. アプリをバックグラウンドまたは完全に閉じる"
+# 設定
+PROJECT_ID="lakiite-flutter-app-dev"
+FCM_TOKEN="fF_Zd9PCkk54lgYQuf3RmA:APA91bGoTUfhTCGXyNqFz9kvU72DLBxinu0GXuFeJSEP6U4jQLDtwd75Xdn4tjPqNNkH0YilN8pEwID67gGVjlW2I_f8AbfBthpfU0zAk2K86qSErn7wloI"
 
-echo -e "\n${BLUE}📋 Xcodeログで確認すべき項目${NC}"
-echo "----------------------------------------"
-echo -e "${GREEN}✅ 成功パターン:${NC}"
-echo '   ✅ APNsデバイストークン登録成功: [64文字のhex文字列]'
-echo '   🔑 FCMトークン受信: [長いトークン文字列]'
-echo '   通知許可ステータス: true, エラー: nil'
-echo ""
-echo -e "${RED}❌ 失敗パターン:${NC}"
-echo '   ❌ リモート通知の登録に失敗: [エラーメッセージ]'
-echo '   ⚠️  プッシュ通知の許可が拒否されました'
-echo '   APNSトークンがnullです。プッシュ通知が機能しない可能性があります。'
+echo "🚀 プッシュ通知テストを開始します..."
+echo "📱 プロジェクトID: $PROJECT_ID"
+echo "🔑 FCMトークン: ${FCM_TOKEN:0:50}..."
 
-echo -e "\n${BLUE}🧪 Firebase Console でのテスト手順${NC}"
-echo "----------------------------------------"
-echo "1. Firebase Console にアクセス"
-echo "2. プロジェクト 'tarakite-flutter-app-dev' を選択"
-echo "3. 左メニューの「Messaging」をクリック"
-echo "4. 「新しいキャンペーンを作成」→「Firebase Cloud Messaging」"
-echo "5. 通知テキストを入力:"
-echo "   - タイトル: テスト通知"
-echo "   - 本文: プッシュ通知のテストです"
-echo "6. 「テストメッセージを送信」をクリック"
-echo "7. FCMトークンを入力（Xcodeログから取得）"
-echo "8. 「テスト」をクリック"
+# Google Cloud認証の確認
+echo "🔐 Google Cloud認証を確認中..."
+if ! gcloud auth print-access-token > /dev/null 2>&1; then
+    echo "❌ Google Cloud認証が必要です。以下を実行してください:"
+    echo "   gcloud auth login"
+    echo "   gcloud config set project $PROJECT_ID"
+    exit 1
+fi
 
-echo -e "\n${BLUE}🔍 トラブルシューティング${NC}"
-echo "----------------------------------------"
-echo -e "${YELLOW}トークンが取得できない場合:${NC}"
-echo "• Xcodeプロジェクトを開いて Capabilities を確認"
-echo "• Push Notifications が追加されているか"
-echo "• Background Modes → Remote notifications がONか"
-echo "• プロビジョニングプロファイルが最新か"
-echo ""
-echo -e "${YELLOW}トークンは取得できるが通知が届かない場合:${NC}"
-echo "• Firebase Console で APNs 認証キー/証明書を確認"
-echo "• Production環境用の設定になっているか"
-echo "• Bundle ID が一致しているか"
-echo "• デバイスがTestFlightビルドを使用しているか"
-echo ""
-echo -e "${YELLOW}通知は届くがアプリで処理されない場合:${NC}"
-echo "• AppDelegate の UNUserNotificationCenterDelegate メソッドが実装されているか"
-echo "• Firebase Messaging の onMessage, onBackgroundMessage ハンドラーが設定されているか"
+# アクセストークンを取得
+echo "🔑 アクセストークンを取得中..."
+ACCESS_TOKEN=$(gcloud auth print-access-token)
+echo "✅ アクセストークン取得完了"
 
-echo -e "\n${BLUE}📱 実際のテスト実行${NC}"
-echo "----------------------------------------"
-echo "以下の手順で実際にテストしてください:"
+# テスト1: 基本的な通知
 echo ""
-echo "1. アプリを TestFlight から起動"
-echo "2. ログインして通知許可を与える"
-echo "3. Xcode の「Window」→「Devices and Simulators」"
-echo "4. テストデバイスを選択して「Open Console」"
-echo "5. アプリ名で検索してログを確認"
-echo "6. Firebase Console でテスト通知を送信"
-echo "7. 通知が届くか確認"
+echo "📢 テスト1: 基本的な通知を送信中..."
+RESPONSE1=$(curl -s -X POST \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json; charset=utf-8" \
+  https://fcm.googleapis.com/v1/projects/$PROJECT_ID/messages:send \
+  -d '{
+    "message": {
+      "token": "'$FCM_TOKEN'",
+      "notification": {
+        "title": "🧪 cURLテスト通知",
+        "body": "cURLスクリプトから送信されたプッシュ通知です"
+      }
+    }
+  }')
+
+if echo "$RESPONSE1" | grep -q '"name"'; then
+    echo "✅ テスト1成功: 基本的な通知送信完了"
+    echo "📋 レスポンス: $RESPONSE1"
+else
+    echo "❌ テスト1失敗: $RESPONSE1"
+fi
+
+# 3秒待機
+sleep 3
+
+# テスト2: データペイロード付き通知
 echo ""
-echo -e "${GREEN}テスト成功の条件:${NC}"
-echo "• アプリがバックグラウンド時に通知バナーが表示される"
-echo "• 通知をタップするとアプリが開く"
-echo "• アプリがフォアグラウンド時は willPresent メソッドが呼ばれる"
+echo "📢 テスト2: データペイロード付き通知を送信中..."
+RESPONSE2=$(curl -s -X POST \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json; charset=utf-8" \
+  https://fcm.googleapis.com/v1/projects/$PROJECT_ID/messages:send \
+  -d '{
+    "message": {
+      "token": "'$FCM_TOKEN'",
+      "notification": {
+        "title": "👥 友達申請テスト",
+        "body": "cURLテストユーザーから友達申請が届いています"
+      },
+      "data": {
+        "type": "friend_request",
+        "fromUserId": "curl-test-user-123",
+        "fromUserName": "cURLテストユーザー",
+        "timestamp": "'$(date +%s)000'"
+      }
+    }
+  }')
+
+if echo "$RESPONSE2" | grep -q '"name"'; then
+    echo "✅ テスト2成功: データペイロード付き通知送信完了"
+    echo "📋 レスポンス: $RESPONSE2"
+else
+    echo "❌ テスト2失敗: $RESPONSE2"
+fi
+
+# 3秒待機
+sleep 3
+
+# テスト3: データ専用メッセージ
 echo ""
-echo -e "${RED}注意: 設定変更後は必ず新しいビルドをTestFlightにアップロードしてください${NC}"
+echo "📢 テスト3: データ専用メッセージを送信中..."
+RESPONSE3=$(curl -s -X POST \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json; charset=utf-8" \
+  https://fcm.googleapis.com/v1/projects/$PROJECT_ID/messages:send \
+  -d '{
+    "message": {
+      "token": "'$FCM_TOKEN'",
+      "data": {
+        "type": "reaction",
+        "fromUserId": "curl-test-user-456",
+        "scheduleId": "curl-schedule-789",
+        "reactionType": "like",
+        "timestamp": "'$(date +%s)000'"
+      }
+    }
+  }')
+
+if echo "$RESPONSE3" | grep -q '"name"'; then
+    echo "✅ テスト3成功: データ専用メッセージ送信完了"
+    echo "📋 レスポンス: $RESPONSE3"
+else
+    echo "❌ テスト3失敗: $RESPONSE3"
+fi
+
+echo ""
+echo "🎉 プッシュ通知テスト完了！"
+echo "📱 アプリのデバッグコンソールで通知受信ログを確認してください。"
+echo ""
+echo "期待されるログ例:"
+echo "📱 フォアグラウンドで通知を受信: [messageId]"
+echo "📱 通知タイトル: 🧪 cURLテスト通知"
+echo "📱 通知本文: cURLスクリプトから送信されたプッシュ通知です"
+echo "🔄 通知メッセージの処理を開始"

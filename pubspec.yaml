@@ -3,7 +3,7 @@ description: LaKiite - 気軽に予定を共有できるアプリ
 
 publish_to: "none"
 
-version: 0.0.1+1
+version: 1.0.0+1
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -48,6 +48,9 @@ dependencies:
 
   # Utilities
   logger: ^2.0.2+1
+  
+  # Notifications
+  flutter_local_notifications: ^17.2.3
   http: ^1.1.0
 
   # App Configuration
