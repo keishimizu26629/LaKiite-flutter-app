@@ -100,7 +100,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
         title: const Text('予定の詳細'),
         actions: [
           if (currentSchedule.ownerId ==
-              ref.watch(authNotifierProvider).value?.user?.id)
+              ref.watch(authNotifierProvider).value?.user?.id) ...[
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: IconButton(
@@ -116,6 +116,15 @@ class ScheduleDetailPage extends HookConsumerWidget {
                 },
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () =>
+                    _showDeleteConfirmDialog(context, ref, currentSchedule),
+              ),
+            ),
+          ],
         ],
       ),
       body: SafeArea(
@@ -777,7 +786,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
                           decoration: BoxDecoration(
                             color: Theme.of(context)
                                 .colorScheme
-                                .surfaceVariant
+                                .surfaceContainerHighest
                                 .withOpacity(0.5),
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -1023,6 +1032,43 @@ class ScheduleDetailPage extends HookConsumerWidget {
               }
             },
             child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmDialog(
+      BuildContext context, WidgetRef ref, Schedule schedule) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('予定の削除'),
+        content: const Text('この予定を削除してもよろしいですか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () {
+              // ダイアログを閉じる
+              Navigator.of(context).pop();
+
+              // 予定を削除
+              ref
+                  .read(scheduleNotifierProvider.notifier)
+                  .deleteSchedule(schedule.id);
+
+              // 削除完了メッセージを表示してページを閉じる
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('予定を削除しました')),
+              );
+
+              // 予定詳細ページを閉じる
+              Navigator.of(context).pop();
+            },
+            child: const Text('削除', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

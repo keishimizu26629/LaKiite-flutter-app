@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/foundation.dart';
 import '../presentation_provider.dart';
+import '../../config/app_config.dart';
 import 'edit_name_page.dart';
 import 'edit_email_page.dart';
 import 'edit_search_id_page.dart';
 import 'legal_info_page_alternative.dart';
 import '../login/login_page.dart';
+import '../debug/debug_notification_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   static const String path = '/settings';
@@ -46,13 +49,42 @@ class SettingsPage extends ConsumerWidget {
             },
           ),
           const Divider(),
+
+          // デバッグ機能（デバッグモードまたは開発環境でのみ表示）
+          // TestFlight配信時にコメントアウト
+          /*
+          if (kDebugMode)
+            ListTile(
+              leading: const Icon(Icons.bug_report, color: Colors.orange),
+              title: const Text('🐯 プッシュ通知デバッグ'),
+              subtitle: const Text('FCMトークンの確認・テスト'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DebugNotificationPage(),
+                  ),
+                );
+              },
+            ),
+          if (kDebugMode) const Divider(),
+          */
+
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text('プライバシーポリシー'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              context.push(
-                  '/settings/${LegalInfoPageAlternative.privacyPolicyPath}');
+              // WebView 設定をチェック（現在は常に外部ブラウザ版を使用）
+              if (WebViewConfig.isEnabled) {
+                // WebView 版（現在は無効化推奨）
+                context.push('/settings/legal-info-webview');
+              } else {
+                // 外部ブラウザ版（安全）
+                context.push(
+                    '/settings/${LegalInfoPageAlternative.privacyPolicyPath}');
+              }
             },
           ),
           ListTile(
@@ -60,8 +92,15 @@ class SettingsPage extends ConsumerWidget {
             title: const Text('利用規約'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              context.push(
-                  '/settings/${LegalInfoPageAlternative.termsOfServicePath}');
+              // WebView 設定をチェック（現在は常に外部ブラウザ版を使用）
+              if (WebViewConfig.isEnabled) {
+                // WebView 版（現在は無効化推奨）
+                context.push('/settings/legal-info-webview');
+              } else {
+                // 外部ブラウザ版（安全）
+                context.push(
+                    '/settings/${LegalInfoPageAlternative.termsOfServicePath}');
+              }
             },
           ),
           const Divider(),
@@ -167,46 +206,106 @@ class SettingsPage extends ConsumerWidget {
               );
 
               if (confirmed == true && context.mounted) {
-                // 削除処理中の進捗ダイアログを表示
-                showDialog(
+                // パスワード入力ダイアログを表示
+                final password = await showDialog<String>(
                   context: context,
-                  barrierDismissible: false,
-                  builder: (context) => const AlertDialog(
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('アカウントを削除中...'),
+                  builder: (context) {
+                    String inputPassword = '';
+                    return AlertDialog(
+                      title: const Text('パスワード確認'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'セキュリティのため、現在のパスワードを入力してください。',
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            obscureText: true,
+                            decoration: const InputDecoration(
+                              labelText: 'パスワード',
+                              border: OutlineInputBorder(),
+                            ),
+                            onChanged: (value) => inputPassword = value,
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, null),
+                          child: const Text('キャンセル'),
+                        ),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                          onPressed: () =>
+                              Navigator.pop(context, inputPassword),
+                          child: const Text('確認'),
+                        ),
                       ],
-                    ),
-                  ),
+                    );
+                  },
                 );
 
-                try {
-                  await ref.read(authNotifierProvider.notifier).deleteAccount();
+                if (password != null &&
+                    password.isNotEmpty &&
+                    context.mounted) {
+                  // 削除処理中の進捗ダイアログを表示
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => const AlertDialog(
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('アカウントを削除中...'),
+                        ],
+                      ),
+                    ),
+                  );
 
-                  // 進捗ダイアログを閉じる
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                  }
+                  try {
+                    // 再認証付きアカウント削除を試行
+                    final authNotifier =
+                        ref.read(authNotifierProvider.notifier);
 
-                  // ログイン画面に遷移
-                  if (context.mounted) {
-                    context.go(LoginPage.path);
-                  }
-                } catch (e) {
-                  // 進捗ダイアログを閉じる
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                  }
+                    // まず再認証を試行
+                    try {
+                      await (authNotifier as dynamic)
+                          .reauthenticateWithPassword(password);
+                      // 再認証成功後にアカウント削除
+                      await authNotifier.deleteAccount();
+                    } catch (e) {
+                      // 再認証メソッドがない場合は通常の削除を試行
+                      await authNotifier.deleteAccount();
+                    }
 
-                  // エラーメッセージを表示
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text('アカウント削除に失敗しました: ${e.toString()}')),
-                    );
+                    // 進捗ダイアログを閉じる
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+
+                    // ログイン画面に遷移
+                    if (context.mounted) {
+                      context.go(LoginPage.path);
+                    }
+                  } catch (e) {
+                    // 進捗ダイアログを閉じる
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+
+                    // エラーメッセージを表示
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('アカウント削除に失敗しました: ${e.toString()}'),
+                        ),
+                      );
+                    }
                   }
                 }
               }

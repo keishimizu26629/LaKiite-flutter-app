@@ -13,6 +13,25 @@ class ShortBioCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // shortBioがnullまたは空文字の場合の処理
+    String displayText;
+    TextStyle textStyle;
+
+    if (shortBio == null || shortBio!.trim().isEmpty) {
+      displayText = '一言コメントがありません';
+      textStyle = TextStyle(
+        fontSize: 16,
+        color: Colors.grey[500],
+        fontStyle: FontStyle.italic,
+      );
+    } else {
+      displayText = shortBio!.trim();
+      textStyle = TextStyle(
+        fontSize: 16,
+        color: Colors.grey[800],
+      );
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Container(
@@ -27,11 +46,8 @@ class ShortBioCard extends StatelessWidget {
           color: Colors.white,
         ),
         child: Text(
-          shortBio?.trim() ?? '',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey[800],
-          ),
+          displayText,
+          style: textStyle,
         ),
       ),
     );

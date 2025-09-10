@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lakiite/application/list/list_state.dart';
 import 'package:lakiite/domain/entity/list.dart';
+import 'package:lakiite/domain/service/service_provider.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 
 part 'list_notifier.g.dart';
@@ -39,30 +40,19 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      await ref.read(listRepositoryProvider).createList(
+      await ref.read(listManagerProvider).createList(
+            userId: ownerId,
             listName: listName,
             memberIds: memberIds,
-            ownerId: ownerId,
-            iconUrl: iconUrl,
             description: description,
+            iconUrl: iconUrl,
           );
-      await fetchLists(ownerId);
-    } catch (e) {
-      state = AsyncValue.data(ListState.error(e.toString()));
-    }
-  }
 
-  /// ユーザーの全てのリスト情報を取得する
-  ///
-  /// [ownerId] リストの所有者ID
-  ///
-  /// 取得成功時は[ListState.loaded]を、
-  /// エラー発生時は[ListState.error]を返します。
-  Future<void> fetchLists(String ownerId) async {
-    state = const AsyncValue.loading();
-    try {
-      final lists = await ref.read(listRepositoryProvider).getLists(ownerId);
-      state = AsyncValue.data(ListState.loaded(lists));
+      // リスト作成後、リスト一覧表示用のStreamProviderを無効化して再読み込みを促す
+      ref.invalidate(userListsStreamProvider);
+
+      // 成功状態に更新
+      state = const AsyncValue.data(ListState.initial());
     } catch (e) {
       state = AsyncValue.data(ListState.error(e.toString()));
     }
@@ -70,38 +60,18 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
 
   /// リスト情報を更新する
   ///
-  /// [listId] 更新するリストのID
-  /// [listName] 更新するリストの名前
-  /// [iconUrl] 更新するリストのアイコン画像URL（任意）
-  /// [memberIds] 更新するリストのメンバーIDリスト
+  /// [list] 更新するリスト情報
   ///
   /// エラー発生時は[ListState.error]を返します。
-  Future<void> updateList(
-    String listId,
-    String listName,
-    String? iconUrl,
-    List<String> memberIds,
-  ) async {
+  Future<void> updateList(UserList list) async {
     state = const AsyncValue.loading();
     try {
-      final list = await ref.read(listRepositoryProvider).getList(listId);
-      if (list == null) {
-        state = const AsyncValue.data(ListState.error('リストが見つかりません'));
-        return;
-      }
+      await ref.read(listManagerProvider).updateList(list);
 
-      final updatedList = UserList(
-        id: listId,
-        listName: listName,
-        ownerId: list.ownerId,
-        memberIds: memberIds,
-        createdAt: list.createdAt,
-        iconUrl: iconUrl,
-        description: list.description,
-      );
+      // リスト更新後、リスト一覧表示用のStreamProviderを無効化して再読み込みを促す
+      ref.invalidate(userListsStreamProvider);
 
-      await ref.read(listRepositoryProvider).updateList(updatedList);
-      await fetchLists(list.ownerId);
+      state = const AsyncValue.data(ListState.initial());
     } catch (e) {
       state = AsyncValue.data(ListState.error(e.toString()));
     }
@@ -110,14 +80,17 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
   /// リストを削除する
   ///
   /// [listId] 削除するリストのID
-  /// [ownerId] リストの所有者ID
   ///
   /// エラー発生時は[ListState.error]を返します。
-  Future<void> deleteList(String listId, String ownerId) async {
+  Future<void> deleteList(String listId) async {
     state = const AsyncValue.loading();
     try {
-      await ref.read(listRepositoryProvider).deleteList(listId);
-      await fetchLists(ownerId);
+      await ref.read(listManagerProvider).deleteList(listId);
+
+      // リスト削除後、リスト一覧表示用のStreamProviderを無効化して再読み込みを促す
+      ref.invalidate(userListsStreamProvider);
+
+      state = const AsyncValue.data(ListState.initial());
     } catch (e) {
       state = AsyncValue.data(ListState.error(e.toString()));
     }
@@ -127,14 +100,14 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
   ///
   /// [listId] メンバーを追加するリストのID
   /// [userId] 追加するユーザーのID
-  /// [ownerId] リストの所有者ID
   ///
   /// エラー発生時は[ListState.error]を返します。
-  Future<void> addMember(String listId, String userId, String ownerId) async {
+  Future<void> addMember(String listId, String userId) async {
     state = const AsyncValue.loading();
     try {
-      await ref.read(listRepositoryProvider).addMember(listId, userId);
-      await fetchLists(ownerId);
+      await ref.read(listManagerProvider).addMember(listId, userId);
+      // 成功時の状態更新は要件に応じて実装
+      state = const AsyncValue.data(ListState.loaded([]));
     } catch (e) {
       state = AsyncValue.data(ListState.error(e.toString()));
     }
@@ -144,15 +117,14 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
   ///
   /// [listId] メンバーを削除するリストのID
   /// [userId] 削除するユーザーのID
-  /// [ownerId] リストの所有者ID
   ///
   /// エラー発生時は[ListState.error]を返します。
-  Future<void> removeMember(
-      String listId, String userId, String ownerId) async {
+  Future<void> removeMember(String listId, String userId) async {
     state = const AsyncValue.loading();
     try {
-      await ref.read(listRepositoryProvider).removeMember(listId, userId);
-      await fetchLists(ownerId);
+      await ref.read(listManagerProvider).removeMember(listId, userId);
+      // 成功時の状態更新は要件に応じて実装
+      state = const AsyncValue.data(ListState.loaded([]));
     } catch (e) {
       state = AsyncValue.data(ListState.error(e.toString()));
     }
@@ -165,7 +137,7 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
   /// リストの変更を[ListState.loaded]として通知し、
   /// エラー発生時は[ListState.error]を返します。
   void watchUserLists(String ownerId) {
-    ref.read(listRepositoryProvider).watchUserLists(ownerId).listen(
+    ref.read(listManagerProvider).watchAuthenticatedUserLists(ownerId).listen(
       (lists) {
         state = AsyncValue.data(ListState.loaded(lists));
       },

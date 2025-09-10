@@ -29,6 +29,9 @@ class ScheduleTile extends ConsumerWidget {
   /// 編集ボタンを表示するかどうか（自分の予定の場合のみ有効）
   final bool showEditButton;
 
+  /// 削除ボタンを表示するかどうか（自分の予定の場合のみ有効）
+  final bool showDeleteButton;
+
   /// タイムラインビューとして表示するかどうか（スタイルに影響）
   final bool isTimelineView;
 
@@ -37,6 +40,9 @@ class ScheduleTile extends ConsumerWidget {
 
   /// 編集ボタンがタップされた時のコールバック
   final VoidCallback? onEditPressed;
+
+  /// 削除ボタンがタップされた時のコールバック
+  final VoidCallback? onDeletePressed;
 
   /// リアクション部分がタップされた時のコールバック
   final VoidCallback? onReactionTap;
@@ -50,9 +56,11 @@ class ScheduleTile extends ConsumerWidget {
   /// [currentUserId] 現在のユーザーID
   /// [showOwner] 作成者情報を表示するかどうか（デフォルト: true）
   /// [showEditButton] 編集ボタンを表示するかどうか（デフォルト: false）
+  /// [showDeleteButton] 削除ボタンを表示するかどうか（デフォルト: false）
   /// [isTimelineView] タイムラインビューとして表示するかどうか（デフォルト: false）
   /// [showDivider] 区切り線を表示するかどうか（デフォルト: false）
   /// [onEditPressed] 編集ボタンがタップされた時のコールバック
+  /// [onDeletePressed] 削除ボタンがタップされた時のコールバック
   /// [onReactionTap] リアクション部分がタップされた時のコールバック
   /// [margin] カードのマージン
   const ScheduleTile({
@@ -61,9 +69,11 @@ class ScheduleTile extends ConsumerWidget {
     required this.currentUserId,
     this.showOwner = true,
     this.showEditButton = false,
+    this.showDeleteButton = false,
     this.isTimelineView = false,
     this.showDivider = false,
     this.onEditPressed,
+    this.onDeletePressed,
     this.onReactionTap,
     this.margin,
   });
@@ -115,23 +125,34 @@ class ScheduleTile extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  if (showEditButton && isOwnSchedule)
-                    IconButton(
-                      icon: Icon(
-                        Icons.edit,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                      onPressed: onEditPressed ??
-                          () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => EditSchedulePage(
-                                  schedule: schedule,
+                  if (isOwnSchedule) ...[
+                    if (showEditButton)
+                      IconButton(
+                        icon: Icon(
+                          Icons.edit,
+                          color: Colors.grey[600],
+                        ),
+                        onPressed: onEditPressed ??
+                            () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => EditSchedulePage(
+                                    schedule: schedule,
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                    ),
+                              );
+                            },
+                      ),
+                    if (showDeleteButton)
+                      IconButton(
+                        icon: Icon(
+                          Icons.delete,
+                          color: Colors.grey[600],
+                        ),
+                        onPressed: onDeletePressed ??
+                            () => _showDeleteConfirmDialog(context, ref),
+                      ),
+                  ],
                 ],
               ),
               const SizedBox(height: 8),
@@ -299,6 +320,39 @@ class ScheduleTile extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('予定の削除'),
+        content: const Text('この予定を削除してもよろしいですか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () {
+              // ダイアログを閉じる
+              Navigator.of(context).pop();
+
+              // 予定を削除
+              ref
+                  .read(scheduleNotifierProvider.notifier)
+                  .deleteSchedule(schedule.id);
+
+              // 削除完了メッセージ
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('予定を削除しました')),
+              );
+            },
+            child: const Text('削除', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }

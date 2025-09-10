@@ -81,37 +81,36 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
 
   /// フレンドタブの内容を構築します。
   Widget _buildFriendTabContent() {
-    // Futureベースのプロバイダーを使用
-    final friendsAsync = ref.watch(userFriendsProvider);
+    // StreamProviderに変更してリアルタイム更新を実現
+    final friendsAsync = ref.watch(userFriendsStreamProvider);
 
     return friendsAsync.when(
       data: (friends) {
         if (friends.isEmpty) {
           return RefreshIndicator(
             onRefresh: () async {
-              // プロバイダーを無効化して再取得を強制
-              ref.invalidate(userFriendsProvider);
-              await ref.read(userFriendsProvider.future);
+              // StreamProviderは自動更新されるため、最小限の更新のみ
+              ref.invalidate(userFriendsStreamProvider);
             },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               children: const [
                 Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                       SizedBox(height: 120),
-                Icon(
-                  Icons.people_outline,
-                  size: 64,
-                  color: Colors.grey,
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'フレンドがいません',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 16,
+                      Icon(
+                        Icons.people_outline,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'フレンドがいません',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 16,
                         ),
                       ),
                     ],
@@ -124,63 +123,62 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
 
         return RefreshIndicator(
           onRefresh: () async {
-            // プロバイダーを無効化して再取得を強制
-            ref.invalidate(userFriendsProvider);
-            await ref.read(userFriendsProvider.future);
+            // StreamProviderは自動更新されるため、最小限の更新のみ
+            ref.invalidate(userFriendsStreamProvider);
           },
           child: ListView.builder(
-          key: const PageStorageKey('friend_list'), // キーを追加してスクロール位置を保持
+            key: const PageStorageKey('friend_list'), // キーを追加してスクロール位置を保持
             physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 8,
-            bottom: 58,
-          ),
-          itemCount: friends.length,
-          itemBuilder: (context, index) {
-            final friend = friends[index];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 4),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
-                leading: friend.iconUrl != null
-                    ? CircleAvatar(
-                        radius: 24,
-                        backgroundImage: NetworkImage(friend.iconUrl!),
-                      )
-                    : const DefaultUserIcon(size: 48),
-                title: Text(
-                  friend.displayName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+            padding: const EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 8,
+              bottom: 58,
+            ),
+            itemCount: friends.length,
+            itemBuilder: (context, index) {
+              final friend = friends[index];
+              return Card(
+                margin: const EdgeInsets.only(bottom: 4),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
                   ),
-                ),
-                subtitle: Text(
-                  friend.shortBio ?? '',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => FriendProfilePage(
-                        userId: friend.id,
-                      ),
+                  leading: friend.iconUrl != null
+                      ? CircleAvatar(
+                          radius: 24,
+                          backgroundImage: NetworkImage(friend.iconUrl!),
+                        )
+                      : const DefaultUserIcon(size: 48),
+                  title: Text(
+                    friend.displayName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                  );
-                },
-              ),
-            );
-          },
+                  ),
+                  subtitle: Text(
+                    friend.shortBio ?? '',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => FriendProfilePage(
+                          userId: friend.id,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
           ),
         );
       },

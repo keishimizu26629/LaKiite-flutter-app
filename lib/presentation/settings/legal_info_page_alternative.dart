@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../utils/logger.dart';
+
 /// 法的情報（プライバシーポリシーや利用規約）を表示するための代替ページ
 /// WebViewの代わりにURLランチャーを使用して外部ブラウザで表示します
 class LegalInfoPageAlternative extends StatelessWidget {
@@ -87,7 +89,7 @@ class LegalInfoPageAlternative extends StatelessWidget {
             ),
           );
         }
-        debugPrint('Could not launch $url');
+        AppLogger.error('Could not launch $url');
       }
     } catch (e) {
       // 例外が発生した場合もスナックバーでエラーを表示
@@ -99,7 +101,7 @@ class LegalInfoPageAlternative extends StatelessWidget {
           ),
         );
       }
-      debugPrint('Error launching URL: $e');
+      AppLogger.error('Error launching URL: $e');
     }
   }
 }

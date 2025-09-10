@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "3311967889",
+    "project_id": "lakiite-flutter-app-dev",
+    "storage_bucket": "lakiite-flutter-app-dev.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:3311967889:android:6e3182d1b0e0c49038a930",
+        "android_client_info": {
+          "package_name": "com.inoworl.lakiite"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMXO18k3ZOYpQPdRB6w-3iZ0Rws0wW5Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:3311967889:android:70d7247f19e5f65438a930",
+        "android_client_info": {
+          "package_name": "com.inoworl.lakiite.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMXO18k3ZOYpQPdRB6w-3iZ0Rws0wW5Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
