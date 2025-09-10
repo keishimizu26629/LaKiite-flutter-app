@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+
+import '../../utils/logger.dart';
 
 enum NotificationType {
   friend,
@@ -147,9 +148,9 @@ class Notification {
     final createdAtDate = createdAtTimestamp.toDate();
     final updatedAtDate = updatedAtTimestamp.toDate();
 
-    debugPrint(
+    AppLogger.debug(
         'Notification fromJson - createdAt timestamp: ${createdAtTimestamp.seconds}');
-    debugPrint('Notification fromJson - createdAt date: $createdAtDate');
+    AppLogger.debug('Notification fromJson - createdAt date: $createdAtDate');
 
     return Notification(
       id: json['id'] as String,

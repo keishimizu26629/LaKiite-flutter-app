@@ -12,7 +12,10 @@ class AppLogger {
     'image_processor_service.dart',
     'schedule_interaction_repository.dart',
     'schedule_interaction_notifier.dart',
-    'schedule_detail_page.dart'
+    'schedule_detail_page.dart',
+    'push_notification_service.dart',
+    'notification_repository.dart',
+    'notification_badge.dart'
   ];
 
   // 常にログを表示するかどうか

@@ -6,7 +6,6 @@ import 'package:lakiite/config/app_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import '../test/mock/providers/test_providers.dart';
-import '../test/utils/test_utils.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

@@ -50,6 +50,10 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/notification_icon_color" />
+        <!-- フォアグラウンド通知用のデフォルトチャネル設定 -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="high_importance_channel" />
         <!-- AdMobの設定 -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"

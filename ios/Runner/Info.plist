@@ -36,11 +36,11 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>プロフィール画像を撮影するために、カメラへのアクセスが必要です。</string>
+	<string>プロフィール画像を撮影・設定するためにカメラを使用します。この機能は任意で、拒否してもアプリの基本機能は利用できます。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>プロフィール画像を変更するために、写真ライブラリへのアクセスが必要です。</string>
+	<string>プロフィール画像を設定するために写真ライブラリにアクセスします。この機能は任意で、拒否してもアプリの基本機能は利用できます。</string>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>このアプリケーションは、より関連性の高い広告を表示するために、デバイスの識別子を使用します。</string>
+	<string>アプリの改善と、より関連性の高い広告を表示するために使用します。この設定はいつでも変更できます。</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

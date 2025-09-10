@@ -515,4 +515,156 @@ class AuthNotifier extends _$AuthNotifier {
       rethrow;
     }
   }
+
+  /// パスワードで再認証を行う
+  ///
+  /// パラメータ:
+  /// - [password] 現在のパスワード
+  ///
+  /// 戻り値:
+  /// - 再認証が成功したかどうかを示すbool値
+  Future<bool> reauthenticateWithPassword(String password) async {
+    try {
+      AppLogger.debug('再認証処理を開始します');
+      final success =
+          await _authRepository.reauthenticateWithPassword(password);
+      if (success) {
+        AppLogger.debug('再認証が正常に完了しました');
+      }
+      return success;
+    } catch (e) {
+      AppLogger.error('再認証エラー: $e');
+      rethrow;
+    }
+  }
+
+  /// 再認証を行ってからアカウントを削除する
+  ///
+  /// パラメータ:
+  /// - [password] 現在のパスワード
+  ///
+  /// 戻り値:
+  /// - 処理が成功した場合は true
+  /// - 失敗した場合は例外をスロー
+  Future<bool> deleteAccountWithReauth(String password) async {
+    // ローディング状態に設定
+    state = const AsyncLoading();
+
+    // アカウント削除処理を実行
+    try {
+      AppLogger.debug('再認証付きアカウント削除処理を開始します');
+
+      // 1. 既存のリポジトリインスタンスのキャッシュを明示的にクリア
+      try {
+        final userRepo = ref.read(userRepositoryProvider);
+        if (userRepo is UserRepository) {
+          userRepo.clearCache();
+          AppLogger.debug('UserRepositoryキャッシュをクリアしました');
+        }
+      } catch (e) {
+        AppLogger.warning('UserRepositoryキャッシュクリアエラー（無視して続行）: $e');
+      }
+
+      try {
+        final scheduleRepo = ref.read(scheduleRepositoryProvider);
+        if (scheduleRepo is ScheduleRepository) {
+          scheduleRepo.clearCache();
+          AppLogger.debug('ScheduleRepositoryキャッシュをクリアしました');
+        }
+      } catch (e) {
+        AppLogger.warning('ScheduleRepositoryキャッシュクリアエラー（無視して続行）: $e');
+      }
+
+      // 2. カレンダー関連のStateProviderキャッシュをクリア
+      try {
+        ref.invalidate(cachedHolidaysProvider);
+        ref.invalidate(cachedSchedulesProvider);
+        ref.invalidate(monthDataLoadingProvider);
+        ref.invalidate(calendarOptimizationProvider);
+        ref.invalidate(renderedMonthsProvider);
+        ref.invalidate(lastCleanupTimeProvider);
+        ref.invalidate(activeMonthIndicesProvider);
+        AppLogger.debug('カレンダー関連キャッシュをクリアしました');
+      } catch (e) {
+        AppLogger.warning('カレンダーキャッシュクリアエラー（無視して続行）: $e');
+      }
+
+      // 3. MyPageのキャッシュをクリア
+      try {
+        ref.invalidate(cachedUserProvider);
+        AppLogger.debug('MyPageキャッシュをクリアしました');
+      } catch (e) {
+        AppLogger.warning('MyPageキャッシュクリアエラー（無視して続行）: $e');
+      }
+
+      // 4. FCMトークンを削除
+      try {
+        if (_fcmTokenService != null) {
+          await _fcmTokenService!.removeFcmToken();
+          AppLogger.debug('FCMトークンを削除しました');
+        } else {
+          AppLogger.debug('FCMトークンサービスが初期化されていないため、FCMトークン削除をスキップします');
+        }
+      } catch (e) {
+        AppLogger.warning('FCMトークン削除エラー（無視して続行）: $e');
+      }
+
+      // 5. Firestoreのキャッシュをクリア
+      try {
+        await FirebaseFirestore.instance.terminate();
+        await FirebaseFirestore.instance.clearPersistence();
+        AppLogger.debug('Firestoreキャッシュをクリアしました');
+      } catch (e) {
+        AppLogger.error('Firestoreキャッシュクリアエラー: $e');
+      }
+
+      // 6. 再認証付きでアカウントを削除（AuthRepositoryの新しいメソッドを使用）
+      final authRepo = _authRepository as dynamic;
+      if (authRepo.deleteAccountWithReauth != null) {
+        final success = await authRepo.deleteAccountWithReauth(password);
+
+        // 7. 認証状態を更新
+        if (success) {
+          state = AsyncData(AuthState.unauthenticated());
+          AppLogger.debug('再認証付きアカウント削除処理が正常に完了しました');
+
+          // 削除成功後に関連するRiverpodプロバイダーをリセット
+          try {
+            // ユーザー関連のプロバイダーを無効化
+            ref.invalidate(userRepositoryProvider);
+
+            // スケジュール関連のプロバイダーも無効化
+            ref.invalidate(scheduleNotifierProvider);
+            ref.invalidate(scheduleRepositoryProvider);
+
+            // グループとリスト関連のプロバイダーも無効化
+            ref.invalidate(groupNotifierProvider);
+            ref.invalidate(groupRepositoryProvider);
+            ref.invalidate(listNotifierProvider);
+            ref.invalidate(listRepositoryProvider);
+
+            // ストリームプロバイダーも無効化
+            ref.invalidate(userListsStreamProvider);
+            ref.invalidate(userGroupsStreamProvider);
+            ref.invalidate(userFriendsStreamProvider);
+            ref.invalidate(userFriendsProvider);
+
+            AppLogger.debug('プロバイダーを無効化しました');
+          } catch (e) {
+            AppLogger.warning('プロバイダー無効化エラー（無視して続行）: $e');
+          }
+        }
+
+        return success;
+      } else {
+        // フォールバック：先に再認証してから削除
+        await reauthenticateWithPassword(password);
+        return await deleteAccount();
+      }
+    } catch (e) {
+      AppLogger.error('再認証付きアカウント削除エラー: $e');
+      state = AsyncError(e, StackTrace.current);
+      rethrow;
+    }
+  }
 }

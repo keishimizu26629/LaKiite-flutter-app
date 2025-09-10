@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/notification/notification_notifier.dart';
 import '../../domain/entity/notification.dart' as domain;
+import '../../utils/logger.dart';
 
 typedef NotificationType = domain.NotificationType;
 
@@ -37,14 +38,15 @@ class NotificationBadge extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // ウィジェットのビルド開始をログ
-    debugPrint('Building NotificationBadge');
+    AppLogger.debug('Building NotificationBadge');
 
     final unreadCountAsyncValue = type != null
         ? ref.watch(unreadNotificationCountByTypeProvider(type!))
         : ref.watch(unreadNotificationCountProvider);
 
     // 非同期値の状態をログ
-    debugPrint('NotificationBadge - AsyncValue state: $unreadCountAsyncValue');
+    AppLogger.debug(
+        'NotificationBadge - AsyncValue state: $unreadCountAsyncValue');
 
     return Stack(
       clipBehavior: Clip.none,
@@ -53,9 +55,9 @@ class NotificationBadge extends ConsumerWidget {
         unreadCountAsyncValue.when(
           data: (count) {
             // 未読カウントをログ
-            debugPrint('NotificationBadge - Unread count: $count');
+            AppLogger.debug('NotificationBadge - Unread count: $count');
             if (count == 0) {
-              debugPrint('NotificationBadge - No unread notifications');
+              AppLogger.debug('NotificationBadge - No unread notifications');
               return const SizedBox.shrink();
             }
 
@@ -89,12 +91,12 @@ class NotificationBadge extends ConsumerWidget {
           },
           loading: () {
             // ローディング状態をログ
-            debugPrint('NotificationBadge - Loading state');
+            AppLogger.debug('NotificationBadge - Loading state');
             return const SizedBox.shrink();
           },
           error: (error, stack) {
             // エラー状態をログ
-            debugPrint('NotificationBadge - Error: $error\n$stack');
+            AppLogger.error('NotificationBadge - Error: $error\n$stack');
             return const SizedBox.shrink();
           },
         ),

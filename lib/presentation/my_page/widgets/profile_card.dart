@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../domain/entity/user.dart';
+import '../../widgets/default_user_icon.dart';
 import 'search_id_display.dart';
 
 /// ユーザープロフィールカードを表示するウィジェット
@@ -25,22 +26,14 @@ class ProfileCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-              backgroundImage:
-                  user.iconUrl != null ? NetworkImage(user.iconUrl!) : null,
-              child: user.iconUrl == null
-                  ? const Icon(Icons.person, size: 40, color: Colors.grey)
-                  : null,
-            ),
+            _buildUserAvatar(context),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    user.displayName,
+                    user.displayName.isNotEmpty ? user.displayName : 'ユーザー',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -64,6 +57,38 @@ class ProfileCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// ユーザーアバターを構築
+  /// nullチェックを行い、適切なフォールバックを提供
+  Widget _buildUserAvatar(BuildContext context) {
+    // iconUrlがnullまたは空文字列の場合はデフォルトアイコンを使用
+    if (user.iconUrl == null || user.iconUrl!.isEmpty) {
+      return const DefaultUserIcon(size: 80);
+    }
+
+    // NetworkImageでエラーが発生した場合のフォールバックも含める
+    return CircleAvatar(
+      radius: 40,
+      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(40),
+        child: Image.network(
+          user.iconUrl!,
+          width: 80,
+          height: 80,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const DefaultUserIcon(size: 80);
+          },
+          errorBuilder: (context, error, stackTrace) {
+            // ネットワークエラーや画像読み込みエラーの場合
+            return const DefaultUserIcon(size: 80);
+          },
         ),
       ),
     );

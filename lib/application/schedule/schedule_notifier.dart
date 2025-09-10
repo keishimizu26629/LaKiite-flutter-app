@@ -110,7 +110,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
           if (retryCount < maxRetries) {
             retryCount++;
             AppLogger.debug(
-                'ScheduleNotifier: Retrying (${retryCount}/${maxRetries})...');
+                'ScheduleNotifier: Retrying ($retryCount/$maxRetries)...');
 
             Future.delayed(Duration(milliseconds: 500 * retryCount), () {
               if (!_isDisposed && _currentUserId == userId) {

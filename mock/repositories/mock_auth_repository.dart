@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:lakiite/domain/interfaces/i_auth_repository.dart';
 import 'package:lakiite/domain/entity/user.dart';
-import 'package:lakiite/domain/value/user_id.dart';
 
 class MockAuthRepository implements IAuthRepository {
   UserModel? _currentUser;
@@ -120,6 +119,35 @@ class MockAuthRepository implements IAuthRepository {
   Future<void> resetPassword(String newPassword, String actionCode) async {
     await Future.delayed(const Duration(milliseconds: 200));
     // テスト用の実装
+  }
+
+  @override
+  Future<bool> reauthenticateWithPassword(String password) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    // テスト用の簡単な再認証シミュレーション
+    if (password.isEmpty) {
+      throw Exception('パスワードが正しくありません');
+    }
+    return true;
+  }
+
+  @override
+  Future<bool> deleteAccountWithReauth(String password) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (_currentUser == null) {
+      throw Exception('ユーザーがログインしていません');
+    }
+
+    // 再認証をシミュレート
+    if (password.isEmpty) {
+      throw Exception('パスワードが正しくありません');
+    }
+
+    // アカウント削除をシミュレート
+    _currentUser = null;
+    _authStateController.add(null);
+    return true;
   }
 
   /// リソースの解放

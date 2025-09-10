@@ -53,16 +53,23 @@ Future<void> startApp([
       await Firebase.initializeApp(options: AppConfig.instance.firebaseOptions);
 
       // プッシュ通知サービスの初期化
+      AppLogger.info('🚀 プッシュ通知サービスの初期化を開始...');
       await PushNotificationService.instance.initialize();
 
       // FCMトークンの強制更新（registration-token-not-registered エラー対策）
+      AppLogger.info('🔄 FCMトークンの強制更新を実行...');
       await PushNotificationService.instance.forceUpdateFCMToken();
+      AppLogger.info('✅ FCMトークンの強制更新が完了');
 
       // AdMobの初期化
       await AdMobService.initialize();
     } catch (e) {
       // Firebase初期化エラーをログに記録
-      debugPrint('Firebase initialization failed: $e');
+      AppLogger.error('❌ Firebase初期化に失敗しました: $e');
+      AppLogger.info('💡 トラブルシューティング:');
+      AppLogger.info('   - ネットワーク接続を確認してください');
+      AppLogger.info('   - Firebase設定ファイルが正しく配置されているか確認してください');
+      AppLogger.info('   - 実機でテストしてください（シミュレータでは制限があります）');
 
       // テスト環境またはCI環境ではエラーを無視
       const isTest = bool.fromEnvironment('FLUTTER_TEST', defaultValue: false);

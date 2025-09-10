@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../../utils/logger.dart';
+
 /// 法的情報（プライバシーポリシーや利用規約）を表示するページ
 class LegalInfoPage extends StatefulWidget {
   /// 表示するページのタイトル
@@ -43,30 +45,30 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
       try {
         _controller.clearCache();
       } catch (e) {
-        debugPrint('Failed to clear cache: ${e.toString()}');
+        AppLogger.error('Failed to clear cache: ${e.toString()}');
       }
 
       try {
         _controller.clearLocalStorage();
       } catch (e) {
-        debugPrint('Failed to clear local storage: ${e.toString()}');
+        AppLogger.error('Failed to clear local storage: ${e.toString()}');
       }
 
       // WebView関連の追加クリーンアップ
       try {
         _controller.setNavigationDelegate(NavigationDelegate());
       } catch (e) {
-        debugPrint('Failed to reset navigation delegate: ${e.toString()}');
+        AppLogger.error('Failed to reset navigation delegate: ${e.toString()}');
       }
 
       // バックグラウンドプロセスやリソースを解放
       try {
         _controller.setJavaScriptMode(JavaScriptMode.disabled);
       } catch (e) {
-        debugPrint('Failed to disable JavaScript: ${e.toString()}');
+        AppLogger.error('Failed to disable JavaScript: ${e.toString()}');
       }
     } catch (e) {
-      debugPrint('WebView disposal error: ${e.toString()}');
+      AppLogger.error('WebView disposal error: ${e.toString()}');
     }
 
     super.dispose();
@@ -76,7 +78,7 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
     try {
       // WebViewControllerの初期化チェック
       if (_isDisposed) {
-        debugPrint('Attempted to initialize WebView after disposal');
+        AppLogger.warning('Attempted to initialize WebView after disposal');
         return;
       }
 
@@ -101,7 +103,7 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
               }
             },
             onWebResourceError: (WebResourceError error) {
-              debugPrint('WebView error: ${error.description}');
+              AppLogger.error('WebView error: ${error.description}');
               if (mounted && !_isDisposed) {
                 setState(() {
                   _hasError = true;
@@ -121,7 +123,8 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
         );
       }
     } catch (e) {
-      debugPrint('WebViewController initialization error: ${e.toString()}');
+      AppLogger.error(
+          'WebViewController initialization error: ${e.toString()}');
       if (mounted && !_isDisposed) {
         setState(() {
           _hasError = true;

@@ -185,4 +185,80 @@ class AuthRepository implements IAuthRepository {
       throw Exception('アカウント削除に失敗しました: $e');
     }
   }
+
+  @override
+  Future<bool> reauthenticateWithPassword(String password) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('ユーザーがログインしていません');
+      }
+
+      if (user.email == null) {
+        throw Exception('メールアドレスが取得できません');
+      }
+
+      // パスワードで再認証
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
+
+      await user.reauthenticateWithCredential(credential);
+      return true;
+    } catch (e) {
+      if (e is FirebaseAuthException) {
+        switch (e.code) {
+          case 'wrong-password':
+            throw Exception('パスワードが正しくありません');
+          case 'invalid-credential':
+            throw Exception('認証情報が無効です');
+          case 'user-mismatch':
+            throw Exception('ユーザーが一致しません');
+          case 'user-not-found':
+            throw Exception('ユーザーが見つかりません');
+          case 'invalid-verification-code':
+            throw Exception('認証コードが無効です');
+          case 'invalid-verification-id':
+            throw Exception('認証IDが無効です');
+          default:
+            throw Exception('再認証エラー: ${e.message}');
+        }
+      }
+      throw Exception('再認証に失敗しました: $e');
+    }
+  }
+
+  @override
+  Future<bool> deleteAccountWithReauth(String password) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('ユーザーがログインしていません');
+      }
+
+      final userId = user.uid;
+
+      // 1. 再認証を実行
+      await reauthenticateWithPassword(password);
+
+      // 2. Firestoreからユーザーデータを削除
+      await _userRepository.deleteUser(userId);
+
+      // 3. Firebase Authからユーザーを削除
+      await user.delete();
+
+      return true;
+    } catch (e) {
+      if (e is FirebaseAuthException) {
+        switch (e.code) {
+          case 'requires-recent-login':
+            throw Exception('セキュリティのため再認証が必要です。一度ログアウトして再度ログインした後に操作してください。');
+          default:
+            throw Exception('アカウント削除エラー: ${e.message}');
+        }
+      }
+      throw Exception('アカウント削除に失敗しました: $e');
+    }
+  }
 }
