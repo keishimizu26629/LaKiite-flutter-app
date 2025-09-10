@@ -48,7 +48,8 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
     try {
       // 認証状態が確定するまで待機
       final authState = await ref.read(authNotifierProvider.future);
-      if (authState.status != AuthStatus.authenticated || authState.user == null) {
+      if (authState.status != AuthStatus.authenticated ||
+          authState.user == null) {
         throw Exception('ユーザーが見つかりません');
       }
       final userId = authState.user!.id;

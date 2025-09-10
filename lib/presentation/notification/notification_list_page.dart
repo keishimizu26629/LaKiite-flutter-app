@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/notification/notification_notifier.dart';
 import '../../domain/entity/notification.dart' as domain;
 import '../../utils/date_formatter.dart';
+import '../../utils/logger.dart';
 import '../../presentation/calendar/schedule_detail_page.dart';
 import '../../presentation/presentation_provider.dart';
 import '../../presentation/friend/friend_profile_page.dart';
@@ -208,7 +209,7 @@ class _NotificationItem extends ConsumerWidget {
       if (!notification.isRead) {
         // 非同期で処理を実行し、結果を待たない
         notifier.markAsRead(notification.id).catchError((e) {
-          debugPrint('既読処理でエラー発生: $e');
+          AppLogger.error('既読処理でエラー発生: $e');
           // エラーが発生しても処理を継続
         });
       }
@@ -284,7 +285,7 @@ class _NotificationItem extends ConsumerWidget {
       // 既読にする処理を非同期に開始し、結果を待たない
       if (!notification.isRead) {
         notifier.markAsRead(notification.id).catchError((e) {
-          debugPrint('既読処理でエラー発生: $e');
+          AppLogger.error('既読処理でエラー発生: $e');
           // エラーが発生しても処理を継続する
         });
       }
@@ -343,7 +344,7 @@ class _NotificationItem extends ConsumerWidget {
             // 投稿詳細画面へ遷移
             if (notification.relatedItemId != null) {
               try {
-                debugPrint(
+                AppLogger.debug(
                     '通知タップ: type=${notification.type.name}, id=${notification.id}, relatedItemId=${notification.relatedItemId}');
 
                 // スケジュール情報を取得する前にローディング表示
@@ -364,7 +365,7 @@ class _NotificationItem extends ConsumerWidget {
                 final schedule = await scheduleStream.first;
 
                 if (schedule != null && context.mounted) {
-                  debugPrint(
+                  AppLogger.debug(
                       'スケジュール取得成功: ${schedule.id}, 通知ID: ${notification.id}');
 
                   // 通知IDを明示的に渡してスケジュール詳細ページに遷移
@@ -379,7 +380,8 @@ class _NotificationItem extends ConsumerWidget {
                   );
                 } else if (context.mounted) {
                   // スケジュールが見つからない場合
-                  debugPrint('スケジュールが見つかりません: ${notification.relatedItemId}');
+                  AppLogger.warning(
+                      'スケジュールが見つかりません: ${notification.relatedItemId}');
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('予定が見つかりませんでした'),
@@ -389,7 +391,7 @@ class _NotificationItem extends ConsumerWidget {
                   );
                 }
               } catch (error) {
-                debugPrint('通知タップ処理でエラー: $error');
+                AppLogger.error('通知タップ処理でエラー: $error');
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -401,7 +403,7 @@ class _NotificationItem extends ConsumerWidget {
                 }
               }
             } else {
-              debugPrint('通知の関連アイテムIDがnullです: ${notification.id}');
+              AppLogger.warning('通知の関連アイテムIDがnullです: ${notification.id}');
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(

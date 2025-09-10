@@ -1,5 +1,5 @@
 name: lakiite
-description: A new Flutter project.
+description: LaKiite - 気軽に予定を共有できるアプリ
 
 publish_to: "none"
 
@@ -40,12 +40,17 @@ dependencies:
   # Media & Assets
   image_picker: ^1.0.7
   flutter_image_compress: ^2.1.0
+  path: ^1.8.3
+  image: ^4.1.7
 
   # Advertising
   google_mobile_ads: ^4.0.0
 
   # Utilities
   logger: ^2.0.2+1
+  
+  # Notifications
+  flutter_local_notifications: ^17.2.3
   http: ^1.1.0
 
   # App Configuration

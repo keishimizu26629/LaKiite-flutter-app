@@ -41,6 +41,7 @@ class GroupMemberInviteState {
 
   /// ユーザーが招待可能かどうかを判定
   bool isInvitable(String userId) {
-    return !groupMembers.contains(userId) && !pendingInvitations.contains(userId);
+    return !groupMembers.contains(userId) &&
+        !pendingInvitations.contains(userId);
   }
 }

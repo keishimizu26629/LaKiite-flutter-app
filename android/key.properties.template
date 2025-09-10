@@ -1,0 +1,21 @@
+# Android Release署名設定
+# このファイルをコピーして android/key.properties として保存してください
+# 実際の値を設定した後、このテンプレートファイルは削除してください
+
+# Keystoreファイルのパス (例: /Users/username/lakiite-release-key.jks)
+storeFile=YOUR_KEYSTORE_PATH_HERE
+
+# Keystoreのパスワード
+storePassword=YOUR_STORE_PASSWORD_HERE
+
+# キーのエイリアス
+keyAlias=lakiite
+
+# キーのパスワード
+keyPassword=YOUR_KEY_PASSWORD_HERE
+
+# 使用方法:
+# 1. keytool -genkey -v -keystore ~/lakiite-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias lakiite
+# 2. このファイルをコピーして android/key.properties として保存
+# 3. 上記の値を実際の値に置き換え
+# 4. git add android/key.properties を実行しないよう注意（機密情報のため）

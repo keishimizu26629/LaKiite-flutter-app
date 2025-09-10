@@ -12,7 +12,8 @@ import '../presentation_provider.dart';
 ///
 /// 戻り値:
 /// - [HomeViewModel]: 初期化されたビューモデルインスタンス
-final homeViewModelProvider = StateNotifierProvider<HomeViewModel, AsyncValue<HomeState>>((ref) {
+final homeViewModelProvider =
+    StateNotifierProvider<HomeViewModel, AsyncValue<HomeState>>((ref) {
   final userRepository = ref.watch(userRepositoryProvider);
   final groupRepository = ref.watch(groupRepositoryProvider);
   return HomeViewModel(userRepository, groupRepository);
@@ -109,12 +110,15 @@ class HomeViewModel extends StateNotifier<AsyncValue<HomeState>> {
       }
 
       // フレンド情報を並列で取得
-      final friendsFutures = user.friends.map((friendId) => _userRepository.getUser(friendId));
-      final friends = (await Future.wait(friendsFutures)).whereType<UserModel>().toList();
+      final friendsFutures =
+          user.friends.map((friendId) => _userRepository.getUser(friendId));
+      final friends =
+          (await Future.wait(friendsFutures)).whereType<UserModel>().toList();
 
       // グループ情報を取得し、ユーザーが所属するグループをフィルタリング
       final groups = await _groupRepository.getGroups();
-      final userGroups = groups.where((group) => group.memberIds.contains(userId)).toList();
+      final userGroups =
+          groups.where((group) => group.memberIds.contains(userId)).toList();
 
       // 取得したデータで状態を更新
       state = AsyncValue.data(HomeState(

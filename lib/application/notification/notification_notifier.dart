@@ -3,11 +3,11 @@ import '../../domain/entity/notification.dart' as domain;
 import '../../domain/interfaces/i_notification_repository.dart';
 import '../../infrastructure/notification_repository.dart';
 import '../../utils/logger.dart';
-import '../auth/auth_notifier.dart';
 import '../../infrastructure/user_repository.dart';
 import '../../infrastructure/firebase/push_notification_sender.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
+import '../../presentation/presentation_provider.dart';
 
 typedef Notification = domain.Notification;
 typedef NotificationType = domain.NotificationType;
@@ -44,7 +44,7 @@ final currentUserIdProvider = Provider<String?>((ref) {
   final effectiveUserId = stateUserId ?? firebaseAuthUserId ?? directUserId;
 
   AppLogger.debug(
-      'currentUserIdProvider - 取得結果比較: FirebaseAuth直接=${directUserId}, authState=${stateUserId}, firebaseAuthStream=${firebaseAuthUserId}, 使用=${effectiveUserId}');
+      'currentUserIdProvider - 取得結果比較: FirebaseAuth直接=$directUserId, authState=$stateUserId, firebaseAuthStream=$firebaseAuthUserId, 使用=$effectiveUserId');
 
   return effectiveUserId;
 });
@@ -128,8 +128,9 @@ final sentNotificationsByTypeProvider =
 class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
   final INotificationRepository _repository;
   final PushNotificationSender _pushNotificationSender;
+  final Ref _ref;
 
-  NotificationNotifier(this._repository)
+  NotificationNotifier(this._repository, this._ref)
       : _pushNotificationSender = PushNotificationSender(),
         super(const AsyncValue.data(null));
 
@@ -230,15 +231,21 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
       // キャッシュクリア処理
       if (notification != null &&
           notification.type == NotificationType.friend) {
-        // フレンド申請承認時は明示的にユーザーリポジトリのキャッシュをクリア
-        // これは通常、プロバイダーのinvalidateによって行われるが、
-        // さらに確実に行うためにリポジトリのキャッシュも明示的にクリア
+        // フレンド申請承認時は既存のプロバイダーインスタンスのキャッシュをクリア
         try {
-          final userRepository = UserRepository();
-          userRepository.clearCache();
+          // 既存のプロバイダーインスタンスを使用してキャッシュをクリア
+          final userRepo = _ref.read(userRepositoryProvider);
+          if (userRepo is UserRepository) {
+            userRepo.clearCache();
+            AppLogger.debug('フレンド申請承認時にUserRepositoryキャッシュをクリアしました');
+          }
+
+          // プロバイダー自体も無効化してより確実にキャッシュをクリア
+          _ref.invalidate(userRepositoryProvider);
+          AppLogger.debug('フレンド申請承認時にuserRepositoryProviderを無効化しました');
         } catch (e) {
           // キャッシュクリアに失敗しても処理は続行
-          AppLogger.error('Failed to clear user repository cache: $e');
+          AppLogger.error('フレンド申請承認時のキャッシュクリアに失敗: $e');
         }
       }
 
@@ -379,5 +386,5 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
 final notificationNotifierProvider =
     StateNotifierProvider<NotificationNotifier, AsyncValue<void>>((ref) {
   final repository = ref.watch(notificationRepositoryProvider);
-  return NotificationNotifier(repository);
+  return NotificationNotifier(repository, ref);
 });

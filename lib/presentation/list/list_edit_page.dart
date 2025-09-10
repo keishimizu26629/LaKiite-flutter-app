@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../domain/entity/list.dart';
+import '../../domain/entity/user.dart';
 import '../presentation_provider.dart';
 
 class ListEditPage extends ConsumerStatefulWidget {
@@ -65,13 +66,19 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
           .where((id) => !_excludedMemberIds.contains(id))
           .toList();
 
+      // 更新されたリストオブジェクトを作成
+      final updatedList = UserList(
+        id: widget.list.id,
+        listName: _nameController.text.trim(),
+        ownerId: widget.list.ownerId,
+        memberIds: updatedMemberIds,
+        createdAt: widget.list.createdAt,
+        iconUrl: newIconUrl,
+        description: widget.list.description,
+      );
+
       // リストの更新
-      await ref.read(listNotifierProvider.notifier).updateList(
-            widget.list.id,
-            _nameController.text.trim(),
-            newIconUrl,
-            updatedMemberIds,
-          );
+      await ref.read(listNotifierProvider.notifier).updateList(updatedList);
 
       if (mounted) {
         Navigator.of(context).pop();
@@ -181,87 +188,99 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
                     itemCount: widget.list.memberIds.length,
                     itemBuilder: (context, index) {
                       final memberId = widget.list.memberIds[index];
-                      return ref.watch(publicUserStreamProvider(memberId)).when(
-                            data: (member) {
-                              if (member == null) {
-                                return const SizedBox.shrink();
-                              }
-                              final isExcluded =
-                                  _excludedMemberIds.contains(memberId);
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                color: isExcluded ? Colors.grey.shade200 : null,
-                                child: InkWell(
-                                  onTap: () {
-                                    setState(() {
-                                      if (isExcluded) {
-                                        _excludedMemberIds.remove(memberId);
-                                      } else {
-                                        _excludedMemberIds.add(memberId);
-                                      }
-                                    });
-                                  },
-                                  child: ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundImage: member.iconUrl != null
-                                          ? NetworkImage(member.iconUrl!)
-                                          : null,
-                                      child: member.iconUrl == null
-                                          ? const Icon(Icons.person)
-                                          : null,
-                                    ),
-                                    title: Text(
-                                      member.displayName,
-                                      style: isExcluded
-                                          ? const TextStyle(color: Colors.grey)
-                                          : null,
-                                    ),
-                                    subtitle: member.shortBio != null &&
-                                            member.shortBio!.isNotEmpty
-                                        ? Text(
-                                            member.shortBio!,
-                                            style: isExcluded
-                                                ? TextStyle(
-                                                    color: Colors.grey[600],
-                                                    fontSize: 14,
-                                                  )
-                                                : TextStyle(
-                                                    color: Colors.grey[600],
-                                                    fontSize: 14,
-                                                  ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          )
-                                        : null,
-                                    trailing: Checkbox(
-                                      value: isExcluded,
-                                      onChanged: (value) {
-                                        setState(() {
-                                          if (value == true) {
-                                            _excludedMemberIds.add(memberId);
-                                          } else {
-                                            _excludedMemberIds.remove(memberId);
-                                          }
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                            loading: () => const Card(
+                      return FutureBuilder<PublicUserModel?>(
+                        future: ref
+                            .read(userRepositoryProvider)
+                            .getFriendPublicProfile(memberId),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Card(
                               child: ListTile(
                                 leading: CircularProgressIndicator(),
                                 title: Text('読み込み中...'),
                               ),
-                            ),
-                            error: (error, _) => Card(
+                            );
+                          }
+
+                          if (snapshot.hasError) {
+                            return Card(
                               child: ListTile(
                                 leading: const Icon(Icons.error),
-                                title: Text('エラーが発生しました: $error'),
+                                title: Text('エラーが発生しました: ${snapshot.error}'),
+                              ),
+                            );
+                          }
+
+                          final member = snapshot.data;
+                          if (member == null) {
+                            return const SizedBox.shrink();
+                          }
+
+                          final isExcluded =
+                              _excludedMemberIds.contains(memberId);
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            color: isExcluded ? Colors.grey.shade200 : null,
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  if (isExcluded) {
+                                    _excludedMemberIds.remove(memberId);
+                                  } else {
+                                    _excludedMemberIds.add(memberId);
+                                  }
+                                });
+                              },
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundImage: member.iconUrl != null
+                                      ? NetworkImage(member.iconUrl!)
+                                      : null,
+                                  child: member.iconUrl == null
+                                      ? const Icon(Icons.person)
+                                      : null,
+                                ),
+                                title: Text(
+                                  member.displayName,
+                                  style: isExcluded
+                                      ? const TextStyle(color: Colors.grey)
+                                      : null,
+                                ),
+                                subtitle: member.shortBio != null &&
+                                        member.shortBio!.isNotEmpty
+                                    ? Text(
+                                        member.shortBio!,
+                                        style: isExcluded
+                                            ? TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 14,
+                                              )
+                                            : TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 14,
+                                              ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                    : null,
+                                trailing: Checkbox(
+                                  value: isExcluded,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      if (value == true) {
+                                        _excludedMemberIds.add(memberId);
+                                      } else {
+                                        _excludedMemberIds.remove(memberId);
+                                      }
+                                    });
+                                  },
+                                ),
                               ),
                             ),
                           );
+                        },
+                      );
                     },
                   ),
                 ],

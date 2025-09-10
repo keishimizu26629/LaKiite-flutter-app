@@ -121,6 +121,8 @@ class FriendSearchViewModel
         throw Exception('ユーザー情報が見つかりません');
       }
 
+      AppLogger.info('👥 友達申請を送信開始: $_currentUserId → $toUserId');
+
       final notification = domain.Notification.createFriendRequest(
         fromUserId: _currentUserId,
         toUserId: toUserId,
@@ -128,10 +130,16 @@ class FriendSearchViewModel
         toUserDisplayName: state.value!.displayName,
       );
 
+      // Firestoreに通知を保存（Cloud Functionsのトリガーが自動実行される）
       await _notificationRepository.createNotification(notification);
+
+      AppLogger.info(
+          '✅ 友達申請通知をFirestoreに保存完了 - Cloud Functionsが自動でプッシュ通知を送信します');
+
       _message = '友達申請を送信しました';
       state = const AsyncValue.data(null); // 検索結果をクリア
     } catch (e) {
+      AppLogger.error('❌ 友達申請送信エラー: $e');
       state = AsyncValue.error(e, StackTrace.current);
     }
   }

@@ -66,3 +66,23 @@ android/app/google-services.json
 
 # cursor
 .cursor/
+
+# Test related
+coverage/
+test-results/
+test_driver/screenshots/
+integration_test/screenshots/
+*.coverage
+*.lcov
+
+# Flutter test coverage
+coverage/lcov.info
+coverage/html/
+
+# Generated launcher icons and splash screens
+android/app/src/main/res/mipmap-*/
+android/app/src/main/res/drawable-*/ic_launcher_foreground.png
+android/app/src/development/res/
+android/app/src/production/res/
+ios/Runner/Assets.xcassets/AppIcon*.appiconset/
+assets/icon/dev_icon.png

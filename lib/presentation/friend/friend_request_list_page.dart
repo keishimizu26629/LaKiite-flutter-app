@@ -72,13 +72,35 @@ class FriendRequestListPage extends ConsumerWidget {
             'FriendRequestListPage - Building card for request ${request.id}');
         return FriendRequestCard(
           request: request,
-          onAccept: () {
+          onAccept: () async {
             AppLogger.debug(
                 'FriendRequestListPage - Accepting request ${request.id}');
-            notifier.acceptNotification(request.id).then((_) {
-              // フレンド申請承認後にフレンドリストを更新
-              ref.invalidate(userFriendsProvider);
-            });
+            try {
+              await notifier.acceptNotification(request.id);
+
+              // Cloud Functionsの処理完了を待つための遅延
+              // サーバーサイドでのfriendsリスト更新処理が完了するまで待機
+              await Future.delayed(const Duration(milliseconds: 1500));
+
+              AppLogger.debug(
+                  'FriendRequestListPage - Friend request accepted successfully');
+
+              // StreamProviderを使用している場合は自動更新されるため、
+              // 手動でのinvalidateは不要だが、確実性のため実行
+              ref.invalidate(userFriendsStreamProvider);
+            } catch (e) {
+              AppLogger.error(
+                  'FriendRequestListPage - Error accepting request: $e');
+              // エラーハンドリング（必要に応じてユーザーに通知）
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('フレンド申請の承認に失敗しました: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
           },
           onReject: () {
             AppLogger.debug(
@@ -99,7 +121,7 @@ class FriendRequestListPage extends ConsumerWidget {
 
 class FriendRequestCard extends StatelessWidget {
   final domain.Notification request;
-  final VoidCallback onAccept;
+  final Future<void> Function() onAccept;
   final VoidCallback onReject;
 
   const FriendRequestCard({

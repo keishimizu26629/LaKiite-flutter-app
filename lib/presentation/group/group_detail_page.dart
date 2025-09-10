@@ -134,7 +134,6 @@ class _GroupDetailPageState extends ConsumerState<GroupDetailPage>
                       const SizedBox(height: 8),
                       OutlinedButton.icon(
                         onPressed: () {
-                          // TODO: グループ編集機能の実装
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('編集機能は現在開発中です')),
                           );
@@ -174,7 +173,7 @@ class _GroupDetailPageState extends ConsumerState<GroupDetailPage>
             ),
           );
         },
-        tooltip: 'メンバーを招待',  // ツールチップを追加
+        tooltip: 'メンバーを招待', // ツールチップを追加
         child: const Icon(Icons.person_add),
       ),
     );
