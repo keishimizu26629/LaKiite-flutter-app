@@ -1,0 +1,71 @@
+import 'package:lakiite/domain/entity/user.dart';
+
+/// 認証機能を提供するリポジトリのインターフェース
+///
+/// アプリケーションの認証に関する以下の機能を定義します:
+/// - ユーザーのサインイン
+/// - ユーザーのサインアウト
+/// - 新規ユーザー登録
+/// - 認証状態の監視
+/// - アカウント削除
+///
+/// このインターフェースの実装クラスは、
+/// 具体的な認証基盤(例:Firebase Authentication)と
+/// アプリケーションを橋渡しする役割を果たします。
+abstract class IAuthRepository {
+  /// メールアドレスとパスワードでサインインを行う
+  ///
+  /// [email] サインインに使用するメールアドレス
+  /// [password] サインインに使用するパスワード
+  ///
+  /// 返値: サインイン成功時は[UserModel]、失敗時はnull
+  Future<UserModel?> signIn(String email, String password);
+
+  /// 現在のユーザーをサインアウトする
+  ///
+  /// サインアウト処理が完了するまで待機します。
+  Future<void> signOut();
+
+  /// 新規ユーザー登録を行う
+  ///
+  /// [email] 登録するメールアドレス
+  /// [password] 設定するパスワード
+  /// [name] ユーザー名
+  ///
+  /// 返値: 登録成功時は作成された[UserModel]、失敗時はnull
+  Future<UserModel?> signUp(String email, String password, String name);
+
+  /// 認証状態の変更を監視するStreamを提供する
+  ///
+  /// 返値: 認証状態が変更されるたびに[UserModel](または未認証時はnull)を
+  /// 発行するStream
+  Stream<UserModel?> authStateChanges();
+
+  /// 現在のユーザーアカウントを削除する
+  ///
+  /// アカウント関連のデータも全て削除されます。
+  /// この操作は元に戻せません。
+  ///
+  /// 返値: 削除が成功したかどうかを示すbool値
+  Future<bool> deleteAccount();
+
+  /// パスワードで再認証を行う
+  ///
+  /// セキュリティの観点から、アカウント削除前に再認証が必要な場合に使用します。
+  ///
+  /// パラメータ:
+  /// - [password] 現在のパスワード
+  ///
+  /// 返値: 再認証が成功したかどうかを示すbool値
+  Future<bool> reauthenticateWithPassword(String password);
+
+  /// 再認証を行ってからアカウントを削除する
+  ///
+  /// セキュリティの観点から、再認証後にアカウント削除を実行します。
+  ///
+  /// パラメータ:
+  /// - [password] 現在のパスワード
+  ///
+  /// 返値: 削除が成功したかどうかを示すbool値
+  Future<bool> deleteAccountWithReauth(String password);
+}

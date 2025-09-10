@@ -1,0 +1,57 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Flutter (Development)",
+        "request": "launch",
+        "type": "dart",
+        "flutterMode": "debug",
+        "program": "lib/main.dart",
+        "preLaunchTask": "generate-dev-icon",
+        "args": [
+          "--flavor", "dev",
+          "--dart-define-from-file=dart_define/dev_dart_define.json"
+        ]
+      },
+      {
+        "name": "Flutter (Production)",
+        "request": "launch",
+        "type": "dart",
+        "flutterMode": "debug",
+        "program": "lib/main.dart",
+        "args": [
+          "--flavor", "prod",
+          "--dart-define-from-file=dart_define/prod_dart_define.json"
+        ]
+      },
+      {
+        "name": "Flutter (No Flavor)",
+        "request": "launch",
+        "type": "dart",
+        "flutterMode": "debug",
+        "program": "lib/main.dart"
+      },
+      {
+        "name": "Flutter (Profile Mode)",
+        "request": "launch",
+        "type": "dart",
+        "flutterMode": "profile",
+        "program": "lib/main.dart",
+        "args": [
+          "--flavor", "dev",
+          "--dart-define-from-file=dart_define/dev_dart_define.json"
+        ]
+      },
+      {
+        "name": "Flutter (Release Mode)",
+        "request": "launch",
+        "type": "dart",
+        "flutterMode": "release",
+        "program": "lib/main.dart",
+        "args": [
+          "--flavor", "prod",
+          "--dart-define-from-file=dart_define/prod_dart_define.json"
+        ]
+      }
+    ]
+  }

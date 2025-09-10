@@ -30,9 +30,15 @@
 .pub-cache/
 .pub/
 /build/
+build/ios/XCBuildData/
 
 # Web related
 lib/generated_plugin_registrant.dart
+
+# Firebase related
+/lib/firebase_options.dart
+/lib/firebase_options_dev.dart
+/lib/firebase_options_prod.dart
 
 # Symbolication related
 app.*.symbols
@@ -45,5 +51,38 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-.fvm/flutter_sdk
 .vscode/settings.json
+
+# FVM Version Cache
+.fvm/
+
+.ai/
+
+ios/Runner/GoogleService-Info.plist
+
+# Nested project directory
+/lakiite-flutter-app/
+android/app/google-services.json
+
+# cursor
+.cursor/
+
+# Test related
+coverage/
+test-results/
+test_driver/screenshots/
+integration_test/screenshots/
+*.coverage
+*.lcov
+
+# Flutter test coverage
+coverage/lcov.info
+coverage/html/
+
+# Generated launcher icons and splash screens
+android/app/src/main/res/mipmap-*/
+android/app/src/main/res/drawable-*/ic_launcher_foreground.png
+android/app/src/development/res/
+android/app/src/production/res/
+ios/Runner/Assets.xcassets/AppIcon*.appiconset/
+assets/icon/dev_icon.png
