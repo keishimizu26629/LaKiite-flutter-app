@@ -80,8 +80,7 @@ class _FakeUserRepository implements IUserRepository {
   final UserModel _user;
 
   @override
-  Future<UserModel?> getUser(String id) async =>
-      id == _user.id ? _user : null;
+  Future<UserModel?> getUser(String id) async => id == _user.id ? _user : null;
 
   // All other methods are not used in this test.
   @override
@@ -89,12 +88,10 @@ class _FakeUserRepository implements IUserRepository {
       Future.error(UnimplementedError());
 
   @override
-  Future<void> createUser(UserModel user) =>
-      Future.error(UnimplementedError());
+  Future<void> createUser(UserModel user) => Future.error(UnimplementedError());
 
   @override
-  Future<void> deleteUser(String id) =>
-      Future.error(UnimplementedError());
+  Future<void> deleteUser(String id) => Future.error(UnimplementedError());
 
   @override
   Future<PublicUserModel?> getFriendPublicProfile(String id) =>
@@ -121,8 +118,7 @@ class _FakeUserRepository implements IUserRepository {
       Future.error(UnimplementedError());
 
   @override
-  Future<void> updateUser(UserModel user) =>
-      Future.error(UnimplementedError());
+  Future<void> updateUser(UserModel user) => Future.error(UnimplementedError());
 
   @override
   Future<String?> uploadUserIcon(String userId, Uint8List imageBytes) =>
@@ -147,14 +143,17 @@ class _FakeUserRepository implements IUserRepository {
 
 class _FakeNotificationRepository implements INotificationRepository {
   @override
-  Future<void> createNotification(domain_notification.Notification notification) async {}
+  Future<void> createNotification(
+      domain_notification.Notification notification) async {}
 
   @override
-  Future<void> updateNotification(domain_notification.Notification notification) =>
+  Future<void> updateNotification(
+          domain_notification.Notification notification) =>
       Future.error(UnimplementedError());
 
   @override
-  Future<domain_notification.Notification?> getNotification(String notificationId) =>
+  Future<domain_notification.Notification?> getNotification(
+          String notificationId) =>
       Future.error(UnimplementedError());
 
   @override
@@ -179,7 +178,8 @@ class _FakeNotificationRepository implements INotificationRepository {
       const Stream.empty();
 
   @override
-  Future<bool> hasPendingFriendRequest(String fromUserId, String toUserId) async =>
+  Future<bool> hasPendingFriendRequest(
+          String fromUserId, String toUserId) async =>
       false;
 
   @override
@@ -301,8 +301,7 @@ class _FakeScheduleInteractionRepository
       Future.error(UnimplementedError());
 
   @override
-  Future<String> addComment(
-          String scheduleId, String userId, String content) =>
+  Future<String> addComment(String scheduleId, String userId, String content) =>
       Future.error(UnimplementedError());
 
   @override
@@ -362,8 +361,8 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          authNotifierProvider
-              .overrideWith(() => _StubAuthNotifier(AuthState.authenticated(user))),
+          authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(user))),
           scheduleInteractionRepositoryProvider.overrideWithValue(repository),
           scheduleInteractionNotifierProvider.overrideWith((ref, scheduleId) {
             return ScheduleInteractionNotifier(
@@ -388,8 +387,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final provider =
-          scheduleInteractionNotifierProvider(schedule.id);
+      final provider = scheduleInteractionNotifierProvider(schedule.id);
 
       // Ensure notifier is created and subscriptions are active.
       container.read(provider);
