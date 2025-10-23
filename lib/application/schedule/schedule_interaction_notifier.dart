@@ -43,7 +43,8 @@ class ScheduleInteractionNotifier
   })  : _enablePushNotifications = enablePushNotifications,
         super(const ScheduleInteractionState()) {
     if (_enablePushNotifications) {
-      _pushNotificationSender = pushNotificationSender ?? PushNotificationSender();
+      _pushNotificationSender =
+          pushNotificationSender ?? PushNotificationSender();
     } else {
       _pushNotificationSender = pushNotificationSender;
     }
@@ -187,8 +188,9 @@ class ScheduleInteractionNotifier
           userPhotoUrl: userDoc.iconUrl,
         );
 
-        final latestReactions =
-            state.reactions.where((reaction) => reaction.userId != userId).toList();
+        final latestReactions = state.reactions
+            .where((reaction) => reaction.userId != userId)
+            .toList();
         final updatedReactions = [...latestReactions, newReaction];
         AppLogger.debug(
             'Optimistically updating state after adding reaction: ${updatedReactions.length} reactions');
@@ -254,12 +256,12 @@ class ScheduleInteractionNotifier
           await _repository.addComment(_scheduleId, userId, content);
 
       // 自分の投稿以外の場合のみ通知を作成
-        if (userId != schedule.ownerId) {
-          await _ref
-              .read(notificationNotifierProvider.notifier)
-              .createCommentNotification(
-                toUserId: schedule.ownerId,
-                fromUserId: userId,
+      if (userId != schedule.ownerId) {
+        await _ref
+            .read(notificationNotifierProvider.notifier)
+            .createCommentNotification(
+              toUserId: schedule.ownerId,
+              fromUserId: userId,
               scheduleId: _scheduleId,
               interactionId: commentId,
               fromUserDisplayName: userDoc.displayName,
