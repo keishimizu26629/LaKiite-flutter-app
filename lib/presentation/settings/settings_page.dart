@@ -1,20 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter/foundation.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../presentation_provider.dart';
-import '../../config/app_config.dart';
+import '../../utils/logger.dart';
 import 'edit_name_page.dart';
 import 'edit_email_page.dart';
 import 'edit_search_id_page.dart';
-import 'legal_info_page_alternative.dart';
 import '../login/login_page.dart';
-import '../debug/debug_notification_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   static const String path = '/settings';
 
   const SettingsPage({super.key});
+
+  /// 指定されたURLを外部ブラウザで開く
+  Future<void> _launchURL(BuildContext context, String url) async {
+    final uri = Uri.parse(url);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+          webViewConfiguration: const WebViewConfiguration(
+            enableJavaScript: true,
+            enableDomStorage: true,
+          ),
+        );
+      } else {
+        // URLを開けない場合はスナックバーでエラーを表示
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('URLを開けませんでした: $url'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        AppLogger.error('Could not launch $url');
+      }
+    } catch (e) {
+      // 例外が発生した場合もスナックバーでエラーを表示
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('エラーが発生しました: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      AppLogger.error('Error launching URL: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,55 +90,36 @@ class SettingsPage extends ConsumerWidget {
           // デバッグ機能（デバッグモードまたは開発環境でのみ表示）
           // TestFlight配信時にコメントアウト
           /*
-          if (kDebugMode)
-            ListTile(
-              leading: const Icon(Icons.bug_report, color: Colors.orange),
-              title: const Text('🐯 プッシュ通知デバッグ'),
-              subtitle: const Text('FCMトークンの確認・テスト'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DebugNotificationPage(),
-                  ),
-                );
-              },
-            ),
-          if (kDebugMode) const Divider(),
+          ListTile(
+            leading: const Icon(Icons.bug_report, color: Colors.orange),
+            title: const Text('🐯 プッシュ通知デバッグ'),
+            subtitle: const Text('FCMトークンの確認・テスト'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DebugNotificationPage(),
+                ),
+              );
+            },
+          ),
+          const Divider(),
           */
 
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text('プライバシーポリシー'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // WebView 設定をチェック（現在は常に外部ブラウザ版を使用）
-              if (WebViewConfig.isEnabled) {
-                // WebView 版（現在は無効化推奨）
-                context.push('/settings/legal-info-webview');
-              } else {
-                // 外部ブラウザ版（安全）
-                context.push(
-                    '/settings/${LegalInfoPageAlternative.privacyPolicyPath}');
-              }
-            },
+            onTap: () => _launchURL(context,
+                'https://keishimizu26629.github.io/LaKiite-flutter-app/privacy-policy.html'),
           ),
           ListTile(
             leading: const Icon(Icons.description_outlined),
             title: const Text('利用規約'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // WebView 設定をチェック（現在は常に外部ブラウザ版を使用）
-              if (WebViewConfig.isEnabled) {
-                // WebView 版（現在は無効化推奨）
-                context.push('/settings/legal-info-webview');
-              } else {
-                // 外部ブラウザ版（安全）
-                context.push(
-                    '/settings/${LegalInfoPageAlternative.termsOfServicePath}');
-              }
-            },
+            onTap: () => _launchURL(context,
+                'https://keishimizu26629.github.io/LaKiite-flutter-app/terms-of-service.html'),
           ),
           const Divider(),
           ListTile(
