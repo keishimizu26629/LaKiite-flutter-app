@@ -31,14 +31,22 @@ class ScheduleInteractionNotifier
   final Ref _ref;
   StreamSubscription<List<ScheduleReaction>>? _reactionsSubscription;
   StreamSubscription<List<ScheduleComment>>? _commentsSubscription;
-  late PushNotificationSender _pushNotificationSender;
+  final bool _enablePushNotifications;
+  PushNotificationSender? _pushNotificationSender;
 
   ScheduleInteractionNotifier(
     this._repository,
     this._scheduleId,
-    this._ref,
-  ) : super(const ScheduleInteractionState()) {
-    _pushNotificationSender = PushNotificationSender();
+    this._ref, {
+    PushNotificationSender? pushNotificationSender,
+    bool enablePushNotifications = true,
+  })  : _enablePushNotifications = enablePushNotifications,
+        super(const ScheduleInteractionState()) {
+    if (_enablePushNotifications) {
+      _pushNotificationSender = pushNotificationSender ?? PushNotificationSender();
+    } else {
+      _pushNotificationSender = pushNotificationSender;
+    }
     _initializeSubscriptions();
   }
 
@@ -73,8 +81,6 @@ class ScheduleInteractionNotifier
       AppLogger.debug(
           'Current state before update: ${state.reactions.length} reactions');
 
-      // isLoading状態を設定する前に現在の状態をキャプチャ
-      final currentReactions = [...state.reactions];
       final currentReaction = state.getUserReaction(userId);
       AppLogger.debug('Current reaction before update: $currentReaction');
 
@@ -101,8 +107,9 @@ class ScheduleInteractionNotifier
           await _repository.removeReaction(_scheduleId, userId);
 
           // リアクション除去後の状態を反映（Stream更新を待たずに反映）
+          final latestReactions = state.reactions;
           final updatedReactions =
-              currentReactions.where((r) => r.userId != userId).toList();
+              latestReactions.where((r) => r.userId != userId).toList();
           AppLogger.debug(
               'Optimistically updating state after removing reaction: ${updatedReactions.length} reactions');
           state = state.copyWith(isLoading: false, reactions: updatedReactions);
@@ -117,20 +124,20 @@ class ScheduleInteractionNotifier
               await _repository.addReaction(_scheduleId, userId, type);
 
           // 楽観的に状態を更新
-          final updatedReactions = currentReactions.map((r) {
-            if (r.userId == userId) {
-              // 同じユーザーのリアクションを新しいタイプに更新
-              return ScheduleReaction(
-                id: reactionId,
-                userId: userId,
-                type: type,
-                createdAt: DateTime.now(),
-                userDisplayName: userDoc.displayName,
-                userPhotoUrl: userDoc.iconUrl,
-              );
-            }
-            return r;
-          }).toList();
+          final latestReactions = state.reactions
+              .where((reaction) => reaction.userId != userId)
+              .toList();
+          final updatedReactions = [
+            ...latestReactions,
+            ScheduleReaction(
+              id: reactionId,
+              userId: userId,
+              type: type,
+              createdAt: DateTime.now(),
+              userDisplayName: userDoc.displayName,
+              userPhotoUrl: userDoc.iconUrl,
+            ),
+          ];
 
           AppLogger.debug(
               'Optimistically updating state after changing reaction: ${updatedReactions.length} reactions');
@@ -148,15 +155,15 @@ class ScheduleInteractionNotifier
                   interactionId: reactionId,
                   fromUserDisplayName: userDoc.displayName,
                 );
-
-            // プッシュ通知送信
-            await _pushNotificationSender.sendReactionNotification(
-              toUserId: schedule.ownerId,
-              fromUserId: userId,
-              fromUserName: userDoc.displayName,
-              scheduleId: _scheduleId,
-              interactionId: reactionId,
-            );
+            if (_enablePushNotifications && _pushNotificationSender != null) {
+              await _pushNotificationSender!.sendReactionNotification(
+                toUserId: schedule.ownerId,
+                fromUserId: userId,
+                fromUserName: userDoc.displayName,
+                scheduleId: _scheduleId,
+                interactionId: reactionId,
+              );
+            }
 
             AppLogger.debug(
                 'Notification created successfully for reaction update');
@@ -180,7 +187,9 @@ class ScheduleInteractionNotifier
           userPhotoUrl: userDoc.iconUrl,
         );
 
-        final updatedReactions = [...currentReactions, newReaction];
+        final latestReactions =
+            state.reactions.where((reaction) => reaction.userId != userId).toList();
+        final updatedReactions = [...latestReactions, newReaction];
         AppLogger.debug(
             'Optimistically updating state after adding reaction: ${updatedReactions.length} reactions');
         state = state.copyWith(isLoading: false, reactions: updatedReactions);
@@ -197,15 +206,15 @@ class ScheduleInteractionNotifier
                 interactionId: reactionId,
                 fromUserDisplayName: userDoc.displayName,
               );
-
-          // プッシュ通知送信
-          await _pushNotificationSender.sendReactionNotification(
-            toUserId: schedule.ownerId,
-            fromUserId: userId,
-            fromUserName: userDoc.displayName,
-            scheduleId: _scheduleId,
-            interactionId: reactionId,
-          );
+          if (_enablePushNotifications && _pushNotificationSender != null) {
+            await _pushNotificationSender!.sendReactionNotification(
+              toUserId: schedule.ownerId,
+              fromUserId: userId,
+              fromUserName: userDoc.displayName,
+              scheduleId: _scheduleId,
+              interactionId: reactionId,
+            );
+          }
 
           AppLogger.debug('Notification created successfully for new reaction');
         } else {
@@ -245,26 +254,26 @@ class ScheduleInteractionNotifier
           await _repository.addComment(_scheduleId, userId, content);
 
       // 自分の投稿以外の場合のみ通知を作成
-      if (userId != schedule.ownerId) {
-        await _ref
-            .read(notificationNotifierProvider.notifier)
-            .createCommentNotification(
-              toUserId: schedule.ownerId,
-              fromUserId: userId,
+        if (userId != schedule.ownerId) {
+          await _ref
+              .read(notificationNotifierProvider.notifier)
+              .createCommentNotification(
+                toUserId: schedule.ownerId,
+                fromUserId: userId,
               scheduleId: _scheduleId,
               interactionId: commentId,
               fromUserDisplayName: userDoc.displayName,
             );
-
-        // プッシュ通知送信
-        await _pushNotificationSender.sendCommentNotification(
-          toUserId: schedule.ownerId,
-          fromUserId: userId,
-          fromUserName: userDoc.displayName,
-          scheduleId: _scheduleId,
-          interactionId: commentId,
-          commentContent: content,
-        );
+        if (_enablePushNotifications && _pushNotificationSender != null) {
+          await _pushNotificationSender!.sendCommentNotification(
+            toUserId: schedule.ownerId,
+            fromUserId: userId,
+            fromUserName: userDoc.displayName,
+            scheduleId: _scheduleId,
+            interactionId: commentId,
+            commentContent: content,
+          );
+        }
       }
 
       state = state.copyWith(isLoading: false);
