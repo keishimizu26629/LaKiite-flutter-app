@@ -1,28 +1,25 @@
-name: Unit Tests
+name: PR Checks
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  push:
+    branches: [develop]
 
 jobs:
-  unit_tests:
-    name: Unit Tests
+  test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.24.0"
           channel: "stable"
-          cache: true
 
-      - name: Install dependencies
+      - name: Get dependencies
         run: flutter pub get
 
       - name: Create dummy Firebase config files for CI
@@ -37,6 +34,7 @@ jobs:
               appId: 'dummy-app-id',
               messagingSenderId: 'dummy-sender-id',
               projectId: 'dummy-project-id',
+              storageBucket: 'dummy-bucket',
             );
           }
           EOF
@@ -45,10 +43,11 @@ jobs:
 
           class DevFirebaseOptions {
             static FirebaseOptions get currentPlatform => const FirebaseOptions(
-              apiKey: 'dummy-api-key',
-              appId: 'dummy-app-id',
-              messagingSenderId: 'dummy-sender-id',
-              projectId: 'dummy-project-id',
+              apiKey: 'dummy-dev-api-key',
+              appId: 'dummy-dev-app-id',
+              messagingSenderId: 'dummy-dev-sender-id',
+              projectId: 'dummy-dev-project-id',
+              storageBucket: 'dummy-dev-bucket',
             );
           }
           EOF
@@ -57,10 +56,11 @@ jobs:
 
           class ProdFirebaseOptions {
             static FirebaseOptions get currentPlatform => const FirebaseOptions(
-              apiKey: 'dummy-api-key',
-              appId: 'dummy-app-id',
-              messagingSenderId: 'dummy-sender-id',
-              projectId: 'dummy-project-id',
+              apiKey: 'dummy-prod-api-key',
+              appId: 'dummy-prod-app-id',
+              messagingSenderId: 'dummy-prod-sender-id',
+              projectId: 'dummy-prod-project-id',
+              storageBucket: 'dummy-prod-bucket',
             );
           }
           EOF
@@ -68,29 +68,11 @@ jobs:
           # 作成したファイルをフォーマット
           dart format lib/firebase_options*.dart
 
-      - name: Analyze project source (ignore Firebase missing files)
+      - name: Analyze code
         run: flutter analyze --no-fatal-infos 2>&1 | grep -v "firebase_options" | grep -v "Target of URI doesn't exist" | grep -v "Undefined name.*FirebaseOptions" || echo "Analysis completed (Firebase errors ignored)"
 
-      - name: Check formatting (excluding generated Firebase files)
-        run: |
-          # Firebaseファイルを一時的に移動
-          mkdir -p temp_firebase
-          mv lib/firebase_options*.dart temp_firebase/ 2>/dev/null || true
+      - name: Run tests
+        run: flutter test
 
-          # フォーマットチェック実行
-          dart format --output=none --set-exit-if-changed .
-
-          # Firebaseファイルを戻す
-          mv temp_firebase/firebase_options*.dart lib/ 2>/dev/null || true
-          rmdir temp_firebase 2>/dev/null || true
-
-      - name: Run unit tests
-        run: flutter test --coverage --dart-define=FLUTTER_TEST=true
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage/lcov.info
-          fail_ci_if_error: false
-          verbose: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Check formatting
+        run: dart format --set-exit-if-changed .
