@@ -1,0 +1,20 @@
+# Global code owners
+* @keishimizu26629
+
+# Flutter/Dart specific files
+*.dart @keishimizu26629
+pubspec.yaml @keishimizu26629
+pubspec.lock @keishimizu26629
+
+# Configuration files
+android/ @keishimizu26629
+ios/ @keishimizu26629
+firebase.json @keishimizu26629
+
+# Documentation
+docs/ @keishimizu26629
+README.md @keishimizu26629
+
+# CI/CD and scripts
+.github/ @keishimizu26629
+scripts/ @keishimizu26629
