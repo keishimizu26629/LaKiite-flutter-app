@@ -28,7 +28,8 @@ void main() {
       expect(find.text('メールアドレス'), findsOneWidget);
       expect(find.text('パスワード'), findsOneWidget);
       expect(find.byType(ElevatedButton), findsOneWidget); // ログインボタン
-      expect(find.text('Googleでログイン'), findsOneWidget);
+      // Googleログインはファーストリリースでは除外
+      // expect(find.text('Googleでログイン'), findsOneWidget);
       expect(find.text('アカウントをお持ちでない方は新規登録'), findsOneWidget);
     });
 
