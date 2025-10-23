@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 env:
-  FLUTTER_VERSION: "3.19.3"
+  FLUTTER_VERSION: "3.24.0"
 
 jobs:
   # 静的解析
