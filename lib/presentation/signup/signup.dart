@@ -124,23 +124,22 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     ? const CircularProgressIndicator()
                     : const Text('新規登録'),
               ),
-              const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: () {
-                  // Googleサインアップ機能は未実装
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.g_mobiledata),
-                    SizedBox(width: 8),
-                    Text('Googleで登録'),
-                  ],
-                ),
-              ),
+              // Firstリリースではサードパーティー登録を非表示
+              // const SizedBox(height: 16),
+              // OutlinedButton(
+              //   onPressed: null,
+              //   style: OutlinedButton.styleFrom(
+              //     padding: const EdgeInsets.symmetric(vertical: 16),
+              //   ),
+              //   child: const Row(
+              //     mainAxisAlignment: MainAxisAlignment.center,
+              //     children: [
+              //       Icon(Icons.g_mobiledata),
+              //       SizedBox(width: 8),
+              //       Text('Googleで登録'),
+              //     ],
+              //   ),
+              // ),
               const SizedBox(height: 24),
               TextButton(
                 onPressed: _navigateToLogin,
