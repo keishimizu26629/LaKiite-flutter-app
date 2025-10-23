@@ -99,23 +99,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ? const CircularProgressIndicator()
                     : const Text('ログイン'),
               ),
-              const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: () {
-                  // Googleログイン機能は未実装
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.g_mobiledata),
-                    SizedBox(width: 8),
-                    Text('Googleでログイン'),
-                  ],
-                ),
-              ),
+              // Firstリリースではサードパーティーログインを非表示
+              // const SizedBox(height: 16),
+              // OutlinedButton(
+              //   onPressed: null,
+              //   style: OutlinedButton.styleFrom(
+              //     padding: const EdgeInsets.symmetric(vertical: 16),
+              //   ),
+              //   child: const Row(
+              //     mainAxisAlignment: MainAxisAlignment.center,
+              //     children: [
+              //       Icon(Icons.g_mobiledata),
+              //       SizedBox(width: 8),
+              //       Text('Googleでログイン'),
+              //     ],
+              //   ),
+              // ),
               const SizedBox(height: 24),
               TextButton(
                 onPressed: _navigateToSignup,
