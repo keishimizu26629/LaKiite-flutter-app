@@ -65,6 +65,9 @@ jobs:
           }
           EOF
 
+          # 作成したファイルをフォーマット
+          dart format lib/firebase_options*.dart
+
       - name: Analyze code
         run: flutter analyze --no-fatal-infos 2>&1 | grep -v "firebase_options" | grep -v "Target of URI doesn't exist" | grep -v "Undefined name.*FirebaseOptions" || echo "Analysis completed (Firebase errors ignored)"
 
