@@ -53,26 +53,40 @@ class ScheduleInteractionNotifier
 
   Future<void> _initializeSubscriptions() async {
     try {
-      // 認証状態を確認
       final authState = await _ref.read(authNotifierProvider.future);
+      if (!mounted) {
+        return;
+      }
       if (authState.user == null) {
         throw Exception('User not authenticated');
       }
 
-      // リアクションの監視を開始
       _reactionsSubscription = _repository.watchReactions(_scheduleId).listen(
-            (reactions) => state = state.copyWith(reactions: reactions),
-            onError: (error) => state = state.copyWith(error: error.toString()),
-          );
+        (reactions) {
+          if (!mounted) return;
+          state = state.copyWith(reactions: reactions);
+        },
+        onError: (error) {
+          if (!mounted) return;
+          state = state.copyWith(error: error.toString());
+        },
+      );
 
-      // コメントの監視を開始
       _commentsSubscription = _repository.watchComments(_scheduleId).listen(
-            (comments) => state = state.copyWith(comments: comments),
-            onError: (error) => state = state.copyWith(error: error.toString()),
-          );
+        (comments) {
+          if (!mounted) return;
+          state = state.copyWith(comments: comments);
+        },
+        onError: (error) {
+          if (!mounted) return;
+          state = state.copyWith(error: error.toString());
+        },
+      );
     } catch (e) {
       AppLogger.error('Error initializing subscriptions: $e');
-      state = state.copyWith(error: e.toString());
+      if (mounted) {
+        state = state.copyWith(error: e.toString());
+      }
     }
   }
 
@@ -90,12 +104,18 @@ class ScheduleInteractionNotifier
       final scheduleStream =
           _ref.read(scheduleRepositoryProvider).watchSchedule(_scheduleId);
       final schedule = await scheduleStream.first;
+      if (!mounted) {
+        return;
+      }
       AppLogger.debug('Schedule data: $schedule');
       if (schedule == null) {
         throw Exception('Schedule not found');
       }
 
       final userDoc = await _ref.read(userRepositoryProvider).getUser(userId);
+      if (!mounted) {
+        return;
+      }
       AppLogger.debug('User data: $userDoc');
       if (userDoc == null) {
         throw Exception('User not found');
@@ -107,24 +127,21 @@ class ScheduleInteractionNotifier
               'Removing same reaction - userId: $userId, type: $type');
           await _repository.removeReaction(_scheduleId, userId);
 
-          // リアクション除去後の状態を反映（Stream更新を待たずに反映）
           final latestReactions = state.reactions;
           final updatedReactions =
               latestReactions.where((r) => r.userId != userId).toList();
           AppLogger.debug(
               'Optimistically updating state after removing reaction: ${updatedReactions.length} reactions');
+          if (!mounted) return;
           state = state.copyWith(isLoading: false, reactions: updatedReactions);
         } else {
           AppLogger.debug(
               'Updating to different reaction - from: ${currentReaction.type}, to: $type');
-          // 前のリアクションを削除
           await _repository.removeReaction(_scheduleId, userId);
 
-          // 新しいリアクションを追加
           final reactionId =
               await _repository.addReaction(_scheduleId, userId, type);
 
-          // 楽観的に状態を更新
           final latestReactions = state.reactions
               .where((reaction) => reaction.userId != userId)
               .toList();
@@ -142,6 +159,7 @@ class ScheduleInteractionNotifier
 
           AppLogger.debug(
               'Optimistically updating state after changing reaction: ${updatedReactions.length} reactions');
+          if (!mounted) return;
           state = state.copyWith(isLoading: false, reactions: updatedReactions);
 
           if (userId != schedule.ownerId) {
@@ -156,6 +174,7 @@ class ScheduleInteractionNotifier
                   interactionId: reactionId,
                   fromUserDisplayName: userDoc.displayName,
                 );
+            if (!mounted) return;
             if (_enablePushNotifications && _pushNotificationSender != null) {
               await _pushNotificationSender!.sendReactionNotification(
                 toUserId: schedule.ownerId,
@@ -178,7 +197,6 @@ class ScheduleInteractionNotifier
         final reactionId =
             await _repository.addReaction(_scheduleId, userId, type);
 
-        // 楽観的に状態を更新
         final newReaction = ScheduleReaction(
           id: reactionId,
           userId: userId,
@@ -194,6 +212,7 @@ class ScheduleInteractionNotifier
         final updatedReactions = [...latestReactions, newReaction];
         AppLogger.debug(
             'Optimistically updating state after adding reaction: ${updatedReactions.length} reactions');
+        if (!mounted) return;
         state = state.copyWith(isLoading: false, reactions: updatedReactions);
 
         if (userId != schedule.ownerId) {
@@ -208,6 +227,7 @@ class ScheduleInteractionNotifier
                 interactionId: reactionId,
                 fromUserDisplayName: userDoc.displayName,
               );
+          if (!mounted) return;
           if (_enablePushNotifications && _pushNotificationSender != null) {
             await _pushNotificationSender!.sendReactionNotification(
               toUserId: schedule.ownerId,
@@ -230,7 +250,9 @@ class ScheduleInteractionNotifier
     } catch (e, stack) {
       AppLogger.error('Error in toggleReaction: $e');
       AppLogger.error('Stack trace: $stack');
-      state = state.copyWith(isLoading: false, error: e.toString());
+      if (mounted) {
+        state = state.copyWith(isLoading: false, error: e.toString());
+      }
     }
   }
 
@@ -238,16 +260,20 @@ class ScheduleInteractionNotifier
     try {
       state = state.copyWith(isLoading: true, error: null);
 
-      // スケジュール情報を取得
       final scheduleStream =
           _ref.read(scheduleRepositoryProvider).watchSchedule(_scheduleId);
       final schedule = await scheduleStream.first;
+      if (!mounted) {
+        return;
+      }
       if (schedule == null) {
         throw Exception('Schedule not found');
       }
 
-      // ユーザー情報を取得
       final userDoc = await _ref.read(userRepositoryProvider).getUser(userId);
+      if (!mounted) {
+        return;
+      }
       if (userDoc == null) {
         throw Exception('User not found');
       }
@@ -255,32 +281,23 @@ class ScheduleInteractionNotifier
       final commentId =
           await _repository.addComment(_scheduleId, userId, content);
 
-      // 自分の投稿以外の場合のみ通知を作成
-      if (userId != schedule.ownerId) {
-        await _ref
-            .read(notificationNotifierProvider.notifier)
-            .createCommentNotification(
-              toUserId: schedule.ownerId,
-              fromUserId: userId,
-              scheduleId: _scheduleId,
-              interactionId: commentId,
-              fromUserDisplayName: userDoc.displayName,
-            );
-        if (_enablePushNotifications && _pushNotificationSender != null) {
-          await _pushNotificationSender!.sendCommentNotification(
-            toUserId: schedule.ownerId,
-            fromUserId: userId,
-            fromUserName: userDoc.displayName,
-            scheduleId: _scheduleId,
-            interactionId: commentId,
-            commentContent: content,
-          );
-        }
-      }
+      await _notifyComment(
+        scheduleOwnerId: schedule.ownerId,
+        fromUserId: userId,
+        scheduleId: _scheduleId,
+        interactionId: commentId,
+        fromUserDisplayName: userDoc.displayName,
+        commentContent: content,
+      );
 
+      if (!mounted) {
+        return;
+      }
       state = state.copyWith(isLoading: false);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      if (mounted) {
+        state = state.copyWith(isLoading: false, error: e.toString());
+      }
     }
   }
 
@@ -359,5 +376,87 @@ class ScheduleInteractionNotifier
     _reactionsSubscription?.cancel();
     _commentsSubscription?.cancel();
     super.dispose();
+  }
+
+  Future<void> _notifyReaction({
+    required String scheduleOwnerId,
+    required String fromUserId,
+    required String scheduleId,
+    required String interactionId,
+    required String fromUserDisplayName,
+  }) async {
+    if (!mounted) {
+      return;
+    }
+    if (fromUserId == scheduleOwnerId) {
+      AppLogger.debug(
+          'Skipping reaction notification - user is the schedule owner');
+      return;
+    }
+
+    await _ref
+        .read(notificationNotifierProvider.notifier)
+        .createReactionNotification(
+          toUserId: scheduleOwnerId,
+          fromUserId: fromUserId,
+          scheduleId: scheduleId,
+          interactionId: interactionId,
+          fromUserDisplayName: fromUserDisplayName,
+        );
+
+    if (!mounted) {
+      return;
+    }
+    if (_enablePushNotifications && _pushNotificationSender != null) {
+      await _pushNotificationSender!.sendReactionNotification(
+        toUserId: scheduleOwnerId,
+        fromUserId: fromUserId,
+        fromUserName: fromUserDisplayName,
+        scheduleId: scheduleId,
+        interactionId: interactionId,
+      );
+    }
+  }
+
+  Future<void> _notifyComment({
+    required String scheduleOwnerId,
+    required String fromUserId,
+    required String scheduleId,
+    required String interactionId,
+    required String fromUserDisplayName,
+    required String commentContent,
+  }) async {
+    if (!mounted) {
+      return;
+    }
+    if (fromUserId == scheduleOwnerId) {
+      AppLogger.debug(
+          'Skipping comment notification - user is the schedule owner');
+      return;
+    }
+
+    await _ref
+        .read(notificationNotifierProvider.notifier)
+        .createCommentNotification(
+          toUserId: scheduleOwnerId,
+          fromUserId: fromUserId,
+          scheduleId: scheduleId,
+          interactionId: interactionId,
+          fromUserDisplayName: fromUserDisplayName,
+        );
+
+    if (!mounted) {
+      return;
+    }
+    if (_enablePushNotifications && _pushNotificationSender != null) {
+      await _pushNotificationSender!.sendCommentNotification(
+        toUserId: scheduleOwnerId,
+        fromUserId: fromUserId,
+        fromUserName: fromUserDisplayName,
+        scheduleId: scheduleId,
+        interactionId: interactionId,
+        commentContent: commentContent,
+      );
+    }
   }
 }
