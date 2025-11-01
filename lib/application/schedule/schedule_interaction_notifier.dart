@@ -4,16 +4,10 @@ import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/schedule_comment.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
-import 'package:lakiite/infrastructure/schedule_interaction_repository.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/application/notification/notification_notifier.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import '../../infrastructure/firebase/push_notification_sender.dart';
-
-final scheduleInteractionRepositoryProvider =
-    Provider<IScheduleInteractionRepository>(
-  (ref) => ScheduleInteractionRepository(),
-);
 
 final scheduleInteractionNotifierProvider = StateNotifierProvider.family<
     ScheduleInteractionNotifier, ScheduleInteractionState, String>(
@@ -281,14 +275,8 @@ class ScheduleInteractionNotifier
       final commentId =
           await _repository.addComment(_scheduleId, userId, content);
 
-      await _notifyComment(
-        scheduleOwnerId: schedule.ownerId,
-        fromUserId: userId,
-        scheduleId: _scheduleId,
-        interactionId: commentId,
-        fromUserDisplayName: userDoc.displayName,
-        commentContent: content,
-      );
+      // TODO: 通知機能は後で実装
+      AppLogger.debug('Comment added: $commentId');
 
       if (!mounted) {
         return;
@@ -366,97 +354,11 @@ class ScheduleInteractionNotifier
 
   /// コメントを監視する
   ///
-  /// コメントの変更を[ScheduleInteractionState]の`comments`に反映します。
-  void _watchComments() {
-    // ... existing code ...
-  }
 
   @override
   void dispose() {
     _reactionsSubscription?.cancel();
     _commentsSubscription?.cancel();
     super.dispose();
-  }
-
-  Future<void> _notifyReaction({
-    required String scheduleOwnerId,
-    required String fromUserId,
-    required String scheduleId,
-    required String interactionId,
-    required String fromUserDisplayName,
-  }) async {
-    if (!mounted) {
-      return;
-    }
-    if (fromUserId == scheduleOwnerId) {
-      AppLogger.debug(
-          'Skipping reaction notification - user is the schedule owner');
-      return;
-    }
-
-    await _ref
-        .read(notificationNotifierProvider.notifier)
-        .createReactionNotification(
-          toUserId: scheduleOwnerId,
-          fromUserId: fromUserId,
-          scheduleId: scheduleId,
-          interactionId: interactionId,
-          fromUserDisplayName: fromUserDisplayName,
-        );
-
-    if (!mounted) {
-      return;
-    }
-    if (_enablePushNotifications && _pushNotificationSender != null) {
-      await _pushNotificationSender!.sendReactionNotification(
-        toUserId: scheduleOwnerId,
-        fromUserId: fromUserId,
-        fromUserName: fromUserDisplayName,
-        scheduleId: scheduleId,
-        interactionId: interactionId,
-      );
-    }
-  }
-
-  Future<void> _notifyComment({
-    required String scheduleOwnerId,
-    required String fromUserId,
-    required String scheduleId,
-    required String interactionId,
-    required String fromUserDisplayName,
-    required String commentContent,
-  }) async {
-    if (!mounted) {
-      return;
-    }
-    if (fromUserId == scheduleOwnerId) {
-      AppLogger.debug(
-          'Skipping comment notification - user is the schedule owner');
-      return;
-    }
-
-    await _ref
-        .read(notificationNotifierProvider.notifier)
-        .createCommentNotification(
-          toUserId: scheduleOwnerId,
-          fromUserId: fromUserId,
-          scheduleId: scheduleId,
-          interactionId: interactionId,
-          fromUserDisplayName: fromUserDisplayName,
-        );
-
-    if (!mounted) {
-      return;
-    }
-    if (_enablePushNotifications && _pushNotificationSender != null) {
-      await _pushNotificationSender!.sendCommentNotification(
-        toUserId: scheduleOwnerId,
-        fromUserId: fromUserId,
-        fromUserName: fromUserDisplayName,
-        scheduleId: scheduleId,
-        interactionId: interactionId,
-        commentContent: commentContent,
-      );
-    }
   }
 }

@@ -513,6 +513,44 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
     });
   }
 
+  @override
+  Future<int> getReactionCount(String scheduleId) async {
+    try {
+      AppLogger.debug('Getting reaction count for schedule: $scheduleId');
+      final snapshot = await _firestore
+          .collection('schedules')
+          .doc(scheduleId)
+          .collection('reactions')
+          .get();
+
+      final count = snapshot.docs.length;
+      AppLogger.debug('Reaction count for $scheduleId: $count');
+      return count;
+    } catch (e) {
+      AppLogger.error('Error getting reaction count: $e');
+      return 0;
+    }
+  }
+
+  @override
+  Future<int> getCommentCount(String scheduleId) async {
+    try {
+      AppLogger.debug('Getting comment count for schedule: $scheduleId');
+      final snapshot = await _firestore
+          .collection('schedules')
+          .doc(scheduleId)
+          .collection('comments')
+          .get();
+
+      final count = snapshot.docs.length;
+      AppLogger.debug('Comment count for $scheduleId: $count');
+      return count;
+    } catch (e) {
+      AppLogger.error('Error getting comment count: $e');
+      return 0;
+    }
+  }
+
   // 現在のユーザーIDを取得する補助メソッド
   Future<String?> _getCurrentUserId() async {
     final auth = FirebaseAuth.instance;

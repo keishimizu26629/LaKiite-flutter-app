@@ -6,7 +6,7 @@ import 'package:lakiite/domain/interfaces/i_user_repository.dart';
 import 'package:lakiite/domain/entity/user.dart' as domain;
 import 'package:lakiite/domain/value/user_id.dart';
 
-class MockUser extends Mock implements firebase_auth.User {
+class MockUser implements firebase_auth.User {
   @override
   String get uid => 'test-user-id';
 
@@ -24,18 +24,26 @@ class MockUser extends Mock implements firebase_auth.User {
     // モック実装 - 正常に完了したと仮定
     return MockUserCredential(this);
   }
+
+  // 他のすべての未実装メソッドをnoSuchMethodで処理
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class MockUserCredential extends Mock implements firebase_auth.UserCredential {
+class MockUserCredential implements firebase_auth.UserCredential {
   final firebase_auth.User mockUser;
 
   MockUserCredential(this.mockUser);
 
   @override
   firebase_auth.User? get user => mockUser;
+
+  // 他のすべての未実装メソッドをnoSuchMethodで処理
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class MockFirebaseAuth extends Mock implements firebase_auth.FirebaseAuth {
+class MockFirebaseAuth implements firebase_auth.FirebaseAuth {
   firebase_auth.User? _currentUser;
 
   @override
@@ -49,7 +57,7 @@ class MockFirebaseAuth extends Mock implements firebase_auth.FirebaseAuth {
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class MockUserRepository extends Mock implements IUserRepository {
+class MockUserRepository implements IUserRepository {
   @override
   Future<void> deleteUser(String id) async {
     // ユーザー削除のシミュレーション
@@ -150,12 +158,6 @@ class MockUserRepository extends Mock implements IUserRepository {
   Future<void> deleteUserIcon(String userId) async {
     throw UnimplementedError('テストでは使用しません');
   }
-}
-
-class Mock {
-  // モック用のベースクラス
-  @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
@@ -271,7 +273,7 @@ void main() {
   });
 }
 
-class MockUserWithReauthError extends Mock implements firebase_auth.User {
+class MockUserWithReauthError implements firebase_auth.User {
   @override
   String get uid => 'test-user-id';
 
@@ -294,4 +296,8 @@ class MockUserWithReauthError extends Mock implements firebase_auth.User {
       message: 'セキュリティのため再認証が必要です。',
     );
   }
+
+  // 他のすべての未実装メソッドをnoSuchMethodで処理
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
