@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import '../../utils/logger.dart';
 import '../../infrastructure/user_fcm_token_service.dart';
@@ -11,10 +12,8 @@ import '../../config/app_config.dart';
 class PushNotificationSender {
   final String _cloudFunctionUrl;
   final UserFcmTokenService _fcmTokenService;
+  static const int _tokenPreviewLength = 20;
 
-  /// コンストラクタ
-  ///
-  /// [cloudFunctionUrl] 通知送信用のCloud Function URL（開発/本番環境で切り替え）
   PushNotificationSender({
     String? cloudFunctionUrl,
     UserFcmTokenService? fcmTokenService,
@@ -22,77 +21,31 @@ class PushNotificationSender {
             cloudFunctionUrl ?? AppConfig.instance.pushNotificationUrl,
         _fcmTokenService = fcmTokenService ?? UserFcmTokenService();
 
-  /// 友達申請通知を送信する
-  ///
-  /// [toUserId] 通知の送信先ユーザーID
-  /// [fromUserId] 送信元ユーザーID
-  /// [fromUserName] 送信元ユーザー名
   Future<bool> sendFriendRequestNotification({
     required String toUserId,
     required String fromUserId,
     required String fromUserName,
   }) async {
-    try {
-      AppLogger.info('👥 友達申請通知の送信を開始');
-      AppLogger.info('👥 送信先: $toUserId, 送信元: $fromUserId ($fromUserName)');
+    AppLogger.info('👥 友達申請通知の送信を開始');
+    AppLogger.info('👥 送信先: $toUserId, 送信元: $fromUserId ($fromUserName)');
 
-      // 送信先ユーザーのFCMトークンを取得
-      AppLogger.info('🔍 送信先ユーザーのFCMトークンを取得中...');
-      final token = await _fcmTokenService.getUserFcmToken(toUserId);
-      if (token == null) {
-        AppLogger.warning('❌ プッシュ通知送信エラー: 宛先ユーザーのFCMトークンがありません - $toUserId');
-        return false;
-      }
-      AppLogger.info('✅ FCMトークン取得成功: ${token.substring(0, 20)}...');
-
-      // 通知データを準備
-      final notificationData = {
-        'token': token,
-        'notification': {
-          'title': '友達申請が届きました',
-          'body': '$fromUserNameさんから友達申請が届いています',
-        },
-        'data': {
-          'type': 'friend_request',
-          'fromUserId': fromUserId,
-          'toUserId': toUserId,
-          'fromUserName': fromUserName,
-          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-        },
-      };
-
-      // Cloud Functionに通知データを送信
-      final response = await http.post(
-        Uri.parse(_cloudFunctionUrl),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(notificationData),
-      );
-
-      // レスポンスを確認
-      if (response.statusCode == 200) {
-        AppLogger.debug('プッシュ通知送信成功: ${response.body}');
-        return true;
-      } else {
-        AppLogger.error(
-            'プッシュ通知送信エラー: ${response.statusCode} - ${response.body}');
-        return false;
-      }
-    } catch (e, stack) {
-      AppLogger.error('プッシュ通知送信例外: $e');
-      AppLogger.error('スタックトレース: $stack');
-      return false;
-    }
+    return _sendNotification(
+      logContext: '友達申請通知',
+      toUserId: toUserId,
+      notificationBody: {
+        'title': '友達申請が届きました',
+        'body': '$fromUserNameさんから友達申請が届いています',
+      },
+      data: {
+        'type': 'friend_request',
+        'fromUserId': fromUserId,
+        'toUserId': toUserId,
+        'fromUserName': fromUserName,
+        'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+      },
+    );
   }
 
-  /// グループ招待通知を送信する
-  ///
-  /// [toUserId] 通知の送信先ユーザーID
-  /// [fromUserId] 招待者ユーザーID
-  /// [fromUserName] 招待者ユーザー名
-  /// [groupId] グループID
-  /// [groupName] グループ名
   Future<bool> sendGroupInvitationNotification({
     required String toUserId,
     required String fromUserId,
@@ -100,64 +53,25 @@ class PushNotificationSender {
     required String groupId,
     required String groupName,
   }) async {
-    try {
-      // 送信先ユーザーのFCMトークンを取得
-      final token = await _fcmTokenService.getUserFcmToken(toUserId);
-      if (token == null) {
-        AppLogger.warning('プッシュ通知送信エラー: 宛先ユーザーのFCMトークンがありません - $toUserId');
-        return false;
-      }
-
-      // 通知データを準備
-      final notificationData = {
-        'token': token,
-        'notification': {
-          'title': 'グループ招待が届きました',
-          'body': '$fromUserNameさんから「$groupName」グループへの招待が届いています',
-        },
-        'data': {
-          'type': 'group_invitation',
-          'fromUserId': fromUserId,
-          'toUserId': toUserId,
-          'fromUserName': fromUserName,
-          'groupId': groupId,
-          'groupName': groupName,
-          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-        },
-      };
-
-      // Cloud Functionに通知データを送信
-      final response = await http.post(
-        Uri.parse(_cloudFunctionUrl),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(notificationData),
-      );
-
-      // レスポンスを確認
-      if (response.statusCode == 200) {
-        AppLogger.debug('プッシュ通知送信成功: ${response.body}');
-        return true;
-      } else {
-        AppLogger.error(
-            'プッシュ通知送信エラー: ${response.statusCode} - ${response.body}');
-        return false;
-      }
-    } catch (e, stack) {
-      AppLogger.error('プッシュ通知送信例外: $e');
-      AppLogger.error('スタックトレース: $stack');
-      return false;
-    }
+    return _sendNotification(
+      logContext: 'グループ招待通知',
+      toUserId: toUserId,
+      notificationBody: {
+        'title': 'グループ招待が届きました',
+        'body': '$fromUserNameさんから「$groupName」グループへの招待が届いています',
+      },
+      data: {
+        'type': 'group_invitation',
+        'fromUserId': fromUserId,
+        'toUserId': toUserId,
+        'fromUserName': fromUserName,
+        'groupId': groupId,
+        'groupName': groupName,
+        'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+      },
+    );
   }
 
-  /// リアクション通知を送信する
-  ///
-  /// [toUserId] 通知の送信先ユーザーID（投稿作成者）
-  /// [fromUserId] 送信元ユーザーID（リアクションした人）
-  /// [fromUserName] 送信元ユーザー名
-  /// [scheduleId] スケジュールID
-  /// [interactionId] リアクションID
   Future<bool> sendReactionNotification({
     required String toUserId,
     required String fromUserId,
@@ -165,65 +79,25 @@ class PushNotificationSender {
     required String scheduleId,
     required String interactionId,
   }) async {
-    try {
-      // 送信先ユーザーのFCMトークンを取得
-      final token = await _fcmTokenService.getUserFcmToken(toUserId);
-      if (token == null) {
-        AppLogger.warning('プッシュ通知送信エラー: 宛先ユーザーのFCMトークンがありません - $toUserId');
-        return false;
-      }
-
-      // 通知データを準備
-      final notificationData = {
-        'token': token,
-        'notification': {
-          'title': '新しいリアクション',
-          'body': '$fromUserNameさんがあなたの投稿にリアクションしました',
-        },
-        'data': {
-          'type': 'reaction',
-          'fromUserId': fromUserId,
-          'toUserId': toUserId,
-          'fromUserName': fromUserName,
-          'scheduleId': scheduleId,
-          'interactionId': interactionId,
-          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-        },
-      };
-
-      // Cloud Functionに通知データを送信
-      final response = await http.post(
-        Uri.parse(_cloudFunctionUrl),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(notificationData),
-      );
-
-      // レスポンスを確認
-      if (response.statusCode == 200) {
-        AppLogger.debug('リアクション通知送信成功: ${response.body}');
-        return true;
-      } else {
-        AppLogger.error(
-            'リアクション通知送信エラー: ${response.statusCode} - ${response.body}');
-        return false;
-      }
-    } catch (e, stack) {
-      AppLogger.error('リアクション通知送信例外: $e');
-      AppLogger.error('スタックトレース: $stack');
-      return false;
-    }
+    return _sendNotification(
+      logContext: 'リアクション通知',
+      toUserId: toUserId,
+      notificationBody: {
+        'title': '新しいリアクション',
+        'body': '$fromUserNameさんがあなたの投稿にリアクションしました',
+      },
+      data: {
+        'type': 'reaction',
+        'fromUserId': fromUserId,
+        'toUserId': toUserId,
+        'fromUserName': fromUserName,
+        'scheduleId': scheduleId,
+        'interactionId': interactionId,
+        'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+      },
+    );
   }
 
-  /// コメント通知を送信する
-  ///
-  /// [toUserId] 通知の送信先ユーザーID（投稿作成者）
-  /// [fromUserId] 送信元ユーザーID（コメントした人）
-  /// [fromUserName] 送信元ユーザー名
-  /// [scheduleId] スケジュールID
-  /// [interactionId] コメントID
-  /// [commentContent] コメント内容（オプション）
   Future<bool> sendCommentNotification({
     required String toUserId,
     required String fromUserId,
@@ -232,63 +106,95 @@ class PushNotificationSender {
     required String interactionId,
     String? commentContent,
   }) async {
+    final commentPreview = commentContent != null && commentContent.isNotEmpty
+        ? (commentContent.length > 50
+            ? '${commentContent.substring(0, 47)}...'
+            : commentContent)
+        : '';
+
+    return _sendNotification(
+      logContext: 'コメント通知',
+      toUserId: toUserId,
+      notificationBody: {
+        'title': '新しいコメント',
+        'body':
+            '$fromUserNameさんがあなたの投稿にコメントしました${commentPreview.isNotEmpty ? ': $commentPreview' : ''}',
+      },
+      data: {
+        'type': 'comment',
+        'fromUserId': fromUserId,
+        'toUserId': toUserId,
+        'fromUserName': fromUserName,
+        'scheduleId': scheduleId,
+        'interactionId': interactionId,
+        'commentContent': commentContent ?? '',
+        'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+      },
+    );
+  }
+
+  Future<bool> _sendNotification({
+    required String logContext,
+    required String toUserId,
+    required Map<String, dynamic> notificationBody,
+    required Map<String, dynamic> data,
+  }) async {
     try {
-      // 送信先ユーザーのFCMトークンを取得
-      final token = await _fcmTokenService.getUserFcmToken(toUserId);
+      final token = await _fetchRecipientToken(toUserId, logContext);
       if (token == null) {
-        AppLogger.warning('プッシュ通知送信エラー: 宛先ユーザーのFCMトークンがありません - $toUserId');
         return false;
       }
 
-      // コメント内容の概要（長すぎる場合はトリミング）
-      final commentPreview = commentContent != null && commentContent.isNotEmpty
-          ? (commentContent.length > 50
-              ? '${commentContent.substring(0, 47)}...'
-              : commentContent)
-          : '';
-
-      // 通知データを準備
-      final notificationData = {
+      final payload = {
         'token': token,
-        'notification': {
-          'title': '新しいコメント',
-          'body':
-              '$fromUserNameさんがあなたの投稿にコメントしました${commentPreview.isNotEmpty ? ': $commentPreview' : ''}',
-        },
-        'data': {
-          'type': 'comment',
-          'fromUserId': fromUserId,
-          'toUserId': toUserId,
-          'fromUserName': fromUserName,
-          'scheduleId': scheduleId,
-          'interactionId': interactionId,
-          'commentContent': commentContent ?? '',
-          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-        },
+        'notification': notificationBody,
+        'data': data,
       };
 
-      // Cloud Functionに通知データを送信
-      final response = await http.post(
-        Uri.parse(_cloudFunctionUrl),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(notificationData),
-      );
-
-      // レスポンスを確認
-      if (response.statusCode == 200) {
-        AppLogger.debug('コメント通知送信成功: ${response.body}');
-        return true;
-      } else {
-        AppLogger.error(
-            'コメント通知送信エラー: ${response.statusCode} - ${response.body}');
-        return false;
-      }
+      return await _postNotification(payload, logContext);
     } catch (e, stack) {
-      AppLogger.error('コメント通知送信例外: $e');
+      AppLogger.error('$logContext 送信例外: $e');
       AppLogger.error('スタックトレース: $stack');
       return false;
     }
+  }
+
+  Future<String?> _fetchRecipientToken(String userId, String logContext) async {
+    AppLogger.info('🔍 $logContext: 宛先ユーザーのFCMトークンを取得中...');
+    final token = await _fcmTokenService.getUserFcmToken(userId);
+    if (token == null) {
+      AppLogger.warning('❌ $logContext: 宛先ユーザーのFCMトークンがありません - $userId');
+      return null;
+    }
+    AppLogger.info('✅ $logContext: FCMトークン取得成功: ${_previewToken(token)}');
+    return token;
+  }
+
+  Future<bool> _postNotification(
+      Map<String, dynamic> payload, String logContext) async {
+    final response = await http.post(
+      Uri.parse(_cloudFunctionUrl),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(payload),
+    );
+
+    if (response.statusCode == 200) {
+      AppLogger.debug('$logContext 送信成功: ${response.body}');
+      return true;
+    }
+
+    AppLogger.error(
+        '$logContext 送信エラー: ${response.statusCode} - ${response.body}');
+    return false;
+  }
+
+  String _previewToken(String token) {
+    if (token.length <= _tokenPreviewLength) {
+      return token;
+    }
+    final previewLength = math.min(token.length, _tokenPreviewLength);
+    return '${token.substring(0, previewLength)}...';
   }
 }

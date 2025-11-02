@@ -312,6 +312,16 @@ class _FakeScheduleInteractionRepository
   Future<void> updateComment(
           String scheduleId, String commentId, String content) =>
       Future.error(UnimplementedError());
+
+  @override
+  Future<int> getReactionCount(String scheduleId) async {
+    return _latestReactions?.length ?? 0;
+  }
+
+  @override
+  Future<int> getCommentCount(String scheduleId) async {
+    return 0; // テスト用のダミー実装
+  }
 }
 
 void main() {

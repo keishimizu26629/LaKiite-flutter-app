@@ -2,13 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../domain/entity/schedule.dart';
 import '../domain/interfaces/i_schedule_repository.dart';
-import '../domain/interfaces/i_friend_list_repository.dart';
 import '../utils/logger.dart';
 import 'mapper/schedule_mapper.dart';
 
 class ScheduleRepository implements IScheduleRepository {
   final FirebaseFirestore _firestore;
-  final IFriendListRepository _friendListRepository;
   final FirebaseAuth _auth;
 
   // スケジュールのエンリッチメント結果をキャッシュ
@@ -22,7 +20,7 @@ class ScheduleRepository implements IScheduleRepository {
   // キャッシュの最終更新時間
   final Map<String, DateTime> _cacheLastUpdated = {};
 
-  ScheduleRepository(this._friendListRepository)
+  ScheduleRepository()
       : _firestore = FirebaseFirestore.instance,
         _auth = FirebaseAuth.instance;
 
@@ -209,30 +207,8 @@ class ScheduleRepository implements IScheduleRepository {
       AppLogger.debug('CreatedAt: ${schedule.createdAt}');
       AppLogger.debug('UpdatedAt: ${schedule.updatedAt}');
 
-      // 共有リストのメンバーを取得
-      final Set<String> newVisibleTo = {...schedule.visibleTo};
-      AppLogger.debug('Processing shared lists for visibility');
-      for (final listId in schedule.sharedLists) {
-        AppLogger.debug('Processing list ID: $listId');
-        try {
-          final memberIds =
-              await _friendListRepository.getListMemberIds(listId);
-          if (memberIds != null) {
-            AppLogger.debug('Retrieved members for list $listId: $memberIds');
-            newVisibleTo.addAll(memberIds);
-          } else {
-            AppLogger.warning('No members found for list: $listId');
-          }
-        } catch (e) {
-          AppLogger.error('Error processing list $listId: $e');
-          continue;
-        }
-      }
-      AppLogger.debug('Final visibleTo list after processing: $newVisibleTo');
-
-      final updatedSchedule =
-          schedule.copyWith(visibleTo: newVisibleTo.toList());
-      final data = ScheduleMapper.toFirestore(updatedSchedule);
+      // スケジュールをそのままFirestoreに保存
+      final data = ScheduleMapper.toFirestore(schedule);
       AppLogger.debug('Prepared Firestore data:');
       AppLogger.debug(data.toString());
 
@@ -270,27 +246,8 @@ class ScheduleRepository implements IScheduleRepository {
       AppLogger.debug('SharedLists: ${schedule.sharedLists}');
       AppLogger.debug('VisibleTo: ${schedule.visibleTo}');
 
-      // 共有リストのメンバーを取得
-      final Set<String> newVisibleTo = {...schedule.visibleTo};
-      for (final listId in schedule.sharedLists) {
-        AppLogger.debug('Processing list: $listId');
-        try {
-          final memberIds =
-              await _friendListRepository.getListMemberIds(listId);
-          if (memberIds != null) {
-            AppLogger.debug('Adding members from list $listId: $memberIds');
-            newVisibleTo.addAll(memberIds);
-          } else {
-            AppLogger.warning('No members found for list: $listId');
-          }
-        } catch (e) {
-          AppLogger.error('Error processing list $listId: $e');
-          continue;
-        }
-      }
-      AppLogger.debug('Final visibleTo list: $newVisibleTo');
-
-      final data = schedule.copyWith(visibleTo: newVisibleTo.toList()).toJson();
+      // スケジュールをそのままFirestoreに更新
+      final data = schedule.toJson();
       AppLogger.debug('Prepared update data:');
       AppLogger.debug(data.toString());
 

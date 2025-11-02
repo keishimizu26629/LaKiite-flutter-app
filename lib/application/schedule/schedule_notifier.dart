@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lakiite/application/schedule/schedule_state.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
+import 'package:lakiite/domain/service/service_provider.dart';
 import 'package:lakiite/utils/logger.dart';
 
 part 'schedule_notifier.g.dart';
@@ -394,14 +395,6 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
     AppLogger.debug('VisibleTo: $visibleTo');
 
     try {
-      AppLogger.debug('ScheduleNotifier: Fetching user information');
-      final userDoc = await ref.read(userRepositoryProvider).getUser(ownerId);
-      if (userDoc == null) {
-        AppLogger.error('ScheduleNotifier: User not found for ID: $ownerId');
-        throw Exception('User not found');
-      }
-      AppLogger.debug('ScheduleNotifier: User found - ${userDoc.displayName}');
-
       AppLogger.debug('ScheduleNotifier: Creating Schedule object');
       final schedule = Schedule(
         id: '', // Firestoreが自動生成
@@ -411,8 +404,8 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
         startDateTime: startDateTime,
         endDateTime: endDateTime,
         ownerId: ownerId,
-        ownerDisplayName: userDoc.displayName,
-        ownerPhotoUrl: userDoc.iconUrl,
+        ownerDisplayName: '', // ScheduleManagerが設定
+        ownerPhotoUrl: null, // ScheduleManagerが設定
         sharedLists: sharedLists,
         visibleTo: visibleTo,
         reactionCount: 0,
@@ -421,8 +414,8 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
         updatedAt: DateTime.now(),
       );
 
-      AppLogger.debug('ScheduleNotifier: Sending schedule to repository');
-      await ref.read(scheduleRepositoryProvider).createSchedule(schedule);
+      AppLogger.debug('ScheduleNotifier: Sending schedule to ScheduleManager');
+      await ref.read(scheduleManagerProvider).createSchedule(schedule);
       AppLogger.debug('ScheduleNotifier: Schedule creation completed');
 
       // 作成完了後は自動的にストリームが更新を検知するため、
@@ -439,7 +432,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
     if (_isDisposed) return;
 
     try {
-      await ref.read(scheduleRepositoryProvider).updateSchedule(schedule);
+      await ref.read(scheduleManagerProvider).updateSchedule(schedule);
       // 更新完了後は自動的にストリームが更新を検知するため、
       // 明示的な再読み込みは不要
     } catch (e, stackTrace) {
@@ -454,7 +447,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
     if (_isDisposed) return;
 
     try {
-      await ref.read(scheduleRepositoryProvider).deleteSchedule(scheduleId);
+      await ref.read(scheduleManagerProvider).deleteSchedule(scheduleId);
       // 削除完了後は自動的にストリームが更新を検知するため、
       // 明示的な再読み込みは不要
     } catch (e, stackTrace) {
@@ -466,6 +459,6 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
 
   /// 特定のスケジュールを監視する
   Stream<Schedule?> watchSchedule(String scheduleId) {
-    return ref.read(scheduleRepositoryProvider).watchSchedule(scheduleId);
+    return ref.read(scheduleManagerProvider).watchSchedule(scheduleId);
   }
 }

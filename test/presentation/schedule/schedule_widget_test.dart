@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lakiite/domain/entity/schedule.dart';
 import '../../mock/providers/test_providers.dart';
 import '../../mock/base_mock.dart';
 import '../../utils/test_utils.dart';
