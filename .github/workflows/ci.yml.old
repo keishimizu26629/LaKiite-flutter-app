@@ -1,6 +1,8 @@
-name: PR Tests
+name: CI/CD Pipeline (Optimized)
 
 on:
+  push:
+    branches: [main, develop]
   pull_request:
     branches: [main, develop]
 
@@ -8,14 +10,20 @@ env:
   FLUTTER_VERSION: "3.24.0"
 
 jobs:
-  # 静的解析
-  analyze:
-    name: Static Analysis
+  # 共通セットアップを再利用可能なアクションとして定義
+  setup:
+    name: Setup & Dependencies
     runs-on: ubuntu-latest
-
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.key }}
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Generate cache key
+        id: cache-key
+        run: echo "key=flutter-${{ env.FLUTTER_VERSION }}-${{ hashFiles('pubspec.lock') }}" >> $GITHUB_OUTPUT
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -67,21 +75,12 @@ jobs:
           }
           EOF
 
-      - name: Analyze project source
-        run: flutter analyze --no-fatal-infos 2>&1 | grep -v "firebase_options" | grep -v "Target of URI doesn't exist" | grep -v "Undefined name.*FirebaseOptions" || echo "Analysis completed"
-
-      - name: Check formatting
-        run: dart format --output=none --set-exit-if-changed .
-
-  # テスト実行（並列化）
-  test:
-    name: Tests
+  # 静的解析（軽量・高速）
+  analyze:
+    name: Static Analysis
     runs-on: ubuntu-latest
-    needs: analyze
-    strategy:
-      matrix:
-        test-type: [unit, widget, integration]
-
+    needs: setup
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -96,18 +95,57 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Create dummy Firebase config files for CI
+      - name: Restore Firebase config
         run: |
           mkdir -p lib
           cat > lib/firebase_options.dart << 'EOF'
           import 'package:firebase_core/firebase_core.dart';
           class DefaultFirebaseOptions {
             static FirebaseOptions get currentPlatform => const FirebaseOptions(
-              apiKey: 'dummy-api-key',
-              appId: 'dummy-app-id',
-              messagingSenderId: 'dummy-sender-id',
-              projectId: 'dummy-project-id',
-              storageBucket: 'dummy-bucket',
+              apiKey: 'dummy-api-key', appId: 'dummy-app-id', messagingSenderId: 'dummy-sender-id',
+              projectId: 'dummy-project-id', storageBucket: 'dummy-bucket',
+            );
+          }
+          EOF
+
+      - name: Analyze project source
+        run: flutter analyze --no-fatal-infos 2>&1 | grep -v "firebase_options" | grep -v "Target of URI doesn't exist" | grep -v "Undefined name.*FirebaseOptions" || echo "Analysis completed"
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+  # テスト実行（並列化）
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: [setup, analyze]
+    strategy:
+      matrix:
+        test-type: [unit, widget, integration]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: "stable"
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Restore Firebase config
+        run: |
+          mkdir -p lib
+          cat > lib/firebase_options.dart << 'EOF'
+          import 'package:firebase_core/firebase_core.dart';
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform => const FirebaseOptions(
+              apiKey: 'dummy-api-key', appId: 'dummy-app-id', messagingSenderId: 'dummy-sender-id',
+              projectId: 'dummy-project-id', storageBucket: 'dummy-bucket',
             );
           }
           EOF
@@ -140,13 +178,37 @@ jobs:
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
 
+  # ビルド検証（mainブランチのみ）
+  build:
+    name: Build Verification
+    runs-on: ubuntu-latest
+    needs: [analyze, test]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: "stable"
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK (debug)
+        run: flutter build apk --debug --dart-define-from-file=dart_define/dev_dart_define.json
+
   # 結果集約
   ci_success:
     name: CI Success
     runs-on: ubuntu-latest
     needs: [analyze, test]
     if: always()
-
+    
     steps:
       - name: Check results
         run: |
