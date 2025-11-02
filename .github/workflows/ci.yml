@@ -72,8 +72,8 @@ jobs:
 
       - name: Check formatting
         run: |
-          # CI作成のFirebaseファイルを削除
-          rm -f lib/firebase_options*.dart
+          # CI作成のFirebaseファイルをフォーマット
+          dart format lib/firebase_options*.dart
           
           # フォーマットチェック実行
           dart format --output=none --set-exit-if-changed .
@@ -113,6 +113,30 @@ jobs:
               messagingSenderId: 'dummy-sender-id',
               projectId: 'dummy-project-id',
               storageBucket: 'dummy-bucket',
+            );
+          }
+          EOF
+          cat > lib/firebase_options_dev.dart << 'EOF'
+          import 'package:firebase_core/firebase_core.dart';
+          class DevFirebaseOptions {
+            static FirebaseOptions get currentPlatform => const FirebaseOptions(
+              apiKey: 'dummy-dev-api-key',
+              appId: 'dummy-dev-app-id',
+              messagingSenderId: 'dummy-dev-sender-id',
+              projectId: 'dummy-dev-project-id',
+              storageBucket: 'dummy-dev-bucket',
+            );
+          }
+          EOF
+          cat > lib/firebase_options_prod.dart << 'EOF'
+          import 'package:firebase_core/firebase_core.dart';
+          class ProdFirebaseOptions {
+            static FirebaseOptions get currentPlatform => const FirebaseOptions(
+              apiKey: 'dummy-prod-api-key',
+              appId: 'dummy-prod-app-id',
+              messagingSenderId: 'dummy-prod-sender-id',
+              projectId: 'dummy-prod-project-id',
+              storageBucket: 'dummy-prod-bucket',
             );
           }
           EOF
