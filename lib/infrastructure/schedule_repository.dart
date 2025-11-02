@@ -59,7 +59,10 @@ class ScheduleRepository implements IScheduleRepository {
     if (_isCacheValid(scheduleId) &&
         _reactionCountCache.containsKey(scheduleId) &&
         _commentCountCache.containsKey(scheduleId)) {
-      return (_reactionCountCache[scheduleId]!, _commentCountCache[scheduleId]!);
+      return (
+        _reactionCountCache[scheduleId]!,
+        _commentCountCache[scheduleId]!
+      );
     }
 
     // 並列でリアクション数とコメント数を取得
@@ -93,7 +96,8 @@ class ScheduleRepository implements IScheduleRepository {
       final schedule = ScheduleMapper.fromFirestore(doc);
 
       // リアクション数とコメント数を一括取得
-      final (reactionCount, commentCount) = await _fetchInteractionCounts(doc.reference);
+      final (reactionCount, commentCount) =
+          await _fetchInteractionCounts(doc.reference);
 
       // リアクション数とコメント数を更新したスケジュールを作成
       final enrichedSchedule = schedule.copyWith(
@@ -146,7 +150,8 @@ class ScheduleRepository implements IScheduleRepository {
           .get();
     });
 
-    final schedules = await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
+    final schedules =
+        await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
     return schedules;
   }
 
@@ -178,7 +183,8 @@ class ScheduleRepository implements IScheduleRepository {
           .get();
     });
 
-    final schedules = await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
+    final schedules =
+        await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
     return schedules;
   }
 
@@ -277,7 +283,8 @@ class ScheduleRepository implements IScheduleRepository {
         .orderBy('startDateTime', descending: false)
         .snapshots()
         .asyncMap((snapshot) async {
-      final schedules = await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
+      final schedules =
+          await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
       return schedules;
     });
   }
@@ -323,12 +330,14 @@ class ScheduleRepository implements IScheduleRepository {
   }
 
   @override
-  Stream<List<Schedule>> watchUserSchedulesForMonth(String userId, DateTime displayMonth) async* {
+  Stream<List<Schedule>> watchUserSchedulesForMonth(
+      String userId, DateTime displayMonth) async* {
     try {
       await _ensureAuthenticated();
 
       // 表示月の6ヶ月前の1日を計算
-      final sixMonthsAgo = DateTime(displayMonth.year, displayMonth.month - 6, 1);
+      final sixMonthsAgo =
+          DateTime(displayMonth.year, displayMonth.month - 6, 1);
 
       // 日付形式を正確に整形（必ず2桁になるようにフォーマット）
       final year = sixMonthsAgo.year.toString();
@@ -392,7 +401,8 @@ class ScheduleRepository implements IScheduleRepository {
   }
 
   // ドキュメントのバッチをより効率的に処理するヘルパーメソッド
-  Future<List<Schedule>> _enrichSchedulesInBatches(List<DocumentSnapshot> docs) async {
+  Future<List<Schedule>> _enrichSchedulesInBatches(
+      List<DocumentSnapshot> docs) async {
     // 最大同時処理数（大きすぎると逆に遅くなる）
     const int batchSize = 10;
 
@@ -424,7 +434,11 @@ class ScheduleRepository implements IScheduleRepository {
 
   @override
   Stream<Schedule?> watchSchedule(String scheduleId) {
-    return _firestore.collection('schedules').doc(scheduleId).snapshots().asyncMap((doc) async {
+    return _firestore
+        .collection('schedules')
+        .doc(scheduleId)
+        .snapshots()
+        .asyncMap((doc) async {
       if (!doc.exists) return null;
       return _enrichSchedule(doc);
     });

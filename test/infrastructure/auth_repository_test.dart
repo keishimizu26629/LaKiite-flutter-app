@@ -19,7 +19,8 @@ class MockUser implements firebase_auth.User {
   }
 
   @override
-  Future<firebase_auth.UserCredential> reauthenticateWithCredential(firebase_auth.AuthCredential credential) async {
+  Future<firebase_auth.UserCredential> reauthenticateWithCredential(
+      firebase_auth.AuthCredential credential) async {
     // モック実装 - 正常に完了したと仮定
     return MockUserCredential(this);
   }
@@ -147,7 +148,8 @@ class MockUserRepository implements IUserRepository {
   }
 
   @override
-  Future<List<domain.PublicUserModel>> getPublicProfiles(List<String> userIds) async {
+  Future<List<domain.PublicUserModel>> getPublicProfiles(
+      List<String> userIds) async {
     throw UnimplementedError('テストでは使用しません');
   }
 
@@ -218,7 +220,8 @@ void main() {
       mockFirebaseAuth.setCurrentUser(mockUser);
 
       // 実行: 再認証
-      final result = await authRepository.reauthenticateWithPassword('password123');
+      final result =
+          await authRepository.reauthenticateWithPassword('password123');
 
       // 検証
       expect(result, isTrue);
@@ -245,7 +248,8 @@ void main() {
       mockFirebaseAuth.setCurrentUser(mockUser);
 
       // 実行: 再認証付きアカウント削除
-      final result = await authRepository.deleteAccountWithReauth('password123');
+      final result =
+          await authRepository.deleteAccountWithReauth('password123');
 
       // 検証
       expect(result, isTrue);
@@ -284,7 +288,8 @@ class MockUserWithReauthError implements firebase_auth.User {
   }
 
   @override
-  Future<firebase_auth.UserCredential> reauthenticateWithCredential(firebase_auth.AuthCredential credential) async {
+  Future<firebase_auth.UserCredential> reauthenticateWithCredential(
+      firebase_auth.AuthCredential credential) async {
     throw firebase_auth.FirebaseAuthException(
       code: 'requires-recent-login',
       message: 'セキュリティのため再認証が必要です。',
