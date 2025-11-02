@@ -20,14 +20,6 @@ final scheduleInteractionNotifierProvider = StateNotifierProvider.family<
 
 class ScheduleInteractionNotifier
     extends StateNotifier<ScheduleInteractionState> {
-  final IScheduleInteractionRepository _repository;
-  final String _scheduleId;
-  final Ref _ref;
-  StreamSubscription<List<ScheduleReaction>>? _reactionsSubscription;
-  StreamSubscription<List<ScheduleComment>>? _commentsSubscription;
-  final bool _enablePushNotifications;
-  PushNotificationSender? _pushNotificationSender;
-
   ScheduleInteractionNotifier(
     this._repository,
     this._scheduleId,
@@ -44,6 +36,13 @@ class ScheduleInteractionNotifier
     }
     _initializeSubscriptions();
   }
+  final IScheduleInteractionRepository _repository;
+  final String _scheduleId;
+  final Ref _ref;
+  StreamSubscription<List<ScheduleReaction>>? _reactionsSubscription;
+  StreamSubscription<List<ScheduleComment>>? _commentsSubscription;
+  final bool _enablePushNotifications;
+  PushNotificationSender? _pushNotificationSender;
 
   Future<void> _initializeSubscriptions() async {
     try {

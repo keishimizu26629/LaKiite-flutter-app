@@ -6,6 +6,9 @@ import '../utils/logger.dart';
 import 'mapper/schedule_mapper.dart';
 
 class ScheduleRepository implements IScheduleRepository {
+  ScheduleRepository()
+      : _firestore = FirebaseFirestore.instance,
+        _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
 
@@ -19,10 +22,6 @@ class ScheduleRepository implements IScheduleRepository {
   static const _cacheExpiryDuration = Duration(minutes: 10);
   // キャッシュの最終更新時間
   final Map<String, DateTime> _cacheLastUpdated = {};
-
-  ScheduleRepository()
-      : _firestore = FirebaseFirestore.instance,
-        _auth = FirebaseAuth.instance;
 
   Future<void> _ensureAuthenticated() async {
     // 認証の初期化を待つ
@@ -166,7 +165,7 @@ class ScheduleRepository implements IScheduleRepository {
     final year = previousMonth.year.toString();
     final month = previousMonth.month.toString().padLeft(2, '0');
     final day = previousMonth.day.toString().padLeft(2, '0');
-    final previousMonthIso = "$year-$month-${day}T00:00:00.000";
+    final previousMonthIso = '$year-$month-${day}T00:00:00.000';
 
     final snapshot = await _firestore
         .collection('schedules')
@@ -275,7 +274,7 @@ class ScheduleRepository implements IScheduleRepository {
     final year = sixMonthsAgo.year.toString();
     final month = sixMonthsAgo.month.toString().padLeft(2, '0');
     final day = sixMonthsAgo.day.toString().padLeft(2, '0');
-    final sixMonthsAgoIso = "$year-$month-${day}T00:00:00.000";
+    final sixMonthsAgoIso = '$year-$month-${day}T00:00:00.000';
 
     return _firestore
         .collection('schedules')
@@ -303,7 +302,7 @@ class ScheduleRepository implements IScheduleRepository {
       final year = sixMonthsAgo.year.toString();
       final month = sixMonthsAgo.month.toString().padLeft(2, '0');
       final day = sixMonthsAgo.day.toString().padLeft(2, '0');
-      final sixMonthsAgoIso = "$year-$month-${day}T00:00:00.000";
+      final sixMonthsAgoIso = '$year-$month-${day}T00:00:00.000';
 
       final stream = _firestore
           .collection('schedules')
@@ -344,7 +343,7 @@ class ScheduleRepository implements IScheduleRepository {
       final year = sixMonthsAgo.year.toString();
       final month = sixMonthsAgo.month.toString().padLeft(2, '0');
       final day = sixMonthsAgo.day.toString().padLeft(2, '0');
-      final sixMonthsAgoIso = "$year-$month-${day}T00:00:00.000";
+      final sixMonthsAgoIso = '$year-$month-${day}T00:00:00.000';
 
       // 最初に素早くキャッシュからデータを取得（データがあれば即時返却）
       try {

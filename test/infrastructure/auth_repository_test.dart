@@ -27,20 +27,19 @@ class MockUser implements firebase_auth.User {
 
   // 他のすべての未実装メソッドをnoSuchMethodで処理
   @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class MockUserCredential implements firebase_auth.UserCredential {
-  final firebase_auth.User mockUser;
-
   MockUserCredential(this.mockUser);
+  final firebase_auth.User mockUser;
 
   @override
   firebase_auth.User? get user => mockUser;
 
   // 他のすべての未実装メソッドをnoSuchMethodで処理
   @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class MockFirebaseAuth implements firebase_auth.FirebaseAuth {
@@ -54,7 +53,7 @@ class MockFirebaseAuth implements firebase_auth.FirebaseAuth {
   }
 
   @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class MockUserRepository implements IUserRepository {
@@ -299,5 +298,5 @@ class MockUserWithReauthError implements firebase_auth.User {
 
   // 他のすべての未実装メソッドをnoSuchMethodで処理
   @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
