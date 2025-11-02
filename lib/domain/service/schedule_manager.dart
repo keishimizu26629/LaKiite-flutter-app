@@ -74,17 +74,16 @@ abstract class IScheduleManager {
 
 /// ScheduleManagerの実装
 class ScheduleManager implements IScheduleManager {
-  final IScheduleRepository _scheduleRepository;
-  final IFriendListRepository _friendListRepository;
-  final IUserRepository _userRepository;
-  final IScheduleInteractionRepository _interactionRepository;
-
   ScheduleManager(
     this._scheduleRepository,
     this._friendListRepository,
     this._userRepository,
     this._interactionRepository,
   );
+  final IScheduleRepository _scheduleRepository;
+  final IFriendListRepository _friendListRepository;
+  final IUserRepository _userRepository;
+  final IScheduleInteractionRepository _interactionRepository;
 
   @override
   Future<Schedule> createSchedule(Schedule schedule) async {
@@ -284,24 +283,24 @@ class ScheduleManager implements IScheduleManager {
 // ===== カスタム例外 =====
 
 class ValidationException implements Exception {
-  final String message;
   ValidationException(this.message);
+  final String message;
 
   @override
   String toString() => 'ValidationException: $message';
 }
 
 class UserNotFoundException implements Exception {
-  final String userId;
   UserNotFoundException(this.userId);
+  final String userId;
 
   @override
   String toString() => 'UserNotFoundException: User not found - $userId';
 }
 
 class ScheduleNotFoundException implements Exception {
-  final String scheduleId;
   ScheduleNotFoundException(this.scheduleId);
+  final String scheduleId;
 
   @override
   String toString() =>
