@@ -8,7 +8,7 @@ import '../../presentation/login/login_page.dart';
 import '../../presentation/settings/edit_email_page.dart';
 import '../../presentation/settings/edit_name_page.dart';
 import '../../presentation/settings/edit_search_id_page.dart';
-import '../../presentation/settings/legal_info_page_alternative.dart';
+import '../../presentation/settings/legal_info_page.dart';
 import '../../presentation/settings/settings_page.dart';
 import '../../presentation/signup/signup.dart';
 import '../../presentation/splash/splash_screen.dart';
@@ -94,17 +94,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const EditSearchIdPage(),
           ),
           GoRoute(
-            path: LegalInfoPageAlternative.privacyPolicyPath,
-            builder: (context, state) => const LegalInfoPageAlternative(
+            path: 'privacy-policy',
+            builder: (context, state) => const LegalInfoPage(
               title: 'プライバシーポリシー',
-              urlPath: 'privacy-policy.html',
+              urlPath: 'privacy-policy',
             ),
           ),
           GoRoute(
-            path: LegalInfoPageAlternative.termsOfServicePath,
-            builder: (context, state) => const LegalInfoPageAlternative(
+            path: 'terms-of-service',
+            builder: (context, state) => const LegalInfoPage(
               title: '利用規約',
-              urlPath: 'terms-of-service.html',
+              urlPath: 'terms-of-service',
             ),
           ),
         ],
