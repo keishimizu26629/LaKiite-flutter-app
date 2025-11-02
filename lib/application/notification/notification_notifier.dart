@@ -66,7 +66,8 @@ final unreadNotificationCountProvider = StreamProvider<int>((ref) {
 /// [type] 監視対象の通知タイプ
 /// ログインユーザーの指定タイプの未読通知数のストリームを提供する
 /// 未ログイン時は0を返す
-final unreadNotificationCountByTypeProvider = StreamProvider.family<int, NotificationType>((ref, type) {
+final unreadNotificationCountByTypeProvider =
+    StreamProvider.family<int, NotificationType>((ref, type) {
   final repository = ref.watch(notificationRepositoryProvider);
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return Stream.value(0);
@@ -89,7 +90,8 @@ final receivedNotificationsProvider = StreamProvider<List<Notification>>((ref) {
 /// [type] 監視対象の通知タイプ
 /// ログインユーザーが受信した指定タイプの通知のストリームを提供する
 /// 未ログイン時は空配列を返す
-final receivedNotificationsByTypeProvider = StreamProvider.family<List<Notification>, NotificationType>((ref, type) {
+final receivedNotificationsByTypeProvider =
+    StreamProvider.family<List<Notification>, NotificationType>((ref, type) {
   final repository = ref.watch(notificationRepositoryProvider);
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return Stream.value([]);
@@ -112,7 +114,8 @@ final sentNotificationsProvider = StreamProvider<List<Notification>>((ref) {
 /// [type] 監視対象の通知タイプ
 /// ログインユーザーが送信した指定タイプの通知のストリームを提供する
 /// 未ログイン時は空配列を返す
-final sentNotificationsByTypeProvider = StreamProvider.family<List<Notification>, NotificationType>((ref, type) {
+final sentNotificationsByTypeProvider =
+    StreamProvider.family<List<Notification>, NotificationType>((ref, type) {
   final repository = ref.watch(notificationRepositoryProvider);
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return Stream.value([]);
@@ -226,7 +229,8 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
       await _repository.acceptNotification(notificationId);
 
       // キャッシュクリア処理
-      if (notification != null && notification.type == NotificationType.friend) {
+      if (notification != null &&
+          notification.type == NotificationType.friend) {
         // フレンド申請承認時は既存のプロバイダーインスタンスのキャッシュをクリア
         try {
           // 既存のプロバイダーインスタンスを使用してキャッシュをクリア
@@ -293,12 +297,14 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
 
       // 既読にする
       await _repository.markAsRead(notificationId);
-      AppLogger.debug('Notification marked as read successfully: $notificationId');
+      AppLogger.debug(
+          'Notification marked as read successfully: $notificationId');
 
       // バッジカウントをクリア
       try {
         await PushNotificationService.instance.clearBadgeCount();
-        AppLogger.debug('Badge count cleared after marking notification as read');
+        AppLogger.debug(
+            'Badge count cleared after marking notification as read');
       } catch (e) {
         AppLogger.warning('Failed to clear badge count: $e');
       }
@@ -339,7 +345,8 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
       );
       AppLogger.debug('Created notification object: $notification');
       await _repository.createNotification(notification);
-      AppLogger.debug('Successfully created reaction notification in Firestore');
+      AppLogger.debug(
+          'Successfully created reaction notification in Firestore');
       state = const AsyncValue.data(null);
     } catch (e, stack) {
       AppLogger.error('Error creating reaction notification: $e');
@@ -386,7 +393,8 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 /// 通知操作を提供するNotifierのプロバイダー
-final notificationNotifierProvider = StateNotifierProvider<NotificationNotifier, AsyncValue<void>>((ref) {
+final notificationNotifierProvider =
+    StateNotifierProvider<NotificationNotifier, AsyncValue<void>>((ref) {
   final repository = ref.watch(notificationRepositoryProvider);
   return NotificationNotifier(repository, ref);
 });

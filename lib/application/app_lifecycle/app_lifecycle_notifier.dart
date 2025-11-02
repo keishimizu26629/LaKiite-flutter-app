@@ -4,7 +4,8 @@ import '../../infrastructure/firebase/push_notification_service.dart';
 import '../../utils/logger.dart';
 
 /// アプリライフサイクルの状態を管理するNotifier
-class AppLifecycleNotifier extends StateNotifier<AppLifecycleState> with WidgetsBindingObserver {
+class AppLifecycleNotifier extends StateNotifier<AppLifecycleState>
+    with WidgetsBindingObserver {
   AppLifecycleNotifier() : super(AppLifecycleState.resumed) {
     WidgetsBinding.instance.addObserver(this);
     AppLogger.debug('AppLifecycleNotifier初期化完了');
@@ -43,6 +44,7 @@ class AppLifecycleNotifier extends StateNotifier<AppLifecycleState> with Widgets
 }
 
 /// アプリライフサイクル状態を提供するプロバイダー
-final appLifecycleProvider = StateNotifierProvider<AppLifecycleNotifier, AppLifecycleState>(
+final appLifecycleProvider =
+    StateNotifierProvider<AppLifecycleNotifier, AppLifecycleState>(
   (ref) => AppLifecycleNotifier(),
 );

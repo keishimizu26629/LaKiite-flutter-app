@@ -16,7 +16,9 @@ import 'utils/logger.dart';
 Future<void> main() async {
   // 環境変数からFlavorを取得
   const flavorString = String.fromEnvironment('FLAVOR');
-  const environment = flavorString == 'production' ? Environment.production : Environment.development;
+  const environment = flavorString == 'production'
+      ? Environment.production
+      : Environment.development;
 
   await startApp(environment);
 }
