@@ -9,6 +9,9 @@ abstract class IScheduleInteractionRepository {
   Future<void> removeReaction(String scheduleId, String userId);
   Stream<List<ScheduleReaction>> watchReactions(String scheduleId);
 
+  // リアクション数の取得
+  Future<int> getReactionCount(String scheduleId);
+
   // コメント関連
   Future<List<ScheduleComment>> getComments(String scheduleId);
   Future<String> addComment(String scheduleId, String userId, String content);
@@ -16,4 +19,7 @@ abstract class IScheduleInteractionRepository {
   Future<void> updateComment(
       String scheduleId, String commentId, String content);
   Stream<List<ScheduleComment>> watchComments(String scheduleId);
+
+  // コメント数の取得
+  Future<int> getCommentCount(String scheduleId);
 }
