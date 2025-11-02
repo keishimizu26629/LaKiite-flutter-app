@@ -111,15 +111,13 @@ class SettingsPage extends ConsumerWidget {
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text('プライバシーポリシー'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => _launchURL(context,
-                'https://keishimizu26629.github.io/LaKiite-flutter-app/privacy-policy.html'),
+            onTap: () => context.go('/settings/privacy-policy'),
           ),
           ListTile(
             leading: const Icon(Icons.description_outlined),
             title: const Text('利用規約'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => _launchURL(context,
-                'https://keishimizu26629.github.io/LaKiite-flutter-app/terms-of-service.html'),
+            onTap: () => context.go('/settings/terms-of-service'),
           ),
           const Divider(),
           ListTile(
