@@ -72,16 +72,11 @@ jobs:
 
       - name: Check formatting
         run: |
-          # Firebaseファイルを一時的に移動
-          mkdir -p temp_firebase
-          mv lib/firebase_options*.dart temp_firebase/ 2>/dev/null || true
+          # CI作成のFirebaseファイルを削除
+          rm -f lib/firebase_options*.dart
           
           # フォーマットチェック実行
           dart format --output=none --set-exit-if-changed .
-          
-          # Firebaseファイルを戻す
-          mv temp_firebase/firebase_options*.dart lib/ 2>/dev/null || true
-          rmdir temp_firebase 2>/dev/null || true
 
   # テスト実行（並列化）
   test:
