@@ -135,7 +135,20 @@ import UserNotifications
     let userInfo = response.notification.request.content.userInfo
     print("👆 通知タップ: \(userInfo)")
 
+    // 通知をタップした時にバッジをクリア
+    UIApplication.shared.applicationIconBadgeNumber = 0
+    print("🧹 通知タップ時にバッジカウントをクリアしました")
+
     completionHandler()
+  }
+
+  // アプリがフォアグラウンドになった時
+  override func applicationDidBecomeActive(_ application: UIApplication) {
+    super.applicationDidBecomeActive(application)
+
+    // フォアグラウンド復帰時にバッジをクリア
+    UIApplication.shared.applicationIconBadgeNumber = 0
+    print("🔄 フォアグラウンド復帰時にバッジカウントをクリアしました")
   }
 }
 

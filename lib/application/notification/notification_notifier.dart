@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entity/notification.dart' as domain;
 import '../../domain/interfaces/i_notification_repository.dart';
 import '../../infrastructure/notification_repository.dart';
+import '../../infrastructure/firebase/push_notification_service.dart';
 import '../../utils/logger.dart';
 import '../../infrastructure/user_repository.dart';
 import '../../infrastructure/firebase/push_notification_sender.dart';
@@ -126,13 +127,12 @@ final sentNotificationsByTypeProvider =
 /// 各操作の実行中はローディング状態を提供し、
 /// エラーが発生した場合はエラー状態を提供する
 class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
-  final INotificationRepository _repository;
-  final PushNotificationSender _pushNotificationSender;
-  final Ref _ref;
-
   NotificationNotifier(this._repository, this._ref)
       : _pushNotificationSender = PushNotificationSender(),
         super(const AsyncValue.data(null));
+  final INotificationRepository _repository;
+  final PushNotificationSender _pushNotificationSender;
+  final Ref _ref;
 
   /// フレンド申請通知を作成する
   ///
@@ -299,6 +299,16 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
       await _repository.markAsRead(notificationId);
       AppLogger.debug(
           'Notification marked as read successfully: $notificationId');
+
+      // バッジカウントをクリア
+      try {
+        await PushNotificationService.instance.clearBadgeCount();
+        AppLogger.debug(
+            'Badge count cleared after marking notification as read');
+      } catch (e) {
+        AppLogger.warning('Failed to clear badge count: $e');
+      }
+
       state = const AsyncValue.data(null);
     } catch (e, stack) {
       AppLogger.error('Error marking notification as read: $e');
