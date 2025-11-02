@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lakiite/domain/service/group_manager.dart';
 import 'package:lakiite/domain/service/list_manager.dart';
 import 'package:lakiite/domain/service/user_manager.dart';
+import 'package:lakiite/domain/service/schedule_manager.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 
 /// グループ管理サービスのプロバイダー
@@ -23,5 +24,15 @@ final listManagerProvider = Provider<IListManager>((ref) {
 final userManagerProvider = Provider<IUserManager>((ref) {
   return UserManager(
     ref.watch(userRepositoryProvider),
+  );
+});
+
+/// スケジュール管理サービスのプロバイダー
+final scheduleManagerProvider = Provider<IScheduleManager>((ref) {
+  return ScheduleManager(
+    ref.watch(scheduleRepositoryProvider),
+    ref.watch(friendListRepositoryProvider),
+    ref.watch(userRepositoryProvider),
+    ref.watch(scheduleInteractionRepositoryProvider),
   );
 });
