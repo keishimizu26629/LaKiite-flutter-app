@@ -13,6 +13,9 @@ import 'package:lakiite/domain/interfaces/i_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
 import 'package:lakiite/domain/interfaces/i_notification_repository.dart';
 import 'package:lakiite/domain/interfaces/i_user_repository.dart';
+import 'package:lakiite/domain/interfaces/i_friend_list_repository.dart';
+import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
+import 'package:lakiite/infrastructure/schedule_interaction_repository.dart';
 import 'package:lakiite/domain/service/service_provider.dart';
 import 'package:lakiite/infrastructure/group_repository.dart';
 import 'package:lakiite/infrastructure/list_repository.dart';
@@ -60,12 +63,23 @@ final listRepositoryProvider = Provider<IListRepository>((ref) {
 
 /// スケジュールリポジトリプロバイダー
 final scheduleRepositoryProvider = Provider<IScheduleRepository>((ref) {
-  return ScheduleRepository(FriendListRepository());
+  return ScheduleRepository();
 });
 
 /// 通知リポジトリプロバイダー
 final notificationRepositoryProvider = Provider<INotificationRepository>((ref) {
   return NotificationRepository();
+});
+
+/// フレンドリストリポジトリプロバイダー
+final friendListRepositoryProvider = Provider<IFriendListRepository>((ref) {
+  return FriendListRepository();
+});
+
+/// スケジュールインタラクションリポジトリプロバイダー
+final scheduleInteractionRepositoryProvider =
+    Provider<IScheduleInteractionRepository>((ref) {
+  return ScheduleInteractionRepository();
 });
 
 /// 認証状態プロバイダー群
