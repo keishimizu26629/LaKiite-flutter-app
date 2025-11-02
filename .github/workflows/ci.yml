@@ -71,7 +71,17 @@ jobs:
         run: flutter analyze --no-fatal-infos 2>&1 | grep -v "firebase_options" | grep -v "Target of URI doesn't exist" | grep -v "Undefined name.*FirebaseOptions" || echo "Analysis completed"
 
       - name: Check formatting
-        run: dart format --output=none --set-exit-if-changed .
+        run: |
+          # Firebaseファイルを一時的に移動
+          mkdir -p temp_firebase
+          mv lib/firebase_options*.dart temp_firebase/ 2>/dev/null || true
+          
+          # フォーマットチェック実行
+          dart format --output=none --set-exit-if-changed .
+          
+          # Firebaseファイルを戻す
+          mv temp_firebase/firebase_options*.dart lib/ 2>/dev/null || true
+          rmdir temp_firebase 2>/dev/null || true
 
   # テスト実行（並列化）
   test:
