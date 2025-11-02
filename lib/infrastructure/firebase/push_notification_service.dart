@@ -9,9 +9,9 @@ import '../../utils/logger.dart';
 
 /// Firebaseプッシュ通知の管理を行うサービスクラス
 class PushNotificationService {
+  PushNotificationService._() : _messaging = FirebaseMessaging.instance;
   final FirebaseMessaging _messaging;
-  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   static PushNotificationService? _instance;
 
@@ -19,8 +19,6 @@ class PushNotificationService {
     _instance ??= PushNotificationService._();
     return _instance!;
   }
-
-  PushNotificationService._() : _messaging = FirebaseMessaging.instance;
 
   Future<void> initialize() async {
     try {
@@ -55,15 +53,39 @@ class PushNotificationService {
     }
   }
 
+  /// アプリアイコンのバッジカウントをクリアする
+  Future<void> clearBadgeCount() async {
+    try {
+      AppLogger.debug('アプリアイコンのバッジカウントをクリアします');
+
+      if (Platform.isIOS) {
+        // iOSの場合、ネイティブ側（AppDelegate.swift）でバッジクリアを処理
+        // ここではログ出力のみ行う
+        AppLogger.info('✅ iOSアプリアイコンのバッジカウントクリア（ネイティブ側で処理）');
+      } else if (Platform.isAndroid) {
+        // Androidの場合、通知チャネルを通じてバッジをクリア
+        final androidImplementation = _flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+        if (androidImplementation != null) {
+          // Androidでは通知をキャンセルすることでバッジをクリア
+          await androidImplementation.cancelAll();
+          AppLogger.info('✅ Android通知バッジをクリアしました');
+        }
+      }
+    } catch (e, stack) {
+      AppLogger.error('バッジカウントクリアエラー: $e');
+      AppLogger.error('スタックトレース: $stack');
+    }
+  }
+
   Future<void> displayTokenForTesting() async {
     try {
       if (_shouldSkipInitialization()) {
         return;
       }
 
-      if (kIsWeb ||
-          (defaultTargetPlatform == TargetPlatform.iOS &&
-              !_isPhysicalDevice())) {
+      if (kIsWeb || (defaultTargetPlatform == TargetPlatform.iOS && !_isPhysicalDevice())) {
         AppLogger.debug('🔧 シミュレータ環境のためトークン表示をスキップします');
         return;
       }
@@ -204,11 +226,9 @@ class PushNotificationService {
         if (apiMatch != null) {
           final apiLevel = int.tryParse(apiMatch.group(1)!);
           if (apiLevel != null && apiLevel >= 33) {
-            AppLogger.info(
-                '🔔 Android 13+ (API $apiLevel) を検出: POST_NOTIFICATIONS権限が必要です');
+            AppLogger.info('🔔 Android 13+ (API $apiLevel) を検出: POST_NOTIFICATIONS権限が必要です');
           } else {
-            AppLogger.info(
-                '🔔 Android 12以下 (API $apiLevel) を検出: POST_NOTIFICATIONS権限は不要です');
+            AppLogger.info('🔔 Android 12以下 (API $apiLevel) を検出: POST_NOTIFICATIONS権限は不要です');
           }
         }
       }
@@ -229,8 +249,7 @@ class PushNotificationService {
 
   void _logPermissionDetails(NotificationSettings settings) {
     AppLogger.info('🔔 通知権限ステータス: ${settings.authorizationStatus}');
-    AppLogger.info(
-        '🔔 通知設定詳細: alert=${settings.alert}, badge=${settings.badge}, sound=${settings.sound}');
+    AppLogger.info('🔔 通知設定詳細: alert=${settings.alert}, badge=${settings.badge}, sound=${settings.sound}');
 
     switch (settings.authorizationStatus) {
       case AuthorizationStatus.authorized:
@@ -297,8 +316,7 @@ class PushNotificationService {
         AppLogger.info('🐯 FCMトークン取得試行 ${retryCount + 1}/$maxRetries...');
 
         if (Platform.isAndroid) {
-          AppLogger.info(
-              '🤖 Android: FirebaseMessaging.instance.getToken() 呼び出し...');
+          AppLogger.info('🤖 Android: FirebaseMessaging.instance.getToken() 呼び出し...');
         }
 
         token = await _messaging.getToken();
@@ -317,8 +335,7 @@ class PushNotificationService {
         } else {
           AppLogger.error('❌ FCMトークンがnullで返されました');
           if (Platform.isAndroid) {
-            AppLogger.error(
-                '🤖 Android: google-services.jsonとpackageNameの一致を確認してください');
+            AppLogger.error('🤖 Android: google-services.jsonとpackageNameの一致を確認してください');
             AppLogger.error('🤖 Android: Google Play開発者サービスが利用可能か確認してください');
           }
         }
@@ -342,7 +359,7 @@ class PushNotificationService {
 
         if (retryCount < maxRetries) {
           final waitSeconds = retryCount * 2;
-          AppLogger.info('⏳ ${waitSeconds}秒後にリトライします...');
+          AppLogger.info('⏳ $waitSeconds秒後にリトライします...');
           await Future.delayed(Duration(seconds: waitSeconds));
         }
       }
@@ -420,8 +437,7 @@ class PushNotificationService {
       } else if (Platform.isAndroid) {
         final model = Platform.environment['ANDROID_MODEL'] ?? '';
         final product = Platform.environment['ANDROID_PRODUCT'] ?? '';
-        return !model.toLowerCase().contains('sdk') &&
-            !product.toLowerCase().contains('sdk');
+        return !model.toLowerCase().contains('sdk') && !product.toLowerCase().contains('sdk');
       }
     } catch (_) {
       return true;
@@ -434,8 +450,7 @@ class PushNotificationService {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const InitializationSettings initializationSettings =
-        InitializationSettings(
+    const InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
     );
 
@@ -447,8 +462,7 @@ class PushNotificationService {
     try {
       AppLogger.info('📢 Android通知チャネルの作成を開始...');
 
-      const AndroidNotificationChannel highImportanceChannel =
-          AndroidNotificationChannel(
+      const AndroidNotificationChannel highImportanceChannel = AndroidNotificationChannel(
         'high_importance_channel',
         'フォアグラウンド通知',
         description: 'アプリ使用中に表示される重要な通知',
@@ -458,16 +472,14 @@ class PushNotificationService {
         enableLights: true,
       );
 
-      const AndroidNotificationChannel generalChannel =
-          AndroidNotificationChannel(
+      const AndroidNotificationChannel generalChannel = AndroidNotificationChannel(
         'general_notifications',
         '一般通知',
         description: '一般的な通知を表示します',
         importance: Importance.defaultImportance,
       );
 
-      const AndroidNotificationChannel importantChannel =
-          AndroidNotificationChannel(
+      const AndroidNotificationChannel importantChannel = AndroidNotificationChannel(
         'important_notifications',
         '重要な通知',
         description: '重要な通知を表示します',
@@ -475,16 +487,14 @@ class PushNotificationService {
         sound: RawResourceAndroidNotificationSound('notification'),
       );
 
-      const AndroidNotificationChannel friendRequestChannel =
-          AndroidNotificationChannel(
+      const AndroidNotificationChannel friendRequestChannel = AndroidNotificationChannel(
         'friend_request_notifications',
         '友達申請',
         description: '友達申請に関する通知を表示します',
         importance: Importance.high,
       );
 
-      const AndroidNotificationChannel reactionChannel =
-          AndroidNotificationChannel(
+      const AndroidNotificationChannel reactionChannel = AndroidNotificationChannel(
         'reaction_notifications',
         'リアクション通知',
         description: 'リアクションに関する通知を表示します',
@@ -492,8 +502,7 @@ class PushNotificationService {
       );
 
       final plugin = _flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
       if (plugin != null) {
         await plugin.createNotificationChannel(highImportanceChannel);
@@ -535,8 +544,7 @@ class PushNotificationService {
           break;
         default:
           AppLogger.warning('⚠️ 未知の通知タイプ: $notificationType');
-          AppLogger.info(
-              '💡 サポートされている通知タイプ: friend_request, group_invitation, reaction, comment');
+          AppLogger.info('💡 サポートされている通知タイプ: friend_request, group_invitation, reaction, comment');
       }
     } catch (e) {
       AppLogger.error('メッセージ処理エラー: $e');

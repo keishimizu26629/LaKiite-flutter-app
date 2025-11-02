@@ -9,15 +9,14 @@ import 'config/router/app_router.dart';
 import 'infrastructure/admob_service.dart';
 import 'infrastructure/firebase/push_notification_service.dart';
 import 'presentation/theme/app_theme.dart';
+import 'application/app_lifecycle/app_lifecycle_notifier.dart';
 import 'utils/logger.dart';
 
 /// アプリケーションのエントリーポイント
 Future<void> main() async {
   // 環境変数からFlavorを取得
   const flavorString = String.fromEnvironment('FLAVOR');
-  const environment = flavorString == 'production'
-      ? Environment.production
-      : Environment.development;
+  const environment = flavorString == 'production' ? Environment.production : Environment.development;
 
   await startApp(environment);
 }
@@ -60,6 +59,11 @@ Future<void> startApp([
       AppLogger.info('🔄 FCMトークンの強制更新を実行...');
       await PushNotificationService.instance.forceUpdateFCMToken();
       AppLogger.info('✅ FCMトークンの強制更新が完了');
+
+      // アプリ起動時にバッジカウントをクリア
+      AppLogger.info('🧹 アプリ起動時のバッジカウントクリアを実行...');
+      await PushNotificationService.instance.clearBadgeCount();
+      AppLogger.info('✅ バッジカウントクリアが完了');
 
       // AdMobの初期化
       await AdMobService.initialize();
@@ -112,6 +116,9 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // ルーター設定の取得
     final router = ref.watch(routerProvider);
+
+    // アプリライフサイクルの監視を開始
+    ref.watch(appLifecycleProvider);
 
     return MaterialApp.router(
       title: 'LaKiite',
