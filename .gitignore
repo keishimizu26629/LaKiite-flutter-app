@@ -66,6 +66,7 @@ android/app/google-services.json
 
 # cursor
 .cursor/
+.cursorrules
 
 # Test related
 coverage/
