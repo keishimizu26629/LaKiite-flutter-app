@@ -10,15 +10,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 /// [FirebaseFirestore]を使用してスケジュールに対するリアクションとコメントの
 /// 作成、取得、更新、削除、およびリアルタイム監視を行います。
 class ScheduleInteractionRepository implements IScheduleInteractionRepository {
-  /// Firestoreのインスタンス
-  final FirebaseFirestore _firestore;
-
   /// [ScheduleInteractionRepository]のコンストラクタ
   ///
   /// [firestore]が指定されない場合は、デフォルトのインスタンスを使用します。
   /// テスト時にモックの[FirebaseFirestore]インスタンスを注入できます。
-  ScheduleInteractionRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  ScheduleInteractionRepository({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  /// Firestoreのインスタンス
+  final FirebaseFirestore _firestore;
 
   /// スケジュールのカウンターを更新する内部メソッド
   Future<void> _updateScheduleCounters(String scheduleId) async {
@@ -29,20 +28,13 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         final scheduleRef = _firestore.collection('schedules').doc(scheduleId);
 
         // リアクション数を取得
-        final reactionsSnapshot = await _firestore
-            .collection('schedules')
-            .doc(scheduleId)
-            .collection('reactions')
-            .get();
+        final reactionsSnapshot =
+            await _firestore.collection('schedules').doc(scheduleId).collection('reactions').get();
         final reactionCount = reactionsSnapshot.docs.length;
         AppLogger.debug('Current reaction count: $reactionCount');
 
         // コメント数を取得
-        final commentsSnapshot = await _firestore
-            .collection('schedules')
-            .doc(scheduleId)
-            .collection('comments')
-            .get();
+        final commentsSnapshot = await _firestore.collection('schedules').doc(scheduleId).collection('comments').get();
         final commentCount = commentsSnapshot.docs.length;
         AppLogger.debug('Current comment count: $commentCount');
 
@@ -70,18 +62,13 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   /// ドキュメントを取得し、[ScheduleReaction]のリストに変換します。
   @override
   Future<List<ScheduleReaction>> getReactions(String scheduleId) async {
-    final snapshot = await _firestore
-        .collection('schedules')
-        .doc(scheduleId)
-        .collection('reactions')
-        .get();
+    final snapshot = await _firestore.collection('schedules').doc(scheduleId).collection('reactions').get();
 
     final reactions = snapshot.docs.map((doc) {
       try {
         final data = {...doc.data(), 'id': doc.id};
         AppLogger.debug('Reaction Data from Firestore: $data');
-        AppLogger.debug(
-            'Reaction type from Firestore: ${data['type']} (${data['type'].runtimeType})');
+        AppLogger.debug('Reaction type from Firestore: ${data['type']} (${data['type'].runtimeType})');
         final reaction = ScheduleReaction.fromJson(data);
         AppLogger.debug('Converted Reaction: $reaction');
         return reaction;
@@ -104,13 +91,8 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
     String userId,
     ReactionType type,
   ) async {
-    AppLogger.debug(
-        'addReaction: Adding reaction for schedule: $scheduleId, user: $userId, type: $type');
-    final reactionDoc = _firestore
-        .collection('schedules')
-        .doc(scheduleId)
-        .collection('reactions')
-        .doc(userId);
+    AppLogger.debug('addReaction: Adding reaction for schedule: $scheduleId, user: $userId, type: $type');
+    final reactionDoc = _firestore.collection('schedules').doc(scheduleId).collection('reactions').doc(userId);
 
     final userDoc = await _firestore.collection('users').doc(userId).get();
     final userData = userDoc.data();
@@ -127,13 +109,11 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
     AppLogger.debug('Reaction data to save: $reactionData');
 
     await reactionDoc.set(reactionData);
-    AppLogger.debug(
-        'addReaction: Successfully added reaction with createdAt: $now');
+    AppLogger.debug('addReaction: Successfully added reaction with createdAt: $now');
 
     // カウンターはCloud Functionsで自動的に更新されるため削除
     // await _updateScheduleCounters(scheduleId);
-    AppLogger.debug(
-        'Reaction added - counter will be updated by Cloud Functions');
+    AppLogger.debug('Reaction added - counter will be updated by Cloud Functions');
 
     return userId;
   }
@@ -143,20 +123,13 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   /// `schedules/{scheduleId}/reactions/{userId}`のドキュメントを削除します。
   @override
   Future<void> removeReaction(String scheduleId, String userId) async {
-    AppLogger.debug(
-        'Removing reaction - scheduleId: $scheduleId, userId: $userId');
-    await _firestore
-        .collection('schedules')
-        .doc(scheduleId)
-        .collection('reactions')
-        .doc(userId)
-        .delete();
+    AppLogger.debug('Removing reaction - scheduleId: $scheduleId, userId: $userId');
+    await _firestore.collection('schedules').doc(scheduleId).collection('reactions').doc(userId).delete();
     AppLogger.debug('Successfully removed reaction for user: $userId');
 
     // カウンターはCloud Functionsで自動的に更新されるため削除
     // await _updateScheduleCounters(scheduleId);
-    AppLogger.debug(
-        'Reaction removed - counter will be updated by Cloud Functions');
+    AppLogger.debug('Reaction removed - counter will be updated by Cloud Functions');
   }
 
   /// 指定された[scheduleId]のリアクションをリアルタイムで監視
@@ -165,8 +138,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   /// 最新の[ScheduleReaction]のリストを提供します。
   @override
   Stream<List<ScheduleReaction>> watchReactions(String scheduleId) {
-    AppLogger.debug(
-        'watchReactions: Starting to watch reactions for schedule: $scheduleId');
+    AppLogger.debug('watchReactions: Starting to watch reactions for schedule: $scheduleId');
 
     // スナップショットごとの変更をカウントするカウンター
     int snapshotCounter = 0;
@@ -179,13 +151,11 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         .snapshots()
         .map((snapshot) {
       snapshotCounter++;
-      AppLogger.debug(
-          'watchReactions: Snapshot #$snapshotCounter received with ${snapshot.docs.length} documents');
-      AppLogger.debug(
-          'watchReactions: Document changes: ${snapshot.docChanges.length}');
+      AppLogger.debug('watchReactions: Snapshot #$snapshotCounter received with ${snapshot.docs.length} documents');
+      AppLogger.debug('watchReactions: Document changes: ${snapshot.docChanges.length}');
 
       // 変更の詳細をログ出力
-      for (var change in snapshot.docChanges) {
+      for (final change in snapshot.docChanges) {
         final changeType = change.type.toString();
         final docId = change.doc.id;
         final docData = change.doc.data();
@@ -204,8 +174,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
           // 型情報を詳細に確認
           final typeValue = data['type'];
           final typeType = typeValue?.runtimeType;
-          AppLogger.debug(
-              'Reaction type value: "$typeValue" (type: $typeType)');
+          AppLogger.debug('Reaction type value: "$typeValue" (type: $typeType)');
 
           // createdAtの情報確認
           final createdAtValue = data['createdAt'];
@@ -213,8 +182,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
           AppLogger.debug('createdAt value type: $createdAtType');
 
           final reaction = ScheduleReaction.fromJson(data);
-          AppLogger.debug(
-              'Successfully converted to ScheduleReaction: $reaction');
+          AppLogger.debug('Successfully converted to ScheduleReaction: $reaction');
           return reaction;
         } catch (e, stackTrace) {
           AppLogger.error('Error converting reaction: $e');
@@ -223,8 +191,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         }
       }).toList();
 
-      AppLogger.debug(
-          'watchReactions: Converted ${reactions.length} reactions');
+      AppLogger.debug('watchReactions: Converted ${reactions.length} reactions');
 
       // 結果確認
       if (reactions.isNotEmpty) {
@@ -252,16 +219,16 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
     AppLogger.debug('スケジュールID: $scheduleId, 取得コメント数: ${snapshot.docs.length}');
 
     // 各コメントのデータ構造を詳細に記録
-    for (var doc in snapshot.docs) {
+    for (final doc in snapshot.docs) {
       final data = doc.data();
       AppLogger.debug('コメントID: ${doc.id}');
       AppLogger.debug('フィールド一覧: ${data.keys.join(", ")}');
       AppLogger.debug('contentフィールドの有無: ${data.containsKey("content")}');
       AppLogger.debug('textフィールドの有無: ${data.containsKey("text")}');
-      if (data.containsKey("content")) {
+      if (data.containsKey('content')) {
         AppLogger.debug('content値: ${data["content"]}');
       }
-      if (data.containsKey("text")) {
+      if (data.containsKey('text')) {
         AppLogger.debug('text値: ${data["text"]}');
       }
     }
@@ -294,8 +261,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
     String content,
   ) async {
     try {
-      AppLogger.debug(
-          'Adding comment - scheduleId: $scheduleId, userId: $userId');
+      AppLogger.debug('Adding comment - scheduleId: $scheduleId, userId: $userId');
       final userDoc = await _firestore.collection('users').doc(userId).get();
       final userData = userDoc.data();
       AppLogger.debug('User data fetched: $userData');
@@ -312,11 +278,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       };
       AppLogger.debug('Comment data to save: $commentData');
 
-      final docRef = await _firestore
-          .collection('schedules')
-          .doc(scheduleId)
-          .collection('comments')
-          .add(commentData);
+      final docRef = await _firestore.collection('schedules').doc(scheduleId).collection('comments').add(commentData);
       AppLogger.debug('Comment added successfully with ID: ${docRef.id}');
 
       // カウンターを更新
@@ -335,20 +297,13 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   /// `schedules/{scheduleId}/comments/{commentId}`のドキュメントを削除します。
   @override
   Future<void> deleteComment(String scheduleId, String commentId) async {
-    AppLogger.debug(
-        'Deleting comment - scheduleId: $scheduleId, commentId: $commentId');
-    await _firestore
-        .collection('schedules')
-        .doc(scheduleId)
-        .collection('comments')
-        .doc(commentId)
-        .delete();
+    AppLogger.debug('Deleting comment - scheduleId: $scheduleId, commentId: $commentId');
+    await _firestore.collection('schedules').doc(scheduleId).collection('comments').doc(commentId).delete();
     AppLogger.debug('Successfully deleted comment: $commentId');
 
     // カウンターはCloud Functionsで自動的に更新されるため削除
     // await _updateScheduleCounters(scheduleId);
-    AppLogger.debug(
-        'Reaction removed - counter will be updated by Cloud Functions');
+    AppLogger.debug('Reaction removed - counter will be updated by Cloud Functions');
   }
 
   /// 指定された[scheduleId]と[commentId]に対応するコメントを更新
@@ -366,12 +321,8 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       AppLogger.debug('スケジュールID: $scheduleId, コメントID: $commentId');
 
       // 更新前に既存のコメントを取得して確認
-      final commentDoc = await _firestore
-          .collection('schedules')
-          .doc(scheduleId)
-          .collection('comments')
-          .doc(commentId)
-          .get();
+      final commentDoc =
+          await _firestore.collection('schedules').doc(scheduleId).collection('comments').doc(commentId).get();
 
       if (!commentDoc.exists) {
         AppLogger.error('コメントが見つかりません: $commentId');
@@ -388,12 +339,9 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       final updatedAtValue = existingData?['updatedAt'];
       final isEditedValue = existingData?['isEdited'];
 
-      AppLogger.debug(
-          '既存コメントのcreatedAt: $createdAtValue (${createdAtValue?.runtimeType})');
-      AppLogger.debug(
-          '既存コメントのupdatedAt: $updatedAtValue (${updatedAtValue?.runtimeType})');
-      AppLogger.debug(
-          '既存コメントのisEdited: $isEditedValue (${isEditedValue?.runtimeType})');
+      AppLogger.debug('既存コメントのcreatedAt: $createdAtValue (${createdAtValue?.runtimeType})');
+      AppLogger.debug('既存コメントのupdatedAt: $updatedAtValue (${updatedAtValue?.runtimeType})');
+      AppLogger.debug('既存コメントのisEdited: $isEditedValue (${isEditedValue?.runtimeType})');
 
       // 更新するデータを準備 - セキュリティルールを満たすために必要最小限のフィールドのみ含める
       // セキュリティルールでは ['content', 'updatedAt', 'isEdited'] のみが許可されている
@@ -444,24 +392,17 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
 
           // ドキュメントデータを再度取得して確認
           try {
-            final refetchDoc = await _firestore
-                .collection('schedules')
-                .doc(scheduleId)
-                .collection('comments')
-                .doc(commentId)
-                .get();
+            final refetchDoc =
+                await _firestore.collection('schedules').doc(scheduleId).collection('comments').doc(commentId).get();
 
             if (refetchDoc.exists) {
               final currentData = refetchDoc.data();
               AppLogger.error('現在のドキュメントデータ: $currentData');
-              AppLogger.error(
-                  '現在のドキュメントフィールド: ${currentData?.keys.join(", ")}');
+              AppLogger.error('現在のドキュメントフィールド: ${currentData?.keys.join(", ")}');
 
               // content/text フィールドの確認
-              AppLogger.error(
-                  'contentフィールドの有無: ${currentData?.containsKey("content")}');
-              AppLogger.error(
-                  'textフィールドの有無: ${currentData?.containsKey("text")}');
+              AppLogger.error('contentフィールドの有無: ${currentData?.containsKey("content")}');
+              AppLogger.error('textフィールドの有無: ${currentData?.containsKey("text")}');
             }
           } catch (e) {
             AppLogger.error('ドキュメント再取得エラー: $e');
@@ -493,8 +434,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      AppLogger.debug(
-          'Received comment snapshot with ${snapshot.docs.length} documents');
+      AppLogger.debug('Received comment snapshot with ${snapshot.docs.length} documents');
       final comments = snapshot.docs.map((doc) {
         try {
           final data = {...doc.data(), 'id': doc.id};
@@ -517,11 +457,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   Future<int> getReactionCount(String scheduleId) async {
     try {
       AppLogger.debug('Getting reaction count for schedule: $scheduleId');
-      final snapshot = await _firestore
-          .collection('schedules')
-          .doc(scheduleId)
-          .collection('reactions')
-          .get();
+      final snapshot = await _firestore.collection('schedules').doc(scheduleId).collection('reactions').get();
 
       final count = snapshot.docs.length;
       AppLogger.debug('Reaction count for $scheduleId: $count');
@@ -536,11 +472,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   Future<int> getCommentCount(String scheduleId) async {
     try {
       AppLogger.debug('Getting comment count for schedule: $scheduleId');
-      final snapshot = await _firestore
-          .collection('schedules')
-          .doc(scheduleId)
-          .collection('comments')
-          .get();
+      final snapshot = await _firestore.collection('schedules').doc(scheduleId).collection('comments').get();
 
       final count = snapshot.docs.length;
       AppLogger.debug('Comment count for $scheduleId: $count');

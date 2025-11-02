@@ -5,8 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/application/auth/auth_notifier.dart' as auth;
 import 'package:lakiite/application/auth/auth_state.dart';
-import 'package:lakiite/application/notification/notification_notifier.dart'
-    as notification;
+import 'package:lakiite/application/notification/notification_notifier.dart' as notification;
 import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
 import 'package:lakiite/config/app_config.dart';
 import 'package:lakiite/domain/entity/notification.dart' as domain_notification;
@@ -36,41 +35,32 @@ class _FakeScheduleRepository implements IScheduleRepository {
   final Schedule _schedule;
 
   @override
-  Stream<Schedule?> watchSchedule(String scheduleId) =>
-      Stream<Schedule?>.value(_schedule);
+  Stream<Schedule?> watchSchedule(String scheduleId) => Stream<Schedule?>.value(_schedule);
 
   // Unused interface members
   @override
-  Future<void> deleteSchedule(String scheduleId) =>
-      Future.error(UnimplementedError());
+  Future<void> deleteSchedule(String scheduleId) => Future.error(UnimplementedError());
 
   @override
-  Future<List<Schedule>> getListSchedules(String listId) =>
-      Future.error(UnimplementedError());
+  Future<List<Schedule>> getListSchedules(String listId) => Future.error(UnimplementedError());
 
   @override
-  Future<Schedule> createSchedule(Schedule schedule) =>
-      Future.error(UnimplementedError());
+  Future<Schedule> createSchedule(Schedule schedule) => Future.error(UnimplementedError());
 
   @override
-  Future<List<Schedule>> getUserSchedules(String userId) =>
-      Future.error(UnimplementedError());
+  Future<List<Schedule>> getUserSchedules(String userId) => Future.error(UnimplementedError());
 
   @override
-  Future<void> updateSchedule(Schedule schedule) =>
-      Future.error(UnimplementedError());
+  Future<void> updateSchedule(Schedule schedule) => Future.error(UnimplementedError());
 
   @override
-  Stream<List<Schedule>> watchListSchedules(String listId) =>
-      Stream<List<Schedule>>.error(UnimplementedError());
+  Stream<List<Schedule>> watchListSchedules(String listId) => Stream<List<Schedule>>.error(UnimplementedError());
 
   @override
-  Stream<List<Schedule>> watchUserSchedules(String userId) =>
-      Stream<List<Schedule>>.error(UnimplementedError());
+  Stream<List<Schedule>> watchUserSchedules(String userId) => Stream<List<Schedule>>.error(UnimplementedError());
 
   @override
-  Stream<List<Schedule>> watchUserSchedulesForMonth(
-          String userId, DateTime displayMonth) =>
+  Stream<List<Schedule>> watchUserSchedulesForMonth(String userId, DateTime displayMonth) =>
       Stream<List<Schedule>>.error(UnimplementedError());
 }
 
@@ -84,8 +74,7 @@ class _FakeUserRepository implements IUserRepository {
 
   // All other methods are not used in this test.
   @override
-  Future<void> addToList(String userId, String memberId) =>
-      Future.error(UnimplementedError());
+  Future<void> addToList(String userId, String memberId) => Future.error(UnimplementedError());
 
   @override
   Future<void> createUser(UserModel user) => Future.error(UnimplementedError());
@@ -94,83 +83,63 @@ class _FakeUserRepository implements IUserRepository {
   Future<void> deleteUser(String id) => Future.error(UnimplementedError());
 
   @override
-  Future<PublicUserModel?> getFriendPublicProfile(String id) =>
-      Future.error(UnimplementedError());
+  Future<PublicUserModel?> getFriendPublicProfile(String id) => Future.error(UnimplementedError());
 
   @override
-  Future<List<PublicUserModel>> getPublicProfiles(List<String> userIds) =>
-      Future.error(UnimplementedError());
+  Future<List<PublicUserModel>> getPublicProfiles(List<String> userIds) => Future.error(UnimplementedError());
 
   @override
-  Future<SearchUserModel?> findBySearchId(String searchId) =>
-      Future.error(UnimplementedError());
+  Future<SearchUserModel?> findBySearchId(String searchId) => Future.error(UnimplementedError());
 
   @override
-  Future<SearchUserModel?> findByUserId(UserId userId) =>
-      Future.error(UnimplementedError());
+  Future<SearchUserModel?> findByUserId(UserId userId) => Future.error(UnimplementedError());
 
   @override
-  Future<bool> isUserIdUnique(UserId userId) =>
-      Future.error(UnimplementedError());
+  Future<bool> isUserIdUnique(UserId userId) => Future.error(UnimplementedError());
 
   @override
-  Future<void> removeFromList(String userId, String memberId) =>
-      Future.error(UnimplementedError());
+  Future<void> removeFromList(String userId, String memberId) => Future.error(UnimplementedError());
 
   @override
   Future<void> updateUser(UserModel user) => Future.error(UnimplementedError());
 
   @override
-  Future<String?> uploadUserIcon(String userId, Uint8List imageBytes) =>
-      Future.error(UnimplementedError());
+  Future<String?> uploadUserIcon(String userId, Uint8List imageBytes) => Future.error(UnimplementedError());
 
   @override
-  Future<void> deleteUserIcon(String userId) =>
-      Future.error(UnimplementedError());
+  Future<void> deleteUserIcon(String userId) => Future.error(UnimplementedError());
 
   @override
-  Stream<PrivateUserModel?> watchPrivateProfile(String id) =>
-      Stream<PrivateUserModel?>.error(UnimplementedError());
+  Stream<PrivateUserModel?> watchPrivateProfile(String id) => Stream<PrivateUserModel?>.error(UnimplementedError());
 
   @override
-  Stream<PublicUserModel?> watchPublicProfile(String id) =>
-      Stream<PublicUserModel?>.error(UnimplementedError());
+  Stream<PublicUserModel?> watchPublicProfile(String id) => Stream<PublicUserModel?>.error(UnimplementedError());
 
   @override
-  Stream<UserModel?> watchUser(String id) =>
-      Stream<UserModel?>.error(UnimplementedError());
+  Stream<UserModel?> watchUser(String id) => Stream<UserModel?>.error(UnimplementedError());
 }
 
 class _FakeNotificationRepository implements INotificationRepository {
   @override
-  Future<void> createNotification(
-      domain_notification.Notification notification) async {}
+  Future<void> createNotification(domain_notification.Notification notification) async {}
 
   @override
-  Future<void> updateNotification(
-          domain_notification.Notification notification) =>
+  Future<void> updateNotification(domain_notification.Notification notification) => Future.error(UnimplementedError());
+
+  @override
+  Future<domain_notification.Notification?> getNotification(String notificationId) =>
       Future.error(UnimplementedError());
 
   @override
-  Future<domain_notification.Notification?> getNotification(
-          String notificationId) =>
-      Future.error(UnimplementedError());
+  Stream<List<domain_notification.Notification>> watchReceivedNotifications(String userId) => const Stream.empty();
 
   @override
-  Stream<List<domain_notification.Notification>> watchReceivedNotifications(
-          String userId) =>
+  Stream<List<domain_notification.Notification>> watchReceivedNotificationsByType(
+          String userId, domain_notification.NotificationType type) =>
       const Stream.empty();
 
   @override
-  Stream<List<domain_notification.Notification>>
-      watchReceivedNotificationsByType(
-              String userId, domain_notification.NotificationType type) =>
-          const Stream.empty();
-
-  @override
-  Stream<List<domain_notification.Notification>> watchSentNotifications(
-          String userId) =>
-      const Stream.empty();
+  Stream<List<domain_notification.Notification>> watchSentNotifications(String userId) => const Stream.empty();
 
   @override
   Stream<List<domain_notification.Notification>> watchSentNotificationsByType(
@@ -178,39 +147,29 @@ class _FakeNotificationRepository implements INotificationRepository {
       const Stream.empty();
 
   @override
-  Future<bool> hasPendingFriendRequest(
-          String fromUserId, String toUserId) async =>
-      false;
+  Future<bool> hasPendingFriendRequest(String fromUserId, String toUserId) async => false;
 
   @override
-  Future<bool> hasPendingGroupInvitation(
-          String fromUserId, String toUserId, String groupId) async =>
-      false;
+  Future<bool> hasPendingGroupInvitation(String fromUserId, String toUserId, String groupId) async => false;
 
   @override
-  Future<void> acceptNotification(String notificationId) =>
-      Future.error(UnimplementedError());
+  Future<void> acceptNotification(String notificationId) => Future.error(UnimplementedError());
 
   @override
-  Future<void> rejectNotification(String notificationId) =>
-      Future.error(UnimplementedError());
+  Future<void> rejectNotification(String notificationId) => Future.error(UnimplementedError());
 
   @override
-  Future<void> markAsRead(String notificationId) =>
-      Future.error(UnimplementedError());
+  Future<void> markAsRead(String notificationId) => Future.error(UnimplementedError());
 
   @override
   Stream<int> watchUnreadCount(String userId) => const Stream.empty();
 
   @override
-  Stream<int> watchUnreadCountByType(
-          String userId, domain_notification.NotificationType type) =>
-      const Stream.empty();
+  Stream<int> watchUnreadCountByType(String userId, domain_notification.NotificationType type) => const Stream.empty();
 }
 
 class _FakeNotificationNotifier extends notification.NotificationNotifier {
-  _FakeNotificationNotifier(Ref ref)
-      : super(_FakeNotificationRepository(), ref);
+  _FakeNotificationNotifier(Ref ref) : super(_FakeNotificationRepository(), ref);
 
   @override
   Future<void> createReactionNotification({
@@ -231,15 +190,12 @@ class _FakeNotificationNotifier extends notification.NotificationNotifier {
   }) async {}
 }
 
-class _FakeScheduleInteractionRepository
-    implements IScheduleInteractionRepository {
+class _FakeScheduleInteractionRepository implements IScheduleInteractionRepository {
   _FakeScheduleInteractionRepository()
       : _reactionListener = Completer<void>(),
         _latestReactions = null,
-        _commentsController =
-            StreamController<List<ScheduleComment>>.broadcast() {
-    _reactionsController =
-        StreamController<List<ScheduleReaction>>.broadcast(onListen: () {
+        _commentsController = StreamController<List<ScheduleComment>>.broadcast() {
+    _reactionsController = StreamController<List<ScheduleReaction>>.broadcast(onListen: () {
       if (!_reactionListener.isCompleted) {
         _reactionListener.complete();
       }
@@ -274,8 +230,7 @@ class _FakeScheduleInteractionRepository
   }
 
   @override
-  Future<String> addReaction(
-      String scheduleId, String userId, ReactionType type) {
+  Future<String> addReaction(String scheduleId, String userId, ReactionType type) {
     addReactionCompleter ??= Completer<String>();
     return addReactionCompleter!.future;
   }
@@ -284,34 +239,26 @@ class _FakeScheduleInteractionRepository
   Future<void> removeReaction(String scheduleId, String userId) async {}
 
   @override
-  Stream<List<ScheduleReaction>> watchReactions(String scheduleId) =>
-      _reactionsController.stream;
+  Stream<List<ScheduleReaction>> watchReactions(String scheduleId) => _reactionsController.stream;
 
   @override
-  Stream<List<ScheduleComment>> watchComments(String scheduleId) =>
-      _commentsController.stream;
+  Stream<List<ScheduleComment>> watchComments(String scheduleId) => _commentsController.stream;
 
   // Unused members
   @override
-  Future<List<ScheduleReaction>> getReactions(String scheduleId) =>
-      Future.error(UnimplementedError());
+  Future<List<ScheduleReaction>> getReactions(String scheduleId) => Future.error(UnimplementedError());
 
   @override
-  Future<List<ScheduleComment>> getComments(String scheduleId) =>
-      Future.error(UnimplementedError());
+  Future<List<ScheduleComment>> getComments(String scheduleId) => Future.error(UnimplementedError());
 
   @override
-  Future<String> addComment(String scheduleId, String userId, String content) =>
-      Future.error(UnimplementedError());
+  Future<String> addComment(String scheduleId, String userId, String content) => Future.error(UnimplementedError());
 
   @override
-  Future<void> deleteComment(String scheduleId, String commentId) =>
-      Future.error(UnimplementedError());
+  Future<void> deleteComment(String scheduleId, String commentId) => Future.error(UnimplementedError());
 
   @override
-  Future<void> updateComment(
-          String scheduleId, String commentId, String content) =>
-      Future.error(UnimplementedError());
+  Future<void> updateComment(String scheduleId, String commentId, String content) => Future.error(UnimplementedError());
 
   @override
   Future<int> getReactionCount(String scheduleId) async {
@@ -332,8 +279,7 @@ void main() {
       AppConfig.initialize(Environment.development);
     });
 
-    test('toggleReaction should retain concurrent reactions from other users',
-        () async {
+    test('toggleReaction should retain concurrent reactions from other users', () async {
       final user = UserModel(
         publicProfile: PublicUserModel(
           id: 'user-1',
@@ -371,8 +317,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          authNotifierProvider.overrideWith(
-              () => _StubAuthNotifier(AuthState.authenticated(user))),
+          authNotifierProvider.overrideWith(() => _StubAuthNotifier(AuthState.authenticated(user))),
           scheduleInteractionRepositoryProvider.overrideWithValue(repository),
           scheduleInteractionNotifierProvider.overrideWith((ref, scheduleId) {
             return ScheduleInteractionNotifier(
@@ -388,8 +333,7 @@ void main() {
           userRepositoryProvider.overrideWithValue(
             _FakeUserRepository(user),
           ),
-          notification.notificationRepositoryProvider
-              .overrideWithValue(_FakeNotificationRepository()),
+          notification.notificationRepositoryProvider.overrideWithValue(_FakeNotificationRepository()),
           notification.notificationNotifierProvider.overrideWith((ref) {
             return _FakeNotificationNotifier(ref);
           }),
@@ -428,9 +372,7 @@ void main() {
 
       repository.addReactionCompleter = Completer<String>();
 
-      final toggleFuture = container
-          .read(provider.notifier)
-          .toggleReaction(user.id, ReactionType.going);
+      final toggleFuture = container.read(provider.notifier).toggleReaction(user.id, ReactionType.going);
 
       await Future.microtask(() {});
 

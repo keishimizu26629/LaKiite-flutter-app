@@ -19,28 +19,26 @@ class MockUser implements firebase_auth.User {
   }
 
   @override
-  Future<firebase_auth.UserCredential> reauthenticateWithCredential(
-      firebase_auth.AuthCredential credential) async {
+  Future<firebase_auth.UserCredential> reauthenticateWithCredential(firebase_auth.AuthCredential credential) async {
     // モック実装 - 正常に完了したと仮定
     return MockUserCredential(this);
   }
 
   // 他のすべての未実装メソッドをnoSuchMethodで処理
   @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class MockUserCredential implements firebase_auth.UserCredential {
-  final firebase_auth.User mockUser;
-
   MockUserCredential(this.mockUser);
+  final firebase_auth.User mockUser;
 
   @override
   firebase_auth.User? get user => mockUser;
 
   // 他のすべての未実装メソッドをnoSuchMethodで処理
   @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class MockFirebaseAuth implements firebase_auth.FirebaseAuth {
@@ -54,7 +52,7 @@ class MockFirebaseAuth implements firebase_auth.FirebaseAuth {
   }
 
   @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class MockUserRepository implements IUserRepository {
@@ -149,8 +147,7 @@ class MockUserRepository implements IUserRepository {
   }
 
   @override
-  Future<List<domain.PublicUserModel>> getPublicProfiles(
-      List<String> userIds) async {
+  Future<List<domain.PublicUserModel>> getPublicProfiles(List<String> userIds) async {
     throw UnimplementedError('テストでは使用しません');
   }
 
@@ -221,8 +218,7 @@ void main() {
       mockFirebaseAuth.setCurrentUser(mockUser);
 
       // 実行: 再認証
-      final result =
-          await authRepository.reauthenticateWithPassword('password123');
+      final result = await authRepository.reauthenticateWithPassword('password123');
 
       // 検証
       expect(result, isTrue);
@@ -249,8 +245,7 @@ void main() {
       mockFirebaseAuth.setCurrentUser(mockUser);
 
       // 実行: 再認証付きアカウント削除
-      final result =
-          await authRepository.deleteAccountWithReauth('password123');
+      final result = await authRepository.deleteAccountWithReauth('password123');
 
       // 検証
       expect(result, isTrue);
@@ -289,8 +284,7 @@ class MockUserWithReauthError implements firebase_auth.User {
   }
 
   @override
-  Future<firebase_auth.UserCredential> reauthenticateWithCredential(
-      firebase_auth.AuthCredential credential) async {
+  Future<firebase_auth.UserCredential> reauthenticateWithCredential(firebase_auth.AuthCredential credential) async {
     throw firebase_auth.FirebaseAuthException(
       code: 'requires-recent-login',
       message: 'セキュリティのため再認証が必要です。',
@@ -299,5 +293,5 @@ class MockUserWithReauthError implements firebase_auth.User {
 
   // 他のすべての未実装メソッドをnoSuchMethodで処理
   @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

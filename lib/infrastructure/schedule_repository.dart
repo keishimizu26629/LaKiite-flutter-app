@@ -6,6 +6,9 @@ import '../utils/logger.dart';
 import 'mapper/schedule_mapper.dart';
 
 class ScheduleRepository implements IScheduleRepository {
+  ScheduleRepository()
+      : _firestore = FirebaseFirestore.instance,
+        _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
 
@@ -19,10 +22,6 @@ class ScheduleRepository implements IScheduleRepository {
   static const _cacheExpiryDuration = Duration(minutes: 10);
   // キャッシュの最終更新時間
   final Map<String, DateTime> _cacheLastUpdated = {};
-
-  ScheduleRepository()
-      : _firestore = FirebaseFirestore.instance,
-        _auth = FirebaseAuth.instance;
 
   Future<void> _ensureAuthenticated() async {
     // 認証の初期化を待つ
@@ -60,10 +59,7 @@ class ScheduleRepository implements IScheduleRepository {
     if (_isCacheValid(scheduleId) &&
         _reactionCountCache.containsKey(scheduleId) &&
         _commentCountCache.containsKey(scheduleId)) {
-      return (
-        _reactionCountCache[scheduleId]!,
-        _commentCountCache[scheduleId]!
-      );
+      return (_reactionCountCache[scheduleId]!, _commentCountCache[scheduleId]!);
     }
 
     // 並列でリアクション数とコメント数を取得
@@ -97,8 +93,7 @@ class ScheduleRepository implements IScheduleRepository {
       final schedule = ScheduleMapper.fromFirestore(doc);
 
       // リアクション数とコメント数を一括取得
-      final (reactionCount, commentCount) =
-          await _fetchInteractionCounts(doc.reference);
+      final (reactionCount, commentCount) = await _fetchInteractionCounts(doc.reference);
 
       // リアクション数とコメント数を更新したスケジュールを作成
       final enrichedSchedule = schedule.copyWith(
@@ -151,8 +146,7 @@ class ScheduleRepository implements IScheduleRepository {
           .get();
     });
 
-    final schedules =
-        await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
+    final schedules = await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
     return schedules;
   }
 
@@ -166,7 +160,7 @@ class ScheduleRepository implements IScheduleRepository {
     final year = previousMonth.year.toString();
     final month = previousMonth.month.toString().padLeft(2, '0');
     final day = previousMonth.day.toString().padLeft(2, '0');
-    final previousMonthIso = "$year-$month-${day}T00:00:00.000";
+    final previousMonthIso = '$year-$month-${day}T00:00:00.000';
 
     final snapshot = await _firestore
         .collection('schedules')
@@ -184,8 +178,7 @@ class ScheduleRepository implements IScheduleRepository {
           .get();
     });
 
-    final schedules =
-        await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
+    final schedules = await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
     return schedules;
   }
 
@@ -275,7 +268,7 @@ class ScheduleRepository implements IScheduleRepository {
     final year = sixMonthsAgo.year.toString();
     final month = sixMonthsAgo.month.toString().padLeft(2, '0');
     final day = sixMonthsAgo.day.toString().padLeft(2, '0');
-    final sixMonthsAgoIso = "$year-$month-${day}T00:00:00.000";
+    final sixMonthsAgoIso = '$year-$month-${day}T00:00:00.000';
 
     return _firestore
         .collection('schedules')
@@ -284,8 +277,7 @@ class ScheduleRepository implements IScheduleRepository {
         .orderBy('startDateTime', descending: false)
         .snapshots()
         .asyncMap((snapshot) async {
-      final schedules =
-          await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
+      final schedules = await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
       return schedules;
     });
   }
@@ -303,7 +295,7 @@ class ScheduleRepository implements IScheduleRepository {
       final year = sixMonthsAgo.year.toString();
       final month = sixMonthsAgo.month.toString().padLeft(2, '0');
       final day = sixMonthsAgo.day.toString().padLeft(2, '0');
-      final sixMonthsAgoIso = "$year-$month-${day}T00:00:00.000";
+      final sixMonthsAgoIso = '$year-$month-${day}T00:00:00.000';
 
       final stream = _firestore
           .collection('schedules')
@@ -331,20 +323,18 @@ class ScheduleRepository implements IScheduleRepository {
   }
 
   @override
-  Stream<List<Schedule>> watchUserSchedulesForMonth(
-      String userId, DateTime displayMonth) async* {
+  Stream<List<Schedule>> watchUserSchedulesForMonth(String userId, DateTime displayMonth) async* {
     try {
       await _ensureAuthenticated();
 
       // 表示月の6ヶ月前の1日を計算
-      final sixMonthsAgo =
-          DateTime(displayMonth.year, displayMonth.month - 6, 1);
+      final sixMonthsAgo = DateTime(displayMonth.year, displayMonth.month - 6, 1);
 
       // 日付形式を正確に整形（必ず2桁になるようにフォーマット）
       final year = sixMonthsAgo.year.toString();
       final month = sixMonthsAgo.month.toString().padLeft(2, '0');
       final day = sixMonthsAgo.day.toString().padLeft(2, '0');
-      final sixMonthsAgoIso = "$year-$month-${day}T00:00:00.000";
+      final sixMonthsAgoIso = '$year-$month-${day}T00:00:00.000';
 
       // 最初に素早くキャッシュからデータを取得（データがあれば即時返却）
       try {
@@ -402,8 +392,7 @@ class ScheduleRepository implements IScheduleRepository {
   }
 
   // ドキュメントのバッチをより効率的に処理するヘルパーメソッド
-  Future<List<Schedule>> _enrichSchedulesInBatches(
-      List<DocumentSnapshot> docs) async {
+  Future<List<Schedule>> _enrichSchedulesInBatches(List<DocumentSnapshot> docs) async {
     // 最大同時処理数（大きすぎると逆に遅くなる）
     const int batchSize = 10;
 
@@ -435,11 +424,7 @@ class ScheduleRepository implements IScheduleRepository {
 
   @override
   Stream<Schedule?> watchSchedule(String scheduleId) {
-    return _firestore
-        .collection('schedules')
-        .doc(scheduleId)
-        .snapshots()
-        .asyncMap((doc) async {
+    return _firestore.collection('schedules').doc(scheduleId).snapshots().asyncMap((doc) async {
       if (!doc.exists) return null;
       return _enrichSchedule(doc);
     });

@@ -13,8 +13,6 @@ void main() {
     test('ScheduleRepositoryが正しくリファクタリングされていることを確認', () {
       // ScheduleRepositoryのコンストラクタが引数を取らないことを確認
       expect(() => ScheduleRepository(), returnsNormally);
-    },
-        skip:
-            'Firestore integration tests require emulator or real Firebase project');
+    }, skip: 'Firestore integration tests require emulator or real Firebase project');
   });
 }

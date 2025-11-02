@@ -74,17 +74,16 @@ abstract class IScheduleManager {
 
 /// ScheduleManagerの実装
 class ScheduleManager implements IScheduleManager {
-  final IScheduleRepository _scheduleRepository;
-  final IFriendListRepository _friendListRepository;
-  final IUserRepository _userRepository;
-  final IScheduleInteractionRepository _interactionRepository;
-
   ScheduleManager(
     this._scheduleRepository,
     this._friendListRepository,
     this._userRepository,
     this._interactionRepository,
   );
+  final IScheduleRepository _scheduleRepository;
+  final IFriendListRepository _friendListRepository;
+  final IUserRepository _userRepository;
+  final IScheduleInteractionRepository _interactionRepository;
 
   @override
   Future<Schedule> createSchedule(Schedule schedule) async {
@@ -113,14 +112,12 @@ class ScheduleManager implements IScheduleManager {
       updatedAt: now,
     );
 
-    AppLogger.debug(
-        'ScheduleManager: Visible users calculated - ${visibleTo.length} users');
+    AppLogger.debug('ScheduleManager: Visible users calculated - ${visibleTo.length} users');
 
     // リポジトリに保存
     final created = await _scheduleRepository.createSchedule(enrichedSchedule);
 
-    AppLogger.info(
-        'ScheduleManager: Schedule created successfully - ${created.id}');
+    AppLogger.info('ScheduleManager: Schedule created successfully - ${created.id}');
     return created;
   }
 
@@ -143,8 +140,7 @@ class ScheduleManager implements IScheduleManager {
     // リポジトリに保存
     await _scheduleRepository.updateSchedule(updatedSchedule);
 
-    AppLogger.info(
-        'ScheduleManager: Schedule updated successfully - ${schedule.id}');
+    AppLogger.info('ScheduleManager: Schedule updated successfully - ${schedule.id}');
   }
 
   @override
@@ -153,8 +149,7 @@ class ScheduleManager implements IScheduleManager {
 
     await _scheduleRepository.deleteSchedule(scheduleId);
 
-    AppLogger.info(
-        'ScheduleManager: Schedule deleted successfully - $scheduleId');
+    AppLogger.info('ScheduleManager: Schedule deleted successfully - $scheduleId');
   }
 
   @override
@@ -181,8 +176,7 @@ class ScheduleManager implements IScheduleManager {
   Stream<List<Schedule>> watchUserSchedules(String userId) async* {
     AppLogger.debug('ScheduleManager: Watching user schedules - $userId');
 
-    await for (final schedules
-        in _scheduleRepository.watchUserSchedules(userId)) {
+    await for (final schedules in _scheduleRepository.watchUserSchedules(userId)) {
       // エンリッチメント処理
       final enrichedSchedules = await _enrichScheduleList(schedules);
       yield enrichedSchedules;
@@ -197,8 +191,7 @@ class ScheduleManager implements IScheduleManager {
     AppLogger.debug(
         'ScheduleManager: Watching user schedules for month - $userId, ${displayMonth.year}-${displayMonth.month}');
 
-    await for (final schedules in _scheduleRepository
-        .watchUserSchedulesForMonth(userId, displayMonth)) {
+    await for (final schedules in _scheduleRepository.watchUserSchedulesForMonth(userId, displayMonth)) {
       // エンリッチメント処理
       final enrichedSchedules = await _enrichScheduleList(schedules);
       yield enrichedSchedules;
@@ -209,8 +202,7 @@ class ScheduleManager implements IScheduleManager {
   Stream<Schedule?> watchSchedule(String scheduleId) async* {
     AppLogger.debug('ScheduleManager: Watching schedule - $scheduleId');
 
-    await for (final schedule
-        in _scheduleRepository.watchSchedule(scheduleId)) {
+    await for (final schedule in _scheduleRepository.watchSchedule(scheduleId)) {
       if (schedule == null) {
         yield null;
       } else {
@@ -246,12 +238,10 @@ class ScheduleManager implements IScheduleManager {
         final memberIds = await _friendListRepository.getListMemberIds(listId);
         if (memberIds != null) {
           visibleTo.addAll(memberIds);
-          AppLogger.debug(
-              'ScheduleManager: Added ${memberIds.length} members from list $listId');
+          AppLogger.debug('ScheduleManager: Added ${memberIds.length} members from list $listId');
         }
       } catch (e) {
-        AppLogger.warning(
-            'ScheduleManager: Error getting members for list $listId - $e');
+        AppLogger.warning('ScheduleManager: Error getting members for list $listId - $e');
         // エラーが発生しても処理を継続
       }
     }
@@ -266,8 +256,7 @@ class ScheduleManager implements IScheduleManager {
     final enrichedSchedules = <Schedule>[];
 
     for (int i = 0; i < schedules.length; i += batchSize) {
-      final end =
-          (i + batchSize < schedules.length) ? i + batchSize : schedules.length;
+      final end = (i + batchSize < schedules.length) ? i + batchSize : schedules.length;
       final batch = schedules.sublist(i, end);
 
       final enrichedBatch = await Future.wait(
@@ -284,26 +273,25 @@ class ScheduleManager implements IScheduleManager {
 // ===== カスタム例外 =====
 
 class ValidationException implements Exception {
-  final String message;
   ValidationException(this.message);
+  final String message;
 
   @override
   String toString() => 'ValidationException: $message';
 }
 
 class UserNotFoundException implements Exception {
-  final String userId;
   UserNotFoundException(this.userId);
+  final String userId;
 
   @override
   String toString() => 'UserNotFoundException: User not found - $userId';
 }
 
 class ScheduleNotFoundException implements Exception {
-  final String scheduleId;
   ScheduleNotFoundException(this.scheduleId);
+  final String scheduleId;
 
   @override
-  String toString() =>
-      'ScheduleNotFoundException: Schedule not found - $scheduleId';
+  String toString() => 'ScheduleNotFoundException: Schedule not found - $scheduleId';
 }

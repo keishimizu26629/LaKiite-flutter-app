@@ -10,9 +10,8 @@ import 'edit_search_id_page.dart';
 import '../login/login_page.dart';
 
 class SettingsPage extends ConsumerWidget {
-  static const String path = '/settings';
-
   const SettingsPage({super.key});
+  static const String path = '/settings';
 
   /// 指定されたURLを外部ブラウザで開く
   Future<void> _launchURL(BuildContext context, String url) async {
@@ -255,8 +254,7 @@ class SettingsPage extends ConsumerWidget {
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.red,
                           ),
-                          onPressed: () =>
-                              Navigator.pop(context, inputPassword),
+                          onPressed: () => Navigator.pop(context, inputPassword),
                           child: const Text('確認'),
                         ),
                       ],
@@ -264,9 +262,7 @@ class SettingsPage extends ConsumerWidget {
                   },
                 );
 
-                if (password != null &&
-                    password.isNotEmpty &&
-                    context.mounted) {
+                if (password != null && password.isNotEmpty && context.mounted) {
                   // 削除処理中の進捗ダイアログを表示
                   showDialog(
                     context: context,
@@ -285,13 +281,11 @@ class SettingsPage extends ConsumerWidget {
 
                   try {
                     // 再認証付きアカウント削除を試行
-                    final authNotifier =
-                        ref.read(authNotifierProvider.notifier);
+                    final authNotifier = ref.read(authNotifierProvider.notifier);
 
                     // まず再認証を試行
                     try {
-                      await (authNotifier as dynamic)
-                          .reauthenticateWithPassword(password);
+                      await (authNotifier as dynamic).reauthenticateWithPassword(password);
                       // 再認証成功後にアカウント削除
                       await authNotifier.deleteAccount();
                     } catch (e) {

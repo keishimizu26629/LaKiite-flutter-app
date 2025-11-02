@@ -74,7 +74,7 @@ jobs:
         run: |
           # CI作成のFirebaseファイルをフォーマット
           dart format lib/firebase_options*.dart
-          
+
           # フォーマットチェック実行
           dart format --output=none --set-exit-if-changed .
 

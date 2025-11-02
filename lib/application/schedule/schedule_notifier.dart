@@ -59,18 +59,15 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
   /// [userId] 監視対象のユーザーID
   void watchUserSchedules(String userId) {
     if (_isDisposed) {
-      AppLogger.debug(
-          'ScheduleNotifier: Notifier is disposed, ignoring watchUserSchedules');
+      AppLogger.debug('ScheduleNotifier: Notifier is disposed, ignoring watchUserSchedules');
       return;
     }
 
-    AppLogger.debug(
-        'ScheduleNotifier: watchUserSchedules called for user: $userId');
+    AppLogger.debug('ScheduleNotifier: watchUserSchedules called for user: $userId');
 
     // 同じユーザーの場合は重複購読を避ける
     if (_currentUserId == userId && _scheduleSubscription != null) {
-      AppLogger.debug(
-          'ScheduleNotifier: Already watching schedules for user: $userId');
+      AppLogger.debug('ScheduleNotifier: Already watching schedules for user: $userId');
       return;
     }
 
@@ -79,16 +76,14 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
     _currentUserId = userId;
 
     try {
-      AppLogger.debug(
-          'ScheduleNotifier: Starting new subscription for user: $userId');
+      AppLogger.debug('ScheduleNotifier: Starting new subscription for user: $userId');
 
       // ローディング状態を設定
       if (!_isDisposed) {
         state = const AsyncValue.loading();
       }
 
-      final stream =
-          ref.read(scheduleRepositoryProvider).watchUserSchedules(userId);
+      final stream = ref.read(scheduleRepositoryProvider).watchUserSchedules(userId);
 
       // エラー発生時の再試行カウンター
       int retryCount = 0;
@@ -97,8 +92,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
       _scheduleSubscription = stream.listen(
         (schedules) {
           if (_isDisposed) return;
-          AppLogger.debug(
-              'ScheduleNotifier: Received ${schedules.length} schedules');
+          AppLogger.debug('ScheduleNotifier: Received ${schedules.length} schedules');
           if (!_isDisposed) {
             state = AsyncValue.data(ScheduleState.loaded(schedules));
           }
@@ -110,34 +104,28 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
           // エラー発生時に再試行する
           if (retryCount < maxRetries) {
             retryCount++;
-            AppLogger.debug(
-                'ScheduleNotifier: Retrying ($retryCount/$maxRetries)...');
+            AppLogger.debug('ScheduleNotifier: Retrying ($retryCount/$maxRetries)...');
 
             Future.delayed(Duration(milliseconds: 500 * retryCount), () {
               if (!_isDisposed && _currentUserId == userId) {
                 // 既存の購読をキャンセルして再購読
                 _scheduleSubscription?.cancel();
 
-                final retryStream = ref
-                    .read(scheduleRepositoryProvider)
-                    .watchUserSchedules(userId);
+                final retryStream = ref.read(scheduleRepositoryProvider).watchUserSchedules(userId);
                 _scheduleSubscription = retryStream.listen(
                   (schedules) {
                     if (_isDisposed) return;
-                    AppLogger.debug(
-                        'ScheduleNotifier: Retry succeeded, received ${schedules.length} schedules');
+                    AppLogger.debug('ScheduleNotifier: Retry succeeded, received ${schedules.length} schedules');
                     if (!_isDisposed) {
                       state = AsyncValue.data(ScheduleState.loaded(schedules));
                     }
                   },
                   onError: (retryError) {
                     if (_isDisposed) return;
-                    AppLogger.error(
-                        'ScheduleNotifier: Retry failed: $retryError');
+                    AppLogger.error('ScheduleNotifier: Retry failed: $retryError');
                     if (retryCount >= maxRetries) {
                       if (!_isDisposed) {
-                        state =
-                            AsyncValue.error(retryError, StackTrace.current);
+                        state = AsyncValue.error(retryError, StackTrace.current);
                       }
                     }
                   },
@@ -171,29 +159,24 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
   /// [displayMonth] 表示中の月
   void watchUserSchedulesForMonth(String userId, DateTime displayMonth) {
     if (_isDisposed) {
-      AppLogger.debug(
-          'ScheduleNotifier: Notifier is disposed, ignoring watchUserSchedulesForMonth');
+      AppLogger.debug('ScheduleNotifier: Notifier is disposed, ignoring watchUserSchedulesForMonth');
       return;
     }
 
     // 年月のみを比較するために正規化した日付を作成
-    final normalizedDisplayMonth =
-        DateTime(displayMonth.year, displayMonth.month, 1);
+    final normalizedDisplayMonth = DateTime(displayMonth.year, displayMonth.month, 1);
     final monthKey = _getMonthKey(normalizedDisplayMonth);
 
-    AppLogger.debug(
-        'ScheduleNotifier: watchUserSchedulesForMonth called for user: $userId, month: $monthKey');
+    AppLogger.debug('ScheduleNotifier: watchUserSchedulesForMonth called for user: $userId, month: $monthKey');
 
     // 同じユーザーかつ同じ月の場合は重複購読を避ける
     if (_currentUserId == userId && _currentDisplayMonth != null) {
       // 年月のみを比較
-      final normalizedCurrentMonth =
-          DateTime(_currentDisplayMonth!.year, _currentDisplayMonth!.month, 1);
+      final normalizedCurrentMonth = DateTime(_currentDisplayMonth!.year, _currentDisplayMonth!.month, 1);
       final currentMonthKey = _getMonthKey(normalizedCurrentMonth);
 
       if (currentMonthKey == monthKey && _scheduleSubscription != null) {
-        AppLogger.debug(
-            'ScheduleNotifier: Already watching schedules for user: $userId and month: $monthKey');
+        AppLogger.debug('ScheduleNotifier: Already watching schedules for user: $userId and month: $monthKey');
 
         // キャッシュがあればそれを即座に表示（状態は維持）
         if (_monthlyScheduleCache.containsKey(monthKey)) {
@@ -242,8 +225,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
   // 月のスケジュールを実際に取得する処理
   void _fetchMonthSchedules(String userId, DateTime month, String monthKey) {
     try {
-      AppLogger.debug(
-          'ScheduleNotifier: Starting new subscription for user: $userId and month: $monthKey');
+      AppLogger.debug('ScheduleNotifier: Starting new subscription for user: $userId and month: $monthKey');
 
       // ローディング状態を設定する前に現在のデータを保存
       if (!_monthlyScheduleCache.containsKey(monthKey)) {
@@ -253,15 +235,12 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
         }
       }
 
-      final stream = ref
-          .read(scheduleRepositoryProvider)
-          .watchUserSchedulesForMonth(userId, month);
+      final stream = ref.read(scheduleRepositoryProvider).watchUserSchedulesForMonth(userId, month);
 
       _scheduleSubscription = stream.listen(
         (schedules) {
           if (_isDisposed) return;
-          AppLogger.debug(
-              'ScheduleNotifier: Received ${schedules.length} schedules for month: $monthKey');
+          AppLogger.debug('ScheduleNotifier: Received ${schedules.length} schedules for month: $monthKey');
 
           // キャッシュを更新
           _monthlyScheduleCache[monthKey] = schedules;
@@ -272,8 +251,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
         },
         onError: (error) {
           if (_isDisposed) return;
-          AppLogger.error(
-              'ScheduleNotifier: Error watching schedules for month: $error');
+          AppLogger.error('ScheduleNotifier: Error watching schedules for month: $error');
           Future(() {
             if (!_isDisposed) {
               state = AsyncValue.error(error, StackTrace.current);
@@ -309,8 +287,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
     final monthKey = _getMonthKey(month);
 
     // すでに読み込み中または読み込み済みならスキップ
-    if (_preloadingMonths.contains(monthKey) ||
-        _monthlyScheduleCache.containsKey(monthKey)) {
+    if (_preloadingMonths.contains(monthKey) || _monthlyScheduleCache.containsKey(monthKey)) {
       return;
     }
 
@@ -319,9 +296,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
     try {
       AppLogger.debug('ScheduleNotifier: Preloading month: $monthKey');
 
-      final stream = ref
-          .read(scheduleRepositoryProvider)
-          .watchUserSchedulesForMonth(userId, month);
+      final stream = ref.read(scheduleRepositoryProvider).watchUserSchedulesForMonth(userId, month);
 
       // バックグラウンドで読み込むだけなので、状態は更新しない
       StreamSubscription? subscription;
@@ -332,8 +307,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
           return;
         }
 
-        AppLogger.debug(
-            'ScheduleNotifier: Preloaded ${schedules.length} schedules for month: $monthKey');
+        AppLogger.debug('ScheduleNotifier: Preloaded ${schedules.length} schedules for month: $monthKey');
 
         // キャッシュを更新
         _monthlyScheduleCache[monthKey] = schedules;
@@ -342,8 +316,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
         // 用が済んだらキャンセル
         subscription?.cancel();
       }, onError: (error) {
-        AppLogger.error(
-            'ScheduleNotifier: Error preloading month $monthKey: $error');
+        AppLogger.error('ScheduleNotifier: Error preloading month $monthKey: $error');
         _preloadingMonths.remove(monthKey);
         subscription?.cancel();
       }, onDone: () {
@@ -354,8 +327,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
       // 10秒後にタイムアウト
       Future.delayed(const Duration(seconds: 10), () {
         if (_preloadingMonths.contains(monthKey)) {
-          AppLogger.debug(
-              'ScheduleNotifier: Preloading timeout for month: $monthKey');
+          AppLogger.debug('ScheduleNotifier: Preloading timeout for month: $monthKey');
           _preloadingMonths.remove(monthKey);
           subscription?.cancel();
         }
@@ -378,8 +350,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
     required List<String> visibleTo,
   }) async {
     if (_isDisposed) {
-      AppLogger.warning(
-          'ScheduleNotifier: Attempted to create schedule after disposal');
+      AppLogger.warning('ScheduleNotifier: Attempted to create schedule after disposal');
       return;
     }
 
@@ -421,8 +392,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
       // 作成完了後は自動的にストリームが更新を検知するため、
       // 明示的な再読み込みは不要
     } catch (e, stackTrace) {
-      AppLogger.error(
-          'ScheduleNotifier: Error in schedule creation', e, stackTrace);
+      AppLogger.error('ScheduleNotifier: Error in schedule creation', e, stackTrace);
       state = AsyncValue.error(e, stackTrace);
     }
   }
@@ -436,8 +406,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
       // 更新完了後は自動的にストリームが更新を検知するため、
       // 明示的な再読み込みは不要
     } catch (e, stackTrace) {
-      AppLogger.error(
-          'ScheduleNotifier: Error updating schedule', e, stackTrace);
+      AppLogger.error('ScheduleNotifier: Error updating schedule', e, stackTrace);
       state = AsyncValue.error(e, stackTrace);
     }
   }
@@ -451,8 +420,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
       // 削除完了後は自動的にストリームが更新を検知するため、
       // 明示的な再読み込みは不要
     } catch (e, stackTrace) {
-      AppLogger.error(
-          'ScheduleNotifier: Error deleting schedule', e, stackTrace);
+      AppLogger.error('ScheduleNotifier: Error deleting schedule', e, stackTrace);
       state = AsyncValue.error(e, stackTrace);
     }
   }
