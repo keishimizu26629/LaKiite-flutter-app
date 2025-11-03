@@ -1,51 +1,44 @@
-# LaKiite GitHub Pages
+# LaKiite プロジェクトドキュメント
 
-このフォルダには、GitHub Pages で公開予定の法的文書が含まれています。
+LaKiite Flutter アプリのプロジェクト関連文書です。
 
-## 📄 ファイル一覧
+## 📁 フォルダ構成
 
-- `index.html` - メインランディングページ
-- `privacy-policy.html` - プライバシーポリシー
-- `terms-of-service.html` - 利用規約
+### `/setup/` - セットアップ・設定関連
+- Firebase設定の修正手順
+- 開発環境のセットアップガイド
+- 必要なアクション項目
 
-## 🌐 GitHub Pages 設定
+### `/release/` - リリース関連
+- TestFlightリリース準備状況
+- リリースノート
+- デプロイメント手順
 
-### 1. GitHub リポジトリ設定
+### `/reviews/` - レビュー・分析
+- コードレビューレポート
+- アーキテクチャレビュー
+- 品質分析結果
 
-1. GitHub リポジトリの「Settings」タブに移動
-2. 左サイドバーの「Pages」をクリック
-3. Source で「Deploy from a branch」を選択
-4. Branch で「main」を選択
-5. Folder で「/ (root)」または「/github-pages」を選択
-6. 「Save」をクリック
+## 🌐 Web公開用ファイル
 
-### 2. カスタムドメイン（任意）
+Web公開用のファイル（プライバシーポリシー、利用規約など）は `/web/` フォルダに移動されました。
 
-独自ドメインを使用する場合：
+## 📱 アプリ開発関連
 
-1. `github-pages/CNAME` ファイルを作成
-2. ファイルにドメイン名を記載（例：`lakiite.com`）
-3. DNS 設定で GitHub Pages を指すよう設定
+### アーキテクチャ
+- Clean Architecture + Riverpod
+- Firebase バックエンド
+- Flutter 3.24.3 + Dart 3.5.3
 
-### 3. アクセス URL
+### 主要機能
+- ユーザー認証（Firebase Auth）
+- スケジュール管理
+- 友達機能
+- プッシュ通知
+- AdMob広告統合
 
-設定完了後、以下の URL でアクセス可能：
+## 🔗 関連リンク
 
-- メインページ: `https://[ユーザー名].github.io/[リポジトリ名]/github-pages/`
-- プライバシーポリシー: `https://[ユーザー名].github.io/[リポジトリ名]/github-pages/privacy-policy.html`
-- 利用規約: `https://[ユーザー名].github.io/[リポジトリ名]/github-pages/terms-of-service.html`
-
-## 📱 アプリでの使用
-
-App Store Connect や Google Play Console でのアプリ申請時に、上記 URL を使用してください：
-
-- **プライバシーポリシー URL**: `https://[ユーザー名].github.io/[リポジトリ名]/github-pages/privacy-policy.html`
-- **利用規約 URL**: `https://[ユーザー名].github.io/[リポジトリ名]/github-pages/terms-of-service.html`
-
-## ⚠️ 注意事項
-
-1. **法的確認**: テンプレートの内容は一般的なものです。実際の公開前に法的専門家による確認を受けることをお勧めします。
-2. **内容の更新**: 実際のサービス内容に合わせて文書を更新してください。
-3. **連絡先情報**: `support@lakiite.com` を実際のサポート用メールアドレスに変更してください。
-
-# GitHub Pages 再ビルドトリガー
+- [Web公開ファイル](/web/) - GitHub Pages用ファイル
+- [プロジェクトルート](/) - メインプロジェクト
+- [GitHub Repository](https://github.com/keishimizu26629/LaKiite-flutter-app)
