@@ -9,6 +9,7 @@ import '../../utils/logger.dart';
 
 /// Firebaseプッシュ通知の管理を行うサービスクラス
 class PushNotificationService {
+  PushNotificationService._() : _messaging = FirebaseMessaging.instance;
   final FirebaseMessaging _messaging;
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -19,8 +20,6 @@ class PushNotificationService {
     _instance ??= PushNotificationService._();
     return _instance!;
   }
-
-  PushNotificationService._() : _messaging = FirebaseMessaging.instance;
 
   Future<void> initialize() async {
     try {
@@ -51,6 +50,33 @@ class PushNotificationService {
       await displayTokenForTesting();
     } catch (e, stack) {
       AppLogger.error('プッシュ通知サービスの初期化エラー: $e');
+      AppLogger.error('スタックトレース: $stack');
+    }
+  }
+
+  /// アプリアイコンのバッジカウントをクリアする
+  Future<void> clearBadgeCount() async {
+    try {
+      AppLogger.debug('アプリアイコンのバッジカウントをクリアします');
+
+      if (Platform.isIOS) {
+        // iOSの場合、ネイティブ側（AppDelegate.swift）でバッジクリアを処理
+        // ここではログ出力のみ行う
+        AppLogger.info('✅ iOSアプリアイコンのバッジカウントクリア（ネイティブ側で処理）');
+      } else if (Platform.isAndroid) {
+        // Androidの場合、通知チャネルを通じてバッジをクリア
+        final androidImplementation = _flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin>();
+
+        if (androidImplementation != null) {
+          // Androidでは通知をキャンセルすることでバッジをクリア
+          await androidImplementation.cancelAll();
+          AppLogger.info('✅ Android通知バッジをクリアしました');
+        }
+      }
+    } catch (e, stack) {
+      AppLogger.error('バッジカウントクリアエラー: $e');
       AppLogger.error('スタックトレース: $stack');
     }
   }
@@ -342,7 +368,7 @@ class PushNotificationService {
 
         if (retryCount < maxRetries) {
           final waitSeconds = retryCount * 2;
-          AppLogger.info('⏳ ${waitSeconds}秒後にリトライします...');
+          AppLogger.info('⏳ $waitSeconds秒後にリトライします...');
           await Future.delayed(Duration(seconds: waitSeconds));
         }
       }

@@ -10,15 +10,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 /// [FirebaseFirestore]を使用してスケジュールに対するリアクションとコメントの
 /// 作成、取得、更新、削除、およびリアルタイム監視を行います。
 class ScheduleInteractionRepository implements IScheduleInteractionRepository {
-  /// Firestoreのインスタンス
-  final FirebaseFirestore _firestore;
-
   /// [ScheduleInteractionRepository]のコンストラクタ
   ///
   /// [firestore]が指定されない場合は、デフォルトのインスタンスを使用します。
   /// テスト時にモックの[FirebaseFirestore]インスタンスを注入できます。
   ScheduleInteractionRepository({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  /// Firestoreのインスタンス
+  final FirebaseFirestore _firestore;
 
   /// スケジュールのカウンターを更新する内部メソッド
   Future<void> _updateScheduleCounters(String scheduleId) async {
@@ -185,7 +185,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
           'watchReactions: Document changes: ${snapshot.docChanges.length}');
 
       // 変更の詳細をログ出力
-      for (var change in snapshot.docChanges) {
+      for (final change in snapshot.docChanges) {
         final changeType = change.type.toString();
         final docId = change.doc.id;
         final docData = change.doc.data();
@@ -252,16 +252,16 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
     AppLogger.debug('スケジュールID: $scheduleId, 取得コメント数: ${snapshot.docs.length}');
 
     // 各コメントのデータ構造を詳細に記録
-    for (var doc in snapshot.docs) {
+    for (final doc in snapshot.docs) {
       final data = doc.data();
       AppLogger.debug('コメントID: ${doc.id}');
       AppLogger.debug('フィールド一覧: ${data.keys.join(", ")}');
       AppLogger.debug('contentフィールドの有無: ${data.containsKey("content")}');
       AppLogger.debug('textフィールドの有無: ${data.containsKey("text")}');
-      if (data.containsKey("content")) {
+      if (data.containsKey('content')) {
         AppLogger.debug('content値: ${data["content"]}');
       }
-      if (data.containsKey("text")) {
+      if (data.containsKey('text')) {
         AppLogger.debug('text値: ${data["text"]}');
       }
     }
