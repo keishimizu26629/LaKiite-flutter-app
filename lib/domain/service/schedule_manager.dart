@@ -306,4 +306,3 @@ class ScheduleNotFoundException implements Exception {
   String toString() =>
       'ScheduleNotFoundException: Schedule not found - $scheduleId';
 }
-
