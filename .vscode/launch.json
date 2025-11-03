@@ -8,7 +8,9 @@
         "program": "lib/main.dart",
         "args": [
           "--dart-define=USE_MOCK=true",
-          "--dart-define=ENVIRONMENT=development"
+          "--dart-define=ENVIRONMENT=development",
+          "--flavor",
+          "dev"
         ]
       },
       {
@@ -18,7 +20,9 @@
         "program": "lib/main.dart",
         "args": [
           "--dart-define=USE_MOCK=false",
-          "--dart-define=ENVIRONMENT=development"
+          "--dart-define=ENVIRONMENT=development",
+          "--flavor",
+          "dev"
         ]
       },
       {
@@ -28,20 +32,30 @@
         "program": "lib/main.dart",
         "args": [
           "--dart-define=USE_MOCK=false",
-          "--dart-define=ENVIRONMENT=production"
+          "--dart-define=ENVIRONMENT=production",
+          "--flavor",
+          "prod"
         ]
       },
       {
-        "name": "Profile Mode",
+        "name": "Profile Mode (Dev)",
         "request": "launch",
         "type": "dart",
-        "flutterMode": "profile"
+        "flutterMode": "profile",
+        "args": [
+          "--flavor",
+          "dev"
+        ]
       },
       {
-        "name": "Release Mode",
+        "name": "Release Mode (Prod)",
         "request": "launch",
         "type": "dart",
-        "flutterMode": "release"
+        "flutterMode": "release",
+        "args": [
+          "--flavor",
+          "prod"
+        ]
       }
     ]
   }

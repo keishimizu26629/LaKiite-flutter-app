@@ -1,56 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../presentation_provider.dart';
-import '../../utils/logger.dart';
 import 'edit_name_page.dart';
 import 'edit_email_page.dart';
 import 'edit_search_id_page.dart';
 import '../login/login_page.dart';
+import 'account_deletion_webview_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
   static const String path = '/settings';
-
-  /// 指定されたURLを外部ブラウザで開く
-  Future<void> _launchURL(BuildContext context, String url) async {
-    final uri = Uri.parse(url);
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-          webViewConfiguration: const WebViewConfiguration(
-            enableJavaScript: true,
-            enableDomStorage: true,
-          ),
-        );
-      } else {
-        // URLを開けない場合はスナックバーでエラーを表示
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('URLを開けませんでした: $url'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        AppLogger.error('Could not launch $url');
-      }
-    } catch (e) {
-      // 例外が発生した場合もスナックバーでエラーを表示
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('エラーが発生しました: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      AppLogger.error('Error launching URL: $e');
-    }
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -194,8 +154,18 @@ class SettingsPage extends ConsumerWidget {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.web, color: Colors.blue),
+            title: const Text('アカウント削除 (Web)', style: TextStyle(color: Colors.blue)),
+            subtitle: const Text('Webページでアカウントを削除'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              context.push(AccountDeletionWebViewPage.path);
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.delete_forever, color: Colors.red),
-            title: const Text('アカウント削除', style: TextStyle(color: Colors.red)),
+            title: const Text('アカウント削除 (アプリ内)', style: TextStyle(color: Colors.red)),
+            subtitle: const Text('アプリ内でアカウントを削除'),
             onTap: () async {
               final confirmed = await showDialog<bool>(
                 context: context,
@@ -254,8 +224,7 @@ class SettingsPage extends ConsumerWidget {
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.red,
                           ),
-                          onPressed: () =>
-                              Navigator.pop(context, inputPassword),
+                          onPressed: () => Navigator.pop(context, inputPassword),
                           child: const Text('確認'),
                         ),
                       ],
@@ -263,9 +232,7 @@ class SettingsPage extends ConsumerWidget {
                   },
                 );
 
-                if (password != null &&
-                    password.isNotEmpty &&
-                    context.mounted) {
+                if (password != null && password.isNotEmpty && context.mounted) {
                   // 削除処理中の進捗ダイアログを表示
                   showDialog(
                     context: context,
@@ -284,13 +251,11 @@ class SettingsPage extends ConsumerWidget {
 
                   try {
                     // 再認証付きアカウント削除を試行
-                    final authNotifier =
-                        ref.read(authNotifierProvider.notifier);
+                    final authNotifier = ref.read(authNotifierProvider.notifier);
 
                     // まず再認証を試行
                     try {
-                      await (authNotifier as dynamic)
-                          .reauthenticateWithPassword(password);
+                      await (authNotifier as dynamic).reauthenticateWithPassword(password);
                       // 再認証成功後にアカウント削除
                       await authNotifier.deleteAccount();
                     } catch (e) {

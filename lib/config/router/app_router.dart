@@ -10,6 +10,7 @@ import '../../presentation/settings/edit_name_page.dart';
 import '../../presentation/settings/edit_search_id_page.dart';
 import '../../presentation/settings/legal_info_page.dart';
 import '../../presentation/settings/settings_page.dart';
+import '../../presentation/settings/account_deletion_webview_page.dart';
 import '../../presentation/signup/signup.dart';
 import '../../presentation/splash/splash_screen.dart';
 import '../../presentation/presentation_provider.dart';
@@ -108,6 +109,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
         ],
+      ),
+      GoRoute(
+        path: AccountDeletionWebViewPage.path,
+        builder: (context, state) => const AccountDeletionWebViewPage(),
       ),
     ],
   );
