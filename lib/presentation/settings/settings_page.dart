@@ -10,9 +10,8 @@ import 'edit_search_id_page.dart';
 import '../login/login_page.dart';
 
 class SettingsPage extends ConsumerWidget {
-  static const String path = '/settings';
-
   const SettingsPage({super.key});
+  static const String path = '/settings';
 
   /// 指定されたURLを外部ブラウザで開く
   Future<void> _launchURL(BuildContext context, String url) async {
