@@ -21,11 +21,19 @@
 
 ### 2. アクセス URL
 
+⚠️ **現在設定中**: GitHub Pagesの設定を`/docs`から`/web`に変更中です。
+
 設定完了後、以下の URL でアクセス可能：
 
 - メインページ: `https://keishimizu26629.github.io/LaKiite-flutter-app/`
 - プライバシーポリシー: `https://keishimizu26629.github.io/LaKiite-flutter-app/privacy-policy.html`
 - 利用規約: `https://keishimizu26629.github.io/LaKiite-flutter-app/terms-of-service.html`
+
+### 🔧 設定変更が必要
+GitHub Repository Settings → Pages → Source を以下に変更してください：
+- **Source**: GitHub Actions (推奨) または Deploy from a branch
+- **Branch**: main
+- **Path**: /web (Deploy from a branchの場合)
 
 ## 📱 アプリストア申請での使用
 
