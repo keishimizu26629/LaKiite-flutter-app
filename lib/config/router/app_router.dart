@@ -57,7 +57,19 @@ final routerProvider = Provider<GoRouter>((ref) {
 
           return null;
         },
-        loading: () => null,
+        loading: () {
+          // ローディング中は現在の場所を維持
+          // ログインページと新規登録ページ間の遷移を許可
+          final isLoggingIn = state.location == LoginPage.path;
+          final isSigningUp = state.location == SignupPage.path;
+
+          if (isLoggingIn || isSigningUp) {
+            return null; // 現在の場所を維持
+          }
+
+          // その他の場所からはログインページにリダイレクト
+          return LoginPage.path;
+        },
         error: (_, __) => LoginPage.path,
       );
     },
