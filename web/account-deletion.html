@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アカウント削除 | LaKiite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo UI', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #fafafa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+
+        .section h3 {
+            color: #34495e;
+            margin-bottom: 10px;
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+
+        .section ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .section li {
+            margin-bottom: 8px;
+        }
+
+        .warning {
+            background-color: #fff3cd;
+            border-left-color: #ffc107;
+            border: 1px solid #ffeaa7;
+        }
+
+        .danger {
+            background-color: #f8d7da;
+            border-left-color: #dc3545;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info {
+            background-color: #d1ecf1;
+            border-left-color: #17a2b8;
+            border: 1px solid #bee5eb;
+        }
+
+        .app-download {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #e8f4fd;
+            border-radius: 8px;
+        }
+
+        .app-download h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .download-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .download-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .download-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .contact-info {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .contact-info h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .contact-info p {
+            margin-bottom: 10px;
+        }
+
+        .email-link {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .email-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .download-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>LaKiite アカウント削除</h1>
+            <p>アカウントの削除に関する情報とお手続きについて</p>
+        </div>
+
+        <div class="section info">
+            <h2>📱 アプリ内でのアカウント削除（推奨）</h2>
+            <p>最も簡単で確実な方法は、LaKiiteアプリ内からアカウントを削除することです。</p>
+
+            <h3>手順:</h3>
+            <ul>
+                <li>LaKiiteアプリを開く</li>
+                <li>「マイページ」→「設定」を選択</li>
+                <li>「アカウント削除」をタップ</li>
+                <li>パスワードを入力して削除を実行</li>
+            </ul>
+        </div>
+
+        <div class="app-download">
+            <h3>LaKiiteアプリをダウンロード</h3>
+            <div class="download-buttons">
+                <a href="#" class="download-btn">App Store からダウンロード</a>
+                <a href="#" class="download-btn">Google Play で手に入れよう</a>
+            </div>
+        </div>
+
+        <div class="section warning">
+            <h2>⚠️ アカウント削除時の注意事項</h2>
+            <ul>
+                <li><strong>削除されるデータ:</strong> プロフィール情報、作成した予定、友達リスト、グループ情報、すべての個人データ</li>
+                <li><strong>復旧不可:</strong> 一度削除されたアカウントとデータは復旧できません</li>
+                <li><strong>即座に実行:</strong> 削除処理は即座に実行され、取り消すことはできません</li>
+                <li><strong>共有データ:</strong> 他のユーザーと共有していた予定やグループからあなたの情報が削除されます</li>
+            </ul>
+        </div>
+
+        <div class="section danger">
+            <h2>🚨 アプリにアクセスできない場合</h2>
+            <p>以下の場合は、サポートチームまでご連絡ください：</p>
+            <ul>
+                <li>アプリをアンインストールしてしまった</li>
+                <li>デバイスを紛失した</li>
+                <li>パスワードを忘れてログインできない</li>
+                <li>技術的な問題でアプリ内削除ができない</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>📋 メールでのアカウント削除依頼</h2>
+            <p>アプリ内での削除ができない場合は、以下の情報を含めてメールでご連絡ください：</p>
+
+            <h3>必要な情報:</h3>
+            <ul>
+                <li><strong>登録メールアドレス:</strong> アカウントに登録されているメールアドレス</li>
+                <li><strong>ユーザー名:</strong> アプリ内で使用していた表示名</li>
+                <li><strong>削除理由:</strong> アプリ内削除ができない理由</li>
+                <li><strong>本人確認:</strong> アカウント作成時期や最後にアプリを使用した日時など</li>
+            </ul>
+
+            <h3>処理期間:</h3>
+            <p>メールでのご依頼の場合、本人確認のため<strong>3-5営業日</strong>お時間をいただきます。</p>
+        </div>
+
+        <div class="section">
+            <h2>🔒 データの取り扱いについて</h2>
+            <ul>
+                <li><strong>個人データ:</strong> アカウント削除と同時にすべての個人データを削除します</li>
+                <li><strong>バックアップ:</strong> セキュリティ目的のバックアップデータは最大30日以内に完全削除されます</li>
+                <li><strong>ログデータ:</strong> 匿名化された使用統計は法的要件に従い保持される場合があります</li>
+                <li><strong>第三者サービス:</strong> 広告配信等の第三者サービスのデータも削除依頼を行います</li>
+            </ul>
+        </div>
+
+        <div class="contact-info">
+            <h3>📧 お問い合わせ</h3>
+            <p><strong>サポートメール:</strong></p>
+            <p><a href="mailto:business-contact@inoworl.com?subject=LaKiite%20アカウント削除依頼" class="email-link">business-contact@inoworl.com</a></p>
+            <p><strong>件名:</strong> LaKiite アカウント削除依頼</p>
+            <p><strong>運営者:</strong> Inoworl</p>
+            <p><strong>所在地:</strong> 〒5300001 大阪府大阪市北区梅田1丁目2番2号大阪駅前第2ビル12-12</p>
+        </div>
+    </div>
+</body>
+</html>
