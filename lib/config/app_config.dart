@@ -29,13 +29,14 @@ class AppConfig {
 
   /// 環境設定を初期化
   ///
-  /// [environment] 環境の種類
+  /// [environment] 環境の種類（main.dartから渡される環境変数FLAVORに基づく）
+  /// このパラメータが優先され、FIREBASE_OPTIONS_CLASSは補助的な情報として使用される
   static void initialize(Environment environment) {
     FirebaseOptions options;
     String appName;
     String pushNotificationUrl;
 
-    // 環境変数からFirebaseOptionsクラス名を取得
+    // 環境変数からFirebaseOptionsクラス名を取得（検証用）
     const firebaseOptionsClass =
         String.fromEnvironment('FIREBASE_OPTIONS_CLASS');
 
@@ -57,18 +58,33 @@ class AppConfig {
       environment = Environment.development;
       pushNotificationUrl = 'https://test-functions.net/sendNotification';
     } else {
-      // FirebaseOptionsクラス名に基づいて適切なFirebaseOptionsを選択
+      // 渡されたenvironmentパラメータに基づいて適切なFirebaseOptionsを選択
+      // FIREBASE_OPTIONS_CLASSは検証用として使用
       try {
-        if (firebaseOptionsClass == 'ProdFirebaseOptions') {
+        if (environment == Environment.production) {
+          // 本番環境
           options = ProdFirebaseOptions.currentPlatform;
-          environment = Environment.production;
           pushNotificationUrl =
               'https://asia-northeast1-lakiite-flutter-app-prod.cloudfunctions.net/sendNotification';
+
+          // 検証: FIREBASE_OPTIONS_CLASSが一致しているか確認
+          if (firebaseOptionsClass.isNotEmpty &&
+              firebaseOptionsClass != 'ProdFirebaseOptions') {
+            throw Exception(
+              '環境の不整合: environment=production だが FIREBASE_OPTIONS_CLASS=$firebaseOptionsClass');
+          }
         } else {
+          // 開発環境
           options = DevFirebaseOptions.currentPlatform;
-          environment = Environment.development;
           pushNotificationUrl =
               'https://asia-northeast1-lakiite-flutter-app-dev.cloudfunctions.net/sendNotification';
+
+          // 検証: FIREBASE_OPTIONS_CLASSが一致しているか確認
+          if (firebaseOptionsClass.isNotEmpty &&
+              firebaseOptionsClass != 'DevFirebaseOptions') {
+            throw Exception(
+              '環境の不整合: environment=development だが FIREBASE_OPTIONS_CLASS=$firebaseOptionsClass');
+          }
         }
       } catch (e) {
         // Firebase設定ファイルが見つからない場合のフォールバック

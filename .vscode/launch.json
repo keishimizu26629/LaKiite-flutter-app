@@ -2,46 +2,48 @@
     "version": "0.2.0",
     "configurations": [
       {
-        "name": "Development (Mock)",
+        "name": "Development (Dev Flavor)",
         "request": "launch",
         "type": "dart",
         "program": "lib/main.dart",
         "args": [
-          "--dart-define=USE_MOCK=true",
-          "--dart-define=ENVIRONMENT=development"
+          "--dart-define-from-file=dart_define/dev_dart_define.json",
+          "--flavor",
+          "dev"
         ]
       },
       {
-        "name": "Development (Firebase)",
+        "name": "Production (Prod Flavor)",
         "request": "launch",
         "type": "dart",
         "program": "lib/main.dart",
         "args": [
-          "--dart-define=USE_MOCK=false",
-          "--dart-define=ENVIRONMENT=development"
-        ]
-      },
-      {
-        "name": "Production (Firebase)",
-        "request": "launch",
-        "type": "dart",
-        "program": "lib/main.dart",
-        "args": [
-          "--dart-define=USE_MOCK=false",
-          "--dart-define=ENVIRONMENT=production"
+          "--dart-define-from-file=dart_define/prod_dart_define.json",
+          "--flavor",
+          "prod"
         ]
       },
       {
         "name": "Profile Mode",
         "request": "launch",
         "type": "dart",
-        "flutterMode": "profile"
+        "flutterMode": "profile",
+        "args": [
+          "--dart-define-from-file=dart_define/dev_dart_define.json",
+          "--flavor",
+          "dev"
+        ]
       },
       {
         "name": "Release Mode",
         "request": "launch",
         "type": "dart",
-        "flutterMode": "release"
+        "flutterMode": "release",
+        "args": [
+          "--dart-define-from-file=dart_define/prod_dart_define.json",
+          "--flavor",
+          "prod"
+        ]
       }
     ]
   }
