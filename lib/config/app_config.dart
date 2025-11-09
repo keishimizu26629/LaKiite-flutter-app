@@ -71,7 +71,7 @@ class AppConfig {
           if (firebaseOptionsClass.isNotEmpty &&
               firebaseOptionsClass != 'ProdFirebaseOptions') {
             throw Exception(
-              '環境の不整合: environment=production だが FIREBASE_OPTIONS_CLASS=$firebaseOptionsClass');
+                '環境の不整合: environment=production だが FIREBASE_OPTIONS_CLASS=$firebaseOptionsClass');
           }
         } else {
           // 開発環境
@@ -83,7 +83,7 @@ class AppConfig {
           if (firebaseOptionsClass.isNotEmpty &&
               firebaseOptionsClass != 'DevFirebaseOptions') {
             throw Exception(
-              '環境の不整合: environment=development だが FIREBASE_OPTIONS_CLASS=$firebaseOptionsClass');
+                '環境の不整合: environment=development だが FIREBASE_OPTIONS_CLASS=$firebaseOptionsClass');
           }
         }
       } catch (e) {
