@@ -7,6 +7,8 @@
 - `index.html` - メインランディングページ
 - `privacy-policy.html` - プライバシーポリシー
 - `terms-of-service.html` - 利用規約
+- `account-deletion.html` - アカウント削除ページ（一般向け）
+- `account-deletion-webview.html` - アカウント削除ページ（WebView用）
 
 ## 🌐 GitHub Pages 設定
 
@@ -28,6 +30,7 @@
 - メインページ: `https://keishimizu26629.github.io/LaKiite-flutter-app/`
 - プライバシーポリシー: `https://keishimizu26629.github.io/LaKiite-flutter-app/privacy-policy.html`
 - 利用規約: `https://keishimizu26629.github.io/LaKiite-flutter-app/terms-of-service.html`
+- アカウント削除: `https://keishimizu26629.github.io/LaKiite-flutter-app/account-deletion.html`
 
 ### 🔧 設定変更が必要
 GitHub Repository Settings → Pages → Source を以下に変更してください：
@@ -38,6 +41,13 @@ GitHub Repository Settings → Pages → Source を以下に変更してくだ�
 ## 📱 アプリストア申請での使用
 
 App Store Connect や Google Play Console でのアプリ申請時に上記URLを使用してください。
+
+### Google Play Console での使用
+- **データセーフティー** → **アカウント削除**: `https://keishimizu26629.github.io/LaKiite-flutter-app/account-deletion.html`
+
+### アプリ内WebView での使用
+- **WebView削除機能**: `https://keishimizu26629.github.io/LaKiite-flutter-app/account-deletion-webview.html`
+- JavaScript連携でアプリ内削除処理と連動
 
 ## ⚠️ 注意事項
 

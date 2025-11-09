@@ -10,6 +10,7 @@ import '../../presentation/settings/edit_name_page.dart';
 import '../../presentation/settings/edit_search_id_page.dart';
 import '../../presentation/settings/legal_info_page.dart';
 import '../../presentation/settings/settings_page.dart';
+import '../../presentation/settings/account_deletion_webview_page.dart';
 import '../../presentation/signup/signup.dart';
 import '../../presentation/splash/splash_screen.dart';
 import '../../presentation/presentation_provider.dart';
@@ -56,7 +57,19 @@ final routerProvider = Provider<GoRouter>((ref) {
 
           return null;
         },
-        loading: () => null,
+        loading: () {
+          // ローディング中は現在の場所を維持
+          // ログインページと新規登録ページ間の遷移を許可
+          final isLoggingIn = state.location == LoginPage.path;
+          final isSigningUp = state.location == SignupPage.path;
+
+          if (isLoggingIn || isSigningUp) {
+            return null; // 現在の場所を維持
+          }
+
+          // その他の場所からはログインページにリダイレクト
+          return LoginPage.path;
+        },
         error: (_, __) => LoginPage.path,
       );
     },
@@ -108,6 +121,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
         ],
+      ),
+      GoRoute(
+        path: AccountDeletionWebViewPage.path,
+        builder: (context, state) => const AccountDeletionWebViewPage(),
       ),
     ],
   );
