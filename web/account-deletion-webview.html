@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アカウント削除 | LaKiite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo UI', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1em;
+        }
+
+        .content {
+            padding: 30px 20px;
+        }
+
+        .warning-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .warning-box h3 {
+            color: #856404;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .warning-box h3::before {
+            content: "⚠️";
+            margin-right: 8px;
+        }
+
+        .warning-box ul {
+            margin-left: 20px;
+            color: #856404;
+        }
+
+        .warning-box li {
+            margin-bottom: 5px;
+        }
+
+        .form-section {
+            margin-bottom: 25px;
+        }
+
+        .form-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .checkbox-group {
+            margin: 20px 0;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: flex-start;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 10px;
+            margin-top: 2px;
+            transform: scale(1.2);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background-color: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .success-message {
+            display: none;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .error-message {
+            display: none;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 20px 15px;
+            }
+
+            .content {
+                padding: 20px 15px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>アカウント削除</h1>
+            <p>LaKiiteアカウントの完全削除</p>
+        </div>
+
+        <div class="content">
+            <div class="warning-box">
+                <h3>重要な注意事項</h3>
+                <ul>
+                    <li><strong>完全削除:</strong> すべてのデータが永久に削除されます</li>
+                    <li><strong>復旧不可:</strong> 削除後の復旧はできません</li>
+                    <li><strong>即座実行:</strong> 削除は即座に実行されます</li>
+                    <li><strong>共有データ:</strong> 友達やグループからも削除されます</li>
+                </ul>
+            </div>
+
+            <form id="deletionForm">
+                <div class="form-section">
+                    <h3>本人確認</h3>
+
+                    <div class="input-group">
+                        <label for="email">登録メールアドレス</label>
+                        <input type="email" id="email" name="email" required
+                               placeholder="example@email.com">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="password">パスワード</label>
+                        <input type="password" id="password" name="password" required
+                               placeholder="現在のパスワードを入力">
+                    </div>
+                </div>
+
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="confirmDeletion" required>
+                        上記の注意事項を理解し、アカウントの完全削除に同意します
+                    </label>
+                </div>
+
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="confirmNoRecovery" required>
+                        削除されたデータは復旧できないことを理解しています
+                    </label>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" class="btn btn-secondary" onclick="cancelDeletion()">
+                        キャンセル
+                    </button>
+                    <button type="submit" class="btn btn-danger" id="deleteBtn">
+                        アカウントを削除
+                    </button>
+                </div>
+
+                <div class="error-message" id="errorMessage"></div>
+            </form>
+
+            <div class="loading" id="loadingDiv">
+                <div class="spinner"></div>
+                <p>アカウントを削除中...</p>
+                <p><small>この処理には数秒かかる場合があります</small></p>
+            </div>
+
+            <div class="success-message" id="successMessage">
+                <h3>✅ アカウント削除完了</h3>
+                <p>アカウントとすべてのデータが正常に削除されました。</p>
+                <p>ご利用いただき、ありがとうございました。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // フォーム送信処理
+        document.getElementById('deletionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmDeletion = document.getElementById('confirmDeletion').checked;
+            const confirmNoRecovery = document.getElementById('confirmNoRecovery').checked;
+
+            // バリデーション
+            if (!email || !password) {
+                showError('メールアドレスとパスワードを入力してください。');
+                return;
+            }
+
+            if (!confirmDeletion || !confirmNoRecovery) {
+                showError('すべての確認項目にチェックを入れてください。');
+                return;
+            }
+
+            // 最終確認
+            if (!confirm('本当にアカウントを削除しますか？この操作は取り消せません。')) {
+                return;
+            }
+
+            // 削除処理開始
+            showLoading(true);
+            hideError();
+
+            try {
+                // Flutter側に削除リクエストを送信
+                const result = await requestAccountDeletion(email, password);
+
+                if (result.success) {
+                    showSuccess();
+                    // 3秒後にFlutter側に完了通知
+                    setTimeout(() => {
+                        notifyDeletionComplete();
+                    }, 3000);
+                } else {
+                    showError(result.error || 'アカウント削除に失敗しました。');
+                    showLoading(false);
+                }
+            } catch (error) {
+                console.error('Deletion error:', error);
+                showError('削除処理中にエラーが発生しました。もう一度お試しください。');
+                showLoading(false);
+            }
+        });
+
+        // Flutter側にアカウント削除をリクエスト
+        async function requestAccountDeletion(email, password) {
+            return new Promise((resolve) => {
+                // Flutter側のJavaScriptチャンネルを呼び出し
+                if (window.flutter_inappwebview) {
+                    window.flutter_inappwebview.callHandler('deleteAccount', {
+                        email: email,
+                        password: password
+                    }).then(function(result) {
+                        resolve(result);
+                    }).catch(function(error) {
+                        resolve({ success: false, error: error.toString() });
+                    });
+                } else {
+                    // WebViewでない場合（テスト用）
+                    setTimeout(() => {
+                        resolve({ success: true });
+                    }, 2000);
+                }
+            });
+        }
+
+        // 削除完了をFlutter側に通知
+        function notifyDeletionComplete() {
+            if (window.flutter_inappwebview) {
+                window.flutter_inappwebview.callHandler('deletionComplete', {});
+            }
+        }
+
+        // キャンセル処理
+        function cancelDeletion() {
+            if (window.flutter_inappwebview) {
+                window.flutter_inappwebview.callHandler('cancelDeletion', {});
+            } else {
+                // WebViewでない場合は何もしない
+                console.log('Deletion cancelled');
+            }
+        }
+
+        // UI制御関数
+        function showLoading(show) {
+            const loadingDiv = document.getElementById('loadingDiv');
+            const form = document.getElementById('deletionForm');
+
+            if (show) {
+                loadingDiv.classList.add('show');
+                form.style.display = 'none';
+            } else {
+                loadingDiv.classList.remove('show');
+                form.style.display = 'block';
+            }
+        }
+
+        function showSuccess() {
+            const successDiv = document.getElementById('successMessage');
+            const loadingDiv = document.getElementById('loadingDiv');
+
+            loadingDiv.classList.remove('show');
+            successDiv.classList.add('show');
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+
+        function hideError() {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.classList.remove('show');
+        }
+
+        // ページロード時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            // フォーカス設定
+            document.getElementById('email').focus();
+
+            // Flutter側に準備完了を通知
+            if (window.flutter_inappwebview) {
+                window.flutter_inappwebview.callHandler('pageReady', {});
+            }
+        });
+    </script>
+</body>
+</html>

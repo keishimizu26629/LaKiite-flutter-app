@@ -8,6 +8,7 @@ import 'edit_name_page.dart';
 import 'edit_email_page.dart';
 import 'edit_search_id_page.dart';
 import '../login/login_page.dart';
+import 'account_deletion_webview_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -194,8 +195,20 @@ class SettingsPage extends ConsumerWidget {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.web, color: Colors.blue),
+            title: const Text('アカウント削除 (Web)',
+                style: TextStyle(color: Colors.blue)),
+            subtitle: const Text('Webページでアカウントを削除'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              context.push(AccountDeletionWebViewPage.path);
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.delete_forever, color: Colors.red),
-            title: const Text('アカウント削除', style: TextStyle(color: Colors.red)),
+            title: const Text('アカウント削除 (アプリ内)',
+                style: TextStyle(color: Colors.red)),
+            subtitle: const Text('アプリ内でアカウントを削除'),
             onTap: () async {
               final confirmed = await showDialog<bool>(
                 context: context,

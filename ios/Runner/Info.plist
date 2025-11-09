@@ -31,9 +31,11 @@
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<true/>
+		<false/>
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
-		<true/>
+		<false/>
+		<!-- 必要に応じて特定ドメインの例外設定を追加 -->
+		<!-- 現在のプロジェクトではHTTPS通信のみ使用のため例外設定は不要 -->
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>プロフィール画像を撮影・設定するためにカメラを使用します。この機能は任意で、拒否してもアプリの基本機能は利用できます。</string>
