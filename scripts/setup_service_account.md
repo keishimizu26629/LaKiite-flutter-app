@@ -54,4 +54,3 @@ curl -X POST \
 # .gitignore に追加
 echo "service-account-key.json" >> .gitignore
 ```
-
