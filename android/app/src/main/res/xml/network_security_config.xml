@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- デフォルトでHTTPS通信のみ許可 -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <!-- システムの証明書を信頼 -->
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+
+    <!-- 開発・デバッグ用の例外設定（必要に応じてコメントアウト） -->
+    <!--
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system"/>
+            <certificates src="user"/>
+        </trust-anchors>
+    </debug-overrides>
+    -->
+
+    <!-- 特定ドメインでクリアテキスト通信が必要な場合の例外設定 -->
+    <!-- 現在のプロジェクトではHTTPS通信のみ使用のため、例外設定は不要 -->
+    <!--
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">example.com</domain>
+    </domain-config>
+    -->
+</network-security-config>
