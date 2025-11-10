@@ -529,36 +529,36 @@ class AuthNotifier extends _$AuthNotifier {
       final authRepo = _authRepository as AuthRepository;
       final success = await authRepo.deleteAccountWithReauth(password);
 
-        // 7. 認証状態を更新
-        if (success) {
-          state = AsyncData(AuthState.unauthenticated());
-          AppLogger.debug('再認証付きアカウント削除処理が正常に完了しました');
+      // 7. 認証状態を更新
+      if (success) {
+        state = AsyncData(AuthState.unauthenticated());
+        AppLogger.debug('再認証付きアカウント削除処理が正常に完了しました');
 
-          // 削除成功後に関連するRiverpodプロバイダーをリセット
-          try {
-            // ユーザー関連のプロバイダーを無効化
-            ref.invalidate(userRepositoryProvider);
+        // 削除成功後に関連するRiverpodプロバイダーをリセット
+        try {
+          // ユーザー関連のプロバイダーを無効化
+          ref.invalidate(userRepositoryProvider);
 
-            // Application層のプロバイダーを無効化
-            ref.invalidate(scheduleNotifierProvider);
-            ref.invalidate(groupNotifierProvider);
-            ref.invalidate(listNotifierProvider);
+          // Application層のプロバイダーを無効化
+          ref.invalidate(scheduleNotifierProvider);
+          ref.invalidate(groupNotifierProvider);
+          ref.invalidate(listNotifierProvider);
 
-            // Repository層のプロバイダーを無効化
-            ref.invalidate(scheduleRepositoryProvider);
-            ref.invalidate(groupRepositoryProvider);
-            ref.invalidate(listRepositoryProvider);
+          // Repository層のプロバイダーを無効化
+          ref.invalidate(scheduleRepositoryProvider);
+          ref.invalidate(groupRepositoryProvider);
+          ref.invalidate(listRepositoryProvider);
 
-            // Presentation層のストリームプロバイダーはPresentation層で処理
-            // Application層からは直接参照しない（アーキテクチャ違反を回避）
+          // Presentation層のストリームプロバイダーはPresentation層で処理
+          // Application層からは直接参照しない（アーキテクチャ違反を回避）
 
-            AppLogger.debug('プロバイダーを無効化しました');
-          } catch (e) {
-            AppLogger.warning('プロバイダー無効化エラー（無視して続行）: $e');
-          }
+          AppLogger.debug('プロバイダーを無効化しました');
+        } catch (e) {
+          AppLogger.warning('プロバイダー無効化エラー（無視して続行）: $e');
         }
+      }
 
-        return success;
+      return success;
       } else {
         // フォールバック：先に再認証してから削除
         await reauthenticateWithPassword(password);
