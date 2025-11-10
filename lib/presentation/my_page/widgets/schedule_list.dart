@@ -11,12 +11,12 @@ import '../../presentation_provider.dart';
 /// 予定がない場合は「予定がありません」というメッセージを表示します。
 /// 予定がある場合は、本日以降の日付でソートされたリストを表示します。
 class ScheduleList extends ConsumerWidget {
-  final String userId;
-
   const ScheduleList({
     super.key,
     required this.userId,
   });
+
+  final String userId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

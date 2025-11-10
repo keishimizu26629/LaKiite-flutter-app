@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 ///
 /// [shortBio] 表示する一言コメント
 class ShortBioCard extends StatelessWidget {
-  final String? shortBio;
-
   const ShortBioCard({
     super.key,
     this.shortBio,
   });
+
+  final String? shortBio;
 
   @override
   Widget build(BuildContext context) {

@@ -51,12 +51,6 @@ final myPageViewModelProvider =
 });
 
 class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
-  final IUserRepository _userRepository;
-  final IScheduleRepository _scheduleRepository;
-  final IStorageService _storageService;
-  final IImageProcessorService _imageProcessorService;
-  final Ref _ref;
-
   MyPageViewModel(
     this._userRepository,
     this._scheduleRepository,
@@ -64,6 +58,12 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
     this._imageProcessorService,
     this._ref,
   ) : super(const AsyncValue.loading());
+
+  final IUserRepository _userRepository;
+  final IScheduleRepository _scheduleRepository;
+  final IStorageService _storageService;
+  final IImageProcessorService _imageProcessorService;
+  final Ref _ref;
 
   Future<void> pickImage() async {
     try {

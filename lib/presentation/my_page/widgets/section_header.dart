@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 /// [icon] 表示するアイコン
 /// [title] 表示するタイトル
 class SectionHeader extends StatelessWidget {
-  final IconData icon;
-  final String title;
-
   const SectionHeader({
     super.key,
     required this.icon,
     required this.title,
   });
+
+  final IconData icon;
+  final String title;
 
   @override
   Widget build(BuildContext context) {

@@ -8,14 +8,14 @@ import '../my_page_view_model.dart';
 /// [user] 編集対象のユーザーモデル
 /// [onImageEdit] プロフィール画像編集時のコールバック
 class ProfileEditDialog extends ConsumerStatefulWidget {
-  final UserModel user;
-  final VoidCallback onImageEdit;
-
   const ProfileEditDialog({
     super.key,
     required this.user,
     required this.onImageEdit,
   });
+
+  final UserModel user;
+  final VoidCallback onImageEdit;
 
   @override
   ConsumerState<ProfileEditDialog> createState() => _ProfileEditDialogState();

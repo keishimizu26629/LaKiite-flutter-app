@@ -7,12 +7,12 @@ import '../../theme/app_theme.dart';
 ///
 /// [searchId] 表示する検索ID
 class SearchIdDisplay extends StatelessWidget {
-  final UserId searchId;
-
   const SearchIdDisplay({
     super.key,
     required this.searchId,
   });
+
+  final UserId searchId;
 
   @override
   Widget build(BuildContext context) {

@@ -8,14 +8,14 @@ import 'search_id_display.dart';
 /// [user] 表示するユーザー情報
 /// [onEditPressed] プロフィール編集ボタンが押された時のコールバック
 class ProfileCard extends StatelessWidget {
-  final UserModel user;
-  final VoidCallback onEditPressed;
-
   const ProfileCard({
     super.key,
     required this.user,
     required this.onEditPressed,
   });
+
+  final UserModel user;
+  final VoidCallback onEditPressed;
 
   @override
   Widget build(BuildContext context) {

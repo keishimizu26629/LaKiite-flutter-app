@@ -348,9 +348,9 @@ class _InvalidUserDataState extends StatelessWidget {
 
 /// エラー発生時の表示ウィジェット
 class _ErrorState extends StatelessWidget {
-  final Object error;
-
   const _ErrorState({required this.error});
+
+  final Object error;
 
   @override
   Widget build(BuildContext context) {
