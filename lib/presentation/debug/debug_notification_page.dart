@@ -78,7 +78,7 @@ class _DebugNotificationPageState extends State<DebugNotificationPage> {
       // Android 13+の場合、詳細な権限デバッグログ
       if (Platform.isAndroid) {
         AppLogger.info('🐯 ANDROID FCM TOKEN取得開始');
-        AppLogger.info('🔔 通知権限ステータス: ${_notificationPermissionStatus}');
+        AppLogger.info('🔔 通知権限ステータス: $_notificationPermissionStatus');
         AppLogger.info('🔔 Alert権限: ${notificationSettings.alert}');
         AppLogger.info('🔔 Badge権限: ${notificationSettings.badge}');
         AppLogger.info('🔔 Sound権限: ${notificationSettings.sound}');

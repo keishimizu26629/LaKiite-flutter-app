@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lakiite/application/auth/auth_notifier.dart' as notifier;
 import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/di/repository_providers.dart';
-import 'package:riverpod/riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../mock/repository/mock_auth_repository.dart';
 
 /// テスト用のプロバイダーコンテナーを作成する関数

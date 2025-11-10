@@ -1,9 +1,9 @@
-/// Presentation層のプロバイダーを一元管理するファイル
-///
-/// このファイルは、Feature別に分割されたプロバイダーを
-/// 一箇所からexportすることで、後方互換性を保ちます。
-///
-/// 新しいプロバイダーは、適切なFeature別のファイルに追加してください。
+// Presentation層のプロバイダーを一元管理するファイル
+//
+// このファイルは、Feature別に分割されたプロバイダーを
+// 一箇所からexportすることで、後方互換性を保ちます。
+//
+// 新しいプロバイダーは、適切なFeature別のファイルに追加してください。
 
 // DI層のプロバイダーをexport
 export 'package:lakiite/di/repository_providers.dart'
@@ -20,12 +20,13 @@ export 'package:lakiite/di/repository_providers.dart'
         reactionRepositoryProvider;
 
 // Application層のプロバイダーをexport
-export 'package:lakiite/application/providers/application_providers.dart' show
-    authStateProvider,
-    authNotifierProvider,
-    scheduleNotifierProvider,
-    groupNotifierProvider,
-    listNotifierProvider;
+export 'package:lakiite/application/providers/application_providers.dart'
+    show
+        authStateProvider,
+        authNotifierProvider,
+        scheduleNotifierProvider,
+        groupNotifierProvider,
+        listNotifierProvider;
 
 export 'package:lakiite/application/notification/notification_notifier.dart'
     show currentUserIdProvider;

@@ -55,7 +55,7 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
     setState(() => _isLoading = true);
 
     try {
-      String? newIconUrl = widget.list.iconUrl;
+      final String? newIconUrl = widget.list.iconUrl;
       if (_selectedImage != null) {
         // 画像のアップロード処理を実装
         // newIconUrl = await uploadImage(_selectedImage!);
