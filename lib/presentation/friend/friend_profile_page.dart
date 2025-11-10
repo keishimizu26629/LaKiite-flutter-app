@@ -7,12 +7,12 @@ import '../widgets/schedule_tile.dart';
 import '../../utils/logger.dart';
 
 class FriendProfilePage extends ConsumerWidget {
-  final String userId;
-
   const FriendProfilePage({
     super.key,
     required this.userId,
   });
+
+  final String userId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -270,13 +270,13 @@ class FriendProfilePage extends ConsumerWidget {
 
 /// セクションヘッダーウィジェット
 class _SectionHeader extends StatelessWidget {
-  final IconData icon;
-  final String title;
-
   const _SectionHeader({
     required this.icon,
     required this.title,
   });
+
+  final IconData icon;
+  final String title;
 
   @override
   Widget build(BuildContext context) {

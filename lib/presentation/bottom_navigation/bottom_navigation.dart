@@ -5,9 +5,9 @@ import '../friend/friend_list_page.dart';
 import '../my_page/my_page.dart';
 
 class BottomNavigationPage extends ConsumerStatefulWidget {
-  static const String path = '/';
-
   const BottomNavigationPage({super.key});
+
+  static const String path = '/';
 
   @override
   ConsumerState<BottomNavigationPage> createState() =>

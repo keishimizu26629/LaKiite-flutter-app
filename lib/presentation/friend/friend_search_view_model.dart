@@ -7,13 +7,6 @@ import '../../presentation/presentation_provider.dart';
 import '../../utils/logger.dart';
 
 class SearchUserModel {
-  final String id;
-  final String displayName;
-  final String searchId;
-  final String iconUrl;
-  final String? shortBio;
-  final bool hasPendingRequest;
-
   const SearchUserModel({
     required this.id,
     required this.displayName,
@@ -22,6 +15,13 @@ class SearchUserModel {
     this.shortBio,
     this.hasPendingRequest = false,
   });
+
+  final String id;
+  final String displayName;
+  final String searchId;
+  final String iconUrl;
+  final String? shortBio;
+  final bool hasPendingRequest;
 }
 
 final friendSearchViewModelProvider =
@@ -40,19 +40,19 @@ final friendSearchViewModelProvider =
 
 class FriendSearchViewModel
     extends StateNotifier<AsyncValue<SearchUserModel?>> {
-  String? _message;
-  String? get message => _message;
-  final IUserRepository _userRepository;
-  final NotificationRepository _notificationRepository;
-  final String _currentUserId;
-  final String _currentUserDisplayName;
-
   FriendSearchViewModel(
     this._userRepository,
     this._notificationRepository,
     this._currentUserId,
     this._currentUserDisplayName,
   ) : super(const AsyncValue.data(null));
+
+  String? _message;
+  String? get message => _message;
+  final IUserRepository _userRepository;
+  final NotificationRepository _notificationRepository;
+  final String _currentUserId;
+  final String _currentUserDisplayName;
 
   Future<void> searchUser(String searchId) async {
     try {

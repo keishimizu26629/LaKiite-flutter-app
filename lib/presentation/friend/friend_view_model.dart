@@ -26,15 +26,6 @@ final homeViewModelProvider =
 /// - [friends] フレンドリスト
 /// - [groups] 所属グループリスト
 class HomeState {
-  /// 現在のユーザー情報
-  final UserModel? user;
-
-  /// フレンドのリスト
-  final List<UserModel> friends;
-
-  /// 所属グループのリスト
-  final List<Group> groups;
-
   /// HomeStateのコンストラクタ
   ///
   /// パラメータ:
@@ -46,6 +37,15 @@ class HomeState {
     this.friends = const [],
     this.groups = const [],
   });
+
+  /// 現在のユーザー情報
+  final UserModel? user;
+
+  /// フレンドのリスト
+  final List<UserModel> friends;
+
+  /// 所属グループのリスト
+  final List<Group> groups;
 
   /// 状態を更新するためのコピーメソッド
   ///
@@ -75,9 +75,6 @@ class HomeState {
 /// - [_userRepository] ユーザー情報の操作を行うリポジトリ
 /// - [_groupRepository] グループ情報の操作を行うリポジトリ
 class HomeViewModel extends StateNotifier<AsyncValue<HomeState>> {
-  final IUserRepository _userRepository;
-  final IGroupRepository _groupRepository;
-
   /// HomeViewModelのコンストラクタ
   ///
   /// パラメータ:
@@ -85,6 +82,9 @@ class HomeViewModel extends StateNotifier<AsyncValue<HomeState>> {
   /// - [_groupRepository] グループ情報の操作を行うリポジトリ
   HomeViewModel(this._userRepository, this._groupRepository)
       : super(const AsyncValue.loading());
+
+  final IUserRepository _userRepository;
+  final IGroupRepository _groupRepository;
 
   /// ユーザーの関連データを読み込む
   ///

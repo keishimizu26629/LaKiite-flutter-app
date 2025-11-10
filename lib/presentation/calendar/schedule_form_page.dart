@@ -9,12 +9,12 @@ import 'package:lakiite/presentation/list/list_detail_page.dart';
 
 /// 15分単位の時間選択ダイアログ
 class CustomTimePickerDialog extends StatefulWidget {
-  final TimeOfDay initialTime;
-
   const CustomTimePickerDialog({
     super.key,
     required this.initialTime,
   });
+
+  final TimeOfDay initialTime;
 
   @override
   State<CustomTimePickerDialog> createState() => _CustomTimePickerDialogState();
@@ -126,14 +126,14 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog> {
 }
 
 class ScheduleFormPage extends HookConsumerWidget {
-  final Schedule? schedule;
-  final DateTime? initialDate;
-
   const ScheduleFormPage({
     super.key,
     this.schedule,
     this.initialDate,
   });
+
+  final Schedule? schedule;
+  final DateTime? initialDate;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -120,16 +120,16 @@ class FriendRequestListPage extends ConsumerWidget {
 }
 
 class FriendRequestCard extends StatelessWidget {
-  final domain.Notification request;
-  final Future<void> Function() onAccept;
-  final VoidCallback onReject;
-
   const FriendRequestCard({
     super.key,
     required this.request,
     required this.onAccept,
     required this.onReject,
   });
+
+  final domain.Notification request;
+  final Future<void> Function() onAccept;
+  final VoidCallback onReject;
 
   @override
   Widget build(BuildContext context) {
