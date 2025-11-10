@@ -16,21 +16,6 @@ enum NotificationStatus {
 }
 
 class Notification {
-  final String id;
-  final NotificationType type;
-  final String sendUserId;
-  final String receiveUserId;
-  final String? sendUserDisplayName;
-  final String? receiveUserDisplayName;
-  final NotificationStatus status;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final int rejectionCount;
-  final bool isRead;
-  final String? groupId; // グループ招待の場合に使用
-  final String? relatedItemId; // 投稿ID等の関連アイテムID
-  final String? interactionId; // リアクション・コメントのID
-
   const Notification({
     required this.id,
     required this.type,
@@ -47,6 +32,21 @@ class Notification {
     this.relatedItemId,
     this.interactionId,
   });
+
+  final String id;
+  final NotificationType type;
+  final String sendUserId;
+  final String receiveUserId;
+  final String? sendUserDisplayName;
+  final String? receiveUserDisplayName;
+  final NotificationStatus status;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final int rejectionCount;
+  final bool isRead;
+  final String? groupId; // グループ招待の場合に使用
+  final String? relatedItemId; // 投稿ID等の関連アイテムID
+  final String? interactionId; // リアクション・コメントのID
 
   factory Notification.createFriendRequest({
     required String fromUserId,

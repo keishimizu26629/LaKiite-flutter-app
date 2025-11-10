@@ -1,8 +1,4 @@
 class UserId {
-  final String value;
-
-  UserId._(this.value);
-
   factory UserId(String value) {
     if (!isValidFormat(value)) {
       throw ArgumentError('Invalid user ID format');
