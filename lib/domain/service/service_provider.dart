@@ -3,7 +3,7 @@ import 'package:lakiite/domain/service/group_manager.dart';
 import 'package:lakiite/domain/service/list_manager.dart';
 import 'package:lakiite/domain/service/user_manager.dart';
 import 'package:lakiite/domain/service/schedule_manager.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
+import 'package:lakiite/di/repository_providers.dart';
 
 /// グループ管理サービスのプロバイダー
 final groupManagerProvider = Provider<IGroupManager>((ref) {

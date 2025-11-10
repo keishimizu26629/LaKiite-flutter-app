@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:lakiite/main.dart' as app;
-import 'package:lakiite/application/auth/auth_notifier.dart';
+import 'package:lakiite/di/repository_providers.dart';
 import 'firebase_test_utils.dart';
 import 'mock_auth_repository.dart';
 import 'package:lakiite/config/app_config.dart';

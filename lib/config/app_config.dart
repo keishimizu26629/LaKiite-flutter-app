@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import '../firebase_options_dev.dart';
 import '../firebase_options_prod.dart';
 
@@ -27,20 +28,45 @@ class AppConfig {
     return _instance!;
   }
 
+  /// 環境設定マップ
+  /// 新しい環境を追加する場合は、ここに設定を追加する
+  static final Map<Environment, EnvironmentConfig> _environmentConfigs = {
+    Environment.development: EnvironmentConfig(
+      firebaseOptionsFactory: () => DevFirebaseOptions.currentPlatform,
+      appName: 'LaKiite',
+      pushNotificationUrl:
+          'https://asia-northeast1-lakiite-flutter-app-dev.cloudfunctions.net/sendNotification',
+      firebaseOptionsClassName: 'DevFirebaseOptions',
+    ),
+    Environment.production: EnvironmentConfig(
+      firebaseOptionsFactory: () => ProdFirebaseOptions.currentPlatform,
+      appName: 'LaKiite',
+      pushNotificationUrl:
+          'https://asia-northeast1-lakiite-flutter-app-prod.cloudfunctions.net/sendNotification',
+      firebaseOptionsClassName: 'ProdFirebaseOptions',
+    ),
+  };
+
   /// 環境設定を初期化
   ///
   /// [environment] 環境の種類
+  ///
+  /// 既に初期化済みの場合は例外をスローする（再初期化防止）
   static void initialize(Environment environment) {
+    // 再初期化防止
+    if (_instance != null) {
+      throw Exception(
+          'AppConfig has already been initialized with environment: ${_instance!.environment.name}. '
+          'Re-initialization is not allowed.');
+    }
+
     FirebaseOptions options;
     String appName;
     String pushNotificationUrl;
 
-    // 環境変数からFirebaseOptionsクラス名を取得
+    // 環境変数からFirebaseOptionsクラス名を取得（検証用）
     const firebaseOptionsClass =
         String.fromEnvironment('FIREBASE_OPTIONS_CLASS');
-
-    // 環境変数からアプリ名を取得
-    appName = const String.fromEnvironment('APP_NAME', defaultValue: 'LaKiite');
 
     // テスト環境の場合はダミーのFirebaseOptionsを使用
     const isTestEnvironment =
@@ -55,20 +81,33 @@ class AppConfig {
         storageBucket: 'test-bucket',
       );
       environment = Environment.development;
+      appName = 'LaKiite (Test)';
       pushNotificationUrl = 'https://test-functions.net/sendNotification';
     } else {
-      // FirebaseOptionsクラス名に基づいて適切なFirebaseOptionsを選択
+      // 環境設定マップから設定を取得
+      final config = _environmentConfigs[environment];
+      if (config == null) {
+        throw Exception(
+            'Environment configuration not found for: ${environment.name}. '
+            'Please add configuration to _environmentConfigs map.');
+      }
+
       try {
-        if (firebaseOptionsClass == 'ProdFirebaseOptions') {
-          options = ProdFirebaseOptions.currentPlatform;
-          environment = Environment.production;
-          pushNotificationUrl =
-              'https://asia-northeast1-lakiite-flutter-app-prod.cloudfunctions.net/sendNotification';
-        } else {
-          options = DevFirebaseOptions.currentPlatform;
-          environment = Environment.development;
-          pushNotificationUrl =
-              'https://asia-northeast1-lakiite-flutter-app-dev.cloudfunctions.net/sendNotification';
+        // FirebaseOptionsを取得
+        options = config.firebaseOptionsFactory();
+
+        // 環境変数からアプリ名を取得（デフォルトは設定マップの値）
+        const appNameEnv = String.fromEnvironment('APP_NAME');
+        appName = appNameEnv.isEmpty ? config.appName : appNameEnv;
+
+        pushNotificationUrl = config.pushNotificationUrl;
+
+        // 検証: FIREBASE_OPTIONS_CLASSが一致しているか確認
+        if (firebaseOptionsClass.isNotEmpty &&
+            firebaseOptionsClass != config.firebaseOptionsClassName) {
+          throw Exception(
+              '環境の不整合: environment=${environment.name} だが FIREBASE_OPTIONS_CLASS=$firebaseOptionsClass '
+              '(期待値: ${config.firebaseOptionsClassName})');
         }
       } catch (e) {
         // Firebase設定ファイルが見つからない場合のフォールバック
@@ -80,6 +119,7 @@ class AppConfig {
           storageBucket: 'fallback-bucket',
         );
         environment = Environment.development;
+        appName = 'LaKiite (Fallback)';
         pushNotificationUrl = 'https://fallback-functions.net/sendNotification';
       }
     }
@@ -99,6 +139,34 @@ class AppConfig {
 
   /// 環境名を取得
   String get environmentName => environment.name;
+
+  /// テスト用: インスタンスをリセット（テスト時のみ使用）
+  @visibleForTesting
+  static void reset() {
+    _instance = null;
+  }
+}
+
+/// 環境設定データクラス
+class EnvironmentConfig {
+  /// FirebaseOptionsを生成するファクトリー関数
+  final FirebaseOptions Function() firebaseOptionsFactory;
+
+  /// アプリ名
+  final String appName;
+
+  /// プッシュ通知用Cloud FunctionのURL
+  final String pushNotificationUrl;
+
+  /// FirebaseOptionsクラス名（検証用）
+  final String firebaseOptionsClassName;
+
+  const EnvironmentConfig({
+    required this.firebaseOptionsFactory,
+    required this.appName,
+    required this.pushNotificationUrl,
+    required this.firebaseOptionsClassName,
+  });
 }
 
 /// 環境の種類

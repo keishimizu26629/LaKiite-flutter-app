@@ -1,12 +1,11 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import '../../domain/interfaces/i_auth_repository.dart';
 import '../../domain/entity/user.dart';
-import '../../infrastructure/auth_repository.dart';
 import '../../infrastructure/user_fcm_token_service.dart';
+import '../../di/repository_providers.dart';
 import '../../infrastructure/user_repository.dart';
 import '../../infrastructure/schedule_repository.dart';
 import '../../presentation/presentation_provider.dart';
@@ -17,24 +16,6 @@ import '../../utils/webview_monitor.dart';
 import 'auth_state.dart';
 
 part 'auth_notifier.g.dart';
-
-/// 認証リポジトリのグローバルプロバイダー
-///
-/// パラメータ:
-/// - [ref] Riverpodのプロバイダー参照
-///
-/// 依存:
-/// - [userRepositoryProvider] ユーザー情報管理用（presentation_provider.dartで定義）
-/// - [FirebaseAuth] 認証基盤
-///
-/// 戻り値:
-/// - [IAuthRepository] 認証操作用のリポジトリインスタンス
-final authRepositoryProvider = Provider<IAuthRepository>((ref) {
-  return AuthRepository(
-    FirebaseAuth.instance,
-    ref.watch(userRepositoryProvider),
-  );
-});
 
 /// 認証状態のストリームを提供するプロバイダー
 final authStateStreamProvider = StreamProvider.autoDispose<AuthState>((ref) {

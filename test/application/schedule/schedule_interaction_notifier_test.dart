@@ -9,6 +9,7 @@ import 'package:lakiite/application/notification/notification_notifier.dart'
     as notification;
 import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
 import 'package:lakiite/config/app_config.dart';
+import 'package:lakiite/di/repository_providers.dart' as di;
 import 'package:lakiite/domain/entity/notification.dart' as domain_notification;
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/schedule_comment.dart';
@@ -388,7 +389,7 @@ void main() {
           userRepositoryProvider.overrideWithValue(
             _FakeUserRepository(user),
           ),
-          notification.notificationRepositoryProvider
+          di.notificationRepositoryProvider
               .overrideWithValue(_FakeNotificationRepository()),
           notification.notificationNotifierProvider.overrideWith((ref) {
             return _FakeNotificationNotifier(ref);

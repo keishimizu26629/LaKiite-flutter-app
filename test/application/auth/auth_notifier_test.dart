@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lakiite/application/auth/auth_notifier.dart' as notifier;
 import 'package:lakiite/application/auth/auth_state.dart';
+import 'package:lakiite/di/repository_providers.dart';
 import 'package:riverpod/riverpod.dart';
 import '../../mock/repository/mock_auth_repository.dart';
 
@@ -24,7 +25,7 @@ void main() {
       container = createTestProviderContainer(
         overrides: [
           // AuthRepositoryをモックでオーバーライド
-          notifier.authRepositoryProvider.overrideWithValue(mockAuthRepository),
+          authRepositoryProvider.overrideWithValue(mockAuthRepository),
           // AuthStateStreamProviderも完全にモックストリームでオーバーライド
           notifier.authStateStreamProvider.overrideWith((ref) {
             return mockAuthRepository.authStateChanges().map((user) {

@@ -1,22 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entity/notification.dart' as domain;
 import '../../domain/interfaces/i_notification_repository.dart';
-import '../../infrastructure/notification_repository.dart';
 import '../../infrastructure/firebase/push_notification_service.dart';
 import '../../utils/logger.dart';
-import '../../infrastructure/user_repository.dart';
 import '../../infrastructure/firebase/push_notification_sender.dart';
+import '../../infrastructure/user_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
+import '../../di/repository_providers.dart';
 import '../../presentation/presentation_provider.dart';
 
 typedef Notification = domain.Notification;
 typedef NotificationType = domain.NotificationType;
-
-/// 通知リポジトリのインスタンスを提供する
-final notificationRepositoryProvider = Provider<INotificationRepository>((ref) {
-  return NotificationRepository();
-});
 
 /// FirebaseAuthの状態変更を監視するStreamプロバイダー
 final firebaseAuthStateProvider = StreamProvider<User?>((ref) {

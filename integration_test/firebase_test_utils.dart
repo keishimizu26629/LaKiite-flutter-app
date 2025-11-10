@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lakiite/application/auth/auth_notifier.dart';
+import 'package:lakiite/di/repository_providers.dart';
 import 'mock_auth_repository.dart';
 
 class FirebaseTestUtils {

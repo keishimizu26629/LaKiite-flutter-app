@@ -2,8 +2,9 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lakiite/application/schedule/schedule_state.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
+import 'package:lakiite/di/repository_providers.dart';
 import 'package:lakiite/domain/service/service_provider.dart';
+import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/utils/logger.dart';
 
 part 'schedule_notifier.g.dart';

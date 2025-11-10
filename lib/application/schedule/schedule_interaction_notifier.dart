@@ -6,6 +6,7 @@ import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart
 import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/application/notification/notification_notifier.dart';
+import 'package:lakiite/di/repository_providers.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import '../../infrastructure/firebase/push_notification_sender.dart';
 
