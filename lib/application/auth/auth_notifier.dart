@@ -559,11 +559,6 @@ class AuthNotifier extends _$AuthNotifier {
       }
 
       return success;
-      } else {
-        // フォールバック：先に再認証してから削除
-        await reauthenticateWithPassword(password);
-        return await deleteAccount();
-      }
     } catch (e) {
       AppLogger.error('再認証付きアカウント削除エラー: $e');
       state = AsyncError(e, StackTrace.current);
