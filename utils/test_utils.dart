@@ -192,10 +192,10 @@ class TestUtils {
 }
 
 class TimeoutException implements Exception {
+  TimeoutException(this.message, this.timeout);
+
   final String message;
   final Duration timeout;
-
-  TimeoutException(this.message, this.timeout);
 
   @override
   String toString() => 'TimeoutException: $message (timeout: $timeout)';

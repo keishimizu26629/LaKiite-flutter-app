@@ -68,6 +68,7 @@ class AuthState with _$AuthState {
   /// - [bool] 認証済みの場合はtrue、そうでなければfalse
   bool get isAuthenticated => status == AuthStatus.authenticated;
 
+  // ignore: sort_constructors_first
   const AuthState._();
 }
 

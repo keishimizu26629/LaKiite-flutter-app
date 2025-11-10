@@ -162,6 +162,7 @@ class SearchUserModel {
   final String? iconUrl;
   final String? shortBio;
 
+  // ignore: sort_constructors_first
   factory SearchUserModel.fromFirestore(String id, Map<String, dynamic> data) {
     return SearchUserModel(
       id: id,
@@ -172,6 +173,7 @@ class SearchUserModel {
     );
   }
 
+  // ignore: sort_constructors_first
   factory SearchUserModel.fromUserModel(UserModel user) {
     return SearchUserModel(
       id: user.id,
@@ -198,6 +200,7 @@ class User {
   final String? iconUrl;
   final String? bio;
 
+  // ignore: sort_constructors_first
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'] as String,

@@ -13,6 +13,7 @@ class PublicProfile {
   final String? iconUrl;
   final String? shortBio;
 
+  // ignore: sort_constructors_first
   factory PublicProfile.fromFirestore(Map<String, dynamic> data) {
     return PublicProfile(
       displayName: data['displayName'] as String,
@@ -45,6 +46,7 @@ class PrivateProfile {
   final DateTime createdAt;
   final String? fcmToken;
 
+  // ignore: sort_constructors_first
   factory PrivateProfile.fromFirestore(Map<String, dynamic> data) {
     return PrivateProfile(
       name: data['name'] as String? ?? '',
@@ -83,6 +85,7 @@ class UserProfile {
   final List<String> groups;
   final String? fcmToken;
 
+  // ignore: sort_constructors_first
   factory UserProfile.fromFirestore(Map<String, dynamic> data, String id) {
     return UserProfile(
       id: id,

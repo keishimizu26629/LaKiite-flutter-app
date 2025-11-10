@@ -48,6 +48,7 @@ class Notification {
   final String? relatedItemId; // 投稿ID等の関連アイテムID
   final String? interactionId; // リアクション・コメントのID
 
+  // ignore: sort_constructors_first
   factory Notification.createFriendRequest({
     required String fromUserId,
     required String toUserId,
@@ -70,6 +71,7 @@ class Notification {
     );
   }
 
+  // ignore: sort_constructors_first
   factory Notification.createGroupInvitation({
     required String fromUserId,
     required String toUserId,
@@ -94,6 +96,7 @@ class Notification {
     );
   }
 
+  // ignore: sort_constructors_first
   factory Notification.createReactionNotification({
     required String fromUserId,
     required String toUserId,
@@ -117,6 +120,7 @@ class Notification {
     );
   }
 
+  // ignore: sort_constructors_first
   factory Notification.createCommentNotification({
     required String fromUserId,
     required String toUserId,
@@ -140,6 +144,7 @@ class Notification {
     );
   }
 
+  // ignore: sort_constructors_first
   factory Notification.fromJson(Map<String, dynamic> json) {
     // createdAtとupdatedAtのデバッグ出力
     final createdAtTimestamp = json['createdAt'] as Timestamp;

@@ -48,6 +48,7 @@ class ReactionIconWidget extends StatelessWidget {
   /// [isLoading] ローディング状態の有無（デフォルト: false）
   ///
   /// マップ内のリアクションカウントに基づいて`hasGoing`と`hasThinking`を自動的に判定します。
+  // ignore: sort_constructors_first
   factory ReactionIconWidget.fromReactionCounts(
     Map<ReactionType, int> reactionCounts, {
     double iconSize = 20,
