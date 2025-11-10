@@ -22,9 +22,9 @@ abstract class IUserManager {
 }
 
 class UserManager implements IUserManager {
-  final IUserRepository _userRepository;
-
   UserManager(this._userRepository);
+
+  final IUserRepository _userRepository;
 
   @override
   Future<UserModel?> getIntegratedUser(String userId) async {

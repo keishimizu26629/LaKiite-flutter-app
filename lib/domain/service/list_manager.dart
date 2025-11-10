@@ -40,9 +40,9 @@ abstract class IListManager {
 }
 
 class ListManager implements IListManager {
-  final IListRepository _listRepository;
-
   ListManager(this._listRepository);
+
+  final IListRepository _listRepository;
 
   @override
   Future<List<UserList>> getAuthenticatedUserLists(String userId) async {

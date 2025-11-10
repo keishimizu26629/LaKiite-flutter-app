@@ -27,12 +27,6 @@ final groupMemberInviteViewModelProvider = StateNotifierProvider.family<
 
 /// グループメンバー招待画面のViewModel
 class GroupMemberInviteNotifier extends StateNotifier<GroupMemberInviteState> {
-  final IUserRepository _userRepository;
-  final NotificationRepository _notificationRepository;
-  final String _currentUserId;
-  final String _currentUserDisplayName;
-  final Group _group;
-
   GroupMemberInviteNotifier(
     this._userRepository,
     this._notificationRepository,
@@ -42,6 +36,12 @@ class GroupMemberInviteNotifier extends StateNotifier<GroupMemberInviteState> {
   ) : super(const GroupMemberInviteState()) {
     _initialize();
   }
+
+  final IUserRepository _userRepository;
+  final NotificationRepository _notificationRepository;
+  final String _currentUserId;
+  final String _currentUserDisplayName;
+  final Group _group;
 
   /// 初期化処理
   Future<void> _initialize() async {

@@ -41,13 +41,13 @@ abstract class IGroupManager {
 }
 
 class GroupManager implements IGroupManager {
-  final IGroupRepository _groupRepository;
-  final INotificationRepository _notificationRepository;
-
   GroupManager(
     this._groupRepository,
     this._notificationRepository,
   );
+
+  final IGroupRepository _groupRepository;
+  final INotificationRepository _notificationRepository;
 
   @override
   Future<Group> createGroupWithNotifications({
