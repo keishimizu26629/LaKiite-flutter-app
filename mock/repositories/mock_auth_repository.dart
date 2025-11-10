@@ -97,25 +97,21 @@ class MockAuthRepository implements IAuthRepository {
     return true;
   }
 
-  @override
   Future<void> updateEmail(String newEmail) async {
     await Future.delayed(const Duration(milliseconds: 200));
     // テスト用の実装
   }
 
-  @override
   Future<void> updatePassword(String newPassword) async {
     await Future.delayed(const Duration(milliseconds: 200));
     // テスト用の実装
   }
 
-  @override
   Future<void> sendPasswordResetEmail(String email) async {
     await Future.delayed(const Duration(milliseconds: 200));
     // テスト用の実装
   }
 
-  @override
   Future<void> resetPassword(String newPassword, String actionCode) async {
     await Future.delayed(const Duration(milliseconds: 200));
     // テスト用の実装

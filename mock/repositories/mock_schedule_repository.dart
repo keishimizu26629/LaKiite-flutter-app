@@ -146,6 +146,7 @@ class MockScheduleRepository implements IScheduleRepository {
     yield _schedules.where((schedule) => schedule.ownerId == userId).toList();
   }
 
+  @override
   Stream<Schedule?> watchSchedule(String scheduleId) async* {
     final schedule = _schedules.firstWhere(
       (s) => s.id == scheduleId,
@@ -154,7 +155,6 @@ class MockScheduleRepository implements IScheduleRepository {
     yield schedule;
   }
 
-  @override
   Future<List<Schedule>> getSchedulesByDateRange(
     String userId,
     DateTime startDate,
@@ -169,7 +169,6 @@ class MockScheduleRepository implements IScheduleRepository {
         .toList();
   }
 
-  @override
   Future<List<Schedule>> getSchedulesByDate(
       String userId, DateTime date) async {
     await Future.delayed(const Duration(milliseconds: 200));
