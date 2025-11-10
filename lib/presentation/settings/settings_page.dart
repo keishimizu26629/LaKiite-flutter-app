@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../presentation_provider.dart';
-import '../../utils/logger.dart';
 import 'edit_name_page.dart';
 import 'edit_email_page.dart';
 import 'edit_search_id_page.dart';
@@ -13,45 +12,6 @@ import 'account_deletion_webview_page.dart';
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
   static const String path = '/settings';
-
-  /// 指定されたURLを外部ブラウザで開く
-  Future<void> _launchURL(BuildContext context, String url) async {
-    final uri = Uri.parse(url);
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-          webViewConfiguration: const WebViewConfiguration(
-            enableJavaScript: true,
-            enableDomStorage: true,
-          ),
-        );
-      } else {
-        // URLを開けない場合はスナックバーでエラーを表示
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('URLを開けませんでした: $url'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        AppLogger.error('Could not launch $url');
-      }
-    } catch (e) {
-      // 例外が発生した場合もスナックバーでエラーを表示
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('エラーが発生しました: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      AppLogger.error('Error launching URL: $e');
-    }
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -303,6 +263,7 @@ class SettingsPage extends ConsumerWidget {
                     // まず再認証を試行
                     try {
                       await (authNotifier as dynamic)
+                          // ignore: avoid_dynamic_calls
                           .reauthenticateWithPassword(password);
                       // 再認証成功後にアカウント削除
                       await authNotifier.deleteAccount();

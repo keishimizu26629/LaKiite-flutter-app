@@ -226,12 +226,15 @@ class _MyPageState extends ConsumerState<MyPage> {
     // 基本的なプロパティの存在チェック
     try {
       // ユーザーIDが存在するかチェック
+      // ignore: avoid_dynamic_calls
       if (user.id == null || user.id.isEmpty) return false;
 
       // 表示名が存在するかチェック
+      // ignore: avoid_dynamic_calls
       if (user.displayName == null) return false;
 
       // publicProfileが存在するかチェック
+      // ignore: avoid_dynamic_calls
       if (user.publicProfile == null) return false;
 
       return true;

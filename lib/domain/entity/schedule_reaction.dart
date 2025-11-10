@@ -29,6 +29,7 @@ class ScheduleReaction with _$ScheduleReaction {
 
     // デバッグ用ログ追加
     AppLogger.debug(
+        // ignore: avoid_dynamic_calls
         'ScheduleReaction.fromJson: createdAt=$createdAt (${createdAt?.runtimeType})');
     AppLogger.debug('Full JSON: $json');
 

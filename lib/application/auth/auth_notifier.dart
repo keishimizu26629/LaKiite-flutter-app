@@ -526,9 +526,8 @@ class AuthNotifier extends _$AuthNotifier {
       }
 
       // 6. 再認証付きでアカウントを削除（AuthRepositoryの新しいメソッドを使用）
-      final authRepo = _authRepository as dynamic;
-      if (authRepo.deleteAccountWithReauth != null) {
-        final success = await authRepo.deleteAccountWithReauth(password);
+      final authRepo = _authRepository as AuthRepository;
+      final success = await authRepo.deleteAccountWithReauth(password);
 
         // 7. 認証状態を更新
         if (success) {

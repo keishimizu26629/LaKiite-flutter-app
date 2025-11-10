@@ -189,8 +189,10 @@ class FriendProfilePage extends ConsumerWidget {
                       final userSchedules = schedules
                           .where((s) =>
                               // この友人が作成した予定
+                              // ignore: avoid_dynamic_calls
                               s.ownerId == userId &&
                               // 現在日以降の予定
+                              // ignore: avoid_dynamic_calls
                               s.endDateTime.isAfter(todayStart))
                           .toList();
 
@@ -231,6 +233,7 @@ class FriendProfilePage extends ConsumerWidget {
 
                       // 日付でソート
                       userSchedules.sort(
+                          // ignore: avoid_dynamic_calls
                           (a, b) => a.startDateTime.compareTo(b.startDateTime));
 
                       return ListView.builder(

@@ -81,6 +81,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         final data = {...doc.data(), 'id': doc.id};
         AppLogger.debug('Reaction Data from Firestore: $data');
         AppLogger.debug(
+            // ignore: avoid_dynamic_calls
             'Reaction type from Firestore: ${data['type']} (${data['type'].runtimeType})');
         final reaction = ScheduleReaction.fromJson(data);
         AppLogger.debug('Converted Reaction: $reaction');
@@ -203,12 +204,14 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
 
           // 型情報を詳細に確認
           final typeValue = data['type'];
+          // ignore: avoid_dynamic_calls
           final typeType = typeValue?.runtimeType;
           AppLogger.debug(
               'Reaction type value: "$typeValue" (type: $typeType)');
 
           // createdAtの情報確認
           final createdAtValue = data['createdAt'];
+          // ignore: avoid_dynamic_calls
           final createdAtType = createdAtValue?.runtimeType;
           AppLogger.debug('createdAt value type: $createdAtType');
 
@@ -389,10 +392,13 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       final isEditedValue = existingData?['isEdited'];
 
       AppLogger.debug(
+          // ignore: avoid_dynamic_calls
           '既存コメントのcreatedAt: $createdAtValue (${createdAtValue?.runtimeType})');
       AppLogger.debug(
+          // ignore: avoid_dynamic_calls
           '既存コメントのupdatedAt: $updatedAtValue (${updatedAtValue?.runtimeType})');
       AppLogger.debug(
+          // ignore: avoid_dynamic_calls
           '既存コメントのisEdited: $isEditedValue (${isEditedValue?.runtimeType})');
 
       // 更新するデータを準備 - セキュリティルールを満たすために必要最小限のフィールドのみ含める

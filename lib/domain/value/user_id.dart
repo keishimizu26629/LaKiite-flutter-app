@@ -1,4 +1,5 @@
 class UserId {
+  // ignore: sort_unnamed_constructors_first
   UserId._(this.value);
 
   factory UserId(String value) {

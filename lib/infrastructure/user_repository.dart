@@ -174,6 +174,7 @@ class UserRepository implements IUserRepository {
         if (privateData['profile'] == null) {
           privateData['profile'] = {};
         }
+        // ignore: avoid_dynamic_calls
         privateData['profile']['iconUrl'] = downloadUrl;
         transaction.update(privateRef, privateData);
       }

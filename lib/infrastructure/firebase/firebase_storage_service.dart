@@ -44,6 +44,7 @@ class FirebaseStorageService implements IStorageService {
 
       // ファイルの存在確認
       AppLogger.debug('FirebaseStorage: ファイルの存在確認 - ${file.path}');
+      // ignore: avoid_slow_async_io
       if (!await file.exists()) {
         AppLogger.error('FirebaseStorage: ファイルが存在しません - ${file.path}');
         throw Exception('アップロードするファイルが見つかりません: ${file.path}');
