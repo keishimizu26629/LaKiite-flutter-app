@@ -10,8 +10,6 @@ import '../../config/app_config.dart';
 /// Cloud FunctionsにPOSTリクエストを送信して通知を配信します
 /// 実際の実装ではCloud Functions側で認証とセキュリティチェックを行う必要があります
 class PushNotificationSender {
-  final String _cloudFunctionUrl;
-  final UserFcmTokenService _fcmTokenService;
   static const int _tokenPreviewLength = 20;
 
   PushNotificationSender({
@@ -20,6 +18,9 @@ class PushNotificationSender {
   })  : _cloudFunctionUrl =
             cloudFunctionUrl ?? AppConfig.instance.pushNotificationUrl,
         _fcmTokenService = fcmTokenService ?? UserFcmTokenService();
+
+  final String _cloudFunctionUrl;
+  final UserFcmTokenService _fcmTokenService;
 
   Future<bool> sendFriendRequestNotification({
     required String toUserId,

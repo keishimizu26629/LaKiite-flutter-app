@@ -148,12 +148,6 @@ class UserModel with _$UserModel {
 
 /// ユーザー検索結果を表現するモデルクラス
 class SearchUserModel {
-  final String id;
-  final String displayName;
-  final String searchId;
-  final String? iconUrl;
-  final String? shortBio;
-
   const SearchUserModel({
     required this.id,
     required this.displayName,
@@ -161,6 +155,12 @@ class SearchUserModel {
     this.iconUrl,
     this.shortBio,
   });
+
+  final String id;
+  final String displayName;
+  final String searchId;
+  final String? iconUrl;
+  final String? shortBio;
 
   factory SearchUserModel.fromFirestore(String id, Map<String, dynamic> data) {
     return SearchUserModel(
@@ -184,12 +184,6 @@ class SearchUserModel {
 }
 
 class User {
-  final String id;
-  final String displayName;
-  final String searchId;
-  final String? iconUrl;
-  final String? bio;
-
   const User({
     required this.id,
     required this.displayName,
@@ -197,6 +191,12 @@ class User {
     this.iconUrl,
     this.bio,
   });
+
+  final String id;
+  final String displayName;
+  final String searchId;
+  final String? iconUrl;
+  final String? bio;
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(

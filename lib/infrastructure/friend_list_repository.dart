@@ -3,9 +3,9 @@ import '../domain/interfaces/i_friend_list_repository.dart';
 import '../utils/logger.dart';
 
 class FriendListRepository implements IFriendListRepository {
-  final FirebaseFirestore _firestore;
-
   FriendListRepository() : _firestore = FirebaseFirestore.instance;
+
+  final FirebaseFirestore _firestore;
 
   @override
   Future<List<String>?> getListMemberIds(String listId) async {

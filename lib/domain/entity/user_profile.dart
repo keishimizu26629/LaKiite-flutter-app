@@ -1,17 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PublicProfile {
-  final String displayName;
-  final String searchId;
-  final String? iconUrl;
-  final String? shortBio;
-
   const PublicProfile({
     required this.displayName,
     required this.searchId,
     this.iconUrl,
     this.shortBio,
   });
+
+  final String displayName;
+  final String searchId;
+  final String? iconUrl;
+  final String? shortBio;
 
   factory PublicProfile.fromFirestore(Map<String, dynamic> data) {
     return PublicProfile(
@@ -33,17 +33,17 @@ class PublicProfile {
 }
 
 class PrivateProfile {
-  final String name;
-  final List<String> lists;
-  final DateTime createdAt;
-  final String? fcmToken;
-
   const PrivateProfile({
     required this.name,
     required this.lists,
     required this.createdAt,
     this.fcmToken,
   });
+
+  final String name;
+  final List<String> lists;
+  final DateTime createdAt;
+  final String? fcmToken;
 
   factory PrivateProfile.fromFirestore(Map<String, dynamic> data) {
     return PrivateProfile(
@@ -67,13 +67,6 @@ class PrivateProfile {
 }
 
 class UserProfile {
-  final String id;
-  final PublicProfile publicProfile;
-  final PrivateProfile privateProfile;
-  final List<String> friends;
-  final List<String> groups;
-  final String? fcmToken;
-
   const UserProfile({
     required this.id,
     required this.publicProfile,
@@ -82,6 +75,13 @@ class UserProfile {
     required this.groups,
     this.fcmToken,
   });
+
+  final String id;
+  final PublicProfile publicProfile;
+  final PrivateProfile privateProfile;
+  final List<String> friends;
+  final List<String> groups;
+  final String? fcmToken;
 
   factory UserProfile.fromFirestore(Map<String, dynamic> data, String id) {
     return UserProfile(

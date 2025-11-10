@@ -3,9 +3,9 @@ import '../domain/entity/list.dart';
 import '../domain/interfaces/i_list_repository.dart';
 
 class ListRepository implements IListRepository {
-  final FirebaseFirestore _firestore;
-
   ListRepository() : _firestore = FirebaseFirestore.instance;
+
+  final FirebaseFirestore _firestore;
 
   Map<String, dynamic> _toFirestore(UserList list) {
     final data = list.toJson();

@@ -3,9 +3,9 @@ import '../domain/entity/group.dart';
 import '../domain/interfaces/i_group_repository.dart';
 
 class GroupRepository implements IGroupRepository {
-  final FirebaseFirestore _firestore;
-
   GroupRepository() : _firestore = FirebaseFirestore.instance;
+
+  final FirebaseFirestore _firestore;
 
   Map<String, dynamic> _toFirestore(Group group) {
     final data = group.toJson();

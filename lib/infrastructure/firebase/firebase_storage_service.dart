@@ -5,14 +5,14 @@ import '../../domain/interfaces/i_storage_service.dart';
 import '../../utils/logger.dart';
 
 class FirebaseStorageService implements IStorageService {
-  final FirebaseStorage _storage;
-  final FirebaseAuth _auth;
-
   FirebaseStorageService({
     FirebaseStorage? storage,
     FirebaseAuth? auth,
   })  : _storage = storage ?? FirebaseStorage.instance,
         _auth = auth ?? FirebaseAuth.instance;
+
+  final FirebaseStorage _storage;
+  final FirebaseAuth _auth;
 
   @override
   Future<String> uploadFile({

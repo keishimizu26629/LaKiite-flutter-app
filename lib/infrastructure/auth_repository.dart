@@ -4,10 +4,10 @@ import '../domain/interfaces/i_user_repository.dart';
 import '../domain/entity/user.dart';
 
 class AuthRepository implements IAuthRepository {
+  AuthRepository(this._auth, this._userRepository);
+
   final FirebaseAuth _auth;
   final IUserRepository _userRepository;
-
-  AuthRepository(this._auth, this._userRepository);
 
   @override
   Stream<UserModel?> authStateChanges() async* {

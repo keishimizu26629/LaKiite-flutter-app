@@ -7,6 +7,10 @@ import '../domain/value/user_id.dart';
 import '../utils/logger.dart';
 
 class UserRepository implements IUserRepository {
+  UserRepository()
+      : _firestore = FirebaseFirestore.instance,
+        _storage = FirebaseStorage.instance;
+
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
 
@@ -14,10 +18,6 @@ class UserRepository implements IUserRepository {
   final Map<String, UserModel> _userCache = {};
   final Map<String, PublicUserModel> _publicProfileCache = {};
   final Map<String, PrivateUserModel> _privateProfileCache = {};
-
-  UserRepository()
-      : _firestore = FirebaseFirestore.instance,
-        _storage = FirebaseStorage.instance;
 
   // キャッシュをクリアするメソッド
   void clearCache() {

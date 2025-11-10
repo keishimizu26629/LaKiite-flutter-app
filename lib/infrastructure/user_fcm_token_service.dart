@@ -5,16 +5,16 @@ import '../utils/logger.dart';
 
 /// ユーザーのFCMトークンを管理するサービスクラス
 class UserFcmTokenService {
-  final FirebaseFirestore _firestore;
-  final FirebaseAuth _auth;
-  final PushNotificationService _pushNotificationService;
-
   UserFcmTokenService({
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _auth = auth ?? FirebaseAuth.instance,
         _pushNotificationService = PushNotificationService.instance;
+
+  final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
+  final PushNotificationService _pushNotificationService;
 
   /// 現在のユーザーのFCMトークンを更新する
   Future<void> updateCurrentUserFcmToken() async {

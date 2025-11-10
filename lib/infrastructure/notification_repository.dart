@@ -6,9 +6,9 @@ import '../utils/logger.dart';
 
 /// 通知関連のFirestoreとのデータアクセスを管理するリポジトリクラス
 class NotificationRepository implements INotificationRepository {
-  final FirebaseFirestore _firestore;
-
   NotificationRepository() : _firestore = FirebaseFirestore.instance;
+
+  final FirebaseFirestore _firestore;
 
   /// 新しい通知を作成する
   ///

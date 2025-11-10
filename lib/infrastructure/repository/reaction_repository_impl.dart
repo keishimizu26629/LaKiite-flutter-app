@@ -3,9 +3,9 @@ import 'package:lakiite/domain/entity/reaction.dart';
 import 'package:lakiite/domain/repository/reaction_repository.dart';
 
 class ReactionRepositoryImpl implements ReactionRepository {
-  final FirebaseFirestore _firestore;
-
   ReactionRepositoryImpl(this._firestore);
+
+  final FirebaseFirestore _firestore;
 
   @override
   Future<List<Reaction>> getReactionsForSchedule(String scheduleId) async {
