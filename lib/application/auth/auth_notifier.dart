@@ -8,6 +8,7 @@ import '../../infrastructure/user_fcm_token_service.dart';
 import '../../di/repository_providers.dart';
 import '../../infrastructure/user_repository.dart';
 import '../../infrastructure/schedule_repository.dart';
+import '../../infrastructure/auth_repository.dart';
 import '../providers/application_providers.dart';
 import '../../utils/logger.dart';
 import '../../utils/webview_monitor.dart';
