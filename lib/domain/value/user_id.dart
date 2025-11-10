@@ -1,7 +1,7 @@
 class UserId {
-  // ignore: sort_unnamed_constructors_first
   UserId._(this.value);
 
+  // ignore: sort_unnamed_constructors_first
   factory UserId(String value) {
     if (!isValidFormat(value)) {
       throw ArgumentError('Invalid user ID format');
