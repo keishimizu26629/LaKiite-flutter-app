@@ -6,12 +6,12 @@ import '../presentation_provider.dart';
 
 /// リストメンバー追加ページ
 class ListMemberInvitePage extends ConsumerStatefulWidget {
-  final UserList list;
-
   const ListMemberInvitePage({
     super.key,
     required this.list,
   });
+
+  final UserList list;
 
   @override
   ConsumerState<ListMemberInvitePage> createState() =>

@@ -4,16 +4,16 @@ import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 
 class HomeErrorWidget extends StatelessWidget {
-  final Object error;
-  final AuthState authState;
-  final WidgetRef ref;
-
   const HomeErrorWidget({
     super.key,
     required this.error,
     required this.authState,
     required this.ref,
   });
+
+  final Object error;
+  final AuthState authState;
+  final WidgetRef ref;
 
   @override
   Widget build(BuildContext context) {

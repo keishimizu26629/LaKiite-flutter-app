@@ -7,12 +7,12 @@ import 'widgets/friend_list_tile.dart';
 
 /// グループメンバー招待ページ
 class GroupMemberInvitePage extends ConsumerStatefulWidget {
-  final Group group;
-
   const GroupMemberInvitePage({
     super.key,
     required this.group,
   });
+
+  final Group group;
 
   @override
   ConsumerState<GroupMemberInvitePage> createState() =>

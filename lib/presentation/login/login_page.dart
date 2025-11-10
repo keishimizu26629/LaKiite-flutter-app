@@ -6,9 +6,9 @@ import '../signup/signup.dart';
 import '../../presentation/bottom_navigation/bottom_navigation.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
-  static const String path = '/login';
-
   const LoginPage({super.key});
+
+  static const String path = '/login';
 
   @override
   ConsumerState<LoginPage> createState() => _LoginPageState();

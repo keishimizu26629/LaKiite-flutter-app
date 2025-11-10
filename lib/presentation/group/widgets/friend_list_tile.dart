@@ -3,13 +3,6 @@ import '../../../domain/entity/user.dart';
 
 /// フレンドリストの各アイテムを表示するウィジェット
 class FriendListTile extends StatelessWidget {
-  final UserModel friend;
-  final bool isSelected;
-  final bool isInvitable;
-  final bool isGroupMember;
-  final bool hasPendingInvitation;
-  final Function(bool?)? onChanged;
-
   const FriendListTile({
     super.key,
     required this.friend,
@@ -19,6 +12,13 @@ class FriendListTile extends StatelessWidget {
     required this.hasPendingInvitation,
     this.onChanged,
   });
+
+  final UserModel friend;
+  final bool isSelected;
+  final bool isInvitable;
+  final bool isGroupMember;
+  final bool hasPendingInvitation;
+  final Function(bool?)? onChanged;
 
   @override
   Widget build(BuildContext context) {

@@ -13,9 +13,9 @@ import 'list_edit_page.dart';
 /// - リストメンバーの表示
 /// - リストの編集・削除
 class ListDetailPage extends ConsumerStatefulWidget {
-  final UserList list;
-
   const ListDetailPage({super.key, required this.list});
+
+  final UserList list;
 
   @override
   ConsumerState<ListDetailPage> createState() => _ListDetailPageState();

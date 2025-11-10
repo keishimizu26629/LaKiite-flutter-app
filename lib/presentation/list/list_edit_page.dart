@@ -7,9 +7,9 @@ import '../../domain/entity/user.dart';
 import '../presentation_provider.dart';
 
 class ListEditPage extends ConsumerStatefulWidget {
-  final UserList list;
-
   const ListEditPage({super.key, required this.list});
+
+  final UserList list;
 
   @override
   ConsumerState<ListEditPage> createState() => _ListEditPageState();

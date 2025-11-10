@@ -9,12 +9,12 @@ import 'group_member_invite_page.dart';
 /// グループのメンバー一覧や予定を表示し、メンバーの招待や
 /// グループ情報の編集機能を提供する
 class GroupDetailPage extends ConsumerStatefulWidget {
-  final Group group;
-
   const GroupDetailPage({
     super.key,
     required this.group,
   });
+
+  final Group group;
 
   @override
   ConsumerState<GroupDetailPage> createState() => _GroupDetailPageState();

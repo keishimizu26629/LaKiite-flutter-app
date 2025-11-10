@@ -4,13 +4,6 @@ import 'search_user_model.dart' as search;
 
 /// グループメンバー招待画面の状態を管理するクラス
 class GroupMemberInviteState {
-  final AsyncValue<search.SearchUserModel?> searchResult;
-  final List<UserModel> friends;
-  final Set<String> selectedFriends;
-  final Set<String> groupMembers;
-  final Set<String> pendingInvitations;
-  final String? message;
-
   const GroupMemberInviteState({
     this.searchResult = const AsyncValue.data(null),
     this.friends = const [],
@@ -19,6 +12,13 @@ class GroupMemberInviteState {
     this.pendingInvitations = const {},
     this.message,
   });
+
+  final AsyncValue<search.SearchUserModel?> searchResult;
+  final List<UserModel> friends;
+  final Set<String> selectedFriends;
+  final Set<String> groupMembers;
+  final Set<String> pendingInvitations;
+  final String? message;
 
   /// 状態を更新するためのコピーメソッド
   GroupMemberInviteState copyWith({

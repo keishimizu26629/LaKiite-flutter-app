@@ -3,16 +3,16 @@ import '../models/search_user_model.dart';
 
 /// ユーザー検索結果を表示するダイアログ
 class UserSearchDialog extends StatelessWidget {
-  final SearchUserModel user;
-  final VoidCallback onCancel;
-  final Function(String) onSelect;
-
   const UserSearchDialog({
     super.key,
     required this.user,
     required this.onCancel,
     required this.onSelect,
   });
+
+  final SearchUserModel user;
+  final VoidCallback onCancel;
+  final Function(String) onSelect;
 
   @override
   Widget build(BuildContext context) {
