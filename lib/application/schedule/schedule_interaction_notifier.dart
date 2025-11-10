@@ -275,7 +275,6 @@ class ScheduleInteractionNotifier
       final commentId =
           await _repository.addComment(_scheduleId, userId, content);
 
-      // TODO: 通知機能は後で実装
       AppLogger.debug('Comment added: $commentId');
 
       if (!mounted) {
