@@ -4,16 +4,16 @@ import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 
 class ScheduleErrorWidget extends StatelessWidget {
-  final Object error;
-  final AuthState state;
-  final WidgetRef ref;
-
   const ScheduleErrorWidget({
     super.key,
     required this.error,
     required this.state,
     required this.ref,
   });
+
+  final Object error;
+  final AuthState state;
+  final WidgetRef ref;
 
   @override
   Widget build(BuildContext context) {

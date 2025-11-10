@@ -7,9 +7,9 @@ import '../bottom_navigation/bottom_navigation.dart';
 import '../login/login_page.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
-  static const String path = '/splash';
-
   const SplashScreen({super.key});
+
+  static const String path = '/splash';
 
   @override
   ConsumerState<SplashScreen> createState() => _SplashScreenState();

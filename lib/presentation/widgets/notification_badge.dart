@@ -16,14 +16,6 @@ typedef NotificationType = domain.NotificationType;
 /// [fontSize] バッジ内のテキストサイズ
 /// [padding] バッジ内のパディング
 class NotificationBadge extends ConsumerWidget {
-  final Widget child;
-  final NotificationType? type;
-  final Color badgeColor;
-  final Color textColor;
-  final double badgeSize;
-  final double fontSize;
-  final EdgeInsets padding;
-
   const NotificationBadge({
     super.key,
     required this.child,
@@ -34,6 +26,14 @@ class NotificationBadge extends ConsumerWidget {
     this.fontSize = 10,
     this.padding = const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
   });
+
+  final Widget child;
+  final NotificationType? type;
+  final Color badgeColor;
+  final Color textColor;
+  final double badgeSize;
+  final double fontSize;
+  final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -109,12 +109,12 @@ class NotificationBadge extends ConsumerWidget {
 ///
 /// [child] バッジを表示する対象のウィジェット
 class FriendRequestBadge extends ConsumerWidget {
-  final Widget child;
-
   const FriendRequestBadge({
     super.key,
     required this.child,
   });
+
+  final Widget child;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -129,12 +129,12 @@ class FriendRequestBadge extends ConsumerWidget {
 ///
 /// [child] バッジを表示する対象のウィジェット
 class GroupInvitationBadge extends ConsumerWidget {
-  final Widget child;
-
   const GroupInvitationBadge({
     super.key,
     required this.child,
   });
+
+  final Widget child;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

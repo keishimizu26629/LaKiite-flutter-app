@@ -14,8 +14,9 @@ enum NotificationFilter {
   unread('未読'),
   pending('未処理');
 
-  final String label;
   const NotificationFilter(this.label);
+
+  final String label;
 }
 
 final notificationFilterProvider =
@@ -101,13 +102,13 @@ class NotificationListPage extends ConsumerWidget {
 }
 
 class _NotificationList extends ConsumerWidget {
-  final AsyncValue<List<domain.Notification>> asyncValue;
-  final NotificationFilter filter;
-
   const _NotificationList({
     required this.asyncValue,
     required this.filter,
   });
+
+  final AsyncValue<List<domain.Notification>> asyncValue;
+  final NotificationFilter filter;
 
   List<domain.Notification> _filterNotifications(
       List<domain.Notification> notifications) {
@@ -193,11 +194,11 @@ class _NotificationList extends ConsumerWidget {
 }
 
 class _NotificationItem extends ConsumerWidget {
-  final domain.Notification notification;
-
   const _NotificationItem({
     required this.notification,
   });
+
+  final domain.Notification notification;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

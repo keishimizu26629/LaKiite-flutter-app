@@ -4,14 +4,14 @@ import '../../domain/entity/schedule.dart';
 import '../calendar/schedule_detail_page.dart';
 
 class ScheduleCard extends StatelessWidget {
-  final Schedule schedule;
-  final bool isOwner;
-
   const ScheduleCard({
     super.key,
     required this.schedule,
     required this.isOwner,
   });
+
+  final Schedule schedule;
+  final bool isOwner;
 
   String _formatDateTime(DateTime dateTime) {
     final formatter = DateFormat('HH:mm');

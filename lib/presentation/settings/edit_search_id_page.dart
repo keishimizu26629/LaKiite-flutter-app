@@ -5,9 +5,9 @@ import '../../domain/value/user_id.dart';
 import '../my_page/my_page_view_model.dart';
 
 class EditSearchIdPage extends ConsumerStatefulWidget {
-  static const String path = 'search-id';
-
   const EditSearchIdPage({super.key});
+
+  static const String path = 'search-id';
 
   @override
   ConsumerState<EditSearchIdPage> createState() => _EditSearchIdPageState();

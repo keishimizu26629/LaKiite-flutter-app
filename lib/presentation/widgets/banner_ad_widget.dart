@@ -15,13 +15,13 @@ final bannerAdProvider =
 });
 
 class BannerAdWidget extends ConsumerWidget {
-  // 一意のIDを追加
-  final String uniqueId;
-
   const BannerAdWidget({
     super.key,
     required this.uniqueId,
   });
+
+  // 一意のIDを追加
+  final String uniqueId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

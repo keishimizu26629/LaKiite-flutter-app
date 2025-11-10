@@ -12,17 +12,17 @@ class LegalInfoPageAlternative extends StatelessWidget {
   /// 利用規約のパス
   static const String termsOfServicePath = 'terms-of-service';
 
-  /// 表示するページのタイトル
-  final String title;
-
-  /// 表示するURLパス
-  final String urlPath;
-
   const LegalInfoPageAlternative({
     super.key,
     required this.title,
     required this.urlPath,
   });
+
+  /// 表示するページのタイトル
+  final String title;
+
+  /// 表示するURLパス
+  final String urlPath;
 
   @override
   Widget build(BuildContext context) {

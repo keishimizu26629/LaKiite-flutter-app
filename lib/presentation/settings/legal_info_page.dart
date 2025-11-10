@@ -5,17 +5,17 @@ import '../../utils/logger.dart';
 
 /// 法的情報（プライバシーポリシーや利用規約）を表示するページ
 class LegalInfoPage extends StatefulWidget {
-  /// 表示するページのタイトル
-  final String title;
-
-  /// 表示するURLパス
-  final String urlPath;
-
   const LegalInfoPage({
     super.key,
     required this.title,
     required this.urlPath,
   });
+
+  /// 表示するページのタイトル
+  final String title;
+
+  /// 表示するURLパス
+  final String urlPath;
 
   @override
   State<LegalInfoPage> createState() => _LegalInfoPageState();
