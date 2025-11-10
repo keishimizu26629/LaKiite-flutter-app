@@ -1,5 +1,5 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lakiite/application/auth/auth_notifier.dart';
+import 'package:lakiite/application/providers/auth_providers.dart';
 import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/domain/service/service_provider.dart';
 import '../../domain/entity/user.dart';

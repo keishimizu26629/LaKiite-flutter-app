@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import '../../infrastructure/firebase/push_notification_service.dart';
 import '../../utils/logger.dart';
 
 /// デバッグ用：プッシュ通知トークン表示ページ

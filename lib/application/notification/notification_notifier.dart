@@ -8,7 +8,7 @@ import '../../infrastructure/user_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 import '../../di/repository_providers.dart';
-import '../../presentation/presentation_provider.dart';
+import '../providers/application_providers.dart';
 
 typedef Notification = domain.Notification;
 typedef NotificationType = domain.NotificationType;

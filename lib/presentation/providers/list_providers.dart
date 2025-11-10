@@ -1,20 +1,16 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lakiite/application/auth/auth_notifier.dart';
+import 'package:lakiite/application/providers/auth_providers.dart';
 import 'package:lakiite/application/auth/auth_state.dart';
-import 'package:lakiite/application/list/list_notifier.dart';
-import 'package:lakiite/application/list/list_state.dart';
 import 'package:lakiite/domain/service/service_provider.dart';
 import '../../domain/entity/list.dart';
 
 /// リスト状態プロバイダー群
 ///
-/// リスト関連のプロバイダーを定義します。
+/// Presentation層のリスト関連プロバイダーを定義します。
 
-/// リスト状態を管理するNotifierプロバイダー
-final listNotifierProvider =
-    AutoDisposeAsyncNotifierProvider<ListNotifier, ListState>(
-  ListNotifier.new,
-);
+/// Application層のNotifierプロバイダーをexport
+export 'package:lakiite/application/providers/list_providers.dart'
+    show listNotifierProvider;
 
 /// 認証済みユーザーのリストを監視するStreamプロバイダー
 ///

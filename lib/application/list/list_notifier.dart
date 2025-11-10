@@ -2,7 +2,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lakiite/application/list/list_state.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/service/service_provider.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
 
 part 'list_notifier.g.dart';
 
@@ -48,8 +47,8 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
             iconUrl: iconUrl,
           );
 
-      // リスト作成後、リスト一覧表示用のStreamProviderを無効化して再読み込みを促す
-      ref.invalidate(userListsStreamProvider);
+      // リスト作成後、Presentation層のStreamProviderは自動的に再評価される
+      // Application層からは直接参照しない（アーキテクチャ違反を回避）
 
       // 成功状態に更新
       state = const AsyncValue.data(ListState.initial());
@@ -68,8 +67,8 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
     try {
       await ref.read(listManagerProvider).updateList(list);
 
-      // リスト更新後、リスト一覧表示用のStreamProviderを無効化して再読み込みを促す
-      ref.invalidate(userListsStreamProvider);
+      // リスト更新後、Presentation層のStreamProviderは自動的に再評価される
+      // Application層からは直接参照しない（アーキテクチャ違反を回避）
 
       state = const AsyncValue.data(ListState.initial());
     } catch (e) {
@@ -87,8 +86,8 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
     try {
       await ref.read(listManagerProvider).deleteList(listId);
 
-      // リスト削除後、リスト一覧表示用のStreamProviderを無効化して再読み込みを促す
-      ref.invalidate(userListsStreamProvider);
+      // リスト削除後、Presentation層のStreamProviderは自動的に再評価される
+      // Application層からは直接参照しない（アーキテクチャ違反を回避）
 
       state = const AsyncValue.data(ListState.initial());
     } catch (e) {

@@ -20,10 +20,17 @@ export 'package:lakiite/di/repository_providers.dart'
         reactionRepositoryProvider;
 
 // Application層のプロバイダーをexport
+export 'package:lakiite/application/providers/application_providers.dart' show
+    authStateProvider,
+    authNotifierProvider,
+    scheduleNotifierProvider,
+    groupNotifierProvider,
+    listNotifierProvider;
+
 export 'package:lakiite/application/notification/notification_notifier.dart'
     show currentUserIdProvider;
 
-// Feature別のプロバイダーをexport
+// Presentation層のFeature別プロバイダーをexport
 export 'providers/auth_providers.dart'
     show authStateProvider, authNotifierProvider;
 

@@ -7,7 +7,7 @@ import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/application/notification/notification_notifier.dart';
 import 'package:lakiite/di/repository_providers.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
+import '../providers/application_providers.dart';
 import '../../infrastructure/firebase/push_notification_sender.dart';
 
 final scheduleInteractionNotifierProvider = StateNotifierProvider.family<

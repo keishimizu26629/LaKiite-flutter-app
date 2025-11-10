@@ -1,20 +1,16 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lakiite/application/auth/auth_notifier.dart';
+import 'package:lakiite/application/providers/auth_providers.dart';
 import 'package:lakiite/application/auth/auth_state.dart';
-import 'package:lakiite/application/group/group_notifier.dart';
-import 'package:lakiite/application/group/group_state.dart';
 import 'package:lakiite/domain/service/service_provider.dart';
 import '../../domain/entity/group.dart';
 
 /// グループ状態プロバイダー群
 ///
-/// グループ関連のプロバイダーを定義します。
+/// Presentation層のグループ関連プロバイダーを定義します。
 
-/// グループ状態を管理するNotifierプロバイダー
-final groupNotifierProvider =
-    AutoDisposeAsyncNotifierProvider<GroupNotifier, GroupState>(
-  GroupNotifier.new,
-);
+/// Application層のNotifierプロバイダーをexport
+export 'package:lakiite/application/providers/group_providers.dart'
+    show groupNotifierProvider;
 
 /// 認証済みユーザーのグループを監視するStreamプロバイダー
 ///

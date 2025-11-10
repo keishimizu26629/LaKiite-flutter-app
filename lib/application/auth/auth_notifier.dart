@@ -8,9 +8,7 @@ import '../../infrastructure/user_fcm_token_service.dart';
 import '../../di/repository_providers.dart';
 import '../../infrastructure/user_repository.dart';
 import '../../infrastructure/schedule_repository.dart';
-import '../../presentation/presentation_provider.dart';
-import '../../presentation/calendar/widgets/calendar_page_view.dart';
-import '../../presentation/my_page/my_page_view_model.dart';
+import '../providers/application_providers.dart';
 import '../../utils/logger.dart';
 import '../../utils/webview_monitor.dart';
 import 'auth_state.dart';
@@ -185,27 +183,11 @@ class AuthNotifier extends _$AuthNotifier {
           AppLogger.warning('ScheduleRepositoryキャッシュクリアエラー（無視して続行）: $e');
         }
 
-        // 2. カレンダー関連のStateProviderキャッシュをクリア
-        try {
-          ref.invalidate(cachedHolidaysProvider);
-          ref.invalidate(cachedSchedulesProvider);
-          ref.invalidate(monthDataLoadingProvider);
-          ref.invalidate(calendarOptimizationProvider);
-          ref.invalidate(renderedMonthsProvider);
-          ref.invalidate(lastCleanupTimeProvider);
-          ref.invalidate(activeMonthIndicesProvider);
-          AppLogger.debug('カレンダー関連キャッシュをクリアしました');
-        } catch (e) {
-          AppLogger.warning('カレンダーキャッシュクリアエラー（無視して続行）: $e');
-        }
+        // 2. カレンダー関連のStateProviderキャッシュはPresentation層で処理
+        // Application層からは直接参照しない（アーキテクチャ違反を回避）
 
-        // 3. MyPageのキャッシュをクリア
-        try {
-          ref.invalidate(cachedUserProvider);
-          AppLogger.debug('MyPageキャッシュをクリアしました');
-        } catch (e) {
-          AppLogger.warning('MyPageキャッシュクリアエラー（無視して続行）: $e');
-        }
+        // 3. MyPageのキャッシュはPresentation層で処理
+        // Application層からは直接参照しない（アーキテクチャ違反を回避）
 
         // 4. FCMトークンを削除
         try {
@@ -299,29 +281,8 @@ class AuthNotifier extends _$AuthNotifier {
             // エラーは無視
           }
 
-          try {
-            ref.invalidate(userListsStreamProvider);
-          } catch (e) {
-            // エラーは無視
-          }
-
-          try {
-            ref.invalidate(userGroupsStreamProvider);
-          } catch (e) {
-            // エラーは無視
-          }
-
-          try {
-            ref.invalidate(userFriendsStreamProvider);
-          } catch (e) {
-            // エラーは無視
-          }
-
-          try {
-            ref.invalidate(userFriendsProvider);
-          } catch (e) {
-            // エラーは無視
-          }
+          // Presentation層のストリームプロバイダーはPresentation層で処理
+          // Application層からは直接参照しない（アーキテクチャ違反を回避）
 
           AppLogger.debug('プロバイダーを無効化しました');
         } catch (e) {
@@ -411,27 +372,11 @@ class AuthNotifier extends _$AuthNotifier {
         AppLogger.warning('ScheduleRepositoryキャッシュクリアエラー（無視して続行）: $e');
       }
 
-      // 2. カレンダー関連のStateProviderキャッシュをクリア
-      try {
-        ref.invalidate(cachedHolidaysProvider);
-        ref.invalidate(cachedSchedulesProvider);
-        ref.invalidate(monthDataLoadingProvider);
-        ref.invalidate(calendarOptimizationProvider);
-        ref.invalidate(renderedMonthsProvider);
-        ref.invalidate(lastCleanupTimeProvider);
-        ref.invalidate(activeMonthIndicesProvider);
-        AppLogger.debug('カレンダー関連キャッシュをクリアしました');
-      } catch (e) {
-        AppLogger.warning('カレンダーキャッシュクリアエラー（無視して続行）: $e');
-      }
+      // 2. カレンダー関連のStateProviderキャッシュはPresentation層で処理
+      // Application層からは直接参照しない（アーキテクチャ違反を回避）
 
-      // 3. MyPageのキャッシュをクリア
-      try {
-        ref.invalidate(cachedUserProvider);
-        AppLogger.debug('MyPageキャッシュをクリアしました');
-      } catch (e) {
-        AppLogger.warning('MyPageキャッシュクリアエラー（無視して続行）: $e');
-      }
+      // 3. MyPageのキャッシュはPresentation層で処理
+      // Application層からは直接参照しない（アーキテクチャ違反を回避）
 
       // 4. FCMトークンを削除
       try {
@@ -467,21 +412,18 @@ class AuthNotifier extends _$AuthNotifier {
           // ユーザー関連のプロバイダーを無効化
           ref.invalidate(userRepositoryProvider);
 
-          // スケジュール関連のプロバイダーも無効化
+          // Application層のプロバイダーを無効化
           ref.invalidate(scheduleNotifierProvider);
-          ref.invalidate(scheduleRepositoryProvider);
-
-          // グループとリスト関連のプロバイダーも無効化
           ref.invalidate(groupNotifierProvider);
-          ref.invalidate(groupRepositoryProvider);
           ref.invalidate(listNotifierProvider);
+
+          // Repository層のプロバイダーを無効化
+          ref.invalidate(scheduleRepositoryProvider);
+          ref.invalidate(groupRepositoryProvider);
           ref.invalidate(listRepositoryProvider);
 
-          // ストリームプロバイダーも無効化
-          ref.invalidate(userListsStreamProvider);
-          ref.invalidate(userGroupsStreamProvider);
-          ref.invalidate(userFriendsStreamProvider);
-          ref.invalidate(userFriendsProvider);
+          // Presentation層のストリームプロバイダーはPresentation層で処理
+          // Application層からは直接参照しない（アーキテクチャ違反を回避）
 
           AppLogger.debug('プロバイダーを無効化しました');
         } catch (e) {
@@ -556,27 +498,11 @@ class AuthNotifier extends _$AuthNotifier {
         AppLogger.warning('ScheduleRepositoryキャッシュクリアエラー（無視して続行）: $e');
       }
 
-      // 2. カレンダー関連のStateProviderキャッシュをクリア
-      try {
-        ref.invalidate(cachedHolidaysProvider);
-        ref.invalidate(cachedSchedulesProvider);
-        ref.invalidate(monthDataLoadingProvider);
-        ref.invalidate(calendarOptimizationProvider);
-        ref.invalidate(renderedMonthsProvider);
-        ref.invalidate(lastCleanupTimeProvider);
-        ref.invalidate(activeMonthIndicesProvider);
-        AppLogger.debug('カレンダー関連キャッシュをクリアしました');
-      } catch (e) {
-        AppLogger.warning('カレンダーキャッシュクリアエラー（無視して続行）: $e');
-      }
+      // 2. カレンダー関連のStateProviderキャッシュはPresentation層で処理
+      // Application層からは直接参照しない（アーキテクチャ違反を回避）
 
-      // 3. MyPageのキャッシュをクリア
-      try {
-        ref.invalidate(cachedUserProvider);
-        AppLogger.debug('MyPageキャッシュをクリアしました');
-      } catch (e) {
-        AppLogger.warning('MyPageキャッシュクリアエラー（無視して続行）: $e');
-      }
+      // 3. MyPageのキャッシュはPresentation層で処理
+      // Application層からは直接参照しない（アーキテクチャ違反を回避）
 
       // 4. FCMトークンを削除
       try {
@@ -614,21 +540,18 @@ class AuthNotifier extends _$AuthNotifier {
             // ユーザー関連のプロバイダーを無効化
             ref.invalidate(userRepositoryProvider);
 
-            // スケジュール関連のプロバイダーも無効化
+            // Application層のプロバイダーを無効化
             ref.invalidate(scheduleNotifierProvider);
-            ref.invalidate(scheduleRepositoryProvider);
-
-            // グループとリスト関連のプロバイダーも無効化
             ref.invalidate(groupNotifierProvider);
-            ref.invalidate(groupRepositoryProvider);
             ref.invalidate(listNotifierProvider);
+
+            // Repository層のプロバイダーを無効化
+            ref.invalidate(scheduleRepositoryProvider);
+            ref.invalidate(groupRepositoryProvider);
             ref.invalidate(listRepositoryProvider);
 
-            // ストリームプロバイダーも無効化
-            ref.invalidate(userListsStreamProvider);
-            ref.invalidate(userGroupsStreamProvider);
-            ref.invalidate(userFriendsStreamProvider);
-            ref.invalidate(userFriendsProvider);
+            // Presentation層のストリームプロバイダーはPresentation層で処理
+            // Application層からは直接参照しない（アーキテクチャ違反を回避）
 
             AppLogger.debug('プロバイダーを無効化しました');
           } catch (e) {
