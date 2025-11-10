@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'config/app_config.dart';
+import 'config/admob_config.dart';
 import 'config/router/app_router.dart';
 import 'infrastructure/admob_service.dart';
 import 'infrastructure/firebase/push_notification_service.dart';
@@ -43,6 +44,9 @@ Future<void> startApp([
 
   // 環境設定の初期化
   AppConfig.initialize(environment);
+
+  // AdMob設定の初期化（Firebase初期化の前に行う）
+  AdMobConfig.initialize();
 
   // 日本語ロケールの初期化
   await initializeDateFormatting('ja_JP', null);

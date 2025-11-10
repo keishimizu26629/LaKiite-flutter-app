@@ -1,19 +1,21 @@
-import 'dart:io';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../config/admob_config.dart';
 import '../utils/logger.dart';
 
 class AdMobService {
-  static String get bannerAdUnitId {
-    if (Platform.isAndroid) {
-      return 'ca-app-pub-3940256099942544/6300978111'; // テスト用Android広告ユニットID
-    } else if (Platform.isIOS) {
-      return 'ca-app-pub-3940256099942544/2934735716'; // テスト用iOS広告ユニットID
-    }
-    throw UnsupportedError('Unsupported platform');
-  }
+  /// 環境に応じたAdMobアプリIDを取得
+  static String get appId => AdMobConfig.instance.getAppId();
+
+  /// 環境に応じたバナー広告ユニットIDを取得
+  static String get bannerAdUnitId => AdMobConfig.instance.getBannerId();
 
   static Future<void> initialize() async {
+    AppLogger.info('🎯 AdMob初期化開始...');
+    AppLogger.info('📱 使用中のApp ID: $appId');
+    AppLogger.info('🎪 使用中のBanner ID: $bannerAdUnitId');
+
     await MobileAds.instance.initialize();
+    AppLogger.info('✅ AdMob初期化完了');
   }
 
   static BannerAd createBannerAd() {
