@@ -149,6 +149,13 @@ class AppConfig {
 
 /// 環境設定データクラス
 class EnvironmentConfig {
+  const EnvironmentConfig({
+    required this.firebaseOptionsFactory,
+    required this.appName,
+    required this.pushNotificationUrl,
+    required this.firebaseOptionsClassName,
+  });
+
   /// FirebaseOptionsを生成するファクトリー関数
   final FirebaseOptions Function() firebaseOptionsFactory;
 
@@ -160,13 +167,6 @@ class EnvironmentConfig {
 
   /// FirebaseOptionsクラス名（検証用）
   final String firebaseOptionsClassName;
-
-  const EnvironmentConfig({
-    required this.firebaseOptionsFactory,
-    required this.appName,
-    required this.pushNotificationUrl,
-    required this.firebaseOptionsClassName,
-  });
 }
 
 /// 環境の種類
