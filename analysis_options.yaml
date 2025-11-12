@@ -36,7 +36,7 @@ linter:
   rules:
     # 基本的なコード品質
     prefer_single_quotes: true
-    avoid_print: false  # デバッグ用にprintを許可
+    avoid_print: false # デバッグ用にprintを許可
 
     # 文字列とパス関連（GoRouterのパス設定エラーを防ぐ）
     prefer_interpolation_to_compose_strings: true
@@ -44,7 +44,7 @@ linter:
 
     # 型安全性の向上
     always_declare_return_types: true
-    always_specify_types: false  # 型推論を活用
+    always_specify_types: false # 型推論を活用
     avoid_dynamic_calls: true
 
     # パフォーマンス
@@ -61,12 +61,11 @@ linter:
 
     # エラー防止
     avoid_empty_else: true
-    avoid_returning_null_for_future: true
     avoid_slow_async_io: true
     cancel_subscriptions: true
     close_sinks: true
 
     # ドキュメント
-    public_member_api_docs: false  # 大規模プロジェクトでは無効化
+    public_member_api_docs: false # 大規模プロジェクトでは無効化
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
