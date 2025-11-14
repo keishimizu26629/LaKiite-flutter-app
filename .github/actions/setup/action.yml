@@ -1,0 +1,31 @@
+name: Setup CI
+description: Setup CI environment for LaKiite Flutter app
+
+runs:
+  using: "composite"
+  steps:
+    - name: Read Flutter SDK version from .fvmrc
+      id: flutter_sdk_version
+      run: |
+        if [ -f .fvmrc ]; then
+          echo "version=$(jq -r '.flutter' .fvmrc)" >> $GITHUB_OUTPUT
+        else
+          echo "version=3.24.5" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
+
+    - name: Setup Flutter
+      id: flutter-action
+      uses: subosito/flutter-action@v2.8.0
+      with:
+        flutter-version: ${{ steps.flutter_sdk_version.outputs.version }}
+        channel: stable
+        cache: true
+
+    - name: Get dependencies
+      run: flutter pub get
+      shell: bash
+
+    - name: Run code generation
+      run: flutter packages pub run build_runner build --delete-conflicting-outputs
+      shell: bash
