@@ -25,13 +25,6 @@ jobs:
         run: |
           echo "${{ secrets.DEV_DART_DEFINE_JSON_BASE64 }}" | base64 -d > dart_define.json
 
-      - name: Setup temporary keychain
-        run: |
-          security create-keychain -p "" build.keychain
-          security set-keychain-settings -lut 21600 build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "" build.keychain
-
       - name: Import Provisioning Profile
         run: |
           echo ${{ secrets.DEV_PROVISIONING_PROFILE_BASE64 }} | base64 --decode > profile.mobileprovision
@@ -41,9 +34,10 @@ jobs:
           security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
 
       - name: Import Code-Signing Certificates
-        run: |
-          echo "${{ secrets.IOS_CERTIFICATES_P12_BASE64 }}" | base64 -d > certificates.p12
-          security import certificates.p12 -k build.keychain -P "${{ secrets.IOS_CERTIFICATES_P12_PASSWORD }}" -A
+        uses: Apple-Actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.IOS_CERTIFICATES_P12_BASE64 }}
+          p12-password: ${{ secrets.IOS_CERTIFICATES_P12_PASSWORD }}
 
       # 証明書の一覧を表示する。
       - name: List available certificates
