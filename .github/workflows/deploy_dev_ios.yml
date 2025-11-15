@@ -43,13 +43,24 @@ jobs:
       - name: Import Code-Signing Certificates
         run: |
           echo "${{ secrets.IOS_CERTIFICATES_P12_BASE64 }}" | base64 -d > certificates.p12
-          security import certificates.p12 -k build.keychain -P "${{ secrets.IOS_CERTIFICATES_P12_PASSWORD }}" -A
+          # 証明書をインポート（-T オプションでアクセス許可を追加）
+          security import certificates.p12 -k build.keychain -P "${{ secrets.IOS_CERTIFICATES_P12_PASSWORD }}" -A -T /usr/bin/codesign -T /usr/bin/xcodebuild
+          # キーチェーンのパーティション設定を更新
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
 
       # 証明書の一覧を表示する。
       - name: List available certificates
         run: |
+          echo "=== Available certificates ==="
           security find-identity -v -p codesigning
+          echo "=== Available provisioning profiles ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
+          echo "=== Provisioning profile details ==="
+          security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision | head -50
+          echo "=== Xcode version ==="
           xcodebuild -version
+          echo "=== Available SDKs ==="
+          xcodebuild -showsdks
 
       - name: Prepare Xcode build settings for Distribution
         run: |
@@ -58,7 +69,7 @@ jobs:
           echo "PROVISIONING_PROFILE_SPECIFIER = LaKiite Dev Distribution" >> Dart-Defines.xcconfig
           echo "CODE_SIGN_STYLE = Manual" >> Dart-Defines.xcconfig
           echo "DEVELOPMENT_TEAM = ${{ secrets.APPLE_TEAM_ID }}" >> Dart-Defines.xcconfig
-          echo "CODE_SIGN_IDENTITY = Apple Distribution" >> Dart-Defines.xcconfig
+          echo "CODE_SIGN_IDENTITY = Apple Distribution: ${{ secrets.APPLE_TEAM_ID }}" >> Dart-Defines.xcconfig
           mv Dart-Defines.xcconfig ios/Flutter/
 
           # ios/ExportOptions.plist を DevExportOptions.plist からコピーして作成する。
