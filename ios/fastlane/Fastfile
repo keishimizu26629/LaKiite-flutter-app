@@ -119,11 +119,33 @@ platform :ios do
     # Environment variables for build configuration (no fallback - must be set explicitly)
     bundle_id = ENV["DEV_BUNDLE_ID"] || ""
     provisioning_profile_name = ENV["DEV_PROVISIONING_PROFILE_NAME"] || ""
+    provisioning_profile_base64 = ENV["PROVISIONING_PROFILE_BASE64"] || ""
     team_id = ENV["DEVELOPMENT_TEAM"] || ""
     ipa_output_name = ENV["IPA_OUTPUT_NAME"] || ""
 
     if bundle_id.empty? || provisioning_profile_name.empty? || team_id.empty? || ipa_output_name.empty?
       UI.user_error!("❌ Required environment variables missing: DEV_BUNDLE_ID, DEV_PROVISIONING_PROFILE_NAME, DEVELOPMENT_TEAM, IPA_OUTPUT_NAME")
+    end
+
+    # CI/CD環境ではBase64エンコードされたプロビジョニングプロファイルを使用
+    if !provisioning_profile_base64.empty?
+      UI.message "📄 Using Base64 encoded provisioning profile for CI/CD"
+      profile_path = "#{ENV['HOME']}/Library/MobileDevice/Provisioning Profiles/"
+
+      # プロビジョニングプロファイルディレクトリを作成
+      FileUtils.mkdir_p(profile_path) unless Dir.exist?(profile_path)
+
+      # Base64デコードして一時ファイルに保存
+      require 'base64'
+      require 'securerandom'
+      profile_filename = "#{SecureRandom.uuid}.mobileprovision"
+      profile_full_path = File.join(profile_path, profile_filename)
+
+      File.open(profile_full_path, 'wb') do |file|
+        file.write(Base64.decode64(provisioning_profile_base64))
+      end
+
+      UI.message "📁 Provisioning profile saved to: #{profile_full_path}"
     end
 
     # Build and sign the app using fastlane
