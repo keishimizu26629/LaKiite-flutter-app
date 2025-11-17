@@ -44,6 +44,10 @@ post_install do |installer|
       # Apple Silicon でシミュレータを動かすとき arm64 を除外
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
 
+      # Xcode 16 compatibility: Apply C++17 to ALL targets
+      config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+      config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
+
       # For gRPC-related pods (Xcode 16 compatibility)
       if target.name.include?('gRPC') || target.name.include?('abseil') || target.name.include?('BoringSSL')
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
