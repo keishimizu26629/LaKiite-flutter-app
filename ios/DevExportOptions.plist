@@ -17,7 +17,7 @@
     <key>provisioningProfiles</key>
     <dict>
         <key>com.inoworl.lakiite.dev</key>
-        <string>LaKiite Dev Distribution</string>
+        <string>LaKiite Dev App Store</string>
     </dict>
 </dict>
 </plist>

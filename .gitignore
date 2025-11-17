@@ -9,6 +9,11 @@
 .history
 .svn/
 
+# Environment files (contains sensitive information)
+.env.local
+*.env.local
+
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -31,6 +36,7 @@
 .pub/
 /build/
 build/ios/XCBuildData/
+ios/build/
 
 # Web related
 lib/generated_plugin_registrant.dart
