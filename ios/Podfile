@@ -44,13 +44,18 @@ post_install do |installer|
       # Apple Silicon でシミュレータを動かすとき arm64 を除外
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
 
-      # For gRPC-related pods
+      # For gRPC-related pods (Xcode 16 compatibility)
       if target.name.include?('gRPC') || target.name.include?('abseil')
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
         # Remove problematic compiler flags
         if config.build_settings['OTHER_CFLAGS'].present?
           config.build_settings['OTHER_CFLAGS'] = config.build_settings['OTHER_CFLAGS'].reject { |f| f == '-G' }
         end
+        # Xcode 16 compatibility for gRPC
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= []
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'GPB_USE_PROTOBUF_FRAMEWORK_IMPORTS=1'
+        config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+        config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
       end
 
       if target.name == 'BoringSSL-GRPC'

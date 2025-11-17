@@ -109,12 +109,17 @@ platform :ios do
     sh "security list-keychains -s #{keychain_name} ~/Library/Keychains/login.keychain-db"
 
     # Flutter build without code signing (CI standard approach)
+    # Check if FVM is available, otherwise use system Flutter
+    flutter_command = "flutter"
     begin
-      sh "cd .. && fvm flutter build ios --release --no-codesign --dart-define-from-file=dart_define/dev_dart_define.json"
+      sh "which fvm"
+      flutter_command = "fvm flutter"
+      UI.message "📱 Using FVM Flutter"
     rescue => e
-      UI.important "⚠️  FVM failed, trying system Flutter: #{e.message}"
-      sh "cd .. && flutter build ios --release --no-codesign --dart-define-from-file=dart_define/dev_dart_define.json"
+      UI.message "📱 FVM not available, using system Flutter: #{e.message}"
     end
+
+    sh "cd .. && #{flutter_command} build ios --release --no-codesign --dart-define-from-file=dart_define/dev_dart_define.json"
 
     # Environment variables for build configuration (no fallback - must be set explicitly)
     bundle_id = ENV["DEV_BUNDLE_ID"] || ""
