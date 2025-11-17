@@ -14,6 +14,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: List available Xcode versions
+        run: |
+          ls -1 /Applications | grep Xcode || true
+          xcode-select -p
+
+      - name: Select Xcode 15.4
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+          xcodebuild -version
+
       - name: Setup CI
         uses: ./.github/actions/setup
 
