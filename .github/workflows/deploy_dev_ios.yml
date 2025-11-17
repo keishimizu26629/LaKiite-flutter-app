@@ -14,15 +14,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: List available Xcode versions
+      - name: Check Xcode version
         run: |
-          ls -1 /Applications | grep Xcode || true
           xcode-select -p
-
-      - name: Select Xcode 15.4
-        run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
           xcodebuild -version
+          echo "Using default Xcode for Xcode 16 compatibility"
 
       - name: Setup CI
         uses: ./.github/actions/setup
@@ -39,13 +35,17 @@ jobs:
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
 
-      - name: Clean iOS build cache
+      - name: Clean iOS build cache and update dependencies
         run: |
           cd ios
+          # Clean all caches for fresh dependency resolution
           rm -rf Pods
           rm -rf Podfile.lock
           rm -rf build
           rm -rf ~/Library/Developer/Xcode/DerivedData/*
+          # Clean CocoaPods cache for latest Firebase/gRPC
+          pod cache clean --all
+          echo "Cleaned all caches for Xcode 16 compatibility"
 
       - name: Deploy with fastlane (unified with local)
         env:
