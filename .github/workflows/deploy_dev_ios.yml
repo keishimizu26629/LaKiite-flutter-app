@@ -29,6 +29,14 @@ jobs:
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
 
+      - name: Clean iOS build cache
+        run: |
+          cd ios
+          rm -rf Pods
+          rm -rf Podfile.lock
+          rm -rf build
+          rm -rf ~/Library/Developer/Xcode/DerivedData/*
+
       - name: Deploy with fastlane (unified with local)
         env:
           # 証明書設定
