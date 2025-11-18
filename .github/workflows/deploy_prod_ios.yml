@@ -14,6 +14,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check Xcode version
+        run: |
+          xcode-select -p
+          xcodebuild -version
+          echo "Using default Xcode for Xcode 16 compatibility"
+
       - name: Setup CI
         uses: ./.github/actions/setup
 

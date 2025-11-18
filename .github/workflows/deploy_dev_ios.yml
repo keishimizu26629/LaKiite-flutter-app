@@ -14,89 +14,84 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check Xcode version
+        run: |
+          xcode-select -p
+          xcodebuild -version
+          echo "Using default Xcode for Xcode 16 compatibility"
+
       - name: Setup CI
         uses: ./.github/actions/setup
 
       - name: Restore Firebase config files
         run: |
           echo "${{ secrets.DEV_GOOGLESERVICE_INFO_PLIST_BASE64 }}" | base64 -d > ios/Runner/GoogleService-Info.plist
+          echo "${{ secrets.FIREBASE_OPTIONS_DART_BASE64 }}" | base64 -d > lib/firebase_options.dart
 
       - name: Restore dart-define config
         run: |
-          echo "${{ secrets.DEV_DART_DEFINE_JSON_BASE64 }}" | base64 -d > dart_define.json
+          echo "${{ secrets.DEV_DART_DEFINE_JSON_BASE64 }}" | base64 -d > dart_define/dev_dart_define.json
 
-      - name: Import Provisioning Profile
+      - name: Setup Provisioning Profile Directory
         run: |
-          echo ${{ secrets.DEV_PROVISIONING_PROFILE_BASE64 }} | base64 --decode > profile.mobileprovision
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
-          ls -l ~/Library/MobileDevice/Provisioning\ Profiles/
-          security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
 
-      - name: Import Code-Signing Certificates
-        uses: Apple-Actions/import-codesign-certs@v2
+      - name: Clean iOS build cache and update dependencies
+        run: |
+          cd ios
+          # Clean all caches for fresh dependency resolution
+          rm -rf Pods
+          rm -rf Podfile.lock
+          rm -rf build
+          rm -rf ~/Library/Developer/Xcode/DerivedData/*
+          # Clean CocoaPods cache for latest Firebase/gRPC
+          pod cache clean --all
+          echo "Cleaned all caches for iOS 15.0 and Firebase SDK 12.4.0 compatibility"
+
+      - name: Deploy with fastlane (unified with local)
+        env:
+          # 証明書設定
+          CERT_PWD: ${{ secrets.CERT_PWD }}
+          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+
+          # App Store Connect API設定
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+
+          # プロビジョニング設定
+          DEV_BUNDLE_ID: ${{ secrets.DEV_BUNDLE_ID }}
+          DEV_PROVISIONING_PROFILE_NAME: ${{ secrets.DEV_PROVISIONING_PROFILE_NAME }}
+          PROVISIONING_PROFILE_BASE64: ${{ secrets.DEV_PROVISIONING_PROFILE_BASE64 }}
+          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+          IPA_OUTPUT_NAME: ${{ secrets.IPA_OUTPUT_NAME }}
+
+          # CI環境設定
+          FASTLANE_DISABLE_PTY: 1
+          FASTLANE_EXPLICIT_OPEN3: 1
+          FASTLANE_DISABLE_COLORS: 1
+          CI: 1
+        run: |
+          cd ios
+          fastlane dev
+
+      - name: Debug build settings on failure
+        if: failure()
+        run: |
+          echo "=== Xcode Build Settings Debug ==="
+          cd ios
+          xcodebuild -showBuildSettings -workspace Runner.xcworkspace -scheme Runner -configuration Release-dev | tail -n 50 || true
+          echo "=== Gym Log Tail ==="
+          tail -n 200 /Users/runner/Library/Logs/gym/Runner-Runner.log || true
+          echo "=== Build Logs Directory ==="
+          ls -la ./build/logs/ || true
+
+      - name: Upload build logs
+        if: failure()
+        uses: actions/upload-artifact@v4
         with:
-          p12-file-base64: ${{ secrets.IOS_CERTIFICATES_P12_BASE64 }}
-          p12-password: ${{ secrets.IOS_CERTIFICATES_P12_PASSWORD }}
-
-      # 証明書の一覧を表示する。
-      - name: List available certificates
-        run: |
-          security find-identity -v -p codesigning
-          xcodebuild -version
-
-      - name: Prepare Xcode build settings for Distribution
-        run: |
-          # ios/project.pbxproj を上書きする設定を Dart-Defines.xcconfig に書き込む。
-          touch Dart-Defines.xcconfig
-          echo "PROVISIONING_PROFILE_SPECIFIER = LaKiite Dev Distribution" >> Dart-Defines.xcconfig
-          echo "CODE_SIGN_STYLE = Manual" >> Dart-Defines.xcconfig
-          echo "DEVELOPMENT_TEAM = ${{ secrets.APPLE_TEAM_ID }}" >> Dart-Defines.xcconfig
-          echo "CODE_SIGN_IDENTITY = Apple Distribution" >> Dart-Defines.xcconfig
-          mv Dart-Defines.xcconfig ios/Flutter/
-
-          # ios/ExportOptions.plist を DevExportOptions.plist からコピーして作成する。
-          cp ios/DevExportOptions.plist ios/ExportOptions.plist
-
-          # ios/project.pbxproj から関連する設定を削除する。
-          sed -i '' '/PROVISIONING_PROFILE_SPECIFIER = /d' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' '/CODE_SIGN_STYLE = /d' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' '/DEVELOPMENT_TEAM = /d' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' '/CODE_SIGN_IDENTITY = /d' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' '/CODE_SIGN_IDENTITY\[sdk=iphoneos\*\] = /d' ios/Runner.xcodeproj/project.pbxproj
-
-          # 最終的な Dart-Defines.xcconfig の内容を表示
-          cat ios/Flutter/Dart-Defines.xcconfig
-
-      - name: Calculate Build Number
-        id: calculate_build_number
-        run: |
-          TOTAL_COMMITS=$(git rev-list --count HEAD)
-          TOTAL_COMMITS=$(($TOTAL_COMMITS + 10000))  # オフセットとして一律で 10000 を加算する。
-          echo "buildNumber=$TOTAL_COMMITS" >> $GITHUB_OUTPUT
-
-      - name: flutter build ipa
-        run: |
-          flutter build ipa --release \
-            --export-options-plist=ios/ExportOptions.plist \
-            --dart-define-from-file="dart_define.json" \
-            -t "lib/main.dart" \
-            --build-name=$(grep 'version:' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1) \
-            --build-number="${{ steps.calculate_build_number.outputs.buildNumber }}"
-
-      - name: Get latest 10 commit messages
-        run: echo "LATEST_COMMIT_MESSAGES=$(git log -n 10 --pretty=format:'%s' | tr '\n' '; ')" >> $GITHUB_ENV
-
-      - name: Setup App Store Connect API Key
-        run: |
-          echo "${{ secrets.ASC_PRIVATE_KEY_P8_BASE64 }}" | base64 -d > AuthKey.p8
-
-      - name: Upload to TestFlight
-        run: |
-          IPA_FILE=$(ls ./build/ios/ipa/*.ipa)
-          xcrun altool --upload-app \
-            -t ios \
-            -f "$IPA_FILE" \
-            --apiKey "${{ secrets.ASC_KEY_ID }}" \
-            --apiIssuer "${{ secrets.ASC_ISSUER_ID }}" \
-            --apiKeyFile AuthKey.p8
+          name: build-logs-${{ github.run_id }}
+          path: |
+            /Users/runner/Library/Logs/gym/Runner-Runner.log
+            ios/build/logs/
+          retention-days: 7
