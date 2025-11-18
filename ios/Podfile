@@ -40,6 +40,51 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+
+    # gRPC-Core Xcode 16 compatibility patch
+    if target.name == 'gRPC-Core'
+      grpc_file_path = File.join(installer.sandbox.root, 'gRPC-Core/src/core/lib/promise/detail/basic_seq.h')
+
+      if File.exist?(grpc_file_path)
+        file_content = File.read(grpc_file_path)
+
+        # パッチ対象の行を検索（より柔軟なマッチング）
+        problematic_pattern = /Traits::template CallSeqFactory\(f_, \*cur_, std::move\(arg\)\)/
+        correct_replacement = 'Traits::template CallSeqFactory<>(f_, *cur_, std::move(arg))'
+
+        if file_content.match?(problematic_pattern)
+          puts "🔧 Patching gRPC-Core basic_seq.h for Xcode 16 compatibility"
+          file_content.gsub!(problematic_pattern, correct_replacement)
+          File.write(grpc_file_path, file_content)
+          puts "✅ gRPC-Core patch applied successfully"
+        else
+          puts "ℹ️  gRPC-Core basic_seq.h: No patch needed or already patched"
+        end
+      else
+        puts "⚠️  gRPC-Core basic_seq.h not found at: #{grpc_file_path}"
+      end
+
+      # Patch SSL key logging header to avoid OpenSSL dependency
+      ssl_key_logging_path = File.join(installer.sandbox.root, 'gRPC-Core/src/core/tsi/ssl/key_logging/ssl_key_logging.h')
+      if File.exist?(ssl_key_logging_path)
+        begin
+          # Make file writable
+          File.chmod(0644, ssl_key_logging_path)
+          ssl_content = File.read(ssl_key_logging_path)
+          if ssl_content.include?('#include <openssl/ssl.h>')
+            puts "🔧 Patching gRPC-Core ssl_key_logging.h to remove OpenSSL dependency"
+            ssl_content.gsub!('#include <openssl/ssl.h>', '// #include <openssl/ssl.h> // Patched for iOS build')
+            File.write(ssl_key_logging_path, ssl_content)
+            puts "✅ gRPC-Core SSL key logging patch applied successfully"
+          else
+            puts "ℹ️  gRPC-Core ssl_key_logging.h: No OpenSSL include found or already patched"
+          end
+        rescue => e
+          puts "⚠️  Failed to patch ssl_key_logging.h: #{e.message}"
+        end
+      end
+    end
+
     target.build_configurations.each do |config|
       # Apple Silicon でシミュレータを動かすとき arm64 を除外
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
@@ -64,14 +109,17 @@ post_install do |installer|
         config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
         config.build_settings['CLANG_WARN_DOCUMENTATION_COMMENTS'] = 'NO'
         config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
-        # Force use system OpenSSL
-        config.build_settings['HEADER_SEARCH_PATHS'] ||= []
-        config.build_settings['HEADER_SEARCH_PATHS'] << '/opt/homebrew/include'
-        config.build_settings['LIBRARY_SEARCH_PATHS'] ||= []
-        config.build_settings['LIBRARY_SEARCH_PATHS'] << '/opt/homebrew/lib'
       end
 
+      # BoringSSL-GRPC specific settings for OpenSSL compatibility
       if target.name == 'BoringSSL-GRPC'
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= []
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'OPENSSL_NO_ASM=1'
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'GRPC_ARES=0'
+        config.build_settings['OTHER_CFLAGS'] ||= []
+        config.build_settings['OTHER_CFLAGS'] << '-DBORINGSSL_PREFIX=GRPC'
+
+        # Clean up problematic compiler flags
         target.source_build_phase.files.each do |file|
           if file.settings && file.settings['COMPILER_FLAGS']
             flags = file.settings['COMPILER_FLAGS'].split
