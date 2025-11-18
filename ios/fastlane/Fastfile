@@ -1,0 +1,301 @@
+# LaKiite iOS Deployment Configuration
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+
+default_platform(:ios)
+
+platform :ios do
+  # Avoid PTY issues in some shells/environments
+  ENV["FASTLANE_DISABLE_PTY"] = "1"
+  ENV["FASTLANE_EXPLICIT_OPEN3"] = "1"
+  ENV["FASTLANE_DISABLE_COLORS"] = "1"
+  ENV["CI"] = "1"
+
+  # SSL certificate settings
+  ENV["SSL_CERT_FILE"] = "/opt/homebrew/etc/ca-certificates/cert.pem"
+  ENV["SSL_CERT_DIR"] = "/opt/homebrew/etc/openssl@3/certs"
+
+  desc "Deploy to TestFlight (Dev Environment)"
+  lane :dev do
+    # Set environment-specific configuration
+    ENV["APP_IDENTIFIER"] = "com.inoworl.lakiite.dev"
+    ENV["SCHEME"] = "Runner"
+    ENV["CONFIGURATION"] = "Release"
+
+    # Skip prepare_build due to Flutter SDK permission issues
+    # prepare_build
+
+    # Calculate build number from git commits
+    build_number = (10000 + sh("cd .. && git rev-list --count HEAD", log: false).strip.to_i).to_s
+    ENV["BUILD_NUMBER"] = build_number
+    UI.message "🔢 Build number: #{build_number}"
+
+    build_and_upload_dev
+  end
+
+  desc "Deploy to TestFlight (Production Environment)"
+  lane :prod do
+    # Set environment-specific configuration
+    ENV["APP_IDENTIFIER"] = "com.inoworl.lakiite"
+    ENV["SCHEME"] = "Runner"
+    ENV["CONFIGURATION"] = "Release"
+
+    prepare_build
+    build_and_upload_prod
+  end
+
+  # Private lanes
+  private_lane :prepare_build do
+    # Clean previous builds (skipped - already done manually)
+    # sh "cd .. && fvm flutter clean"
+
+    # Get Flutter dependencies
+    sh "cd .. && fvm flutter pub get"
+
+    # Calculate build number from git commits
+    build_number = (10000 + sh("cd .. && git rev-list --count HEAD", log: false).strip.to_i).to_s
+    ENV["BUILD_NUMBER"] = build_number
+
+    UI.message "🔢 Build number: #{build_number}"
+  end
+
+  private_lane :build_and_upload_dev do
+    # Build Flutter iOS app for Dev
+    UI.message "🔨 Building Flutter app..."
+
+    # Environment variables validation (no fallback - must be set explicitly)
+    cert_password = ENV["CERT_PWD"] || ""
+    certificate_path = ENV["IOS_CERTIFICATE_PATH"] || ""
+    certificate_base64 = ENV["IOS_CERTIFICATE_BASE64"] || ""
+
+    if cert_password.empty?
+      UI.user_error!("❌ CERT_PWD environment variable is required")
+    end
+
+    # CI/CD環境ではBase64エンコードされた証明書を使用
+    if !certificate_base64.empty?
+      UI.message "📄 Using Base64 encoded certificate for CI/CD"
+      certificate_path = "./certificates.p12"
+
+      # Base64デコードして一時ファイルに保存
+      require 'base64'
+      File.open(certificate_path, 'wb') do |file|
+        file.write(Base64.decode64(certificate_base64))
+      end
+    elsif certificate_path.empty?
+      UI.user_error!("❌ IOS_CERTIFICATE_PATH or IOS_CERTIFICATE_BASE64 environment variable is required")
+    end
+
+    # Create temporary keychain and import certificate (CI/Local unified flow)
+    keychain_name = "fastlane_tmp_keychain"
+
+    create_keychain(
+      name: keychain_name,
+      password: cert_password,
+      default_keychain: true,
+      unlock: true,
+      timeout: 3600,
+      lock_when_sleeps: false
+    )
+
+    import_certificate(
+      certificate_path: File.expand_path(certificate_path),
+      certificate_password: cert_password,
+      keychain_name: keychain_name,
+      keychain_password: cert_password
+    )
+
+    # Set keychain search list for build process (CI standard)
+    sh "security list-keychains -s #{keychain_name} ~/Library/Keychains/login.keychain-db"
+
+    # Flutter build without code signing (CI standard approach)
+    # Check if FVM is available, otherwise use system Flutter
+    flutter_command = "flutter"
+    begin
+      sh "which fvm"
+      flutter_command = "fvm flutter"
+      UI.message "📱 Using FVM Flutter"
+    rescue => e
+      UI.message "📱 FVM not available, using system Flutter: #{e.message}"
+    end
+
+    sh "cd .. && #{flutter_command} build ios --release --no-codesign --dart-define-from-file=dart_define/dev_dart_define.json"
+
+    # Environment variables for build configuration (no fallback - must be set explicitly)
+    bundle_id = ENV["DEV_BUNDLE_ID"] || ""
+    provisioning_profile_name = ENV["DEV_PROVISIONING_PROFILE_NAME"] || ""
+    provisioning_profile_base64 = ENV["PROVISIONING_PROFILE_BASE64"] || ""
+    team_id = ENV["DEVELOPMENT_TEAM"] || ""
+    ipa_output_name = ENV["IPA_OUTPUT_NAME"] || ""
+
+    if bundle_id.empty? || provisioning_profile_name.empty? || team_id.empty? || ipa_output_name.empty?
+      UI.user_error!("❌ Required environment variables missing: DEV_BUNDLE_ID, DEV_PROVISIONING_PROFILE_NAME, DEVELOPMENT_TEAM, IPA_OUTPUT_NAME")
+    end
+
+    # CI/CD環境ではBase64エンコードされたプロビジョニングプロファイルを使用
+    if !provisioning_profile_base64.empty?
+      UI.message "📄 Using Base64 encoded provisioning profile for CI/CD"
+      profile_path = "#{ENV['HOME']}/Library/MobileDevice/Provisioning Profiles/"
+
+      # プロビジョニングプロファイルディレクトリを作成
+      FileUtils.mkdir_p(profile_path) unless Dir.exist?(profile_path)
+
+      # Base64デコードして一時ファイルに保存
+      require 'base64'
+      require 'securerandom'
+      profile_filename = "#{SecureRandom.uuid}.mobileprovision"
+      profile_full_path = File.join(profile_path, profile_filename)
+
+      File.open(profile_full_path, 'wb') do |file|
+        file.write(Base64.decode64(provisioning_profile_base64))
+      end
+
+      UI.message "📁 Provisioning profile saved to: #{profile_full_path}"
+    end
+
+    # Build and sign the app using fastlane
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      configuration: "Release-dev",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "#{ipa_output_name}.ipa",
+      silent: false,
+      suppress_xcode_output: false,
+      buildlog_path: "./build/logs",
+      skip_build_archive: false,
+      export_options: {
+        method: "app-store",
+        teamID: team_id,
+        signingStyle: "manual",
+        provisioningProfiles: {
+          bundle_id => provisioning_profile_name
+        },
+        uploadBitcode: false,
+        compileBitcode: false,
+        uploadSymbols: true
+      }
+    )
+
+    existing_ipa = "./build/#{ipa_output_name}.ipa"
+    UI.success "✅ Generated IPA: #{existing_ipa}"
+
+    # Environment variables for App Store Connect API (no fallback - must be set explicitly)
+    asc_key_id = ENV["ASC_KEY_ID"] || ""
+    asc_issuer_id = ENV["ASC_ISSUER_ID"] || ""
+    asc_api_key_path = ENV["ASC_API_KEY_PATH"] || ""
+    asc_api_key_base64 = ENV["ASC_API_KEY_BASE64"] || ""
+
+    if asc_key_id.empty? || asc_issuer_id.empty?
+      UI.user_error!("❌ ASC_KEY_ID and ASC_ISSUER_ID environment variables are required")
+    end
+
+    if asc_api_key_base64.empty? && asc_api_key_path.empty?
+      UI.user_error!("❌ Either ASC_API_KEY_PATH or ASC_API_KEY_BASE64 environment variable is required")
+    end
+
+    # CI/CD環境ではBase64エンコードされたAPI Keyを使用
+    if !asc_api_key_base64.empty?
+      UI.message "📄 Using Base64 encoded API Key for CI/CD"
+      asc_api_key_path = "./AuthKey.p8"
+
+      # Base64デコードして一時ファイルに保存
+      require 'base64'
+      File.open(asc_api_key_path, 'wb') do |file|
+        file.write(Base64.decode64(asc_api_key_base64))
+      end
+    end
+
+    # Upload to TestFlight using App Store Connect API Key
+    api_key = app_store_connect_api_key(
+      key_id: asc_key_id,
+      issuer_id: asc_issuer_id,
+      key_filepath: File.expand_path(asc_api_key_path),
+      in_house: false
+    )
+
+    # Skip app existence check for now
+    # ensure_app_exists_on_asc(api_key: api_key)
+
+    upload_to_testflight(
+      api_key: api_key,
+      ipa: existing_ipa,
+      skip_waiting_for_build_processing: true,
+      skip_submission: true
+    )
+
+    UI.success "🎉 Dev IPA build completed successfully!"
+    UI.message "📁 IPA file: #{existing_ipa}"
+
+    UI.success "🎉 Dev build uploaded to TestFlight successfully!"
+
+    # Clean up temporary keychain
+    begin
+      delete_keychain(name: keychain_name)
+      UI.message "🧹 Cleaned up temporary keychain"
+    rescue => e
+      UI.important "⚠️  Failed to clean up keychain: #{e.message}"
+    end
+  end
+
+  private_lane :build_and_upload_prod do
+    # Build Flutter iOS app for Production
+    sh "cd .. && fvm flutter build ios --release --dart-define-from-file=dart_define/prod_dart_define.json"
+
+    # Build and archive with locale fix
+    ENV["LANG"] = "en_US.UTF-8"
+    ENV["LANGUAGE"] = "en_US.UTF-8"
+    ENV["LC_ALL"] = "en_US.UTF-8"
+
+    build_app(
+      scheme: ENV["SCHEME"],
+      configuration: "Release",
+      export_method: "app-store",
+      clean: true,
+      output_directory: "./build",
+      output_name: "LaKiite-Prod",
+      export_options: {
+        method: "app-store-connect",
+        teamID: "T6ZYALKC4V",
+        provisioningProfiles: {
+          "com.inoworl.lakiite" => "LaKiite Prod App Store"
+        },
+      signingStyle: "manual",
+      destination: "export",
+      compileBitcode: false
+    }
+    )
+
+    # Upload to TestFlight using App Store Connect API Key
+    api_key = app_store_connect_api_key(
+      key_id: "96BH437MBD",
+      issuer_id: "fb6d96bf-4445-47cc-9b10-0e917c992edf",
+      key_filepath: "#{ENV['HOME']}/Downloads/AuthKey_96BH437MBD.p8"
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true,
+      skip_submission: true
+    )
+
+    UI.success "🎉 Production build uploaded to TestFlight successfully!"
+  end
+
+  private_lane :ensure_app_exists_on_asc do |options|
+    api_key = options[:api_key]
+    Spaceship::ConnectAPI.token = api_key if api_key
+
+    app_identifier = ENV["APP_IDENTIFIER"]
+    UI.message "🔍 Checking App Store Connect for #{app_identifier}..."
+
+    app = Spaceship::ConnectAPI::App.find(app_identifier)
+    UI.user_error!("App Store Connect app #{app_identifier} is missing. Please create it first.") if app.nil?
+  end
+
+  # Error handling
+  error do |lane, exception|
+    UI.error "❌ Lane '#{lane}' failed with exception: #{exception}"
+  end
+end
