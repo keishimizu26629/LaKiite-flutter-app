@@ -74,3 +74,24 @@ jobs:
         run: |
           cd ios
           fastlane dev
+
+      - name: Debug build settings on failure
+        if: failure()
+        run: |
+          echo "=== Xcode Build Settings Debug ==="
+          cd ios
+          xcodebuild -showBuildSettings -workspace Runner.xcworkspace -scheme Runner -configuration Release-dev | tail -n 50 || true
+          echo "=== Gym Log Tail ==="
+          tail -n 200 /Users/runner/Library/Logs/gym/Runner-Runner.log || true
+          echo "=== Build Logs Directory ==="
+          ls -la ./build/logs/ || true
+
+      - name: Upload build logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-${{ github.run_id }}
+          path: |
+            /Users/runner/Library/Logs/gym/Runner-Runner.log
+            ios/build/logs/
+          retention-days: 7
