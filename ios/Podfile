@@ -1,5 +1,5 @@
-# CocoaPods CDNエラー回避のため、GitHubソースのみ使用（ZENプロジェクトと同様）
-source 'https://github.com/CocoaPods/Specs.git'
+# CocoaPods CDN（デフォルト）を使用
+# source 'https://cdn.cocoapods.org/' # デフォルトなので明示的な指定は不要
 
 # Uncomment this line to define a global platform for your project
 platform :ios, '15.0'
@@ -34,12 +34,6 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 flutter_ios_podfile_setup
 
 target 'Runner' do
-  # Firebase CDNエラー回避のため、ZENプロジェクトと同様にGitHubから直接取得
-  # https://firebase.flutter.dev/docs/overview/
-  # README.md: https://github.com/invertase/firestore-ios-sdk-frameworks
-  # https://github.com/FirebaseExtended/flutterfire/blob/master/packages/firebase_core/firebase_core/ios/firebase_sdk_version.rb
-  pod 'FirebaseFirestore', :git => 'https://github.com/invertase/firestore-ios-sdk-frameworks.git', :tag => '10.18.0'
-
   use_frameworks!
   use_modular_headers!
 
