@@ -45,7 +45,7 @@ jobs:
           rm -rf ~/Library/Developer/Xcode/DerivedData/*
           # Clean CocoaPods cache for latest Firebase/gRPC
           pod cache clean --all
-          echo "Cleaned all caches for Xcode 16 compatibility"
+          echo "Cleaned all caches for iOS 15.0 and Firebase SDK 12.4.0 compatibility"
 
       - name: Deploy with fastlane (unified with local)
         env:

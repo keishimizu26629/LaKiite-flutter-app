@@ -35,15 +35,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: SplashScreen.path,
     redirect: (context, state) {
       // スプラッシュ画面の場合はリダイレクトしない
-      if (state.location == SplashScreen.path) {
+      if (state.matchedLocation == SplashScreen.path) {
         return null;
       }
 
       return authState.when(
         data: (authState) {
           final isLoggedIn = authState.status == AuthStatus.authenticated;
-          final isLoggingIn = state.location == LoginPage.path;
-          final isSigningUp = state.location == SignupPage.path;
+          final isLoggingIn = state.matchedLocation == LoginPage.path;
+          final isSigningUp = state.matchedLocation == SignupPage.path;
 
           // 未認証ユーザーのリダイレクト処理
           if (!isLoggedIn && !isLoggingIn && !isSigningUp) {
@@ -60,8 +60,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         loading: () {
           // ローディング中は現在の場所を維持
           // ログインページと新規登録ページ間の遷移を許可
-          final isLoggingIn = state.location == LoginPage.path;
-          final isSigningUp = state.location == SignupPage.path;
+          final isLoggingIn = state.matchedLocation == LoginPage.path;
+          final isSigningUp = state.matchedLocation == SignupPage.path;
 
           if (isLoggingIn || isSigningUp) {
             return null; // 現在の場所を維持
