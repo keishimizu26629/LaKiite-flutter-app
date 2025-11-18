@@ -161,8 +161,9 @@ platform :ios do
       export_method: "app-store",
       output_directory: "./build",
       output_name: "#{ipa_output_name}.ipa",
-      silent: true,
-      suppress_xcode_output: true,
+      silent: false,
+      suppress_xcode_output: false,
+      buildlog_path: "./build/logs",
       skip_build_archive: false,
       export_options: {
         method: "app-store",
