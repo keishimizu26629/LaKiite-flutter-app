@@ -1,5 +1,5 @@
 # Uncomment this line to define a global platform for your project
-platform :ios, '12.0'
+platform :ios, '15.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -41,116 +41,13 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
 
-    # gRPC-Core Xcode 16 compatibility patch
-    if target.name == 'gRPC-Core'
-      grpc_file_path = File.join(installer.sandbox.root, 'gRPC-Core/src/core/lib/promise/detail/basic_seq.h')
-
-      if File.exist?(grpc_file_path)
-        file_content = File.read(grpc_file_path)
-
-        # パッチ対象の行を検索（より柔軟なマッチング）
-        problematic_pattern = /Traits::template CallSeqFactory\(f_, \*cur_, std::move\(arg\)\)/
-        correct_replacement = 'Traits::template CallSeqFactory<>(f_, *cur_, std::move(arg))'
-
-        if file_content.match?(problematic_pattern)
-          puts "🔧 Patching gRPC-Core basic_seq.h for Xcode 16 compatibility"
-          file_content.gsub!(problematic_pattern, correct_replacement)
-          File.write(grpc_file_path, file_content)
-          puts "✅ gRPC-Core patch applied successfully"
-        else
-          puts "ℹ️  gRPC-Core basic_seq.h: No patch needed or already patched"
-        end
-      else
-        puts "⚠️  gRPC-Core basic_seq.h not found at: #{grpc_file_path}"
-      end
-
-      # Patch SSL key logging header to avoid OpenSSL dependency
-      ssl_key_logging_path = File.join(installer.sandbox.root, 'gRPC-Core/src/core/tsi/ssl/key_logging/ssl_key_logging.h')
-      if File.exist?(ssl_key_logging_path)
-        begin
-          # Make file writable
-          File.chmod(0644, ssl_key_logging_path)
-          ssl_content = File.read(ssl_key_logging_path)
-          if ssl_content.include?('#include <openssl/ssl.h>')
-            puts "🔧 Patching gRPC-Core ssl_key_logging.h to remove OpenSSL dependency"
-            ssl_content.gsub!('#include <openssl/ssl.h>', '// #include <openssl/ssl.h> // Patched for iOS build')
-            File.write(ssl_key_logging_path, ssl_content)
-            puts "✅ gRPC-Core SSL key logging patch applied successfully"
-          else
-            puts "ℹ️  gRPC-Core ssl_key_logging.h: No OpenSSL include found or already patched"
-          end
-        rescue => e
-          puts "⚠️  Failed to patch ssl_key_logging.h: #{e.message}"
-        end
-      end
-    end
-
     target.build_configurations.each do |config|
-      # Apple Silicon でシミュレータを動かすとき arm64 を除外
+      # Apple Silicon シミュレータでの arm64 除外
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
 
-      # Xcode 16 compatibility: Apply C++17 to ALL targets
+      # Xcode 16 でも無難な C++ 設定
       config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
       config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-
-      # For gRPC-related pods (Xcode 16 compatibility)
-      if target.name.include?('gRPC') || target.name.include?('abseil') || target.name.include?('BoringSSL')
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
-        # Remove problematic compiler flags
-        if config.build_settings['OTHER_CFLAGS'].present?
-          config.build_settings['OTHER_CFLAGS'] = config.build_settings['OTHER_CFLAGS'].reject { |f| f == '-G' }
-        end
-        # Xcode 16 compatibility for gRPC
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= []
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'GPB_USE_PROTOBUF_FRAMEWORK_IMPORTS=1'
-        config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
-        config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-        # Disable problematic warnings and errors
-        config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
-        config.build_settings['CLANG_WARN_DOCUMENTATION_COMMENTS'] = 'NO'
-        config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
-      end
-
-      # BoringSSL-GRPC specific settings for OpenSSL compatibility
-      if target.name == 'BoringSSL-GRPC'
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= []
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'OPENSSL_NO_ASM=1'
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'GRPC_ARES=0'
-        config.build_settings['OTHER_CFLAGS'] ||= []
-        config.build_settings['OTHER_CFLAGS'] << '-DBORINGSSL_PREFIX=GRPC'
-
-        # Clean up problematic compiler flags
-        target.source_build_phase.files.each do |file|
-          if file.settings && file.settings['COMPILER_FLAGS']
-            flags = file.settings['COMPILER_FLAGS'].split
-            flags.reject! { |flag| flag == '-GCC_WARN_INHIBIT_ALL_WARNINGS' }
-            file.settings['COMPILER_FLAGS'] = flags.join(' ')
-          end
-        end
-      end
-
-      config.build_settings['ENABLE_BITCODE'] = 'NO'
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
-      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-
-      # Xcode 15 specific settings
-      config.build_settings['DEAD_CODE_STRIPPING'] = 'YES'
-      config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES'
-      config.build_settings['ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS'] = 'YES'
-
-      # PlatformViews関連の問題を修正するための設定
-      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
-        '$(inherited)',
-        'WEBKIT_WITHOUT_WEBKIT_INTERNALS=1',
-      ]
-    end
-  end
-
-  installer.generated_projects.each do |project|
-    project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
-      end
     end
   end
 
