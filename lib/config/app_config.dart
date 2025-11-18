@@ -1,6 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
-import '../firebase_options_dev.dart';
-import '../firebase_options_prod.dart';
+import '../firebase_options.dart';
 
 /// アプリケーションの環境設定を管理するクラス
 class AppConfig {
@@ -58,29 +57,31 @@ class AppConfig {
       environment = Environment.development;
       pushNotificationUrl = 'https://test-functions.net/sendNotification';
     } else {
-      // 渡されたenvironmentパラメータに基づいて適切なFirebaseOptionsを選択
-      // FIREBASE_OPTIONS_CLASSは検証用として使用
+      // 統合されたDefaultFirebaseOptionsを使用（ZEN方式）
+      // 環境変数FLAVORで自動的に適切な設定が選択される
       try {
+        options = DefaultFirebaseOptions.currentPlatform;
+
         if (environment == Environment.production) {
           // 本番環境
-          options = ProdFirebaseOptions.currentPlatform;
           pushNotificationUrl =
               'https://asia-northeast1-lakiite-flutter-app-prod.cloudfunctions.net/sendNotification';
 
-          // 検証: FIREBASE_OPTIONS_CLASSが一致しているか確認
+          // 検証: FIREBASE_OPTIONS_CLASSが一致しているか確認（後方互換性のため）
           if (firebaseOptionsClass.isNotEmpty &&
+              firebaseOptionsClass != 'DefaultFirebaseOptions' &&
               firebaseOptionsClass != 'ProdFirebaseOptions') {
             throw Exception(
                 '環境の不整合: environment=production だが FIREBASE_OPTIONS_CLASS=$firebaseOptionsClass');
           }
         } else {
           // 開発環境
-          options = DevFirebaseOptions.currentPlatform;
           pushNotificationUrl =
               'https://asia-northeast1-lakiite-flutter-app-dev.cloudfunctions.net/sendNotification';
 
-          // 検証: FIREBASE_OPTIONS_CLASSが一致しているか確認
+          // 検証: FIREBASE_OPTIONS_CLASSが一致しているか確認（後方互換性のため）
           if (firebaseOptionsClass.isNotEmpty &&
+              firebaseOptionsClass != 'DefaultFirebaseOptions' &&
               firebaseOptionsClass != 'DevFirebaseOptions') {
             throw Exception(
                 '環境の不整合: environment=development だが FIREBASE_OPTIONS_CLASS=$firebaseOptionsClass');
