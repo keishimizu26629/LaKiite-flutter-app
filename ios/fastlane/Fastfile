@@ -119,7 +119,18 @@ platform :ios do
       UI.message "📱 FVM not available, using system Flutter: #{e.message}"
     end
 
-    sh "cd .. && #{flutter_command} build ios --release --no-codesign --dart-define-from-file=dart_define/dev_dart_define.json"
+    # Ensure CocoaPods dependencies are synchronized before build
+    begin
+      UI.message "🔄 Ensuring CocoaPods dependencies are synchronized..."
+      sh "pod install"
+    rescue => e
+      UI.important "⚠️  Pod install failed, attempting to fix: #{e.message}"
+      # Clean and retry if pod install fails
+      sh "rm -rf Pods .symlinks Podfile.lock"
+      sh "pod install"
+    end
+
+    sh "cd .. && #{flutter_command} build ios --release --no-codesign --config Release-dev --dart-define-from-file=dart_define/dev_dart_define.json"
 
     # Environment variables for build configuration (no fallback - must be set explicitly)
     bundle_id = ENV["DEV_BUNDLE_ID"] || ""
@@ -240,6 +251,17 @@ platform :ios do
   end
 
   private_lane :build_and_upload_prod do
+    # Ensure CocoaPods dependencies are synchronized before build
+    begin
+      UI.message "🔄 Ensuring CocoaPods dependencies are synchronized..."
+      sh "pod install"
+    rescue => e
+      UI.important "⚠️  Pod install failed, attempting to fix: #{e.message}"
+      # Clean and retry if pod install fails
+      sh "rm -rf Pods .symlinks Podfile.lock"
+      sh "pod install"
+    end
+
     # Build Flutter iOS app for Production
     sh "cd .. && fvm flutter build ios --release --dart-define-from-file=dart_define/prod_dart_define.json"
 
