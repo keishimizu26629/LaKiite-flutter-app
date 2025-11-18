@@ -1,5 +1,4 @@
-# CocoaPods CDNとGitHubソースの併用でエラー回避
-source 'https://cdn.cocoapods.org/'
+# CocoaPods CDNエラー回避のため、GitHubソースのみ使用（ZENプロジェクトと同様）
 source 'https://github.com/CocoaPods/Specs.git'
 
 # Uncomment this line to define a global platform for your project
@@ -39,7 +38,7 @@ target 'Runner' do
   # https://firebase.flutter.dev/docs/overview/
   # README.md: https://github.com/invertase/firestore-ios-sdk-frameworks
   # https://github.com/FirebaseExtended/flutterfire/blob/master/packages/firebase_core/firebase_core/ios/firebase_sdk_version.rb
-  pod 'FirebaseFirestore', :git => 'https://github.com/invertase/firestore-ios-sdk-frameworks.git', :tag => '10.29.0'
+  pod 'FirebaseFirestore', :git => 'https://github.com/invertase/firestore-ios-sdk-frameworks.git', :tag => '10.18.0'
 
   use_frameworks!
   use_modular_headers!
