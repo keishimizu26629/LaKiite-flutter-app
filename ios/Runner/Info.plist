@@ -232,8 +232,6 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>aps-environment</key>
-	<string>production</string>
 	<key>io.flutter.embedded_views_preview</key>
 	<true/>
 </dict>
