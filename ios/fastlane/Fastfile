@@ -130,7 +130,7 @@ platform :ios do
       sh "pod install"
     end
 
-    sh "cd .. && #{flutter_command} build ios --release --no-codesign --config Release-dev --dart-define-from-file=dart_define/dev_dart_define.json"
+    sh "cd .. && #{flutter_command} build ios --release --no-codesign --dart-define-from-file=dart_define/dev_dart_define.json"
 
     # Environment variables for build configuration (no fallback - must be set explicitly)
     bundle_id = ENV["DEV_BUNDLE_ID"] || ""
