@@ -139,6 +139,14 @@ platform :ios do
     team_id = ENV["DEVELOPMENT_TEAM"] || ""
     ipa_output_name = ENV["IPA_OUTPUT_NAME"] || ""
 
+    # Debug: 署名関連の環境変数を出力
+    UI.message "🔍 Debug - Build Configuration:"
+    UI.message "🔍 Bundle ID: #{bundle_id}"
+    UI.message "🔍 Provisioning Profile Name: #{provisioning_profile_name}"
+    UI.message "🔍 Team ID: #{team_id}"
+    UI.message "🔍 IPA Output Name: #{ipa_output_name}"
+    UI.message "🔍 Has Provisioning Profile Base64: #{!provisioning_profile_base64.empty?}"
+
     if bundle_id.empty? || provisioning_profile_name.empty? || team_id.empty? || ipa_output_name.empty?
       UI.user_error!("❌ Required environment variables missing: DEV_BUNDLE_ID, DEV_PROVISIONING_PROFILE_NAME, DEVELOPMENT_TEAM, IPA_OUTPUT_NAME")
     end
@@ -165,11 +173,14 @@ platform :ios do
     end
 
     # Build and sign the app using fastlane
+    UI.message "🔨 Starting build_app with configuration: Release-dev"
+    UI.message "🔍 Provisioning Profile Mapping: #{bundle_id} => #{provisioning_profile_name}"
+    
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
       configuration: "Release-dev",
-      export_method: "app-store",
+      export_method: "development",  # dev環境では開発用証明書を使用
       output_directory: "./build",
       output_name: "#{ipa_output_name}.ipa",
       silent: false,
@@ -177,7 +188,7 @@ platform :ios do
       buildlog_path: "./build/logs",
       skip_build_archive: false,
       export_options: {
-        method: "app-store",
+        method: "development",  # 開発用配布に変更
         teamID: team_id,
         signingStyle: "manual",
         provisioningProfiles: {
