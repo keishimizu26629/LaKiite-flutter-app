@@ -153,6 +153,32 @@ platform :ios do
       UI.message "📁 Provisioning profile saved to: #{profile_full_path}"
     end
 
+    # Debug certificate and provisioning profile information
+    UI.message "🔍 Certificate and Provisioning Profile Debug Information:"
+    
+    # Show certificates in fastlane keychain
+    begin
+      sh "security find-identity -v -p codesigning fastlane_tmp_keychain | head -5 || true"
+    rescue => e
+      UI.message "Could not list certificates in fastlane keychain: #{e.message}"
+    end
+    
+    # Show provisioning profiles
+    begin
+      profile_dir = "#{ENV['HOME']}/Library/MobileDevice/Provisioning Profiles"
+      if Dir.exist?(profile_dir)
+        profiles = Dir.glob("#{profile_dir}/*.mobileprovision")
+        UI.message "📱 Found #{profiles.count} provisioning profiles"
+        profiles.first(3).each do |profile|
+          UI.message "  - #{File.basename(profile)}"
+        end
+      else
+        UI.message "❌ Provisioning profiles directory not found"
+      end
+    rescue => e
+      UI.message "Could not list provisioning profiles: #{e.message}"
+    end
+
     # Build and sign the app using fastlane
     build_app(
       workspace: "Runner.xcworkspace",
