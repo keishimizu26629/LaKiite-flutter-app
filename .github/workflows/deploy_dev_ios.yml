@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     runs-on: macos-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     environment: dev
 
     steps:
@@ -44,8 +44,8 @@ jobs:
           rm -rf Podfile.lock
           rm -rf build
           rm -rf ~/Library/Developer/Xcode/DerivedData/*
-          # Clean CocoaPods cache for latest Firebase/gRPC
-          pod cache clean --all
+          # Clean CocoaPods cache for latest Firebase/gRPC (commented out to speed up build)
+          # pod cache clean --all
           echo "Cleaned all caches for iOS 15.0 and Firebase SDK 12.4.0 compatibility"
 
       - name: Debug certificates and provisioning profiles
