@@ -1480,7 +1480,7 @@ DEPENDENCIES:
   - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/ios`)
 
 SPEC REPOS:
-  trunk:
+  https://github.com/CocoaPods/Specs.git:
     - abseil
     - BoringSSL-GRPC
     - Firebase
@@ -1588,6 +1588,6 @@ SPEC CHECKSUMS:
   url_launcher_ios: 5334b05cef931de560670eeae103fd3e431ac3fe
   webview_flutter_wkwebview: 2e2d318f21a5e036e2c3f26171342e95908bd60a
 
-PODFILE CHECKSUM: ab95169d97ea34814b233ddb606a56374f10efb8
+PODFILE CHECKSUM: d1cdfba38d54546d4a9066da976b79cacf5a9e37
 
 COCOAPODS: 1.16.2

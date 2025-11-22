@@ -119,7 +119,11 @@ platform :ios do
       UI.message "📱 FVM not available, using system Flutter: #{e.message}"
     end
 
-    sh "cd .. && #{flutter_command} build ios --release --no-codesign --dart-define-from-file=dart_define/dev_dart_define.json"
+    # Get calculated build number
+    build_number = ENV["BUILD_NUMBER"] || "1"
+    UI.message "📱 Using build number: #{build_number}"
+    
+    sh "cd .. && #{flutter_command} build ios --release --flavor dev --no-codesign --dart-define-from-file=dart_define/dev_dart_define.json --build-number #{build_number}"
 
     # Environment variables for build configuration (no fallback - must be set explicitly)
     bundle_id = ENV["DEV_BUNDLE_ID"] || ""
@@ -151,6 +155,32 @@ platform :ios do
       end
 
       UI.message "📁 Provisioning profile saved to: #{profile_full_path}"
+    end
+
+    # Debug certificate and provisioning profile information
+    UI.message "🔍 Certificate and Provisioning Profile Debug Information:"
+
+    # Show certificates in fastlane keychain
+    begin
+      sh "security find-identity -v -p codesigning fastlane_tmp_keychain | head -5 || true"
+    rescue => e
+      UI.message "Could not list certificates in fastlane keychain: #{e.message}"
+    end
+
+    # Show provisioning profiles
+    begin
+      profile_dir = "#{ENV['HOME']}/Library/MobileDevice/Provisioning Profiles"
+      if Dir.exist?(profile_dir)
+        profiles = Dir.glob("#{profile_dir}/*.mobileprovision")
+        UI.message "📱 Found #{profiles.count} provisioning profiles"
+        profiles.first(3).each do |profile|
+          UI.message "  - #{File.basename(profile)}"
+        end
+      else
+        UI.message "❌ Provisioning profiles directory not found"
+      end
+    rescue => e
+      UI.message "Could not list provisioning profiles: #{e.message}"
     end
 
     # Build and sign the app using fastlane

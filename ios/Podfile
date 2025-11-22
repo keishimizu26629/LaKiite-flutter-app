@@ -38,7 +38,8 @@ target 'Runner' do
   # https://firebase.flutter.dev/docs/overview/
   # README.md: https://github.com/invertase/firestore-ios-sdk-frameworks
   # https://github.com/FirebaseExtended/flutterfire/blob/master/packages/firebase_core/firebase_core/ios/firebase_sdk_version.rb
-  pod 'FirebaseFirestore', :git => 'https://github.com/invertase/firestore-ios-sdk-frameworks.git', :tag => '10.18.0'
+  # pod 'FirebaseFirestore', :git => 'https://github.com/invertase/firestore-ios-sdk-frameworks.git', :tag => '10.18.0'
+  # ↑ バージョン競合のためコメントアウト。Flutterプラグインが自動的に適切なバージョンを選択します。
 
   use_frameworks!
   use_modular_headers!

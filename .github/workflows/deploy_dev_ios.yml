@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     runs-on: macos-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     environment: dev
 
     steps:
@@ -26,7 +26,7 @@ jobs:
       - name: Restore Firebase config files
         run: |
           echo "${{ secrets.DEV_GOOGLESERVICE_INFO_PLIST_BASE64 }}" | base64 -d > ios/Runner/GoogleService-Info.plist
-          echo "${{ secrets.FIREBASE_OPTIONS_DART_BASE64 }}" | base64 -d > lib/firebase_options.dart
+          echo "${{ secrets.DEV_FIREBASE_OPTIONS_DART_BASE64 }}" | base64 -d > lib/firebase_options.dart
 
       - name: Restore dart-define config
         run: |
@@ -44,9 +44,41 @@ jobs:
           rm -rf Podfile.lock
           rm -rf build
           rm -rf ~/Library/Developer/Xcode/DerivedData/*
-          # Clean CocoaPods cache for latest Firebase/gRPC
-          pod cache clean --all
+          # Clean CocoaPods cache for latest Firebase/gRPC (commented out to speed up build)
+          # pod cache clean --all
           echo "Cleaned all caches for iOS 15.0 and Firebase SDK 12.4.0 compatibility"
+
+      - name: Debug certificates and provisioning profiles
+        env:
+          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          PROVISIONING_PROFILE_BASE64: ${{ secrets.DEV_PROVISIONING_PROFILE_BASE64 }}
+          DEV_PROVISIONING_PROFILE_NAME: ${{ secrets.DEV_PROVISIONING_PROFILE_NAME }}
+        run: |
+          echo "=== Certificate and Provisioning Profile Debug ==="
+
+          # Check available certificates in system keychain
+          echo "📋 System keychain certificates:"
+          security find-identity -v -p codesigning | head -10 || true
+
+          # Check if we have the certificate data
+          if [ ! -z "$IOS_CERTIFICATE_BASE64" ]; then
+            echo "✅ IOS_CERTIFICATE_BASE64 is set (length: ${#IOS_CERTIFICATE_BASE64})"
+          else
+            echo "❌ IOS_CERTIFICATE_BASE64 is not set"
+          fi
+
+          # Check if we have the provisioning profile data
+          if [ ! -z "$PROVISIONING_PROFILE_BASE64" ]; then
+            echo "✅ PROVISIONING_PROFILE_BASE64 is set (length: ${#PROVISIONING_PROFILE_BASE64})"
+          else
+            echo "❌ PROVISIONING_PROFILE_BASE64 is not set"
+          fi
+
+          echo "📱 Expected provisioning profile name: $DEV_PROVISIONING_PROFILE_NAME"
+
+          # Check existing provisioning profiles
+          echo "📄 Existing provisioning profiles:"
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || echo "No provisioning profiles directory found"
 
       - name: Deploy with fastlane (unified with local)
         env:
