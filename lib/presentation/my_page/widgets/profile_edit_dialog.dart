@@ -8,14 +8,14 @@ import '../my_page_view_model.dart';
 /// [user] 編集対象のユーザーモデル
 /// [onImageEdit] プロフィール画像編集時のコールバック
 class ProfileEditDialog extends ConsumerStatefulWidget {
-  final UserModel user;
-  final VoidCallback onImageEdit;
 
   const ProfileEditDialog({
     super.key,
     required this.user,
     required this.onImageEdit,
   });
+  final UserModel user;
+  final VoidCallback onImageEdit;
 
   @override
   ConsumerState<ProfileEditDialog> createState() => _ProfileEditDialogState();
@@ -149,27 +149,55 @@ class _ProfileEditDialogState extends ConsumerState<ProfileEditDialog> {
                   final scaffoldMessenger = ScaffoldMessenger.of(context);
 
                   try {
+                    // 入力値の検証
+                    if (_displayNameController.text.trim().isEmpty) {
+                      throw Exception('表示名を入力してください');
+                    }
+                    if (_displayNameController.text.trim().length > 50) {
+                      throw Exception('表示名は50文字以内で入力してください');
+                    }
+                    if (_shortBioController.text.length > 200) {
+                      throw Exception('一言コメントは200文字以内で入力してください');
+                    }
+
                     final selectedImage = ref.read(selectedImageProvider);
                     await ref
                         .read(myPageViewModelProvider.notifier)
                         .updateProfile(
                           name: widget.user.name,
-                          displayName: _displayNameController.text,
+                          displayName: _displayNameController.text.trim(),
                           searchIdStr: widget.user.searchId.toString(),
-                          shortBio: _shortBioController.text,
+                          shortBio: _shortBioController.text.trim().isEmpty
+                              ? null
+                              : _shortBioController.text.trim(),
                           imageFile: selectedImage,
                         );
+
+                    // 成功時の処理
                     ref.read(selectedImageProvider.notifier).state = null;
                     if (mounted) {
                       navigator.pop();
                       scaffoldMessenger.showSnackBar(
-                        const SnackBar(content: Text('プロフィールを更新しました')),
+                        const SnackBar(
+                          content: Text('プロフィールを更新しました'),
+                          backgroundColor: Colors.green,
+                        ),
                       );
                     }
                   } catch (e) {
                     if (mounted) {
+                      // エラーメッセージを整理
+                      String errorMessage = e.toString();
+                      if (errorMessage.startsWith('Exception: ')) {
+                        errorMessage = errorMessage.substring(11);
+                      }
+
                       scaffoldMessenger.showSnackBar(
-                        SnackBar(content: Text('エラー: ${e.toString()}')),
+                        SnackBar(
+                          content: Text(errorMessage),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 4),
+                        ),
                       );
                       setState(() {
                         _isProcessing = false;

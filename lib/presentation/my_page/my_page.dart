@@ -255,8 +255,18 @@ class _MyPageState extends ConsumerState<MyPage> {
             await ref.read(myPageViewModelProvider.notifier).pickImage();
           } catch (e) {
             if (mounted) {
+              // エラーメッセージを整理
+              String errorMessage = e.toString();
+              if (errorMessage.startsWith('Exception: ')) {
+                errorMessage = errorMessage.substring(11);
+              }
+
               scaffoldMessenger.showSnackBar(
-                SnackBar(content: Text('画像の選択に失敗しました: $e')),
+                SnackBar(
+                  content: Text(errorMessage),
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 4),
+                ),
               );
             }
           }

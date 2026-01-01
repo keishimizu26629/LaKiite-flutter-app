@@ -8,7 +8,6 @@ import '../../domain/entity/schedule.dart';
 import '../../domain/value/user_id.dart';
 import '../../domain/interfaces/i_user_repository.dart';
 import '../../domain/interfaces/i_schedule_repository.dart';
-import '../../domain/interfaces/i_storage_service.dart';
 import '../../domain/interfaces/i_image_processor_service.dart';
 import '../../presentation/presentation_provider.dart';
 import '../../infrastructure/providers.dart';
@@ -39,12 +38,10 @@ final myPageViewModelProvider =
     StateNotifierProvider<MyPageViewModel, AsyncValue<UserModel?>>((ref) {
   final userRepository = ref.watch(userRepositoryProvider);
   final scheduleRepository = ref.watch(scheduleRepositoryProvider);
-  final storageService = ref.watch(storageServiceProvider);
   final imageProcessorService = ref.watch(imageProcessorServiceProvider);
   return MyPageViewModel(
     userRepository,
     scheduleRepository,
-    storageService,
     imageProcessorService,
     ref,
   );
@@ -53,14 +50,12 @@ final myPageViewModelProvider =
 class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
   final IUserRepository _userRepository;
   final IScheduleRepository _scheduleRepository;
-  final IStorageService _storageService;
   final IImageProcessorService _imageProcessorService;
   final Ref _ref;
 
   MyPageViewModel(
     this._userRepository,
     this._scheduleRepository,
-    this._storageService,
     this._imageProcessorService,
     this._ref,
   ) : super(const AsyncValue.loading());
@@ -73,6 +68,10 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
       }
 
       AppLogger.debug('画像選択を開始します');
+
+      // 既存の選択画像をクリア
+      _ref.read(selectedImageProvider.notifier).state = null;
+
       final pickedImagePath = await _ref
           .read(picker.imagePickerServiceProvider)
           .pickImage(picker.ImageSource.gallery);
@@ -80,8 +79,18 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
       if (pickedImagePath != null) {
         AppLogger.debug('選択された画像パス: $pickedImagePath');
         final imageFile = File(pickedImagePath);
+
+        // ファイル存在チェック
         if (!await imageFile.exists()) {
+          AppLogger.error('選択された画像ファイルが存在しません: $pickedImagePath');
           throw Exception('画像ファイルが見つかりません');
+        }
+
+        // ファイルサイズチェック（10MB制限）
+        final fileSize = await imageFile.length();
+        AppLogger.debug('選択された画像のファイルサイズ: $fileSize bytes');
+        if (fileSize > 10 * 1024 * 1024) {
+          throw Exception('画像ファイルが大きすぎます（10MB以下にしてください）');
         }
 
         AppLogger.debug('画像圧縮を開始します');
@@ -91,9 +100,16 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
           minHeight: 300,
           quality: 85,
         );
+
+        // 圧縮後のファイル存在チェック
+        if (!await compressedImageFile.exists()) {
+          AppLogger.error('画像圧縮後のファイルが存在しません');
+          throw Exception('画像の処理に失敗しました');
+        }
+
         AppLogger.debug('圧縮後の画像パス: ${compressedImageFile.path}');
-        AppLogger.debug(
-            '圧縮後のファイルサイズ: ${await compressedImageFile.length()} bytes');
+        final compressedSize = await compressedImageFile.length();
+        AppLogger.debug('圧縮後のファイルサイズ: $compressedSize bytes');
 
         // 圧縮した画像をStateに保存
         _ref.read(selectedImageProvider.notifier).state = compressedImageFile;
@@ -103,13 +119,18 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
       }
     } on PlatformException catch (e) {
       AppLogger.error('プラットフォームエラー発生', e);
+      // 選択画像をクリア
+      _ref.read(selectedImageProvider.notifier).state = null;
+
       if (e.code == 'photo_access_denied') {
         throw Exception('設定から、このアプリに端末内の画像の操作を許可してください。');
       }
       throw Exception('画像の選択に失敗しました');
     } catch (e) {
       AppLogger.error('画像選択エラー', e);
-      throw Exception('画像の選択に失敗しました');
+      // 選択画像をクリア
+      _ref.read(selectedImageProvider.notifier).state = null;
+      rethrow;
     }
   }
 
@@ -151,39 +172,81 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
           AppLogger.debug('画像のアップロードを開始します');
           AppLogger.debug('現在のユーザーID: ${state.value!.id}');
 
-          // ファイル情報の詳細ログ
+          // ファイル存在チェック
           final fileExists = await imageFile.exists();
           AppLogger.debug('ファイルの存在確認: $fileExists');
+          if (!fileExists) {
+            AppLogger.error('アップロード対象のファイルが存在しません: ${imageFile.path}');
+            throw Exception('画像ファイルが見つかりません');
+          }
+
+          // ファイルサイズチェック
           final fileSize = await imageFile.length();
           AppLogger.debug('ファイルサイズ: $fileSize bytes');
+          if (fileSize == 0) {
+            AppLogger.error('ファイルサイズが0です: ${imageFile.path}');
+            throw Exception('画像ファイルが破損している可能性があります');
+          }
+          if (fileSize > 10 * 1024 * 1024) {
+            throw Exception('画像ファイルが大きすぎます（10MB以下にしてください）');
+          }
+
           AppLogger.debug('ファイルパス: ${imageFile.path}');
+          AppLogger.debug('UserRepositoryのアップロードメソッドを呼び出します');
 
-          final path = 'v1/users/icon/${state.value!.id}';
-          AppLogger.debug('アップロード先パス: $path');
-
-          final metadata = {
-            'uploadedAt': DateTime.now().toIso8601String(),
-            'userId': state.value!.id,
-          };
-          AppLogger.debug('メタデータ: $metadata');
-
-          AppLogger.debug('StorageServiceのアップロードメソッドを呼び出します');
           try {
-            iconUrl = await _storageService.uploadFile(
-              path: path,
-              file: imageFile,
-              metadata: metadata,
+            // ファイルをバイト配列に変換
+            final imageBytes = await imageFile.readAsBytes();
+            if (imageBytes.isEmpty) {
+              AppLogger.error('画像データが空です');
+              throw Exception('画像データの読み込みに失敗しました');
+            }
+            AppLogger.debug('画像をバイト配列に変換しました: ${imageBytes.length} bytes');
+
+            iconUrl = await _userRepository.uploadUserIcon(
+              state.value!.id,
+              imageBytes,
             );
+
+            if (iconUrl == null || iconUrl.isEmpty) {
+              AppLogger.error('アップロード後のURLが無効です');
+              throw Exception('画像のアップロードに失敗しました');
+            }
+
             AppLogger.debug('画像のアップロードが完了しました: $iconUrl');
           } catch (uploadError) {
-            AppLogger.error('StorageService.uploadFile内部エラー', uploadError);
+            AppLogger.error('UserRepository.uploadUserIcon内部エラー', uploadError);
             if (uploadError is FirebaseException) {
-              throw Exception('画像のアップロードに失敗しました: ${uploadError.code}');
+              switch (uploadError.code) {
+                case 'storage/unauthorized':
+                  throw Exception('画像のアップロード権限がありません');
+                case 'storage/canceled':
+                  throw Exception('画像のアップロードがキャンセルされました');
+                case 'storage/unknown':
+                  throw Exception('画像のアップロードで不明なエラーが発生しました');
+                case 'storage/object-not-found':
+                  throw Exception('アップロード先が見つかりません');
+                case 'storage/bucket-not-found':
+                  throw Exception('ストレージの設定に問題があります');
+                case 'storage/project-not-found':
+                  throw Exception('プロジェクトの設定に問題があります');
+                case 'storage/quota-exceeded':
+                  throw Exception('ストレージの容量制限に達しました');
+                case 'storage/unauthenticated':
+                  throw Exception('認証が必要です。再ログインしてください');
+                case 'storage/retry-limit-exceeded':
+                  throw Exception('アップロードの再試行回数が上限に達しました');
+                default:
+                  throw Exception('画像のアップロードに失敗しました: ${uploadError.code}');
+              }
             }
             rethrow;
           }
         } catch (e) {
           AppLogger.error('画像アップロードエラー', e, StackTrace.current);
+          if (e.toString().contains('Exception:')) {
+            rethrow; // 既に適切なメッセージが設定されている場合はそのまま
+          }
           throw Exception('画像のアップロードに失敗しました');
         }
       }

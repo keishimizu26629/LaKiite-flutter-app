@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../domain/entity/user.dart';
 import '../domain/interfaces/i_user_repository.dart';
 import '../domain/value/user_id.dart';
@@ -137,49 +138,92 @@ class UserRepository implements IUserRepository {
 
   @override
   Future<String?> uploadUserIcon(String userId, Uint8List imageBytes) async {
-    // 新しいパス構造を使用
-    final ref = _storage.ref().child('v1/users/icon/$userId');
-    await ref.putData(
-      imageBytes,
-      SettableMetadata(
-        contentType: 'image/jpeg',
-        customMetadata: {
-          'uploadedAt': DateTime.now().toIso8601String(),
-          'userId': userId,
-        },
-      ),
-    );
+    try {
+      AppLogger.debug(
+          'uploadUserIcon開始: userId=$userId, imageSize=${imageBytes.length}');
 
-    // ダウンロードURLを取得
-    final downloadUrl = await ref.getDownloadURL();
+      // Firebase Authの認証状態を確認
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        AppLogger.error('Firebase Auth: ユーザーが認証されていません');
+        throw Exception('ユーザーが認証されていません');
+      }
+      AppLogger.debug('Firebase Auth: 認証済みユーザー uid=${currentUser.uid}');
+      AppLogger.debug('アップロード対象ユーザーID: $userId');
 
-    // ユーザードキュメントの参照を取得
-    final userRef = _firestore.collection('users').doc(userId);
-    final privateRef = userRef.collection('private').doc('profile');
-
-    // トランザクションでアイコンURLを更新
-    await _firestore.runTransaction((transaction) async {
-      // 公開プロフィールのiconUrlを更新
-      final userDoc = await transaction.get(userRef);
-      if (userDoc.exists) {
-        final userData = userDoc.data() ?? {};
-        userData['iconUrl'] = downloadUrl;
-        transaction.update(userRef, userData);
+      // ユーザーIDの一致確認（セキュリティルール要件）
+      if (currentUser.uid != userId) {
+        AppLogger.error('Firebase Auth UID と アップロード対象ユーザーID が一致しません');
+        AppLogger.error(
+            'Auth UID: ${currentUser.uid}, Target User ID: $userId');
+        throw Exception('ユーザーIDが一致しません');
       }
 
-      // プライベートプロフィールにも同じURLを保存
-      final privateDoc = await transaction.get(privateRef);
-      if (privateDoc.exists) {
-        final privateData = privateDoc.data() ?? {};
-        if (privateData['profile'] == null) {
-          privateData['profile'] = {};
-        }
-        privateData['profile']['iconUrl'] = downloadUrl;
-        transaction.update(privateRef, privateData);
-      }
-    });
+      // Storage Rulesに合わせたパス構造を使用
+      final path = 'users/$userId/profile/avatar.jpg';
+      final ref = _storage.ref().child(path);
+      AppLogger.debug('Firebase Storage参照パス: $path');
+      AppLogger.debug('Firebase Storage参照フルパス: ${ref.fullPath}');
 
-    return downloadUrl;
+      // アップロードタスクを実行
+      AppLogger.debug('アップロードタスクを開始します');
+      final uploadTask = ref.putData(
+        imageBytes,
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          customMetadata: {
+            'uploadedAt': DateTime.now().toIso8601String(),
+            'userId': userId,
+          },
+        ),
+      );
+
+      // アップロードの完了を待つ
+      AppLogger.debug('アップロード完了を待機中...');
+      final snapshot = await uploadTask;
+      AppLogger.debug('アップロード完了: state=${snapshot.state}');
+
+      // アップロードが成功したことを確認
+      if (snapshot.state == TaskState.success) {
+        AppLogger.debug('アップロード成功、ダウンロードURLを取得中...');
+        // ダウンロードURLを取得
+        final downloadUrl = await ref.getDownloadURL();
+        AppLogger.debug('ダウンロードURL取得成功: $downloadUrl');
+
+        // ユーザードキュメントの参照を取得
+        final userRef = _firestore.collection('users').doc(userId);
+        final privateRef = userRef.collection('private').doc('profile');
+
+        // トランザクションでアイコンURLを更新
+        await _firestore.runTransaction((transaction) async {
+          // 公開プロフィールのiconUrlを更新
+          final userDoc = await transaction.get(userRef);
+          if (userDoc.exists) {
+            final userData = userDoc.data() ?? {};
+            userData['iconUrl'] = downloadUrl;
+            transaction.update(userRef, userData);
+          }
+
+          // プライベートプロフィールにも同じURLを保存
+          final privateDoc = await transaction.get(privateRef);
+          if (privateDoc.exists) {
+            final privateData = privateDoc.data() ?? {};
+            if (privateData['profile'] == null) {
+              privateData['profile'] = {};
+            }
+            privateData['profile']['iconUrl'] = downloadUrl;
+            transaction.update(privateRef, privateData);
+          }
+        });
+
+        return downloadUrl;
+      } else {
+        throw Exception('アップロードが失敗しました: ${snapshot.state}');
+      }
+    } catch (e) {
+      print('uploadUserIcon error: $e');
+      rethrow;
+    }
   }
 
   @override

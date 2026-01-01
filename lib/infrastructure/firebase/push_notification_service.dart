@@ -337,8 +337,9 @@ class PushNotificationService {
             AppLogger.info('🤖 Android FCMトークン詳細:');
             AppLogger.info('🤖 - トークンの先頭10文字: ${token.substring(0, 10)}...');
             AppLogger.info('🤖 - トークンにコロン含む: ${token.contains(':')}');
-            AppLogger.info(
-                '🤖 - トークン形式確認: ${token.startsWith('f') || token.startsWith('c') || token.startsWith('d') ? '正常' : '異常'}');
+            // FCMトークンの基本的な形式チェック（長さとコロンの存在）
+            final isValidFormat = token.length > 100 && token.contains(':');
+            AppLogger.info('🤖 - トークン形式確認: ${isValidFormat ? '正常' : '異常'}');
           }
         } else {
           AppLogger.error('❌ FCMトークンがnullで返されました');

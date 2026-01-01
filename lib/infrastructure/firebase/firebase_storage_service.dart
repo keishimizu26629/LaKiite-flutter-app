@@ -69,55 +69,28 @@ class FirebaseStorageService implements IStorageService {
         final ref = _storage.ref().child(normalizedPath);
         AppLogger.debug('FirebaseStorage: 参照作成成功 - ${ref.fullPath}');
 
-        // アップロードタスクを作成
+        // ファイルを直接読み込んでアップロード
         final bytes = await file.readAsBytes();
         AppLogger.debug('FirebaseStorage: ファイル読み込み成功 - ${bytes.length} bytes');
 
-        final uploadTask = ref.putData(
+        // putDataを直接awaitして同期的にアップロード
+        await ref.putData(
           bytes,
           SettableMetadata(
             contentType: contentType,
             customMetadata: fullMetadata,
           ),
         );
-        AppLogger.debug('FirebaseStorage: アップロードタスク作成成功');
+        AppLogger.debug('FirebaseStorage: アップロード完了');
 
-        // アップロードの進行状況を監視
-        uploadTask.snapshotEvents.listen(
-          (TaskSnapshot snapshot) {
-            AppLogger.debug(
-                'FirebaseStorage: アップロード進行状況 - ${snapshot.bytesTransferred}/${snapshot.totalBytes} bytes');
-            AppLogger.debug('FirebaseStorage: アップロード状態 - ${snapshot.state}');
-          },
-          onError: (error) {
-            AppLogger.error('FirebaseStorage: アップロード監視エラー - $error');
-            if (error is FirebaseException) {
-              AppLogger.error('FirebaseStorage: エラーコード - ${error.code}');
-              AppLogger.error('FirebaseStorage: エラーメッセージ - ${error.message}');
-              AppLogger.error('FirebaseStorage: エラー詳細 - ${error.stackTrace}');
-            }
-          },
-          cancelOnError: false,
-        );
-
-        // アップロード完了を待機
-        AppLogger.debug('FirebaseStorage: アップロード完了を待機');
-        final snapshot = await uploadTask;
-        AppLogger.debug('FirebaseStorage: アップロード完了 - 状態: ${snapshot.state}');
-
-        if (snapshot.state == TaskState.success) {
-          // ダウンロードURLの取得
-          try {
-            final downloadUrl = await ref.getDownloadURL();
-            AppLogger.debug('FirebaseStorage: アップロード成功 - URL: $downloadUrl');
-            return downloadUrl;
-          } catch (e) {
-            AppLogger.error('FirebaseStorage: ダウンロードURL取得エラー', e);
-            throw Exception('ダウンロードURLの取得に失敗しました');
-          }
-        } else {
-          AppLogger.error('FirebaseStorage: 不正な状態 - ${snapshot.state}');
-          throw Exception('アップロードが完了しましたが、状態が不正です');
+        // ダウンロードURLの取得
+        try {
+          final downloadUrl = await ref.getDownloadURL();
+          AppLogger.debug('FirebaseStorage: アップロード成功 - URL: $downloadUrl');
+          return downloadUrl;
+        } catch (e) {
+          AppLogger.error('FirebaseStorage: ダウンロードURL取得エラー', e);
+          throw Exception('ダウンロードURLの取得に失敗しました');
         }
       } catch (e) {
         AppLogger.error('FirebaseStorage: アップロード処理エラー', e,

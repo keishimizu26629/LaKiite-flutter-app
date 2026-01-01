@@ -17,7 +17,7 @@ import 'utils/logger.dart';
 Future<void> main() async {
   // 環境変数からFlavorを取得
   const flavorString = String.fromEnvironment('FLAVOR');
-  const environment = flavorString == 'production'
+  const environment = (flavorString == 'production' || flavorString == 'prod')
       ? Environment.production
       : Environment.development;
 
@@ -54,8 +54,14 @@ Future<void> startApp([
   // Firebase関連の初期化（テスト時はスキップ）
   if (!skipFirebaseInit) {
     try {
-      // Firebaseの初期化
-      await Firebase.initializeApp(options: AppConfig.instance.firebaseOptions);
+      // Firebaseの初期化（重複初期化を防ぐ）
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+            options: AppConfig.instance.firebaseOptions);
+      } else {
+        AppLogger.debug(
+            'Firebase default app already exists; skipping initialize');
+      }
 
       // プッシュ通知サービスの初期化
       AppLogger.info('🚀 プッシュ通知サービスの初期化を開始...');
@@ -76,15 +82,23 @@ Future<void> startApp([
     } catch (e) {
       // Firebase初期化エラーをログに記録
       AppLogger.error('❌ Firebase初期化に失敗しました: $e');
-      AppLogger.info('💡 トラブルシューティング:');
-      AppLogger.info('   - ネットワーク接続を確認してください');
-      AppLogger.info('   - Firebase設定ファイルが正しく配置されているか確認してください');
-      AppLogger.info('   - 実機でテストしてください（シミュレータでは制限があります）');
 
-      // テスト環境またはCI環境ではエラーを無視
-      const isTest = bool.fromEnvironment('FLUTTER_TEST', defaultValue: false);
-      if (!isTest && environment != Environment.development) {
-        rethrow;
+      // duplicate-appエラーの場合は警告レベルで処理
+      if (e.toString().contains('[core/duplicate-app]')) {
+        AppLogger.warning(
+            '⚠️ Firebase app already exists - continuing with existing instance');
+      } else {
+        AppLogger.info('💡 トラブルシューティング:');
+        AppLogger.info('   - ネットワーク接続を確認してください');
+        AppLogger.info('   - Firebase設定ファイルが正しく配置されているか確認してください');
+        AppLogger.info('   - 実機でテストしてください（シミュレータでは制限があります）');
+
+        // テスト環境またはCI環境ではエラーを無視
+        const isTest =
+            bool.fromEnvironment('FLUTTER_TEST', defaultValue: false);
+        if (!isTest && environment != Environment.development) {
+          rethrow;
+        }
       }
     }
   }
@@ -130,8 +144,8 @@ class MyApp extends ConsumerWidget {
       title: 'LaKiite',
       theme: AppTheme.theme,
       routerConfig: router,
-      // 環境名をデバッグモードで表示
-      debugShowCheckedModeBanner: AppConfig.instance.isDevelopment,
+      // 環境名をデバッグモードで表示（常に非表示に設定）
+      debugShowCheckedModeBanner: false,
     );
   }
 }
