@@ -9,8 +9,6 @@ plugins {
 
 import java.io.FileNotFoundException
 
-def kotlin_version = '1.8.22'
-
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -42,12 +40,13 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.inoworl.lakiite"
-    compileSdk 35
-    ndkVersion flutter.ndkVersion
+    compileSdkVersion 35
+    ndkVersion "26.1.10909125"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+        coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
@@ -100,7 +99,6 @@ android {
     }
 }
 
-
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
 }
