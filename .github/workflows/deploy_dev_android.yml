@@ -35,6 +35,7 @@ jobs:
         run: |
           echo "${{ secrets.DEV_GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > android/app/src/dev/google-services.json
           echo "${{ secrets.DEV_GOOGLESERVICE_INFO_PLIST_BASE64 }}" | base64 -d > ios/Runner/GoogleService-Info-Dev.plist
+          echo "${{ secrets.DEV_FIREBASE_OPTIONS_DART_BASE64 }}" | base64 -d > lib/firebase_options.dart
 
       - name: Restore Android signing keystore
         run: |
