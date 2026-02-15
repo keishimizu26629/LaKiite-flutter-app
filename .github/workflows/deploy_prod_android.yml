@@ -104,6 +104,16 @@ jobs:
             --build-name=$(grep 'version:' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1) \
             --build-number="${{ steps.calculate_build_number.outputs.buildNumber }}"
 
+      - name: flutter build apk (for Firebase App Distribution)
+        run: |
+          flutter build apk --release \
+            --flavor prod \
+            --target-platform android-arm,android-arm64,android-x64 \
+            --dart-define-from-file="dart_define.json" \
+            -t "lib/main.dart" \
+            --build-name=$(grep 'version:' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1) \
+            --build-number="${{ steps.calculate_build_number.outputs.buildNumber }}"
+
       - name: Get latest 10 commit messages
         run: echo "LATEST_COMMIT_MESSAGES=$(git log -n 10 --pretty=format:'%s' | tr '\n' '; ')" >> $GITHUB_ENV
 
@@ -115,7 +125,7 @@ jobs:
           echo $PROD_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 | base64 -d > /tmp/prod_firebase_service_account_key.json
           export GOOGLE_APPLICATION_CREDENTIALS=/tmp/prod_firebase_service_account_key.json
           firebase use --project ${{ secrets.PROD_FIREBASE_PROJECT_ID }}
-          firebase appdistribution:distribute ./build/app/outputs/bundle/prodRelease/app-prod-release.aab \
+          firebase appdistribution:distribute ./build/app/outputs/flutter-apk/app-prod-release.apk \
             --app ${{ secrets.PROD_FIREBASE_ANDROID_APP_ID }} \
             --groups internal-testers  \
             --release-notes "${LATEST_COMMIT_MESSAGES}"
