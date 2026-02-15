@@ -37,9 +37,46 @@ jobs:
           echo "${{ secrets.DEV_GOOGLESERVICE_INFO_PLIST_BASE64 }}" | base64 -d > ios/Runner/GoogleService-Info-Dev.plist
           echo "${{ secrets.DEV_FIREBASE_OPTIONS_DART_BASE64 }}" | base64 -d > lib/firebase_options.dart
 
-      - name: Restore Android signing keystore
+      - name: Validate Android signing secrets
+        env:
+          ANDROID_UPLOAD_KEYSTORE_JKS_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_JKS_BASE64 }}
+          ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
         run: |
-          echo "${{ secrets.ANDROID_UPLOAD_KEYSTORE_JKS_BASE64 }}" | base64 -d > android/upload-keystore.jks
+          missing=0
+          for v in ANDROID_UPLOAD_KEYSTORE_JKS_BASE64 ANDROID_UPLOAD_KEYSTORE_PASSWORD ANDROID_UPLOAD_KEY_ALIAS ANDROID_UPLOAD_KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then
+              echo "::error ::Missing required secret: $v"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Restore Android signing keystore
+        env:
+          ANDROID_UPLOAD_KEYSTORE_JKS_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_JKS_BASE64 }}
+        run: |
+          echo "$ANDROID_UPLOAD_KEYSTORE_JKS_BASE64" | base64 -d > android/upload-keystore.jks
+          if [ ! -s android/upload-keystore.jks ]; then
+            echo "::error ::Decoded keystore is empty. Check ANDROID_UPLOAD_KEYSTORE_JKS_BASE64."
+            exit 1
+          fi
+
+      - name: Create Android key.properties
+        env:
+          ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=$ANDROID_UPLOAD_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_UPLOAD_KEY_PASSWORD
+          keyAlias=$ANDROID_UPLOAD_KEY_ALIAS
+          storeFile=../upload-keystore.jks
+          EOF
 
       - name: Restore dart-define config
         run: |
