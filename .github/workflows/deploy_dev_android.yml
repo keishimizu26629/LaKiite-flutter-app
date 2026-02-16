@@ -158,3 +158,4 @@ jobs:
           packageName: ${{ secrets.DEV_ANDROID_PACKAGE_NAME }}
           releaseFiles: build/app/outputs/bundle/devRelease/app-dev-release.aab
           track: internal
+          status: draft
