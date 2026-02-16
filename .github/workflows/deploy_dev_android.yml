@@ -131,7 +131,25 @@ jobs:
             --release-notes "${LATEST_COMMIT_MESSAGES}"
 
       - name: Decode Google Play Console API Service Account Key
-        run: echo "${{ secrets.GOOGLE_PLAY_CONSOLE_API_SERVICE_ACCOUNT_KEY_JSON_BASE64 }}" | base64 --decode > /tmp/google_play_console_api_service_account_key.json
+        env:
+          GOOGLE_PLAY_CONSOLE_API_SERVICE_ACCOUNT_KEY_JSON_BASE64: ${{ secrets.GOOGLE_PLAY_CONSOLE_API_SERVICE_ACCOUNT_KEY_JSON_BASE64 }}
+        run: |
+          if [ -z "$GOOGLE_PLAY_CONSOLE_API_SERVICE_ACCOUNT_KEY_JSON_BASE64" ]; then
+            echo "::error ::Missing required secret: GOOGLE_PLAY_CONSOLE_API_SERVICE_ACCOUNT_KEY_JSON_BASE64"
+            exit 1
+          fi
+          echo "$GOOGLE_PLAY_CONSOLE_API_SERVICE_ACCOUNT_KEY_JSON_BASE64" | base64 --decode > /tmp/google_play_console_api_service_account_key.json
+          if [ ! -s /tmp/google_play_console_api_service_account_key.json ]; then
+            echo "::error ::Decoded Google Play service account JSON is empty. Check GOOGLE_PLAY_CONSOLE_API_SERVICE_ACCOUNT_KEY_JSON_BASE64."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json
+          p = '/tmp/google_play_console_api_service_account_key.json'
+          with open(p, 'r', encoding='utf-8') as f:
+            json.load(f)
+          print('Google Play service account JSON: OK')
+          PY
 
       - name: Deploy to Play Store (Internal)
         uses: r0adkll/upload-google-play@v1
