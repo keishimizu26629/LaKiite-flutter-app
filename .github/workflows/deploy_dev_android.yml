@@ -134,7 +134,6 @@ jobs:
           packageName: ${{ secrets.DEV_ANDROID_PACKAGE_NAME }}
           releaseFiles: build/app/outputs/bundle/devRelease/app-dev-release.aab
           track: internal
-          status: draft
 
       # 事前に Firebase プロジェクトの Project Settings > Integrations から Google Play Console と連携しておく必要がある。
       - name: Deploy to Firebase App Distribution
