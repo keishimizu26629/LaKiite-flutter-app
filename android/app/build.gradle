@@ -9,6 +9,8 @@ plugins {
 
 import java.io.FileNotFoundException
 
+def kotlin_version = '1.9.0'
+
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -41,12 +43,11 @@ if (flutterVersionName == null) {
 android {
     namespace "com.inoworl.lakiite"
     compileSdkVersion 35
-    ndkVersion "26.1.10909125"
+    ndkVersion flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
-        coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
@@ -59,10 +60,23 @@ android {
 
     signingConfigs {
         release {
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-            storePassword keystoreProperties['storePassword']
+            def envKeystorePath = System.getenv("ANDROID_UPLOAD_KEYSTORE_PATH")
+            def envStorePassword = System.getenv("ANDROID_UPLOAD_KEYSTORE_PASSWORD")
+            def envKeyAlias = System.getenv("ANDROID_UPLOAD_KEY_ALIAS")
+            def envKeyPassword = System.getenv("ANDROID_UPLOAD_KEY_PASSWORD")
+
+            if (envKeystorePath) {
+                def envFile = new File(envKeystorePath)
+                storeFile envFile.isAbsolute() ? envFile : rootProject.file(envKeystorePath)
+            } else if (keystoreProperties['storeFile']) {
+                storeFile file(keystoreProperties['storeFile'])
+            } else {
+                storeFile null
+            }
+
+            storePassword envStorePassword ?: keystoreProperties['storePassword']
+            keyAlias envKeyAlias ?: keystoreProperties['keyAlias']
+            keyPassword envKeyPassword ?: keystoreProperties['keyPassword']
         }
     }
 
@@ -72,7 +86,7 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion 23
-        targetSdkVersion flutter.targetSdkVersion
+        targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
 
@@ -83,7 +97,7 @@ android {
     productFlavors {
         dev {
             dimension "environment"
-            applicationId "com.inoworl.lakiite"
+            applicationId "com.inoworl.lakiite.dev"
             versionNameSuffix "-dev"
         }
         prod {
@@ -99,6 +113,7 @@ android {
     }
 }
 
+
 dependencies {
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }
