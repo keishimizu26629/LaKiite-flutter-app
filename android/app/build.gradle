@@ -9,7 +9,7 @@ plugins {
 
 import java.io.FileNotFoundException
 
-def kotlin_version = '1.7.10'
+def kotlin_version = '1.9.0'
 
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
@@ -42,7 +42,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.inoworl.lakiite"
-    compileSdkVersion flutter.compileSdkVersion
+    compileSdkVersion 35
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -60,10 +60,23 @@ android {
 
     signingConfigs {
         release {
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-            storePassword keystoreProperties['storePassword']
+            def envKeystorePath = System.getenv("ANDROID_UPLOAD_KEYSTORE_PATH")
+            def envStorePassword = System.getenv("ANDROID_UPLOAD_KEYSTORE_PASSWORD")
+            def envKeyAlias = System.getenv("ANDROID_UPLOAD_KEY_ALIAS")
+            def envKeyPassword = System.getenv("ANDROID_UPLOAD_KEY_PASSWORD")
+
+            if (envKeystorePath) {
+                def envFile = new File(envKeystorePath)
+                storeFile envFile.isAbsolute() ? envFile : rootProject.file(envKeystorePath)
+            } else if (keystoreProperties['storeFile']) {
+                storeFile file(keystoreProperties['storeFile'])
+            } else {
+                storeFile null
+            }
+
+            storePassword envStorePassword ?: keystoreProperties['storePassword']
+            keyAlias envKeyAlias ?: keystoreProperties['keyAlias']
+            keyPassword envKeyPassword ?: keystoreProperties['keyPassword']
         }
     }
 
@@ -72,8 +85,8 @@ android {
         applicationId "com.inoworl.lakiite"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion 21
-        targetSdkVersion flutter.targetSdkVersion
+        minSdkVersion 23
+        targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
 
