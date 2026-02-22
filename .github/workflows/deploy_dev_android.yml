@@ -107,6 +107,17 @@ jobs:
       - name: Get latest 10 commit messages
         run: echo "LATEST_COMMIT_MESSAGES=$(git log -n 10 --pretty=format:'%s' | tr '\n' '; ')" >> $GITHUB_ENV
 
+      - name: Decode Google Play Console API Service Account Key
+        run: echo "${{ secrets.GOOGLE_PLAY_CONSOLE_API_SERVICE_ACCOUNT_KEY_JSON_BASE64 }}" | base64 --decode > /tmp/google_play_console_api_service_account_key.json
+
+      - name: Deploy to Play Store (Internal)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: /tmp/google_play_console_api_service_account_key.json
+          packageName: ${{ secrets.DEV_ANDROID_PACKAGE_NAME }}
+          releaseFiles: build/app/outputs/bundle/devRelease/app-dev-release.aab
+          track: internal
+
       # 事前に Firebase プロジェクトの Project Settings > Integrations から Google Play Console と連携しておく必要がある。
       - name: Deploy to Firebase App Distribution
         env:
@@ -119,14 +130,3 @@ jobs:
             --app ${{ secrets.DEV_FIREBASE_ANDROID_APP_ID }} \
             --groups internal-testers  \
             --release-notes "${LATEST_COMMIT_MESSAGES}"
-
-      - name: Decode Google Play Console API Service Account Key
-        run: echo "${{ secrets.GOOGLE_PLAY_CONSOLE_API_SERVICE_ACCOUNT_KEY_JSON_BASE64 }}" | base64 --decode > /tmp/google_play_console_api_service_account_key.json
-
-      - name: Deploy to Play Store (Internal)
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJson: /tmp/google_play_console_api_service_account_key.json
-          packageName: ${{ secrets.DEV_ANDROID_PACKAGE_NAME }}
-          releaseFiles: build/app/outputs/bundle/devRelease/app-dev-release.aab
-          track: internal
