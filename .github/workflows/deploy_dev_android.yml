@@ -85,9 +85,9 @@ jobs:
       - name: Calculate Build Number
         id: calculate_build_number
         run: |
-          TOTAL_COMMITS=$(git rev-list --count HEAD)
-          TOTAL_COMMITS=$(($TOTAL_COMMITS + 10000))  # オフセットとして一律で 10000 を加算する。
-          echo "buildNumber=$TOTAL_COMMITS" >> $GITHUB_OUTPUT
+          # Re-runでも重複しないよう、Unix epoch秒をversionCodeとして使う。
+          BUILD_NUMBER=$(date +%s)
+          echo "buildNumber=$BUILD_NUMBER" >> $GITHUB_OUTPUT
 
       - name: flutter build appbundle
         env:
