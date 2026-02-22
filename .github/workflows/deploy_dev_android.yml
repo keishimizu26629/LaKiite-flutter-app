@@ -104,6 +104,23 @@ jobs:
             --build-name=$(grep 'version:' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1) \
             --build-number="${{ steps.calculate_build_number.outputs.buildNumber }}"
 
+      # Firebase App Distribution (Dev) は APK 配布にして、
+      # Google Play の公開状態に依存しないようにする。
+      - name: flutter build apk
+        env:
+          ANDROID_UPLOAD_KEYSTORE_PATH: ${{ github.workspace }}/android/upload-keystore.jks
+          ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          flutter build apk --release \
+            --flavor dev \
+            --target-platform android-arm,android-arm64,android-x64 \
+            --dart-define-from-file="dart_define.json" \
+            -t "lib/main.dart" \
+            --build-name=$(grep 'version:' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1) \
+            --build-number="${{ steps.calculate_build_number.outputs.buildNumber }}"
+
       - name: Get latest 10 commit messages
         run: echo "LATEST_COMMIT_MESSAGES=$(git log -n 10 --pretty=format:'%s' | tr '\n' '; ')" >> $GITHUB_ENV
 
@@ -127,7 +144,7 @@ jobs:
           echo $DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 | base64 -d > /tmp/dev_firebase_service_account_key.json
           export GOOGLE_APPLICATION_CREDENTIALS=/tmp/dev_firebase_service_account_key.json
           firebase use --project ${{ secrets.DEV_FIREBASE_PROJECT_ID }}
-          firebase appdistribution:distribute ./build/app/outputs/bundle/devRelease/app-dev-release.aab \
+          firebase appdistribution:distribute ./build/app/outputs/flutter-apk/app-dev-release.apk \
             --app ${{ secrets.DEV_FIREBASE_ANDROID_APP_ID }} \
             --groups internal-testers  \
             --release-notes "${LATEST_COMMIT_MESSAGES}"
