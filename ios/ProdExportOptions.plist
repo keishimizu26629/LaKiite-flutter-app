@@ -14,10 +14,10 @@
     <true/>
     <key>signingStyle</key>
     <string>manual</string>
-    <key>provisioningProfiles</key>
-    <dict>
-        <key>com.inoworl.lakiite</key>
-        <string>LaKiite Prod Distribution</string>
-    </dict>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.inoworl.lakiite</key>
+		<string>LaKiite Prod App Store</string>
+	</dict>
 </dict>
 </plist>

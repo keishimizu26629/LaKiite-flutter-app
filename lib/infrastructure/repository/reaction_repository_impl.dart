@@ -44,7 +44,7 @@ class ReactionRepositoryImpl implements ReactionRepository {
       'userId': userId,
       'type': type,
       'userDisplayName': userData?['displayName'] as String,
-      'userPhotoUrl': userData?['photoUrl'] as String?,
+      'userPhotoUrl': userData?['iconUrl'] as String?,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
