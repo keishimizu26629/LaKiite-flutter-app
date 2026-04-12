@@ -7,7 +7,6 @@ import '../../utils/logger.dart';
 import 'edit_name_page.dart';
 import 'edit_email_page.dart';
 import 'edit_search_id_page.dart';
-import '../login/login_page.dart';
 import 'account_deletion_webview_page.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -143,6 +142,8 @@ class SettingsPage extends ConsumerWidget {
               );
 
               if (confirmed == true && context.mounted) {
+                final navigator = Navigator.of(context, rootNavigator: true);
+
                 // ローディングインジケータを表示
                 showDialog(
                   context: context,
@@ -161,22 +162,7 @@ class SettingsPage extends ConsumerWidget {
 
                 try {
                   await ref.read(authNotifierProvider.notifier).signOut();
-
-                  // ローディングインジケータを閉じる
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                  }
-
-                  // ログイン画面へ遷移
-                  if (context.mounted) {
-                    context.go(LoginPage.path);
-                  }
                 } catch (e) {
-                  // ローディングインジケータを閉じる
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                  }
-
                   if (context.mounted) {
                     // エラーの種類に応じて適切なメッセージを表示
                     String errorMessage = 'ログアウトに失敗しました';
@@ -190,6 +176,12 @@ class SettingsPage extends ConsumerWidget {
                       SnackBar(content: Text(errorMessage)),
                     );
                   }
+                } finally {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (navigator.mounted && navigator.canPop()) {
+                      navigator.pop();
+                    }
+                  });
                 }
               }
             },
@@ -318,7 +310,7 @@ class SettingsPage extends ConsumerWidget {
 
                     // ログイン画面に遷移
                     if (context.mounted) {
-                      context.go(LoginPage.path);
+                      context.go('/login');
                     }
                   } catch (e) {
                     // 進捗ダイアログを閉じる

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:lakiite/application/auth/auth_state.dart';
 import '../../infrastructure/image_picker_service.dart' as picker;
 import '../../domain/entity/user.dart';
 import '../../domain/entity/schedule.dart';
@@ -19,17 +20,38 @@ final selectedImageProvider = StateProvider<File?>((ref) => null);
 final myPageEditingProvider = StateProvider<bool>((ref) => false);
 
 final timelineSchedulesProvider = StreamProvider<List<Schedule>>((ref) {
-  final scheduleRepository = ref.watch(scheduleRepositoryProvider);
-  final currentUserId = ref.watch(currentUserIdProvider);
-  if (currentUserId == null) return Stream.value([]);
+  final authState = ref.watch(authNotifierProvider);
 
-  return scheduleRepository.watchUserSchedules(currentUserId);
+  return authState.when(
+    data: (state) {
+      if (state.status != AuthStatus.authenticated || state.user == null) {
+        return Stream.value([]);
+      }
+
+      return ref
+          .watch(scheduleRepositoryProvider)
+          .watchUserSchedules(state.user!.id);
+    },
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
 });
 
 final userSchedulesStreamProvider =
     StreamProvider.family<List<Schedule>, String>((ref, userId) {
-  final scheduleRepository = ref.watch(scheduleRepositoryProvider);
-  return scheduleRepository.watchUserSchedules(userId);
+  final authState = ref.watch(authNotifierProvider);
+
+  return authState.when(
+    data: (state) {
+      if (state.status != AuthStatus.authenticated || state.user == null) {
+        return Stream.value([]);
+      }
+
+      return ref.watch(scheduleRepositoryProvider).watchUserSchedules(userId);
+    },
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
 });
 
 final cachedUserProvider =
@@ -51,12 +73,6 @@ final myPageViewModelProvider =
 });
 
 class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
-  final IUserRepository _userRepository;
-  final IScheduleRepository _scheduleRepository;
-  final IStorageService _storageService;
-  final IImageProcessorService _imageProcessorService;
-  final Ref _ref;
-
   MyPageViewModel(
     this._userRepository,
     this._scheduleRepository,
@@ -64,6 +80,11 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
     this._imageProcessorService,
     this._ref,
   ) : super(const AsyncValue.loading());
+  final IUserRepository _userRepository;
+  final IScheduleRepository _scheduleRepository;
+  final IStorageService _storageService;
+  final IImageProcessorService _imageProcessorService;
+  final Ref _ref;
 
   Future<void> pickImage() async {
     try {
