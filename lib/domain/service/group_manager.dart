@@ -41,7 +41,6 @@ abstract class IGroupManager {
 }
 
 class GroupManager implements IGroupManager {
-
   GroupManager(
     this._groupRepository,
     this._notificationRepository,
