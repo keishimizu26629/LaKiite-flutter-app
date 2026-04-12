@@ -1,19 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/notification.dart';
-import 'package:lakiite/domain/interfaces/i_auth_repository.dart';
+import 'package:lakiite/presentation/presentation_provider.dart';
 import '../repository/mock_auth_repository.dart';
 import '../repository/mock_schedule_repository.dart';
 import '../repository/mock_list_repository.dart';
 import '../repository/mock_notification_repository.dart';
 import '../repository/mock_user_repository.dart';
 import '../base_mock.dart';
-
-// 認証リポジトリプロバイダー（presentation_providerに存在しない場合のため）
-final authRepositoryProvider = Provider<IAuthRepository>((ref) {
-  throw UnimplementedError('テスト環境では直接使用せず、オーバーライドしてください');
-});
 
 class TestProviders {
   static MockAuthRepository? _mockAuthRepository;
