@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../home/home_page.dart';
 import '../friend/friend_list_page.dart';
 import '../my_page/my_page.dart';
+import '../widgets/auth_dependent_builder.dart';
 
 class BottomNavigationPage extends ConsumerStatefulWidget {
-  static const String path = '/';
-
   const BottomNavigationPage({super.key});
+  static const String path = '/';
 
   @override
   ConsumerState<BottomNavigationPage> createState() =>
@@ -15,6 +15,30 @@ class BottomNavigationPage extends ConsumerStatefulWidget {
 }
 
 class _BottomNavigationPageState extends ConsumerState<BottomNavigationPage> {
+  @override
+  Widget build(BuildContext context) {
+    return AuthDependentBuilder(
+      onAuthenticated: (_) => const _AuthenticatedBottomNavigationShell(),
+      onLoading: (_) => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      onUnauthenticated: (_) => const Scaffold(
+        body: SizedBox.shrink(),
+      ),
+    );
+  }
+}
+
+class _AuthenticatedBottomNavigationShell extends StatefulWidget {
+  const _AuthenticatedBottomNavigationShell();
+
+  @override
+  State<_AuthenticatedBottomNavigationShell> createState() =>
+      _AuthenticatedBottomNavigationShellState();
+}
+
+class _AuthenticatedBottomNavigationShellState
+    extends State<_AuthenticatedBottomNavigationShell> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [

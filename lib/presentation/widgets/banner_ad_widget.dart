@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -15,16 +17,19 @@ final bannerAdProvider =
 });
 
 class BannerAdWidget extends ConsumerWidget {
-  // 一意のIDを追加
-  final String uniqueId;
-
   const BannerAdWidget({
     super.key,
     required this.uniqueId,
   });
+  // 一意のIDを追加
+  final String uniqueId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      return const SizedBox.shrink();
+    }
+
     // 一意のIDを使用して独自のBannerAdを取得
     final bannerAd = ref.watch(bannerAdProvider(uniqueId));
 

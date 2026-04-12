@@ -7,9 +7,8 @@ import '../../domain/entity/user.dart';
 import '../presentation_provider.dart';
 
 class ListEditPage extends ConsumerStatefulWidget {
-  final UserList list;
-
   const ListEditPage({super.key, required this.list});
+  final UserList list;
 
   @override
   ConsumerState<ListEditPage> createState() => _ListEditPageState();
@@ -55,7 +54,7 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
     setState(() => _isLoading = true);
 
     try {
-      String? newIconUrl = widget.list.iconUrl;
+      final String? newIconUrl = widget.list.iconUrl;
       if (_selectedImage != null) {
         // 画像のアップロード処理を実装
         // newIconUrl = await uploadImage(_selectedImage!);

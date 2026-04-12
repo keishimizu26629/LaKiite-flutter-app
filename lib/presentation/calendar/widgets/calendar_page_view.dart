@@ -11,6 +11,7 @@ import 'dart:async'; // Timerのインポートを追加
 import 'package:flutter/gestures.dart' show DragStartBehavior;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:lakiite/utils/logger.dart'; // AppLoggerのインポートを追加
+import 'package:lakiite/application/auth/auth_state.dart';
 
 // 現在表示中のカレンダーページインデックスを保持するプロバイダー
 final calendarCurrentIndexProvider =
@@ -249,6 +250,18 @@ class CalendarPageView extends HookConsumerWidget {
             // 少し遅延させてからデータ表示を確実にする
             Future.delayed(const Duration(milliseconds: 500), () {
               try {
+                final latestAuthState = ref.read(authNotifierProvider);
+                final stillAuthenticated = latestAuthState.maybeWhen(
+                  data: (state) =>
+                      state.status == AuthStatus.authenticated &&
+                      state.user?.id == currentUserId,
+                  orElse: () => false,
+                );
+                if (!stillAuthenticated) {
+                  AppLogger.debug('カレンダー初期表示: 認証状態が変化したため強制再取得を中止');
+                  return;
+                }
+
                 // 最適化モードを無効化（スライド完了時と同じ処理）
                 if (ref.exists(calendarOptimizationProvider)) {
                   ref.read(calendarOptimizationProvider.notifier).state = false;
@@ -286,7 +299,7 @@ class CalendarPageView extends HookConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "$visibleYear年$visibleMonth",
+                  '$visibleYear年$visibleMonth',
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold),
                 ),
@@ -625,6 +638,16 @@ class CalendarPageView extends HookConsumerWidget {
       [bool force = false]) {
     try {
       final monthKey = getMonthKey(date);
+      final authState = ref.read(authNotifierProvider);
+      final stillAuthenticated = authState.maybeWhen(
+        data: (state) =>
+            state.status == AuthStatus.authenticated &&
+            state.user?.id == userId,
+        orElse: () => false,
+      );
+      if (!stillAuthenticated) {
+        return;
+      }
 
       // Providerの存在確認
       if (!ref.exists(lastDataFetchTimeProvider) ||
@@ -703,18 +726,18 @@ class CalendarPageView extends HookConsumerWidget {
 
   String _getMonthName(int month) {
     final monthNames = [
-      "1月",
-      "2月",
-      "3月",
-      "4月",
-      "5月",
-      "6月",
-      "7月",
-      "8月",
-      "9月",
-      "10月",
-      "11月",
-      "12月"
+      '1月',
+      '2月',
+      '3月',
+      '4月',
+      '5月',
+      '6月',
+      '7月',
+      '8月',
+      '9月',
+      '10月',
+      '11月',
+      '12月'
     ];
     return monthNames[month - 1];
   }

@@ -16,20 +16,7 @@ enum NotificationStatus {
 }
 
 class Notification {
-  final String id;
-  final NotificationType type;
-  final String sendUserId;
-  final String receiveUserId;
-  final String? sendUserDisplayName;
-  final String? receiveUserDisplayName;
-  final NotificationStatus status;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final int rejectionCount;
-  final bool isRead;
-  final String? groupId; // グループ招待の場合に使用
-  final String? relatedItemId; // 投稿ID等の関連アイテムID
-  final String? interactionId; // リアクション・コメントのID
+  // リアクション・コメントのID
 
   const Notification({
     required this.id,
@@ -47,99 +34,6 @@ class Notification {
     this.relatedItemId,
     this.interactionId,
   });
-
-  factory Notification.createFriendRequest({
-    required String fromUserId,
-    required String toUserId,
-    String? fromUserDisplayName,
-    String? toUserDisplayName,
-  }) {
-    final now = DateTime.now();
-    return Notification(
-      id: '', // Firestoreで自動生成
-      type: NotificationType.friend,
-      sendUserId: fromUserId,
-      receiveUserId: toUserId,
-      sendUserDisplayName: fromUserDisplayName,
-      receiveUserDisplayName: toUserDisplayName,
-      status: NotificationStatus.pending,
-      createdAt: now,
-      updatedAt: now,
-      rejectionCount: 0,
-      isRead: false,
-    );
-  }
-
-  factory Notification.createGroupInvitation({
-    required String fromUserId,
-    required String toUserId,
-    required String groupId,
-    String? fromUserDisplayName,
-    String? toUserDisplayName,
-  }) {
-    final now = DateTime.now();
-    return Notification(
-      id: '', // Firestoreで自動生成
-      type: NotificationType.groupInvitation,
-      sendUserId: fromUserId,
-      receiveUserId: toUserId,
-      sendUserDisplayName: fromUserDisplayName,
-      receiveUserDisplayName: toUserDisplayName,
-      status: NotificationStatus.pending,
-      createdAt: now,
-      updatedAt: now,
-      rejectionCount: 0,
-      isRead: false,
-      groupId: groupId,
-    );
-  }
-
-  factory Notification.createReactionNotification({
-    required String fromUserId,
-    required String toUserId,
-    required String relatedItemId,
-    required String interactionId,
-    String? fromUserDisplayName,
-  }) {
-    final now = DateTime.now();
-    return Notification(
-      id: '', // Firestoreで自動生成
-      type: NotificationType.reaction,
-      sendUserId: fromUserId,
-      receiveUserId: toUserId,
-      sendUserDisplayName: fromUserDisplayName,
-      status: NotificationStatus.accepted, // リアクションは自動承認
-      createdAt: now,
-      updatedAt: now,
-      isRead: false,
-      relatedItemId: relatedItemId,
-      interactionId: interactionId,
-    );
-  }
-
-  factory Notification.createCommentNotification({
-    required String fromUserId,
-    required String toUserId,
-    required String relatedItemId,
-    required String interactionId,
-    String? fromUserDisplayName,
-  }) {
-    final now = DateTime.now();
-    return Notification(
-      id: '', // Firestoreで自動生成
-      type: NotificationType.comment,
-      sendUserId: fromUserId,
-      receiveUserId: toUserId,
-      sendUserDisplayName: fromUserDisplayName,
-      status: NotificationStatus.accepted, // コメントは自動承認
-      createdAt: now,
-      updatedAt: now,
-      isRead: false,
-      relatedItemId: relatedItemId,
-      interactionId: interactionId,
-    );
-  }
-
   factory Notification.fromJson(Map<String, dynamic> json) {
     // createdAtとupdatedAtのデバッグ出力
     final createdAtTimestamp = json['createdAt'] as Timestamp;
@@ -175,6 +69,112 @@ class Notification {
       interactionId: json['interactionId'] as String?,
     );
   }
+
+  factory Notification.createCommentNotification({
+    required String fromUserId,
+    required String toUserId,
+    required String relatedItemId,
+    required String interactionId,
+    String? fromUserDisplayName,
+  }) {
+    final now = DateTime.now();
+    return Notification(
+      id: '', // Firestoreで自動生成
+      type: NotificationType.comment,
+      sendUserId: fromUserId,
+      receiveUserId: toUserId,
+      sendUserDisplayName: fromUserDisplayName,
+      status: NotificationStatus.accepted, // コメントは自動承認
+      createdAt: now,
+      updatedAt: now,
+      isRead: false,
+      relatedItemId: relatedItemId,
+      interactionId: interactionId,
+    );
+  }
+
+  factory Notification.createReactionNotification({
+    required String fromUserId,
+    required String toUserId,
+    required String relatedItemId,
+    required String interactionId,
+    String? fromUserDisplayName,
+  }) {
+    final now = DateTime.now();
+    return Notification(
+      id: '', // Firestoreで自動生成
+      type: NotificationType.reaction,
+      sendUserId: fromUserId,
+      receiveUserId: toUserId,
+      sendUserDisplayName: fromUserDisplayName,
+      status: NotificationStatus.accepted, // リアクションは自動承認
+      createdAt: now,
+      updatedAt: now,
+      isRead: false,
+      relatedItemId: relatedItemId,
+      interactionId: interactionId,
+    );
+  }
+
+  factory Notification.createGroupInvitation({
+    required String fromUserId,
+    required String toUserId,
+    required String groupId,
+    String? fromUserDisplayName,
+    String? toUserDisplayName,
+  }) {
+    final now = DateTime.now();
+    return Notification(
+      id: '', // Firestoreで自動生成
+      type: NotificationType.groupInvitation,
+      sendUserId: fromUserId,
+      receiveUserId: toUserId,
+      sendUserDisplayName: fromUserDisplayName,
+      receiveUserDisplayName: toUserDisplayName,
+      status: NotificationStatus.pending,
+      createdAt: now,
+      updatedAt: now,
+      rejectionCount: 0,
+      isRead: false,
+      groupId: groupId,
+    );
+  }
+
+  factory Notification.createFriendRequest({
+    required String fromUserId,
+    required String toUserId,
+    String? fromUserDisplayName,
+    String? toUserDisplayName,
+  }) {
+    final now = DateTime.now();
+    return Notification(
+      id: '', // Firestoreで自動生成
+      type: NotificationType.friend,
+      sendUserId: fromUserId,
+      receiveUserId: toUserId,
+      sendUserDisplayName: fromUserDisplayName,
+      receiveUserDisplayName: toUserDisplayName,
+      status: NotificationStatus.pending,
+      createdAt: now,
+      updatedAt: now,
+      rejectionCount: 0,
+      isRead: false,
+    );
+  }
+  final String id;
+  final NotificationType type;
+  final String sendUserId;
+  final String receiveUserId;
+  final String? sendUserDisplayName;
+  final String? receiveUserDisplayName;
+  final NotificationStatus status;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final int rejectionCount;
+  final bool isRead;
+  final String? groupId; // グループ招待の場合に使用
+  final String? relatedItemId; // 投稿ID等の関連アイテムID
+  final String? interactionId;
 
   Map<String, dynamic> toJson() => {
         'id': id,
