@@ -178,7 +178,8 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
       orElse: () => false,
     );
     if (!isAuthenticated) {
-      AppLogger.debug('ListNotifier: 認証状態が一致しないためリスト監視を開始しません - ownerId: $ownerId');
+      AppLogger.debug(
+          'ListNotifier: 認証状態が一致しないためリスト監視を開始しません - ownerId: $ownerId');
       state = const AsyncValue.data(ListState.initial());
       return;
     }

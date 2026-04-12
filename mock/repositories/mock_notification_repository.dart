@@ -31,7 +31,8 @@ class MockNotificationRepository implements INotificationRepository {
   }
 
   @override
-  Future<bool> hasPendingFriendRequest(String fromUserId, String toUserId) async {
+  Future<bool> hasPendingFriendRequest(
+      String fromUserId, String toUserId) async {
     return false;
   }
 
@@ -91,7 +92,8 @@ class MockNotificationRepository implements INotificationRepository {
   }
 
   @override
-  Stream<int> watchUnreadCountByType(String userId, NotificationType type) async* {
+  Stream<int> watchUnreadCountByType(
+      String userId, NotificationType type) async* {
     yield _notifications
         .where(
           (n) => n.receiveUserId == userId && n.type == type && !n.isRead,

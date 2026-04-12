@@ -15,7 +15,6 @@ import '../../mock/repositories/mock_auth_repository.dart';
 import '../../mock/repositories/mock_user_repository.dart';
 
 class _TrackingScheduleRepository implements IScheduleRepository {
-
   _TrackingScheduleRepository() {
     _controller
       ..onListen = () {
@@ -30,7 +29,8 @@ class _TrackingScheduleRepository implements IScheduleRepository {
   int listenCount = 0;
 
   @override
-  Stream<List<Schedule>> watchUserSchedules(String userId) => _controller.stream;
+  Stream<List<Schedule>> watchUserSchedules(String userId) =>
+      _controller.stream;
 
   @override
   Stream<List<Schedule>> watchUserSchedulesForMonth(
@@ -38,7 +38,8 @@ class _TrackingScheduleRepository implements IScheduleRepository {
       _controller.stream;
 
   @override
-  Stream<List<Schedule>> watchListSchedules(String listId) => _controller.stream;
+  Stream<List<Schedule>> watchListSchedules(String listId) =>
+      _controller.stream;
 
   @override
   Stream<Schedule?> watchSchedule(String scheduleId) =>
@@ -95,7 +96,8 @@ class _TrackingListRepository implements IListRepository {
   int listsListenCount = 0;
 
   @override
-  Stream<List<UserList>> watchUserLists(String ownerId) => _listsController.stream;
+  Stream<List<UserList>> watchUserLists(String ownerId) =>
+      _listsController.stream;
 
   @override
   Stream<UserList?> watchList(String listId) => _listController.stream;
@@ -118,7 +120,8 @@ class _TrackingListRepository implements IListRepository {
   Future<void> deleteList(String listId) => Future.error(UnimplementedError());
 
   @override
-  Future<UserList?> getList(String listId) => Future.error(UnimplementedError());
+  Future<UserList?> getList(String listId) =>
+      Future.error(UnimplementedError());
 
   @override
   Future<List<UserList>> getLists(String ownerId) =>

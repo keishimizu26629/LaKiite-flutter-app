@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lakiite/application/list/list_state.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/domain/interfaces/i_list_repository.dart';
@@ -22,7 +21,8 @@ class _TrackingListRepository implements IListRepository {
   int cancelCount = 0;
 
   @override
-  Stream<List<UserList>> watchUserLists(String ownerId) => _listsController.stream;
+  Stream<List<UserList>> watchUserLists(String ownerId) =>
+      _listsController.stream;
 
   @override
   Stream<UserList?> watchList(String listId) => const Stream<UserList?>.empty();
@@ -45,7 +45,8 @@ class _TrackingListRepository implements IListRepository {
   Future<void> deleteList(String listId) => Future.error(UnimplementedError());
 
   @override
-  Future<UserList?> getList(String listId) => Future.error(UnimplementedError());
+  Future<UserList?> getList(String listId) =>
+      Future.error(UnimplementedError());
 
   @override
   Future<List<UserList>> getLists(String ownerId) =>
