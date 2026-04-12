@@ -6,6 +6,12 @@ import '../../utils/logger.dart';
 /// 法的情報（プライバシーポリシーや利用規約）を表示するための代替ページ
 /// WebViewの代わりにURLランチャーを使用して外部ブラウザで表示します
 class LegalInfoPageAlternative extends StatelessWidget {
+  const LegalInfoPageAlternative({
+    super.key,
+    required this.title,
+    required this.urlPath,
+  });
+
   /// プライバシーポリシーのパス
   static const String privacyPolicyPath = 'privacy-policy';
 
@@ -17,12 +23,6 @@ class LegalInfoPageAlternative extends StatelessWidget {
 
   /// 表示するURLパス
   final String urlPath;
-
-  const LegalInfoPageAlternative({
-    super.key,
-    required this.title,
-    required this.urlPath,
-  });
 
   @override
   Widget build(BuildContext context) {

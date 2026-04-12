@@ -2,8 +2,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lakiite/application/auth/auth_notifier.dart' as notifier;
 import 'package:lakiite/application/auth/auth_state.dart';
-import 'package:riverpod/riverpod.dart';
+import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
+import 'package:lakiite/domain/interfaces/i_user_repository.dart';
+import 'package:lakiite/presentation/presentation_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../mock/repository/mock_auth_repository.dart';
+
+class _ThrowingUserRepository implements IUserRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('userRepositoryProvider should not be read');
+}
+
+class _ThrowingScheduleRepository implements IScheduleRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('scheduleRepositoryProvider should not be read');
+}
 
 /// テスト用のプロバイダーコンテナーを作成する関数
 ProviderContainer createTestProviderContainer({
@@ -236,6 +251,72 @@ void main() {
         // 認証状態の確認でエラーが発生しても、主要な機能（削除）は成功している
         print('認証状態確認でエラー（無視）: $e');
       }
+    });
+
+    test('アカウント削除は repository 参照なしでも成功する', () async {
+      final isolatedContainer = createTestProviderContainer(
+        overrides: [
+          notifier.authRepositoryProvider.overrideWithValue(mockAuthRepository),
+          notifier.authStateStreamProvider.overrideWith((ref) {
+            return mockAuthRepository.authStateChanges().map((user) {
+              if (user != null) {
+                return AuthState.authenticated(user);
+              }
+              return AuthState.unauthenticated();
+            });
+          }),
+          userRepositoryProvider.overrideWithValue(_ThrowingUserRepository()),
+          scheduleRepositoryProvider
+              .overrideWithValue(_ThrowingScheduleRepository()),
+        ],
+      );
+
+      final testUser = MockAuthRepository.createTestUser(
+        name: 'テストユーザー',
+        displayName: 'テスト表示名',
+      );
+      mockAuthRepository.setCurrentUser(testUser);
+
+      final authNotifier =
+          isolatedContainer.read(notifier.authNotifierProvider.notifier);
+
+      final result = await authNotifier.deleteAccount();
+      expect(result, isTrue);
+
+      isolatedContainer.dispose();
+    });
+
+    test('再認証付きアカウント削除は repository 参照なしでも成功する', () async {
+      final isolatedContainer = createTestProviderContainer(
+        overrides: [
+          notifier.authRepositoryProvider.overrideWithValue(mockAuthRepository),
+          notifier.authStateStreamProvider.overrideWith((ref) {
+            return mockAuthRepository.authStateChanges().map((user) {
+              if (user != null) {
+                return AuthState.authenticated(user);
+              }
+              return AuthState.unauthenticated();
+            });
+          }),
+          userRepositoryProvider.overrideWithValue(_ThrowingUserRepository()),
+          scheduleRepositoryProvider
+              .overrideWithValue(_ThrowingScheduleRepository()),
+        ],
+      );
+
+      final testUser = MockAuthRepository.createTestUser(
+        name: 'テストユーザー',
+        displayName: 'テスト表示名',
+      );
+      mockAuthRepository.setCurrentUser(testUser);
+
+      final authNotifier =
+          isolatedContainer.read(notifier.authNotifierProvider.notifier);
+
+      final result = await authNotifier.deleteAccountWithReauth('password123');
+      expect(result, isTrue);
+
+      isolatedContainer.dispose();
     });
   });
 }

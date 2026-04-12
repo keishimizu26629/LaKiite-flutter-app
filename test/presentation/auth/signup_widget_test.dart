@@ -154,6 +154,8 @@ void main() {
 
       // ローディング状態の確認（CircularProgressIndicatorまたはボタンが無効化）
       // 実際の実装に合わせて調整
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
     });
 
     testWidgets('ログインボタンが機能する', (tester) async {

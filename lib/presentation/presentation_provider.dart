@@ -35,18 +35,39 @@ import 'package:lakiite/infrastructure/repository/reaction_repository_impl.dart'
 export 'package:lakiite/application/notification/notification_notifier.dart'
     show currentUserIdProvider;
 export 'package:lakiite/application/auth/auth_notifier.dart'
-    show authRepositoryProvider;
+    show authNotifierProvider, authRepositoryProvider;
+
+typedef UserRepositoryFactory = IUserRepository Function();
+typedef ScheduleRepositoryFactory = IScheduleRepository Function();
 
 /// Firebase認証インスタンスを提供するプロバイダー
 final firebaseAuthProvider = Provider((ref) => FirebaseAuth.instance);
 
+/// Firebase 認証状態の変化を監視し、repository のセッション境界を提供する。
+final repositorySessionKeyProvider = StreamProvider.autoDispose<String?>((ref) {
+  final firebaseAuth = ref.watch(firebaseAuthProvider);
+  return firebaseAuth.authStateChanges().map((user) => user?.uid);
+});
+
 /// リポジトリプロバイダー群
+final userRepositoryFactoryProvider = Provider<UserRepositoryFactory>((ref) {
+  return () => UserRepository();
+});
+
+final scheduleRepositoryFactoryProvider =
+    Provider<ScheduleRepositoryFactory>((ref) {
+  return () => ScheduleRepository();
+});
+
 // ユーザーリポジトリプロバイダー
 final userRepositoryProvider = Provider<IUserRepository>((ref) {
-  final repository = UserRepository();
+  ref.watch(repositorySessionKeyProvider);
+
+  final repository = ref.watch(userRepositoryFactoryProvider).call();
   ref.onDispose(() {
-    // キャッシュをクリア
-    (repository).clearCache();
+    if (repository is UserRepository) {
+      repository.clearCache();
+    }
   });
   return repository;
 });
@@ -63,7 +84,8 @@ final listRepositoryProvider = Provider<IListRepository>((ref) {
 
 /// スケジュールリポジトリプロバイダー
 final scheduleRepositoryProvider = Provider<IScheduleRepository>((ref) {
-  return ScheduleRepository();
+  ref.watch(repositorySessionKeyProvider);
+  return ref.watch(scheduleRepositoryFactoryProvider).call();
 });
 
 /// 通知リポジトリプロバイダー
@@ -88,12 +110,6 @@ final authStateProvider = StreamProvider.autoDispose((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   return authRepository.authStateChanges();
 });
-
-/// 認証状態を管理するNotifierプロバイダー
-final authNotifierProvider =
-    AutoDisposeAsyncNotifierProvider<AuthNotifier, AuthState>(
-  AuthNotifier.new,
-);
 
 /// グループ状態プロバイダー群
 // グループ状態を管理するNotifierプロバイダー
@@ -121,37 +137,42 @@ final listNotifierProvider =
 /// 認証状態に基づいて適切にリストを提供します。
 /// Application層のビジネスロジックに依存しません。
 final userListsStreamProvider =
-    StreamProvider.autoDispose<List<UserList>>((ref) async* {
-  final authState = await ref.watch(authNotifierProvider.future);
+    StreamProvider.autoDispose<List<UserList>>((ref) {
+  final authState = ref.watch(authNotifierProvider);
 
-  if (authState.status == AuthStatus.authenticated && authState.user != null) {
-    await for (final lists in ref
-        .watch(listManagerProvider)
-        .watchAuthenticatedUserLists(authState.user!.id)) {
-      yield lists;
-    }
-  } else {
-    yield [];
-  }
+  return authState.when(
+    data: (state) {
+      if (state.status != AuthStatus.authenticated || state.user == null) {
+        return Stream.value([]);
+      }
+
+      return ref
+          .watch(listManagerProvider)
+          .watchAuthenticatedUserLists(state.user!.id);
+    },
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
 });
 
 /// 認証済みユーザーのグループを監視するStreamプロバイダー
 ///
 /// 認証状態に基づいて適切にグループを提供します。
 /// Application層のビジネスロジックに依存しません。
-final userGroupsStreamProvider =
-    StreamProvider.autoDispose<List<Group>>((ref) async* {
-  final authState = await ref.watch(authNotifierProvider.future);
+final userGroupsStreamProvider = StreamProvider.autoDispose<List<Group>>((ref) {
+  final authState = ref.watch(authNotifierProvider);
 
-  if (authState.status == AuthStatus.authenticated && authState.user != null) {
-    await for (final groups in ref
-        .watch(groupManagerProvider)
-        .watchUserGroups(authState.user!.id)) {
-      yield groups;
-    }
-  } else {
-    yield [];
-  }
+  return authState.when(
+    data: (state) {
+      if (state.status != AuthStatus.authenticated || state.user == null) {
+        return Stream.value([]);
+      }
+
+      return ref.watch(groupManagerProvider).watchUserGroups(state.user!.id);
+    },
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
 });
 
 /// 統合されたユーザー情報をリアルタイムで監視するStreamプロバイダー
@@ -161,7 +182,19 @@ final userGroupsStreamProvider =
 /// UserManagerを使用して統合されたユーザー情報を提供します。
 final userStreamProvider =
     StreamProvider.family<UserModel?, String>((ref, userId) {
-  return ref.watch(userManagerProvider).watchIntegratedUser(userId);
+  final authState = ref.watch(authNotifierProvider);
+
+  return authState.when(
+    data: (state) {
+      if (state.status != AuthStatus.authenticated || state.user == null) {
+        return Stream.value(null);
+      }
+
+      return ref.watch(userManagerProvider).watchIntegratedUser(userId);
+    },
+    loading: () => Stream.value(null),
+    error: (_, __) => Stream.value(null),
+  );
 });
 
 /// 特定のリストをリアルタイムで監視するStreamプロバイダー
@@ -169,25 +202,41 @@ final userStreamProvider =
 /// [listId] 監視対象のリストID
 final listStreamProvider =
     StreamProvider.family<UserList?, String>((ref, listId) {
-  return ref.watch(listManagerProvider).watchList(listId);
+  final authState = ref.watch(authNotifierProvider);
+
+  return authState.when(
+    data: (state) {
+      if (state.status != AuthStatus.authenticated || state.user == null) {
+        return Stream.value(null);
+      }
+
+      return ref.watch(listManagerProvider).watchList(listId);
+    },
+    loading: () => Stream.value(null),
+    error: (_, __) => Stream.value(null),
+  );
 });
 
 /// 認証済みユーザーのフレンド一覧を監視するStreamプロバイダー
 ///
 /// UserManagerを使用してフレンド情報を提供します。
 final userFriendsStreamProvider =
-    StreamProvider.autoDispose<List<PublicUserModel>>((ref) async* {
-  final authState = await ref.watch(authNotifierProvider.future);
+    StreamProvider.autoDispose<List<PublicUserModel>>((ref) {
+  final authState = ref.watch(authNotifierProvider);
 
-  if (authState.status == AuthStatus.authenticated && authState.user != null) {
-    await for (final friends in ref
-        .watch(userManagerProvider)
-        .watchAuthenticatedUserFriends(authState.user!.id)) {
-      yield friends;
-    }
-  } else {
-    yield [];
-  }
+  return authState.when(
+    data: (state) {
+      if (state.status != AuthStatus.authenticated || state.user == null) {
+        return Stream.value([]);
+      }
+
+      return ref
+          .watch(userManagerProvider)
+          .watchAuthenticatedUserFriends(state.user!.id);
+    },
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
 });
 
 /// 認証済みユーザーのフレンド一覧を取得するFutureプロバイダー
@@ -209,10 +258,21 @@ final userFriendsProvider =
 ///
 /// [userId] 監視対象のユーザーID
 final userSchedulesStreamProvider =
-    StreamProvider.family<List<Schedule>, String>(
-  (ref, userId) =>
-      ref.watch(scheduleRepositoryProvider).watchUserSchedules(userId),
-);
+    StreamProvider.family<List<Schedule>, String>((ref, userId) {
+  final authState = ref.watch(authNotifierProvider);
+
+  return authState.when(
+    data: (state) {
+      if (state.status != AuthStatus.authenticated || state.user == null) {
+        return Stream.value([]);
+      }
+
+      return ref.watch(scheduleRepositoryProvider).watchUserSchedules(userId);
+    },
+    loading: () => Stream.value([]),
+    error: (_, __) => Stream.value([]),
+  );
+});
 
 final reactionRepositoryProvider = Provider<ReactionRepository>((ref) {
   final firestore = FirebaseFirestore.instance;

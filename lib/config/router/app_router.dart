@@ -28,12 +28,13 @@ import '../../presentation/presentation_provider.dart';
 /// - [GoRouter] 設定されたルーターインスタンス
 final routerProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = ref.watch(goRouterRefreshProvider);
-  final authState = ref.watch(authNotifierProvider);
 
   return GoRouter(
     refreshListenable: refreshNotifier,
     initialLocation: SplashScreen.path,
     redirect: (context, state) {
+      final authState = ref.read(authNotifierProvider);
+
       // スプラッシュ画面の場合はリダイレクトしない
       if (state.matchedLocation == SplashScreen.path) {
         return null;

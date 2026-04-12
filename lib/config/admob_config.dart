@@ -40,12 +40,12 @@ class AdMobConfig {
   /// 設定値が不正な場合は例外をスローします。
   ///
   /// テスト環境の場合は検証をスキップし、ダミー値を設定します。
-  static void initialize() {
+  static void initialize({bool forceTestMode = false}) {
     // テスト環境かどうかを確認
     const isTestEnvironment =
         bool.fromEnvironment('FLUTTER_TEST', defaultValue: false);
 
-    if (isTestEnvironment) {
+    if (isTestEnvironment || forceTestMode) {
       // テスト環境ではダミー値を設定
       _instance = AdMobConfig._(
         androidAppId: 'ca-app-pub-test-android',

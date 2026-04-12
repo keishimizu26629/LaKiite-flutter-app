@@ -6,7 +6,6 @@ import '../../infrastructure/firebase/push_notification_service.dart';
 import '../../utils/logger.dart';
 import '../../infrastructure/user_repository.dart';
 import '../../infrastructure/firebase/push_notification_sender.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 import '../../presentation/presentation_provider.dart';
 
@@ -18,36 +17,27 @@ final notificationRepositoryProvider = Provider<INotificationRepository>((ref) {
   return NotificationRepository();
 });
 
-/// FirebaseAuthの状態変更を監視するStreamプロバイダー
-final firebaseAuthStateProvider = StreamProvider<User?>((ref) {
-  return FirebaseAuth.instance.authStateChanges();
-});
-
 /// 現在のユーザーIDを提供するプロバイダー
 final currentUserIdProvider = Provider<String?>((ref) {
-  // ログ出力を追加
   AppLogger.debug('currentUserIdProvider - 読み込み開始');
 
-  // まず直接FirebaseAuthからユーザーIDを取得
-  final firebaseAuth = FirebaseAuth.instance;
-  final currentUser = firebaseAuth.currentUser;
-  final directUserId = currentUser?.uid;
-
-  // 次にauthStateからユーザーIDを取得 (一般的にこちらの方が信頼性が高い)
   final authState = ref.watch(authNotifierProvider);
-  final stateUserId = authState.value?.user?.id;
-
-  // FirebaseAuthの状態変更も監視
-  final firebaseAuthState = ref.watch(firebaseAuthStateProvider);
-  final firebaseAuthUserId = firebaseAuthState.value?.uid;
-
-  // 優先順位: authState > firebaseAuthState > directUserId
-  final effectiveUserId = stateUserId ?? firebaseAuthUserId ?? directUserId;
-
-  AppLogger.debug(
-      'currentUserIdProvider - 取得結果比較: FirebaseAuth直接=$directUserId, authState=$stateUserId, firebaseAuthStream=$firebaseAuthUserId, 使用=$effectiveUserId');
-
-  return effectiveUserId;
+  return authState.when(
+    data: (state) {
+      final userId = state.user?.id;
+      AppLogger.debug('currentUserIdProvider - authState からユーザーIDを取得: $userId');
+      return userId;
+    },
+    loading: () {
+      AppLogger.debug('currentUserIdProvider - authState 読み込み中のためnullを返却');
+      return null;
+    },
+    error: (error, _) {
+      AppLogger.warning(
+          'currentUserIdProvider - authState エラーのためnullを返却: $error');
+      return null;
+    },
+  );
 });
 
 /// 未読の通知数を監視するプロバイダー
