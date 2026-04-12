@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/application/list/list_state.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/service/service_provider.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
+import 'package:lakiite/utils/logger.dart';
 
 part 'list_notifier.g.dart';
 
@@ -17,9 +21,37 @@ part 'list_notifier.g.dart';
 /// アプリケーション全体でリスト状態を共有します。
 @riverpod
 class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
+  StreamSubscription<List<UserList>>? _listSubscription;
+
   @override
   Future<ListState> build() async {
+    ref.listen(authNotifierProvider, (_, next) {
+      next.whenOrNull(
+        data: (authState) {
+          if (authState.status != AuthStatus.authenticated ||
+              authState.user == null) {
+            unawaited(_stopWatchingLists(resetState: true));
+          }
+        },
+        loading: () => unawaited(_stopWatchingLists(resetState: true)),
+        error: (_, __) => unawaited(_stopWatchingLists(resetState: true)),
+      );
+    });
+
+    ref.onDispose(() {
+      _listSubscription?.cancel();
+    });
+
     return const ListState.initial();
+  }
+
+  Future<void> _stopWatchingLists({bool resetState = false}) async {
+    await _listSubscription?.cancel();
+    _listSubscription = null;
+
+    if (resetState) {
+      state = const AsyncValue.data(ListState.initial());
+    }
   }
 
   /// 新しいプライベートリストを作成する
@@ -136,12 +168,36 @@ class ListNotifier extends AutoDisposeAsyncNotifier<ListState> {
   ///
   /// リストの変更を[ListState.loaded]として通知し、
   /// エラー発生時は[ListState.error]を返します。
-  void watchUserLists(String ownerId) {
-    ref.read(listManagerProvider).watchAuthenticatedUserLists(ownerId).listen(
+  Future<void> watchUserLists(String ownerId) async {
+    await _stopWatchingLists();
+
+    final authState = ref.read(authNotifierProvider);
+    final isAuthenticated = authState.maybeWhen(
+      data: (state) =>
+          state.status == AuthStatus.authenticated && state.user?.id == ownerId,
+      orElse: () => false,
+    );
+    if (!isAuthenticated) {
+      AppLogger.debug('ListNotifier: 認証状態が一致しないためリスト監視を開始しません - ownerId: $ownerId');
+      state = const AsyncValue.data(ListState.initial());
+      return;
+    }
+
+    _listSubscription = ref
+        .read(listManagerProvider)
+        .watchAuthenticatedUserLists(ownerId)
+        .listen(
       (lists) {
         state = AsyncValue.data(ListState.loaded(lists));
       },
       onError: (error) {
+        final message = error.toString();
+        if (message.contains('permission-denied') ||
+            message.contains('User not authenticated')) {
+          AppLogger.warning('ListNotifier: 認証解除後のリスト監視エラーを無視します: $error');
+          unawaited(_stopWatchingLists(resetState: true));
+          return;
+        }
         state = AsyncValue.data(ListState.error(error.toString()));
       },
     );

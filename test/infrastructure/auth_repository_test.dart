@@ -77,22 +77,18 @@ class MockUserRepository implements IUserRepository {
     throw UnimplementedError('テストでは使用しません');
   }
 
-  @override
   Future<List<domain.UserModel>> getUsers(List<String> userIds) async {
     throw UnimplementedError('テストでは使用しません');
   }
 
-  @override
   Future<List<domain.UserModel>> searchUsersByName(String query) async {
     throw UnimplementedError('テストでは使用しません');
   }
 
-  @override
   Future<domain.UserModel?> getUserBySearchId(String searchId) async {
     throw UnimplementedError('テストでは使用しません');
   }
 
-  @override
   Future<List<domain.UserModel>> getFriends(String userId) async {
     throw UnimplementedError('テストでは使用しません');
   }

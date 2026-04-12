@@ -3,12 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../presentation_provider.dart';
 import '../signup/signup.dart';
-import '../../presentation/bottom_navigation/bottom_navigation.dart';
+import '../../utils/logger.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
-  static const String path = '/login';
-
   const LoginPage({super.key});
+  static const String path = '/login';
 
   @override
   ConsumerState<LoginPage> createState() => _LoginPageState();
@@ -29,6 +28,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Future<void> _handleLogin() async {
     if (_isLoading) return;
 
+    AppLogger.debugOnly('LoginPage._handleLogin開始');
     setState(() {
       _isLoading = true;
     });
@@ -38,10 +38,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             _emailController.text,
             _passwordController.text,
           );
-      if (mounted) {
-        context.go(BottomNavigationPage.path);
+      final authState = ref.read(authNotifierProvider);
+      AppLogger.debugOnly('LoginPage._handleLogin後 state=$authState');
+      if (mounted && authState.hasError) {
+        final error = authState.error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ログインに失敗しました: ${error.toString()}')),
+        );
       }
     } catch (e) {
+      AppLogger.errorOnly('LoginPage._handleLogin例外', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('ログインに失敗しました: ${e.toString()}')),

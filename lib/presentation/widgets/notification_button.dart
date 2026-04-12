@@ -7,6 +7,13 @@ import './notification_badge.dart';
 /// 未読通知がある場合は赤いバッジを表示します。
 /// タップすると通知一覧画面に遷移します。
 class NotificationButton extends StatelessWidget {
+  const NotificationButton({
+    super.key,
+    this.rightPadding = 24.0,
+    this.iconColor,
+    this.iconSize = 24.0,
+  });
+
   /// 右側のパディング
   final double rightPadding;
 
@@ -15,13 +22,6 @@ class NotificationButton extends StatelessWidget {
 
   /// アイコンのサイズ
   final double iconSize;
-
-  const NotificationButton({
-    super.key,
-    this.rightPadding = 24.0,
-    this.iconColor,
-    this.iconSize = 24.0,
-  });
 
   @override
   Widget build(BuildContext context) {

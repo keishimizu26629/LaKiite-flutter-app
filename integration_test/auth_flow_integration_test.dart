@@ -79,7 +79,7 @@ void main() {
 
       // 段階的にスプラッシュ画面の待機を行い、状態を確認
       for (int i = 1; i <= 5; i++) {
-        print('⏳ [$testName] スプラッシュ画面待機 ${i}秒目...');
+        print('⏳ [$testName] スプラッシュ画面待機 $i秒目...');
         await Future.delayed(const Duration(seconds: 1));
         await tester.pumpAndSettle();
 

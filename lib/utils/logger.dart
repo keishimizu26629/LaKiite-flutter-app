@@ -69,6 +69,35 @@ class AppLogger {
     }
   }
 
+  static void debugOnly(dynamic message) {
+    assert(() {
+      debug(message);
+      return true;
+    }());
+  }
+
+  static void infoOnly(dynamic message) {
+    assert(() {
+      info(message);
+      return true;
+    }());
+  }
+
+  static void warningOnly(dynamic message) {
+    assert(() {
+      warning(message);
+      return true;
+    }());
+  }
+
+  static void errorOnly(dynamic message,
+      [dynamic errorObject, StackTrace? stackTrace]) {
+    assert(() {
+      error(message, errorObject, stackTrace);
+      return true;
+    }());
+  }
+
   static void info(dynamic message) {
     // テスト環境ではinfoログを出力しない
     if (_isTestEnvironment) return;

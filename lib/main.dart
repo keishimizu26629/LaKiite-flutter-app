@@ -46,7 +46,7 @@ Future<void> startApp([
   AppConfig.initialize(environment);
 
   // AdMob設定の初期化（Firebase初期化の前に行う）
-  AdMobConfig.initialize();
+  AdMobConfig.initialize(forceTestMode: skipFirebaseInit);
 
   // 日本語ロケールの初期化
   await initializeDateFormatting('ja_JP', null);
@@ -54,8 +54,21 @@ Future<void> startApp([
   // Firebase関連の初期化（テスト時はスキップ）
   if (!skipFirebaseInit) {
     try {
-      // Firebaseの初期化
-      await Firebase.initializeApp(options: AppConfig.instance.firebaseOptions);
+      AppLogger.info(
+          'Firebase初期化を開始: env=${AppConfig.instance.environmentName}, projectId=${AppConfig.instance.firebaseOptions.projectId}, iosBundleId=${AppConfig.instance.firebaseOptions.iosBundleId}');
+
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+            options: AppConfig.instance.firebaseOptions);
+        AppLogger.info('Firebase初期化完了: [DEFAULT] を作成しました');
+      } else {
+        AppLogger.warning(
+            'Firebaseは既に初期化済みのため再初期化をスキップします: apps=${Firebase.apps.map((app) => app.name).join(', ')}');
+      }
+
+      final defaultApp = Firebase.app();
+      AppLogger.info(
+          'Firebase使用中アプリ: name=${defaultApp.name}, projectId=${defaultApp.options.projectId}, appId=${defaultApp.options.appId}, senderId=${defaultApp.options.messagingSenderId}, iosBundleId=${defaultApp.options.iosBundleId}');
 
       // プッシュ通知サービスの初期化
       AppLogger.info('🚀 プッシュ通知サービスの初期化を開始...');
