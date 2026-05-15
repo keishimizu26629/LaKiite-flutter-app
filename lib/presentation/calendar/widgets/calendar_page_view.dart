@@ -117,6 +117,7 @@ class CalendarPageView extends HookConsumerWidget {
     final currentIndexValue = ref.watch(calendarCurrentIndexProvider);
     final activeMonthIndices = ref.watch(activeMonthIndicesProvider);
     final renderedMonths = ref.watch(renderedMonthsProvider);
+    bool isMounted() => context.mounted;
 
     final visibleDateTime = _getVisibleDateTime(currentIndexValue);
     final visibleMonth = _getMonthName(visibleDateTime.month);
@@ -132,6 +133,9 @@ class CalendarPageView extends HookConsumerWidget {
       _isCalendarFirstBuild = false;
       // ビルド完了後に実行
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!isMounted()) {
+          return;
+        }
         if (ref.exists(calendarOptimizationProvider)) {
           ref.read(calendarOptimizationProvider.notifier).state = false;
         }
@@ -181,6 +185,9 @@ class CalendarPageView extends HookConsumerWidget {
       holidaysAsync.whenData((holidays) {
         // 祝日データをキャッシュ（すぐに利用できるようにする）
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!isMounted()) {
+            return;
+          }
           try {
             if (ref.exists(cachedHolidaysProvider)) {
               ref.read(cachedHolidaysProvider.notifier).state = holidays;
@@ -201,6 +208,9 @@ class CalendarPageView extends HookConsumerWidget {
 
         // ビルド完了後に実行（ウィジェットツリーの構築中に状態を変更しないため）
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!isMounted()) {
+            return;
+          }
           try {
             AppLogger.debug('カレンダー初期表示: データ取得開始 - userId: $currentUserId');
 
@@ -220,19 +230,22 @@ class CalendarPageView extends HookConsumerWidget {
 
             // スケジュールデータの取得（祝日データと並列実行）
             AppLogger.debug('カレンダー初期表示: スケジュールデータ取得開始');
-            _fetchDataWithThrottle(ref, currentUserId, visibleDate, true);
+            _fetchDataWithThrottle(
+                ref, currentUserId, visibleDate, true, isMounted);
 
             // 前後の月のデータも事前に取得
             for (int i = 1; i <= _prefetchMonthsRange; i++) {
               // 前の月
               final prevDate =
                   DateTime(visibleDate.year, visibleDate.month - i, 1);
-              _fetchDataWithThrottle(ref, currentUserId, prevDate, false);
+              _fetchDataWithThrottle(
+                  ref, currentUserId, prevDate, false, isMounted);
 
               // 次の月
               final nextDate =
                   DateTime(visibleDate.year, visibleDate.month + i, 1);
-              _fetchDataWithThrottle(ref, currentUserId, nextDate, false);
+              _fetchDataWithThrottle(
+                  ref, currentUserId, nextDate, false, isMounted);
             }
 
             // 前後の月のインデックス集合を初期化
@@ -249,6 +262,9 @@ class CalendarPageView extends HookConsumerWidget {
             // ★重要: ログイン時にスライド完了処理と同等の処理を実行
             // 少し遅延させてからデータ表示を確実にする
             Future.delayed(const Duration(milliseconds: 500), () {
+              if (!isMounted()) {
+                return;
+              }
               try {
                 final latestAuthState = ref.read(authNotifierProvider);
                 final stillAuthenticated = latestAuthState.maybeWhen(
@@ -270,7 +286,8 @@ class CalendarPageView extends HookConsumerWidget {
                 // データを強制再取得（スライド完了時と同じ処理）
                 if (ref.exists(scheduleNotifierProvider)) {
                   AppLogger.debug('カレンダー初期表示: データ強制再取得実行');
-                  _fetchDataWithThrottle(ref, currentUserId, visibleDate, true);
+                  _fetchDataWithThrottle(
+                      ref, currentUserId, visibleDate, true, isMounted);
                 }
               } catch (e) {
                 AppLogger.error('カレンダー初期表示: 最適化モード制御エラー: $e');
@@ -278,7 +295,7 @@ class CalendarPageView extends HookConsumerWidget {
             });
 
             // 定期的なクリーンアップを開始
-            _scheduleCleanup(ref, currentIndexValue);
+            _scheduleCleanup(ref, currentIndexValue, isMounted);
           } catch (e) {
             AppLogger.error('初期データ読み込みエラー: $e');
           }
@@ -546,11 +563,11 @@ class CalendarPageView extends HookConsumerWidget {
 
                         // スライド中でない場合のみデータ取得を実行
                         if (!_isSliding && currentUserId != null) {
-                          _fetchDataWithThrottle(
-                              ref, currentUserId, visibleDate);
+                          _fetchDataWithThrottle(ref, currentUserId,
+                              visibleDate, false, isMounted);
 
                           // データ取得後にクリーンアップをスケジュール
-                          _scheduleCleanup(ref, index);
+                          _scheduleCleanup(ref, index, isMounted);
                         }
                       } else {
                         // 異常なインデックスの場合はリセット
@@ -584,7 +601,8 @@ class CalendarPageView extends HookConsumerWidget {
   }
 
   // 不要なページのクリーンアップをスケジュール
-  void _scheduleCleanup(WidgetRef ref, int currentIndex) {
+  void _scheduleCleanup(
+      WidgetRef ref, int currentIndex, bool Function() isMounted) {
     final lastCleanup = ref.read(lastCleanupTimeProvider);
     final now = DateTime.now();
 
@@ -592,6 +610,9 @@ class CalendarPageView extends HookConsumerWidget {
     if (lastCleanup == null ||
         now.difference(lastCleanup).inMilliseconds > _cleanupIntervalMillis) {
       Future.delayed(const Duration(seconds: 3), () {
+        if (!isMounted()) {
+          return;
+        }
         // ウィジェットが破棄されていないかチェック
         try {
           if (!ref.exists(renderedMonthsProvider) ||
@@ -634,9 +655,18 @@ class CalendarPageView extends HookConsumerWidget {
   }
 
   // スロットリングを適用してデータ取得
-  void _fetchDataWithThrottle(WidgetRef ref, String userId, DateTime date,
-      [bool force = false]) {
+  void _fetchDataWithThrottle(
+    WidgetRef ref,
+    String userId,
+    DateTime date, [
+    bool force = false,
+    bool Function()? isMounted,
+  ]) {
     try {
+      if (isMounted != null && !isMounted()) {
+        return;
+      }
+
       final monthKey = getMonthKey(date);
       final authState = ref.read(authNotifierProvider);
       final stillAuthenticated = authState.maybeWhen(
@@ -692,6 +722,9 @@ class CalendarPageView extends HookConsumerWidget {
 
             // 一定時間後にローディング状態を解除
             Future.delayed(const Duration(milliseconds: 1000), () {
+              if (isMounted != null && !isMounted()) {
+                return;
+              }
               try {
                 if (ref.exists(monthDataLoadingProvider(monthKey))) {
                   ref.read(monthDataLoadingProvider(monthKey).notifier).state =
@@ -706,6 +739,9 @@ class CalendarPageView extends HookConsumerWidget {
           AppLogger.error('スケジュールデータ取得エラー: $e');
           // エラー時も読み込み状態を解除
           Future.delayed(const Duration(milliseconds: 300), () {
+            if (isMounted != null && !isMounted()) {
+              return;
+            }
             try {
               if (ref.exists(monthDataLoadingProvider(monthKey))) {
                 ref.read(monthDataLoadingProvider(monthKey).notifier).state =
