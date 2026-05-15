@@ -3,6 +3,10 @@ import '../firebase_options.dart';
 
 /// アプリケーションの環境設定を管理するクラス
 class AppConfig {
+  /// プライベートコンストラクタ
+  AppConfig._(this.environment, this.firebaseOptions, this.appName,
+      this.pushNotificationUrl);
+
   /// 環境の種類
   final Environment environment;
 
@@ -103,10 +107,6 @@ class AppConfig {
 
     _instance = AppConfig._(environment, options, appName, pushNotificationUrl);
   }
-
-  /// プライベートコンストラクタ
-  AppConfig._(this.environment, this.firebaseOptions, this.appName,
-      this.pushNotificationUrl);
 
   /// 開発環境かどうか
   bool get isDevelopment => environment == Environment.development;

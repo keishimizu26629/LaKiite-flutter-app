@@ -1,57 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../presentation_provider.dart';
-import '../../utils/logger.dart';
 import 'edit_name_page.dart';
 import 'edit_email_page.dart';
 import 'edit_search_id_page.dart';
-import '../login/login_page.dart';
 import 'account_deletion_webview_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
   static const String path = '/settings';
-
-  /// 指定されたURLを外部ブラウザで開く
-  Future<void> _launchURL(BuildContext context, String url) async {
-    final uri = Uri.parse(url);
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-          webViewConfiguration: const WebViewConfiguration(
-            enableJavaScript: true,
-            enableDomStorage: true,
-          ),
-        );
-      } else {
-        // URLを開けない場合はスナックバーでエラーを表示
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('URLを開けませんでした: $url'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        AppLogger.error('Could not launch $url');
-      }
-    } catch (e) {
-      // 例外が発生した場合もスナックバーでエラーを表示
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('エラーが発生しました: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      AppLogger.error('Error launching URL: $e');
-    }
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -143,6 +101,8 @@ class SettingsPage extends ConsumerWidget {
               );
 
               if (confirmed == true && context.mounted) {
+                final navigator = Navigator.of(context, rootNavigator: true);
+
                 // ローディングインジケータを表示
                 showDialog(
                   context: context,
@@ -161,22 +121,7 @@ class SettingsPage extends ConsumerWidget {
 
                 try {
                   await ref.read(authNotifierProvider.notifier).signOut();
-
-                  // ローディングインジケータを閉じる
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                  }
-
-                  // ログイン画面へ遷移
-                  if (context.mounted) {
-                    context.go(LoginPage.path);
-                  }
                 } catch (e) {
-                  // ローディングインジケータを閉じる
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                  }
-
                   if (context.mounted) {
                     // エラーの種類に応じて適切なメッセージを表示
                     String errorMessage = 'ログアウトに失敗しました';
@@ -190,6 +135,12 @@ class SettingsPage extends ConsumerWidget {
                       SnackBar(content: Text(errorMessage)),
                     );
                   }
+                } finally {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (navigator.mounted && navigator.canPop()) {
+                      navigator.pop();
+                    }
+                  });
                 }
               }
             },
@@ -302,8 +253,7 @@ class SettingsPage extends ConsumerWidget {
 
                     // まず再認証を試行
                     try {
-                      await (authNotifier as dynamic)
-                          .reauthenticateWithPassword(password);
+                      await authNotifier.reauthenticateWithPassword(password);
                       // 再認証成功後にアカウント削除
                       await authNotifier.deleteAccount();
                     } catch (e) {
@@ -318,7 +268,7 @@ class SettingsPage extends ConsumerWidget {
 
                     // ログイン画面に遷移
                     if (context.mounted) {
-                      context.go(LoginPage.path);
+                      context.go('/login');
                     }
                   } catch (e) {
                     // 進捗ダイアログを閉じる

@@ -15,18 +15,6 @@ import 'package:lakiite/domain/entity/schedule_reaction.dart';
 ///
 /// また、`isLoading`パラメータがtrueの場合はローディングインジケータを表示します。
 class ReactionIconWidget extends StatelessWidget {
-  /// 「行きます！」リアクションの有無
-  final bool hasGoing;
-
-  /// 「考え中！」リアクションの有無
-  final bool hasThinking;
-
-  /// アイコンの表示サイズ
-  final double iconSize;
-
-  /// ローディング中かどうかのフラグ
-  final bool isLoading;
-
   /// コンストラクタ
   ///
   /// [hasGoing] 「行きます！」リアクションの有無
@@ -65,6 +53,18 @@ class ReactionIconWidget extends StatelessWidget {
       isLoading: isLoading,
     );
   }
+
+  /// 「行きます！」リアクションの有無
+  final bool hasGoing;
+
+  /// 「考え中！」リアクションの有無
+  final bool hasThinking;
+
+  /// アイコンの表示サイズ
+  final double iconSize;
+
+  /// ローディング中かどうかのフラグ
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {

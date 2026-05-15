@@ -148,12 +148,6 @@ class UserModel with _$UserModel {
 
 /// ユーザー検索結果を表現するモデルクラス
 class SearchUserModel {
-  final String id;
-  final String displayName;
-  final String searchId;
-  final String? iconUrl;
-  final String? shortBio;
-
   const SearchUserModel({
     required this.id,
     required this.displayName,
@@ -161,6 +155,15 @@ class SearchUserModel {
     this.iconUrl,
     this.shortBio,
   });
+  factory SearchUserModel.fromUserModel(UserModel user) {
+    return SearchUserModel(
+      id: user.id,
+      displayName: user.displayName,
+      searchId: user.searchId.toString(),
+      iconUrl: user.iconUrl,
+      shortBio: user.publicProfile.shortBio,
+    );
+  }
 
   factory SearchUserModel.fromFirestore(String id, Map<String, dynamic> data) {
     return SearchUserModel(
@@ -171,25 +174,14 @@ class SearchUserModel {
       shortBio: data['shortBio'] as String?,
     );
   }
-
-  factory SearchUserModel.fromUserModel(UserModel user) {
-    return SearchUserModel(
-      id: user.id,
-      displayName: user.displayName,
-      searchId: user.searchId.toString(),
-      iconUrl: user.iconUrl,
-      shortBio: user.publicProfile.shortBio,
-    );
-  }
-}
-
-class User {
   final String id;
   final String displayName;
   final String searchId;
   final String? iconUrl;
-  final String? bio;
+  final String? shortBio;
+}
 
+class User {
   const User({
     required this.id,
     required this.displayName,
@@ -207,6 +199,11 @@ class User {
       bio: json['bio'] as String?,
     );
   }
+  final String id;
+  final String displayName;
+  final String searchId;
+  final String? iconUrl;
+  final String? bio;
 
   Map<String, dynamic> toJson() {
     return {

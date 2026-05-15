@@ -2,36 +2,37 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../infrastructure/firebase/push_notification_service.dart';
 import '../utils/logger.dart';
+import '../utils/notification_token_log_formatter.dart';
 
 /// ユーザーのFCMトークンを管理するサービスクラス
 class UserFcmTokenService {
-  final FirebaseFirestore _firestore;
-  final FirebaseAuth _auth;
-  final PushNotificationService _pushNotificationService;
-
   UserFcmTokenService({
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _auth = auth ?? FirebaseAuth.instance,
         _pushNotificationService = PushNotificationService.instance;
+  final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
+  final PushNotificationService _pushNotificationService;
 
   /// 現在のユーザーのFCMトークンを更新する
-  Future<void> updateCurrentUserFcmToken() async {
+  Future<bool> updateCurrentUserFcmToken() async {
     try {
       final user = _auth.currentUser;
       if (user == null) {
         AppLogger.warning('FCMトークン更新: ユーザーがログインしていません');
-        return;
+        return false;
       }
 
       final token = await _pushNotificationService.refreshToken();
       if (token == null) {
         AppLogger.warning('FCMトークン更新: トークンが取得できませんでした');
-        return;
+        return false;
       }
 
-      AppLogger.debug('FCMトークン更新: ユーザーID=${user.uid}, トークン=$token');
+      AppLogger.debug(
+          'FCMトークン更新: ユーザーID=${user.uid}, トークン=${maskNotificationToken(token)}');
 
       // Firebase Functionsが参照する場所（users/{userId}直下）に保存
       // updateではなくsetを使用してドキュメントが存在しない場合でも確実に保存
@@ -40,9 +41,11 @@ class UserFcmTokenService {
       }, SetOptions(merge: true));
 
       AppLogger.debug('FCMトークン更新: 完了');
+      return true;
     } catch (e, stack) {
       AppLogger.error('FCMトークン更新エラー: $e');
       AppLogger.error('スタックトレース: $stack');
+      return false;
     }
   }
 
@@ -121,7 +124,7 @@ class UserFcmTokenService {
       }
 
       final token = data['fcmToken'] as String?;
-      AppLogger.debug('FCMトークン取得: トークン=$token');
+      AppLogger.debug('FCMトークン取得: トークン=${maskNotificationToken(token)}');
 
       return token;
     } catch (e, stack) {

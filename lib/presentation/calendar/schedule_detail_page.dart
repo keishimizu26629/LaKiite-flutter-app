@@ -503,7 +503,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
 
     // リポジトリから取得したリアクションデータをログ出力
     developer.log('リポジトリから取得したリアクション: ${reactions.length}件');
-    for (var reaction in reactions) {
+    for (final reaction in reactions) {
       developer
           .log('取得したリアクション: userId=${reaction.userId}, type=${reaction.type}');
     }

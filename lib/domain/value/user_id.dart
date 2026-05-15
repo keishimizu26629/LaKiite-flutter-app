@@ -1,14 +1,12 @@
 class UserId {
-  final String value;
-
-  UserId._(this.value);
-
   factory UserId(String value) {
     if (!isValidFormat(value)) {
       throw ArgumentError('Invalid user ID format');
     }
     return UserId._(value);
   }
+  UserId._(this.value);
+  final String value;
 
   static bool isValidFormat(String value) {
     // 8文字の英数字のみを許可

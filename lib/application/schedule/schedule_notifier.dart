@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/application/schedule/schedule_state.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
@@ -22,9 +23,29 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
   // 先行読み込み中かどうかを示すフラグ
   final Set<String> _preloadingMonths = {};
 
+  void _stopWatchingSchedules({bool resetState = false}) {
+    _scheduleSubscription?.cancel();
+    _scheduleSubscription = null;
+    _currentUserId = null;
+    _currentDisplayMonth = null;
+
+    if (resetState && !_isDisposed) {
+      state = const AsyncValue.data(ScheduleState.initial());
+    }
+  }
+
   // 月のキャッシュキーを生成
   String _getMonthKey(DateTime month) {
     return '${month.year}-${month.month.toString().padLeft(2, '0')}';
+  }
+
+  bool _isAuthenticatedUserActive(String userId) {
+    final authState = ref.read(authNotifierProvider);
+    return authState.maybeWhen(
+      data: (state) =>
+          state.status == AuthStatus.authenticated && state.user?.id == userId,
+      orElse: () => false,
+    );
   }
 
   @override
@@ -33,8 +54,7 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
     ref.onDispose(() {
       AppLogger.debug('ScheduleNotifier: Disposing');
       _isDisposed = true;
-      _scheduleSubscription?.cancel();
-      _currentUserId = null;
+      _stopWatchingSchedules();
     });
 
     // 認証状態を監視して自動的にスケジュールの監視を開始
@@ -43,10 +63,14 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
         if (authState.user != null) {
           // 少し遅延させて認証完了後の安定した状態でスケジュール取得を開始
           Future.delayed(const Duration(milliseconds: 300), () {
-            if (!_isDisposed) {
+            if (!_isDisposed &&
+                _isAuthenticatedUserActive(authState.user!.id)) {
               watchUserSchedules(authState.user!.id);
             }
           });
+        } else {
+          AppLogger.debug('ScheduleNotifier: 認証解除を検知したため購読を停止します');
+          _stopWatchingSchedules(resetState: true);
         }
       });
     });
@@ -107,6 +131,17 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
           if (_isDisposed) return;
           AppLogger.error('ScheduleNotifier: Error watching schedules: $error');
 
+          final errorText = error.toString();
+          final isPermissionOrAuthError =
+              errorText.contains('permission-denied') ||
+                  errorText.contains('User not authenticated');
+
+          if (isPermissionOrAuthError) {
+            AppLogger.warning('ScheduleNotifier: 認証解除後の購読エラーとして処理を終了します');
+            _stopWatchingSchedules(resetState: true);
+            return;
+          }
+
           // エラー発生時に再試行する
           if (retryCount < maxRetries) {
             retryCount++;
@@ -134,6 +169,16 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
                     if (_isDisposed) return;
                     AppLogger.error(
                         'ScheduleNotifier: Retry failed: $retryError');
+                    final retryErrorText = retryError.toString();
+                    final isPermissionOrAuthRetryError =
+                        retryErrorText.contains('permission-denied') ||
+                            retryErrorText.contains('User not authenticated');
+                    if (isPermissionOrAuthRetryError) {
+                      AppLogger.warning(
+                          'ScheduleNotifier: 認証解除後の再試行エラーとして処理を終了します');
+                      _stopWatchingSchedules(resetState: true);
+                      return;
+                    }
                     if (retryCount >= maxRetries) {
                       if (!_isDisposed) {
                         state =
@@ -183,6 +228,13 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
 
     AppLogger.debug(
         'ScheduleNotifier: watchUserSchedulesForMonth called for user: $userId, month: $monthKey');
+
+    if (!_isAuthenticatedUserActive(userId)) {
+      AppLogger.debug(
+          'ScheduleNotifier: 認証状態が変化したため月別購読を開始しません userId=$userId, month=$monthKey');
+      _stopWatchingSchedules(resetState: true);
+      return;
+    }
 
     // 同じユーザーかつ同じ月の場合は重複購読を避ける
     if (_currentUserId == userId && _currentDisplayMonth != null) {
@@ -274,6 +326,17 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
           if (_isDisposed) return;
           AppLogger.error(
               'ScheduleNotifier: Error watching schedules for month: $error');
+
+          final errorText = error.toString();
+          final isPermissionOrAuthError =
+              errorText.contains('permission-denied') ||
+                  errorText.contains('User not authenticated');
+          if (isPermissionOrAuthError) {
+            AppLogger.warning('ScheduleNotifier: 認証解除後の月別購読エラーとして処理を終了します');
+            _stopWatchingSchedules(resetState: true);
+            return;
+          }
+
           Future(() {
             if (!_isDisposed) {
               state = AsyncValue.error(error, StackTrace.current);
@@ -314,6 +377,10 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
       return;
     }
 
+    if (!_isAuthenticatedUserActive(userId)) {
+      return;
+    }
+
     _preloadingMonths.add(monthKey);
 
     try {
@@ -344,7 +411,15 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
       }, onError: (error) {
         AppLogger.error(
             'ScheduleNotifier: Error preloading month $monthKey: $error');
+        final errorText = error.toString();
+        final isPermissionOrAuthError =
+            errorText.contains('permission-denied') ||
+                errorText.contains('User not authenticated');
         _preloadingMonths.remove(monthKey);
+        if (isPermissionOrAuthError) {
+          subscription?.cancel();
+          return;
+        }
         subscription?.cancel();
       }, onDone: () {
         _preloadingMonths.remove(monthKey);

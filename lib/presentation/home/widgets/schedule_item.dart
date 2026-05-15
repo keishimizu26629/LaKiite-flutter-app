@@ -13,12 +13,6 @@ import 'package:lakiite/presentation/widgets/reaction_icon_widget.dart';
 /// ホームタブのタイムラインに表示される予定の内容を表示します。
 /// 予定の基本情報とリアクション・コメントの状態を表示します。
 class ScheduleItem extends ConsumerWidget {
-  /// 表示する予定データ
-  final Schedule schedule;
-
-  /// 現在のユーザー情報
-  final UserModel currentUser;
-
   /// コンストラクタ
   ///
   /// [schedule] 表示する予定データ
@@ -28,6 +22,12 @@ class ScheduleItem extends ConsumerWidget {
     required this.schedule,
     required this.currentUser,
   });
+
+  /// 表示する予定データ
+  final Schedule schedule;
+
+  /// 現在のユーザー情報
+  final UserModel currentUser;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

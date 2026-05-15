@@ -10,8 +10,6 @@ import UserNotifications
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    FirebaseApp.configure()
-
     // テスト時は通知許可をリクエストしない
     let isTestMode = ProcessInfo.processInfo.environment["TEST_MODE"] == "true"
     if isTestMode {
