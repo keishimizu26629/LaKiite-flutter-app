@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../firebase_options.dart';
 import '../user_fcm_token_service.dart';
 import '../../utils/logger.dart';
+import '../../utils/notification_token_log_formatter.dart';
 
 /// Firebaseプッシュ通知の管理を行うサービスクラス
 class PushNotificationService {
@@ -106,11 +107,11 @@ class PushNotificationService {
       );
 
       final token = await messaging.getToken();
-      AppLogger.info('🐯 FCM TOKEN: $token');
+      AppLogger.info('🐯 FCM TOKEN: ${maskNotificationToken(token)}');
 
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         final apnsToken = await messaging.getAPNSToken();
-        AppLogger.info('🍎 APNs TOKEN: $apnsToken');
+        AppLogger.info('🍎 APNs TOKEN: ${maskNotificationToken(apnsToken)}');
       }
     } catch (e) {
       AppLogger.error('❌ トークン取得エラー: $e');
@@ -120,10 +121,10 @@ class PushNotificationService {
   Future<String?> getAndDisplayToken() async {
     try {
       final token = await _messaging.getToken();
-      AppLogger.info('🐯 手動取得したFCMトークン: $token');
+      AppLogger.info('🐯 手動取得したFCMトークン: ${maskNotificationToken(token)}');
       if (Platform.isIOS) {
         final apnsToken = await _messaging.getAPNSToken();
-        AppLogger.info('🍎 APNsトークン: $apnsToken');
+        AppLogger.info('🍎 APNsトークン: ${maskNotificationToken(apnsToken)}');
       }
       return token;
     } catch (e) {
@@ -141,7 +142,7 @@ class PushNotificationService {
       while (token == null && retryCount < maxRetries) {
         try {
           token = await _messaging.getToken();
-          AppLogger.debug('FCMトークンをリフレッシュ: $token');
+          AppLogger.debug('FCMトークンをリフレッシュ: ${maskNotificationToken(token)}');
         } catch (e) {
           retryCount++;
           AppLogger.error('FCMトークンのリフレッシュエラー (試行 $retryCount/$maxRetries): $e');
@@ -177,7 +178,8 @@ class PushNotificationService {
         try {
           newToken = await _messaging.getToken();
           if (newToken != null) {
-            AppLogger.debug('新しいFCMトークンを取得: $newToken');
+            AppLogger.debug(
+                '新しいFCMトークンを取得: ${maskNotificationToken(newToken)}');
           }
         } catch (e) {
           retryCount++;
@@ -194,8 +196,12 @@ class PushNotificationService {
         AppLogger.debug('FCMトークンの強制更新が完了しました');
         try {
           final fcmTokenService = UserFcmTokenService();
-          await fcmTokenService.updateCurrentUserFcmToken();
-          AppLogger.info('✅ 強制更新されたFCMトークンのFirestore保存完了');
+          final didSave = await fcmTokenService.updateCurrentUserFcmToken();
+          if (didSave) {
+            AppLogger.info('✅ 強制更新されたFCMトークンのFirestore保存完了');
+          } else {
+            AppLogger.info('強制更新されたFCMトークンのFirestore保存をスキップしました');
+          }
         } catch (e) {
           AppLogger.error('❌ 強制更新されたFCMトークンのFirestore保存エラー: $e');
         }
@@ -297,7 +303,7 @@ class PushNotificationService {
 
     try {
       final apnsToken = await _messaging.getAPNSToken();
-      AppLogger.debug('APNSトークン: $apnsToken');
+      AppLogger.debug('APNSトークン: ${maskNotificationToken(apnsToken)}');
       if (apnsToken == null) {
         AppLogger.error('APNSトークンがnullです。プッシュ通知が機能しない可能性があります。');
       }
@@ -330,7 +336,7 @@ class PushNotificationService {
         token = await _messaging.getToken();
 
         if (token != null) {
-          AppLogger.info('🐯 FCMトークン取得成功: $token');
+          AppLogger.info('🐯 FCMトークン取得成功: ${maskNotificationToken(token)}');
           AppLogger.info('🐯 トークン長: ${token.length}文字');
 
           if (Platform.isAndroid) {
@@ -393,8 +399,12 @@ class PushNotificationService {
     try {
       AppLogger.debug('🔄 FCMトークンをFirestoreに保存中...');
       final fcmTokenService = UserFcmTokenService();
-      await fcmTokenService.updateCurrentUserFcmToken();
-      AppLogger.info('✅ FCMトークンのFirestore保存完了');
+      final didSave = await fcmTokenService.updateCurrentUserFcmToken();
+      if (didSave) {
+        AppLogger.info('✅ FCMトークンのFirestore保存完了');
+      } else {
+        AppLogger.info('FCMトークンのFirestore保存をスキップしました');
+      }
     } catch (e) {
       AppLogger.error('❌ FCMトークンのFirestore保存エラー: $e');
     }
