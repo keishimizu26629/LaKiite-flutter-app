@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/entity/schedule.dart';
 import '../../domain/entity/user.dart';
 import '../../presentation/presentation_provider.dart';
 import '../widgets/schedule_tile.dart';
 import '../../utils/logger.dart';
 
 class FriendProfilePage extends ConsumerWidget {
-  final String userId;
-
   const FriendProfilePage({
     super.key,
     required this.userId,
   });
+  final String userId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,7 +23,7 @@ class FriendProfilePage extends ConsumerWidget {
     // 自分自身が閲覧可能な予定を取得（マイページと同じ方法）
     final schedulesAsync = currentUserId != null
         ? ref.watch(userSchedulesStreamProvider(currentUserId))
-        : const AsyncValue<List<dynamic>>.loading();
+        : const AsyncValue<List<Schedule>>.loading();
 
     AppLogger.debug('FriendProfilePage: 表示中のユーザーID: $userId');
     AppLogger.debug('FriendProfilePage: 現在のユーザーID: $currentUserId');
@@ -270,13 +270,12 @@ class FriendProfilePage extends ConsumerWidget {
 
 /// セクションヘッダーウィジェット
 class _SectionHeader extends StatelessWidget {
-  final IconData icon;
-  final String title;
-
   const _SectionHeader({
     required this.icon,
     required this.title,
   });
+  final IconData icon;
+  final String title;
 
   @override
   Widget build(BuildContext context) {

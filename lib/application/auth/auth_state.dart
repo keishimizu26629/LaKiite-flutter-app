@@ -15,8 +15,6 @@ part 'auth_state.freezed.dart';
 /// - 各状態に応じたファクトリーメソッドを提供
 @freezed
 class AuthState with _$AuthState {
-  const AuthState._();
-
   /// 認証状態を作成するファクトリーコンストラクタ
   ///
   /// パラメータ:
@@ -29,6 +27,7 @@ class AuthState with _$AuthState {
     required AuthStatus status,
     UserModel? user,
   }) = _AuthState;
+  const AuthState._();
 
   /// 認証済み状態を作成するファクトリーメソッド
   ///

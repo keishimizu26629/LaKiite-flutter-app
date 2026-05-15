@@ -139,6 +139,19 @@ class HomePage extends HookConsumerWidget {
             // 認証完了後、少し遅延させてからスケジュールの取得を開始することで
             // Firebase認証が確実に完了した状態でデータ取得を行う
             Future.delayed(const Duration(milliseconds: 500), () {
+              final latestAuthState = ref.read(authNotifierProvider);
+              final stillAuthenticated = latestAuthState.maybeWhen(
+                data: (latestState) =>
+                    latestState.status == AuthStatus.authenticated &&
+                    latestState.user?.id == currentUserId,
+                orElse: () => false,
+              );
+              if (!stillAuthenticated) {
+                AppLogger.debug(
+                    'ホーム画面: 認証状態が変化したため遅延後データ取得を中止しました - userId: $currentUserId');
+                return;
+              }
+
               // 常に全ての予定を取得する
               ref
                   .read(scheduleNotifierProvider.notifier)

@@ -30,7 +30,7 @@ class DailyScheduleContent extends HookConsumerWidget {
   List<List<Schedule>> _groupOverlappingSchedules(List<Schedule> schedules) {
     if (schedules.isEmpty) return [];
 
-    List<List<Schedule>> groups = [];
+    final List<List<Schedule>> groups = [];
     List<Schedule> currentGroup = [schedules[0]];
 
     for (int i = 1; i < schedules.length; i++) {

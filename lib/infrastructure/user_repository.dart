@@ -7,6 +7,9 @@ import '../domain/value/user_id.dart';
 import '../utils/logger.dart';
 
 class UserRepository implements IUserRepository {
+  UserRepository()
+      : _firestore = FirebaseFirestore.instance,
+        _storage = FirebaseStorage.instance;
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
 
@@ -14,10 +17,6 @@ class UserRepository implements IUserRepository {
   final Map<String, UserModel> _userCache = {};
   final Map<String, PublicUserModel> _publicProfileCache = {};
   final Map<String, PrivateUserModel> _privateProfileCache = {};
-
-  UserRepository()
-      : _firestore = FirebaseFirestore.instance,
-        _storage = FirebaseStorage.instance;
 
   // キャッシュをクリアするメソッド
   void clearCache() {
@@ -42,27 +41,43 @@ class UserRepository implements IUserRepository {
 
   @override
   Future<UserModel?> getUser(String id) async {
-    final userDoc = await _firestore.collection('users').doc(id).get();
-    if (!userDoc.exists) return null;
+    try {
+      AppLogger.debugOnly('UserRepository.getUser開始: userId=$id');
+      final userDoc = await _firestore.collection('users').doc(id).get();
+      if (!userDoc.exists) {
+        AppLogger.warningOnly(
+            'UserRepository.getUser: public docなし userId=$id');
+        return null;
+      }
 
-    final privateDoc = await _firestore
-        .collection('users')
-        .doc(id)
-        .collection('private')
-        .doc('profile')
-        .get();
-    if (!privateDoc.exists) return null;
+      final privateDoc = await _firestore
+          .collection('users')
+          .doc(id)
+          .collection('private')
+          .doc('profile')
+          .get();
+      if (!privateDoc.exists) {
+        AppLogger.warningOnly(
+            'UserRepository.getUser: private docなし userId=$id');
+        return null;
+      }
 
-    final publicData = userDoc.data()!;
-    publicData['id'] = userDoc.id;
+      final publicData = userDoc.data()!;
+      publicData['id'] = userDoc.id;
 
-    final privateData = privateDoc.data()!;
-    privateData['lists'] = privateData['lists'] ?? [];
+      final privateData = privateDoc.data()!;
+      privateData['lists'] = privateData['lists'] ?? [];
 
-    return UserModel(
-      publicProfile: PublicUserModel.fromJson(publicData),
-      privateProfile: PrivateUserModel.fromJson(privateData),
-    );
+      AppLogger.debugOnly('UserRepository.getUser成功: userId=$id');
+      return UserModel(
+        publicProfile: PublicUserModel.fromJson(publicData),
+        privateProfile: PrivateUserModel.fromJson(privateData),
+      );
+    } catch (e, stackTrace) {
+      AppLogger.errorOnly(
+          'UserRepository.getUser失敗: userId=$id', e, stackTrace);
+      rethrow;
+    }
   }
 
   // 友達の公開情報のみを取得するメソッド
@@ -78,9 +93,12 @@ class UserRepository implements IUserRepository {
   @override
   Future<void> createUser(UserModel user) async {
     try {
+      AppLogger.debugOnly('UserRepository.createUser開始: userId=${user.id}');
       // searchIdの一意性をチェック
       final isUnique = await isUserIdUnique(user.searchId);
       if (!isUnique) {
+        AppLogger.warningOnly(
+            'UserRepository.createUser失敗: searchId重複 searchId=${user.searchId}');
         throw Exception('このsearchIdは既に使用されています');
       }
 
@@ -102,24 +120,35 @@ class UserRepository implements IUserRepository {
         // 非公開情報をprivateサブコレクションに保存
         transaction.set(privateRef, _toFirestorePrivate(user.privateProfile));
       });
-    } catch (e) {
-      AppLogger.error('Error creating user: $e');
+      AppLogger.debugOnly('UserRepository.createUser完了: userId=${user.id}');
+    } catch (e, stackTrace) {
+      AppLogger.errorOnly(
+          'UserRepository.createUser失敗: userId=${user.id}', e, stackTrace);
       rethrow;
     }
   }
 
   @override
   Future<void> updateUser(UserModel user) async {
-    final userRef = _firestore.collection('users').doc(user.id);
-    final privateRef = userRef.collection('private').doc('profile');
+    try {
+      AppLogger.debugOnly('UserRepository.updateUser開始: userId=${user.id}');
+      final userRef = _firestore.collection('users').doc(user.id);
+      final privateRef = userRef.collection('private').doc('profile');
 
-    await _firestore.runTransaction((transaction) async {
-      // 公開情報を更新
-      transaction.update(userRef, _toFirestorePublic(user.publicProfile));
+      await _firestore.runTransaction((transaction) async {
+        // 公開情報を更新
+        transaction.update(userRef, _toFirestorePublic(user.publicProfile));
 
-      // 非公開情報を更新
-      transaction.update(privateRef, _toFirestorePrivate(user.privateProfile));
-    });
+        // 非公開情報を更新
+        transaction.update(
+            privateRef, _toFirestorePrivate(user.privateProfile));
+      });
+      AppLogger.debugOnly('UserRepository.updateUser完了: userId=${user.id}');
+    } catch (e, stackTrace) {
+      AppLogger.errorOnly(
+          'UserRepository.updateUser失敗: userId=${user.id}', e, stackTrace);
+      rethrow;
+    }
   }
 
   @override
@@ -174,7 +203,8 @@ class UserRepository implements IUserRepository {
         if (privateData['profile'] == null) {
           privateData['profile'] = {};
         }
-        privateData['profile']['iconUrl'] = downloadUrl;
+        final profile = privateData['profile'] as Map<String, dynamic>;
+        profile['iconUrl'] = downloadUrl;
         transaction.update(privateRef, privateData);
       }
     });

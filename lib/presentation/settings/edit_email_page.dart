@@ -3,9 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class EditEmailPage extends ConsumerStatefulWidget {
-  static const String path = 'email';
-
   const EditEmailPage({super.key});
+  static const String path = 'email';
 
   @override
   ConsumerState<EditEmailPage> createState() => _EditEmailPageState();

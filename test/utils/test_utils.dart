@@ -6,6 +6,25 @@ import 'package:lakiite/main.dart';
 import 'package:lakiite/config/app_config.dart';
 
 class TestUtils {
+  static Finder _findTextFieldByLabel(String labelText) {
+    return find
+        .byWidgetPredicate(
+          (widget) =>
+              widget is TextField && widget.decoration?.labelText == labelText,
+          description: 'TextField(labelText: $labelText)',
+        )
+        .last;
+  }
+
+  static Finder _findElevatedButtonByText(String text) {
+    return find
+        .descendant(
+          of: find.byType(ElevatedButton),
+          matching: find.text(text),
+        )
+        .last;
+  }
+
   /// 標準的なテストウィジェットのセットアップ
   static Widget createTestApp({
     required Widget child,
@@ -51,11 +70,11 @@ class TestUtils {
     List<Override> overrides = const [],
   }) async {
     await startApp(Environment.development, overrides);
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // スプラッシュ画面の待機
     await Future.delayed(const Duration(seconds: 2));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   /// ログイン操作のヘルパー
@@ -65,7 +84,7 @@ class TestUtils {
     String password = 'password123',
   }) async {
     // メールアドレス入力
-    final emailField = find.widgetWithText(TextField, 'メールアドレス');
+    final emailField = _findTextFieldByLabel('メールアドレス');
     if (emailField.evaluate().isNotEmpty) {
       await tester.enterText(emailField, email);
     } else {
@@ -77,7 +96,7 @@ class TestUtils {
     }
 
     // パスワード入力
-    final passwordField = find.widgetWithText(TextField, 'パスワード');
+    final passwordField = _findTextFieldByLabel('パスワード');
     if (passwordField.evaluate().isNotEmpty) {
       await tester.enterText(passwordField, password);
     } else {
@@ -87,10 +106,10 @@ class TestUtils {
       }
     }
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // ログインボタンをタップ
-    final loginButton = find.text('ログイン');
+    final loginButton = _findElevatedButtonByText('ログイン');
     if (loginButton.evaluate().isNotEmpty) {
       await tester.tap(loginButton);
     } else {
@@ -100,7 +119,7 @@ class TestUtils {
       }
     }
 
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   /// サインアップ操作のヘルパー
@@ -112,7 +131,7 @@ class TestUtils {
     String password = 'password123',
   }) async {
     // 名前入力（実際のラベルに合わせて修正）
-    final nameField = find.widgetWithText(TextField, '名前(フルネーム)');
+    final nameField = _findTextFieldByLabel('名前(フルネーム)');
     if (nameField.evaluate().isNotEmpty) {
       await tester.enterText(nameField, name);
     } else {
@@ -123,13 +142,13 @@ class TestUtils {
     }
 
     // 表示名入力（実際のラベルに合わせて修正）
-    final displayNameField = find.widgetWithText(TextField, '表示名(ニックネーム)');
+    final displayNameField = _findTextFieldByLabel('表示名(ニックネーム)');
     if (displayNameField.evaluate().isNotEmpty) {
       await tester.enterText(displayNameField, displayName);
     }
 
     // メールアドレス入力
-    final emailField = find.widgetWithText(TextField, 'メールアドレス');
+    final emailField = _findTextFieldByLabel('メールアドレス');
     if (emailField.evaluate().isNotEmpty) {
       await tester.enterText(emailField, email);
     } else {
@@ -140,7 +159,7 @@ class TestUtils {
     }
 
     // パスワード入力
-    final passwordField = find.widgetWithText(TextField, 'パスワード');
+    final passwordField = _findTextFieldByLabel('パスワード');
     if (passwordField.evaluate().isNotEmpty) {
       await tester.enterText(passwordField, password);
     } else {
@@ -150,13 +169,10 @@ class TestUtils {
       }
     }
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // サインアップボタンをタップ（ElevatedButtonの「新規登録」テキストを特定）
-    final signUpButton = find.descendant(
-      of: find.byType(ElevatedButton),
-      matching: find.text('新規登録'),
-    );
+    final signUpButton = _findElevatedButtonByText('新規登録');
     if (signUpButton.evaluate().isNotEmpty) {
       await tester.tap(signUpButton);
     } else {
@@ -166,7 +182,7 @@ class TestUtils {
       }
     }
 
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   /// スケジュール作成操作のヘルパー

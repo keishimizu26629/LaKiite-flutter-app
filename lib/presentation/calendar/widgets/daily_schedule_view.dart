@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/presentation/presentation_provider.dart'
     hide scheduleNotifierProvider;
 import 'package:lakiite/application/schedule/schedule_notifier.dart';
+import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
 
@@ -79,6 +80,19 @@ class DailyScheduleView extends HookConsumerWidget {
         // 少し遅延させてからスケジュールの取得を開始することで
         // Firebase認証が確実に完了した状態でデータ取得を行う
         Future.delayed(const Duration(milliseconds: 300), () {
+          final latestAuthState = ref.read(authNotifierProvider);
+          final stillAuthenticated = latestAuthState.maybeWhen(
+            data: (state) =>
+                state.status == AuthStatus.authenticated &&
+                state.user?.id == currentUserId,
+            orElse: () => false,
+          );
+          if (!stillAuthenticated) {
+            AppLogger.debug(
+                'DailyScheduleView - 認証状態が変化したためスケジュール監視開始を中止: userId=$currentUserId');
+            return;
+          }
+
           AppLogger.debug(
               'DailyScheduleView - スケジュール監視開始: userId=$currentUserId');
           ref

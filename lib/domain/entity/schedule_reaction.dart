@@ -25,7 +25,7 @@ class ScheduleReaction with _$ScheduleReaction {
   }) = _ScheduleReaction;
 
   factory ScheduleReaction.fromJson(Map<String, dynamic> json) {
-    final createdAt = json['createdAt'];
+    final Object? createdAt = json['createdAt'];
 
     // デバッグ用ログ追加
     AppLogger.debug(

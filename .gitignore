@@ -73,6 +73,8 @@ android/app/google-services.json
 # cursor
 .cursor/
 .cursorrules
+.serena/
+/test-worktree/
 
 # Test related
 coverage/

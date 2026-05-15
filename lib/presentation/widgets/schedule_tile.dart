@@ -17,6 +17,34 @@ import 'package:lakiite/presentation/widgets/reaction_icon_widget.dart';
 /// 予定の詳細情報（タイトル、説明、日時、場所、作成者）とリアクション・コメント情報を表示します。
 /// また、オプションで編集ボタンを表示したり、タイムラインビューでの特別なスタイルを適用できます。
 class ScheduleTile extends ConsumerWidget {
+  /// コンストラクタ
+  ///
+  /// [schedule] 表示する予定データ
+  /// [currentUserId] 現在のユーザーID
+  /// [showOwner] 作成者情報を表示するかどうか（デフォルト: true）
+  /// [showEditButton] 編集ボタンを表示するかどうか（デフォルト: false）
+  /// [showDeleteButton] 削除ボタンを表示するかどうか（デフォルト: false）
+  /// [isTimelineView] タイムラインビューとして表示するかどうか（デフォルト: false）
+  /// [showDivider] 区切り線を表示するかどうか（デフォルト: false）
+  /// [onEditPressed] 編集ボタンがタップされた時のコールバック
+  /// [onDeletePressed] 削除ボタンがタップされた時のコールバック
+  /// [onReactionTap] リアクション部分がタップされた時のコールバック
+  /// [margin] カードのマージン
+  const ScheduleTile({
+    super.key,
+    required this.schedule,
+    required this.currentUserId,
+    this.showOwner = true,
+    this.showEditButton = false,
+    this.showDeleteButton = false,
+    this.isTimelineView = false,
+    this.showDivider = false,
+    this.onEditPressed,
+    this.onDeletePressed,
+    this.onReactionTap,
+    this.margin,
+  });
+
   /// 表示する予定のデータ
   final Schedule schedule;
 
@@ -49,34 +77,6 @@ class ScheduleTile extends ConsumerWidget {
 
   /// カードのマージン
   final EdgeInsetsGeometry? margin;
-
-  /// コンストラクタ
-  ///
-  /// [schedule] 表示する予定データ
-  /// [currentUserId] 現在のユーザーID
-  /// [showOwner] 作成者情報を表示するかどうか（デフォルト: true）
-  /// [showEditButton] 編集ボタンを表示するかどうか（デフォルト: false）
-  /// [showDeleteButton] 削除ボタンを表示するかどうか（デフォルト: false）
-  /// [isTimelineView] タイムラインビューとして表示するかどうか（デフォルト: false）
-  /// [showDivider] 区切り線を表示するかどうか（デフォルト: false）
-  /// [onEditPressed] 編集ボタンがタップされた時のコールバック
-  /// [onDeletePressed] 削除ボタンがタップされた時のコールバック
-  /// [onReactionTap] リアクション部分がタップされた時のコールバック
-  /// [margin] カードのマージン
-  const ScheduleTile({
-    super.key,
-    required this.schedule,
-    required this.currentUserId,
-    this.showOwner = true,
-    this.showEditButton = false,
-    this.showDeleteButton = false,
-    this.isTimelineView = false,
-    this.showDivider = false,
-    this.onEditPressed,
-    this.onDeletePressed,
-    this.onReactionTap,
-    this.margin,
-  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

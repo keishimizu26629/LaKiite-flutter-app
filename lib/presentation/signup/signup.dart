@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../presentation_provider.dart';
+import '../../utils/logger.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
-  static const String path = '/signup';
-
   const SignupPage({super.key});
+  static const String path = '/signup';
 
   @override
   ConsumerState<SignupPage> createState() => _SignupPageState();
@@ -30,6 +30,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   Future<void> _handleSignup() async {
     if (_isLoading) return;
 
+    AppLogger.debugOnly('SignupPage._handleSignup開始');
     setState(() {
       _isLoading = true;
     });
@@ -43,9 +44,16 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 ? _displayNameController.text
                 : null,
           );
-      // AuthNotifier経由で認証状態が更新されるため、
-      // GoRouterのリダイレクト処理により自動的にホーム画面に遷移する
+      final authState = ref.read(authNotifierProvider);
+      AppLogger.debugOnly('SignupPage._handleSignup後 state=$authState');
+      if (mounted && authState.hasError) {
+        final error = authState.error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('サインアップに失敗しました: ${error.toString()}')),
+        );
+      }
     } catch (e) {
+      AppLogger.errorOnly('SignupPage._handleSignup例外', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('サインアップに失敗しました: ${e.toString()}')),
