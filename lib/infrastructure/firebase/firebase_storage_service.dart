@@ -43,13 +43,13 @@ class FirebaseStorageService implements IStorageService {
 
       // ファイルの存在確認
       AppLogger.debug('FirebaseStorage: ファイルの存在確認 - ${file.path}');
-      if (!await file.exists()) {
+      if (!file.existsSync()) {
         AppLogger.error('FirebaseStorage: ファイルが存在しません - ${file.path}');
         throw Exception('アップロードするファイルが見つかりません: ${file.path}');
       }
 
       // ファイルサイズの確認
-      final fileSize = await file.length();
+      final fileSize = file.lengthSync();
       AppLogger.debug('FirebaseStorage: ファイルサイズ - $fileSize bytes');
 
       // メタデータの設定
@@ -69,7 +69,7 @@ class FirebaseStorageService implements IStorageService {
         AppLogger.debug('FirebaseStorage: 参照作成成功 - ${ref.fullPath}');
 
         // アップロードタスクを作成
-        final bytes = await file.readAsBytes();
+        final bytes = file.readAsBytesSync();
         AppLogger.debug('FirebaseStorage: ファイル読み込み成功 - ${bytes.length} bytes');
 
         final uploadTask = ref.putData(

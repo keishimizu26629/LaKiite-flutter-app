@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/entity/schedule.dart';
 import '../../domain/entity/user.dart';
 import '../../presentation/presentation_provider.dart';
 import '../widgets/schedule_tile.dart';
@@ -22,7 +23,7 @@ class FriendProfilePage extends ConsumerWidget {
     // 自分自身が閲覧可能な予定を取得（マイページと同じ方法）
     final schedulesAsync = currentUserId != null
         ? ref.watch(userSchedulesStreamProvider(currentUserId))
-        : const AsyncValue<List<dynamic>>.loading();
+        : const AsyncValue<List<Schedule>>.loading();
 
     AppLogger.debug('FriendProfilePage: 表示中のユーザーID: $userId');
     AppLogger.debug('FriendProfilePage: 現在のユーザーID: $currentUserId');
@@ -190,7 +191,6 @@ class FriendProfilePage extends ConsumerWidget {
                               // この友人が作成した予定
                               s.ownerId == userId &&
                               // 現在日以降の予定
-                              // ignore: avoid_dynamic_calls
                               s.endDateTime.isAfter(todayStart))
                           .toList();
 
@@ -231,7 +231,6 @@ class FriendProfilePage extends ConsumerWidget {
 
                       // 日付でソート
                       userSchedules.sort(
-                          // ignore: avoid_dynamic_calls
                           (a, b) => a.startDateTime.compareTo(b.startDateTime));
 
                       return ListView.builder(
