@@ -74,10 +74,15 @@ Future<void> startApp([
       AppLogger.info('🚀 プッシュ通知サービスの初期化を開始...');
       await PushNotificationService.instance.initialize();
 
-      // FCMトークンの強制更新（registration-token-not-registered エラー対策）
-      AppLogger.info('🔄 FCMトークンの強制更新を実行...');
-      await PushNotificationService.instance.forceUpdateFCMToken();
-      AppLogger.info('✅ FCMトークンの強制更新が完了');
+      const forceRefreshFcmTokenOnStartup = bool.fromEnvironment(
+        'FORCE_REFRESH_FCM_TOKEN_ON_STARTUP',
+        defaultValue: false,
+      );
+      if (forceRefreshFcmTokenOnStartup) {
+        AppLogger.info('🔄 FCMトークンの強制更新を実行...');
+        await PushNotificationService.instance.forceUpdateFCMToken();
+        AppLogger.info('✅ FCMトークンの強制更新が完了');
+      }
 
       // アプリ起動時にバッジカウントをクリア
       AppLogger.info('🧹 アプリ起動時のバッジカウントクリアを実行...');

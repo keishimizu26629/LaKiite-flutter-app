@@ -60,9 +60,6 @@ post_install do |installer|
       # iOS Deployment Targetを15.0に明示的に設定（abseil系など古いPodも含む）
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
 
-      # Apple Silicon シミュレータでの arm64 除外
-      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
-
       # Xcode 16 でも無難な C++ 設定
       config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
       config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
