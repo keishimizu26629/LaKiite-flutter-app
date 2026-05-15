@@ -203,7 +203,8 @@ class UserRepository implements IUserRepository {
         if (privateData['profile'] == null) {
           privateData['profile'] = {};
         }
-        privateData['profile']['iconUrl'] = downloadUrl;
+        final profile = privateData['profile'] as Map<String, dynamic>;
+        profile['iconUrl'] = downloadUrl;
         transaction.update(privateRef, privateData);
       }
     });

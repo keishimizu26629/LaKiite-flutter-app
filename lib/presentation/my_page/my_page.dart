@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:io';
+import '../../domain/entity/user.dart';
 import 'my_page_view_model.dart';
 import '../presentation_provider.dart';
 import '../widgets/banner_ad_widget.dart';
@@ -220,19 +221,17 @@ class _MyPageState extends ConsumerState<MyPage> {
   }
 
   /// ユーザーデータの妥当性をチェック
-  bool _isUserDataValid(dynamic user) {
-    if (user == null) return false;
-
+  bool _isUserDataValid(UserModel user) {
     // 基本的なプロパティの存在チェック
     try {
       // ユーザーIDが存在するかチェック
-      if (user.id == null || user.id.isEmpty) return false;
+      if (user.id.isEmpty) return false;
 
       // 表示名が存在するかチェック
-      if (user.displayName == null) return false;
+      if (user.displayName.isEmpty) return false;
 
       // publicProfileが存在するかチェック
-      if (user.publicProfile == null) return false;
+      if (user.publicProfile.id.isEmpty) return false;
 
       return true;
     } catch (e) {
@@ -242,7 +241,7 @@ class _MyPageState extends ConsumerState<MyPage> {
   }
 
   /// プロフィール編集ダイアログを表示
-  void _showProfileEditDialog(BuildContext context, dynamic user) {
+  void _showProfileEditDialog(BuildContext context, UserModel user) {
     showDialog(
       context: context,
       barrierDismissible: false,
