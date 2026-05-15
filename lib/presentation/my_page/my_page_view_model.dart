@@ -101,7 +101,7 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
       if (pickedImagePath != null) {
         AppLogger.debug('選択された画像パス: $pickedImagePath');
         final imageFile = File(pickedImagePath);
-        if (!await imageFile.exists()) {
+        if (!imageFile.existsSync()) {
           throw Exception('画像ファイルが見つかりません');
         }
 
@@ -173,9 +173,9 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
           AppLogger.debug('現在のユーザーID: ${state.value!.id}');
 
           // ファイル情報の詳細ログ
-          final fileExists = await imageFile.exists();
+          final fileExists = imageFile.existsSync();
           AppLogger.debug('ファイルの存在確認: $fileExists');
-          final fileSize = await imageFile.length();
+          final fileSize = imageFile.lengthSync();
           AppLogger.debug('ファイルサイズ: $fileSize bytes');
           AppLogger.debug('ファイルパス: ${imageFile.path}');
 

@@ -14,8 +14,8 @@ enum NotificationFilter {
   unread('未読'),
   pending('未処理');
 
-  final String label;
   const NotificationFilter(this.label);
+  final String label;
 }
 
 final notificationFilterProvider =

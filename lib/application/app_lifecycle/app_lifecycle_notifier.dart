@@ -18,14 +18,14 @@ class AppLifecycleNotifier extends StateNotifier<AppLifecycleState>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState lifecycleState) {
-    super.didChangeAppLifecycleState(lifecycleState);
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
 
-    AppLogger.debug('アプリライフサイクル変更: ${lifecycleState.name}');
-    state = lifecycleState;
+    AppLogger.debug('アプリライフサイクル変更: ${state.name}');
+    this.state = state;
 
     // フォアグラウンドに復帰した時にバッジをクリア
-    if (lifecycleState == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed) {
       _clearBadgeOnResume();
     }
   }

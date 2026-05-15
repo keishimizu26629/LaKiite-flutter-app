@@ -80,8 +80,9 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       try {
         final data = {...doc.data(), 'id': doc.id};
         AppLogger.debug('Reaction Data from Firestore: $data');
+        final Object? typeValue = data['type'];
         AppLogger.debug(
-            'Reaction type from Firestore: ${data['type']} (${data['type'].runtimeType})');
+            'Reaction type from Firestore: $typeValue (${typeValue.runtimeType})');
         final reaction = ScheduleReaction.fromJson(data);
         AppLogger.debug('Converted Reaction: $reaction');
         return reaction;
@@ -202,14 +203,14 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
           AppLogger.debug('Reaction Data with ID added: $data');
 
           // 型情報を詳細に確認
-          final typeValue = data['type'];
-          final typeType = typeValue?.runtimeType;
+          final Object? typeValue = data['type'];
+          final typeType = typeValue.runtimeType;
           AppLogger.debug(
               'Reaction type value: "$typeValue" (type: $typeType)');
 
           // createdAtの情報確認
-          final createdAtValue = data['createdAt'];
-          final createdAtType = createdAtValue?.runtimeType;
+          final Object? createdAtValue = data['createdAt'];
+          final createdAtType = createdAtValue.runtimeType;
           AppLogger.debug('createdAt value type: $createdAtType');
 
           final reaction = ScheduleReaction.fromJson(data);
@@ -384,9 +385,9 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       AppLogger.debug('コメントID: $commentId, ドキュメントID: ${commentDoc.id}');
 
       // createdAtとupdatedAtの値を確認
-      final createdAtValue = existingData?['createdAt'];
-      final updatedAtValue = existingData?['updatedAt'];
-      final isEditedValue = existingData?['isEdited'];
+      final Object? createdAtValue = existingData?['createdAt'];
+      final Object? updatedAtValue = existingData?['updatedAt'];
+      final Object? isEditedValue = existingData?['isEdited'];
 
       AppLogger.debug(
           '既存コメントのcreatedAt: $createdAtValue (${createdAtValue?.runtimeType})');
