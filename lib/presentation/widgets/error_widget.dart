@@ -23,13 +23,13 @@ class ScheduleErrorWidget extends StatelessWidget {
           Icon(
             Icons.error_outline,
             size: 48,
-            color: Theme.of(context).primaryColor.withOpacity(0.7),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 16),
           Text(
             'エラーが発生しました: $error',
             style: TextStyle(
-              color: Theme.of(context).primaryColor.withOpacity(0.9),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.9),
             ),
           ),
           const SizedBox(height: 16),

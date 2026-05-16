@@ -53,7 +53,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog> {
                 SizedBox(
                   width: 80,
                   child: DropdownButtonFormField<int>(
-                    value: selectedHour,
+                    initialValue: selectedHour,
                     items: List.generate(24, (index) {
                       return DropdownMenuItem(
                         value: index,
@@ -77,7 +77,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog> {
                 SizedBox(
                   width: 80,
                   child: DropdownButtonFormField<int>(
-                    value: selectedMinute,
+                    initialValue: selectedMinute,
                     items: [0, 15, 30, 45].map((minute) {
                       return DropdownMenuItem(
                         value: minute,
@@ -730,7 +730,8 @@ class ScheduleFormPage extends HookConsumerWidget {
                                       child: Container(
                                         padding: const EdgeInsets.all(4),
                                         decoration: BoxDecoration(
-                                          color: Colors.blue.withOpacity(0.1),
+                                          color: Colors.blue
+                                              .withValues(alpha: 0.1),
                                           borderRadius:
                                               BorderRadius.circular(4),
                                         ),

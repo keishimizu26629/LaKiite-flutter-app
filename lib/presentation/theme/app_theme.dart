@@ -21,7 +21,7 @@ class AppTheme {
   static ThemeData get theme => ThemeData(
         useMaterial3: false,
         primarySwatch: MaterialColor(
-          primaryColor.value,
+          primaryColor.toARGB32(),
           const <int, Color>{
             50: Color(0xFFfff5e6),
             100: Color(0xFFffe6b3),
@@ -69,7 +69,7 @@ class AppTheme {
           elevation: 2,
           highlightElevation: 4,
         ),
-        cardTheme: const CardTheme(
+        cardTheme: const CardThemeData(
           elevation: 1,
           margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           shape: RoundedRectangleBorder(
@@ -153,15 +153,15 @@ class AppTheme {
           trackColor:
               WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
             if (states.contains(WidgetState.disabled)) {
-              return disabledColor.withOpacity(0.3);
+              return disabledColor.withValues(alpha: 0.3);
             }
             if (states.contains(WidgetState.selected)) {
-              return primaryColor.withOpacity(0.5);
+              return primaryColor.withValues(alpha: 0.5);
             }
-            return disabledColor.withOpacity(0.3);
+            return disabledColor.withValues(alpha: 0.3);
           }),
         ),
-        shadowColor: Colors.black.withOpacity(0.1),
+        shadowColor: Colors.black.withValues(alpha: 0.1),
         dividerTheme: const DividerThemeData(
           space: 16,
           thickness: 1,

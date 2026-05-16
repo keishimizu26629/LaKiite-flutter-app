@@ -48,7 +48,7 @@ class NotificationListPage extends ConsumerWidget {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -434,7 +434,7 @@ class _NotificationItem extends ConsumerWidget {
           if (state.isLoading)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 child: const Center(
                   child: SizedBox(
                     width: 24,
@@ -540,8 +540,12 @@ class _NotificationItem extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: notification.status ==
                               domain.NotificationStatus.accepted
-                          ? Theme.of(context).primaryColor.withOpacity(0.1)
-                          : Theme.of(context).primaryColor.withOpacity(0.05),
+                          ? Theme.of(context)
+                              .primaryColor
+                              .withValues(alpha: 0.1)
+                          : Theme.of(context)
+                              .primaryColor
+                              .withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
@@ -552,7 +556,9 @@ class _NotificationItem extends ConsumerWidget {
                         color: notification.status ==
                                 domain.NotificationStatus.accepted
                             ? Theme.of(context).primaryColor
-                            : Theme.of(context).primaryColor.withOpacity(0.8),
+                            : Theme.of(context)
+                                .primaryColor
+                                .withValues(alpha: 0.8),
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -572,7 +578,7 @@ class _NotificationItem extends ConsumerWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -586,7 +592,7 @@ class _NotificationItem extends ConsumerWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -600,7 +606,7 @@ class _NotificationItem extends ConsumerWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -614,7 +620,7 @@ class _NotificationItem extends ConsumerWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(

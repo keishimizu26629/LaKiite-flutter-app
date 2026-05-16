@@ -72,7 +72,7 @@ class ProfileCard extends StatelessWidget {
     // NetworkImageでエラーが発生した場合のフォールバックも含める
     return CircleAvatar(
       radius: 40,
-      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+      backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(40),
         child: Image.network(
