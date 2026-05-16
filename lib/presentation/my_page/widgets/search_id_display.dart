@@ -32,7 +32,7 @@ class SearchIdDisplay extends StatelessWidget {
             '@$searchId',
             style: TextStyle(
               fontSize: 16,
-              color: Theme.of(context).primaryColor.withOpacity(0.8),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(width: 6),
