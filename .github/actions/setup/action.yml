@@ -10,7 +10,7 @@ runs:
         if [ -f .fvmrc ]; then
           echo "version=$(jq -r '.flutter' .fvmrc)" >> $GITHUB_OUTPUT
         else
-          echo "version=3.24.5" >> $GITHUB_OUTPUT
+          echo "version=3.41.5" >> $GITHUB_OUTPUT
         fi
       shell: bash
 
