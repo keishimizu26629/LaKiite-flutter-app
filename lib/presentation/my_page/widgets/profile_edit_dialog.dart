@@ -77,7 +77,7 @@ class _ProfileEditDialogState extends ConsumerState<ProfileEditDialog> {
                       height: 80,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                       ),
                       child: const Icon(
                         Icons.camera_alt,
@@ -104,7 +104,7 @@ class _ProfileEditDialogState extends ConsumerState<ProfileEditDialog> {
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(
-                color: Theme.of(context).primaryColor.withOpacity(0.3),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
                 width: 1,
               ),
               borderRadius: BorderRadius.circular(8),

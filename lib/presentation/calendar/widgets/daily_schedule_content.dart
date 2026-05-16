@@ -178,16 +178,16 @@ class DailyScheduleContent extends HookConsumerWidget {
                                     const EdgeInsets.symmetric(horizontal: 2),
                                 decoration: BoxDecoration(
                                   color: isOwnerWithCheck
-                                      ? Colors.grey.withOpacity(0.1)
+                                      ? Colors.grey.withValues(alpha: 0.1)
                                       : Theme.of(context)
                                           .primaryColor
-                                          .withOpacity(0.1),
+                                          .withValues(alpha: 0.1),
                                   border: Border.all(
                                     color: isOwnerWithCheck
-                                        ? Colors.grey.withOpacity(0.8)
+                                        ? Colors.grey.withValues(alpha: 0.8)
                                         : Theme.of(context)
                                             .primaryColor
-                                            .withOpacity(0.8),
+                                            .withValues(alpha: 0.8),
                                     width: 2,
                                   ),
                                   borderRadius: BorderRadius.circular(8),
