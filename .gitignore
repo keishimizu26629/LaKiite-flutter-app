@@ -95,3 +95,5 @@ android/app/src/development/res/
 android/app/src/production/res/
 ios/Runner/Assets.xcassets/AppIcon*.appiconset/
 assets/icon/dev_icon.png
+
+.playwright-mcp/
