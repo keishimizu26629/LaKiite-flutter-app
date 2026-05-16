@@ -617,7 +617,9 @@ class CalendarPageView extends HookConsumerWidget {
         try {
           if (!ref.exists(renderedMonthsProvider) ||
               !ref.exists(lastCleanupTimeProvider) ||
-              !ref.exists(activeMonthIndicesProvider)) return;
+              !ref.exists(activeMonthIndicesProvider)) {
+            return;
+          }
 
           // 現在のアクティブ範囲を取得
           final activeIndices = ref.read(activeMonthIndicesProvider);
@@ -1400,13 +1402,13 @@ class OptimizedDateCell extends StatelessWidget {
                                 ? Colors.grey.shade200
                                 : Theme.of(context)
                                     .primaryColor
-                                    .withOpacity(0.15),
+                                    .withValues(alpha: 0.15),
                             border: Border.all(
                               color: isOwnerWithCheck
                                   ? Colors.grey.shade400
                                   : Theme.of(context)
                                       .primaryColor
-                                      .withOpacity(0.3),
+                                      .withValues(alpha: 0.3),
                               width: 0.5,
                             ),
                             borderRadius: BorderRadius.circular(2),
@@ -1419,7 +1421,7 @@ class OptimizedDateCell extends StatelessWidget {
                                   ? Colors.grey.shade700
                                   : Theme.of(context)
                                       .primaryColor
-                                      .withOpacity(0.8),
+                                      .withValues(alpha: 0.8),
                               fontWeight: FontWeight.w500,
                             ),
                             overflow: TextOverflow.ellipsis,

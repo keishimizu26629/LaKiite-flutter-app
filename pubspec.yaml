@@ -66,15 +66,15 @@ dev_dependencies:
     sdk: flutter
 
   # Code Generation
-  build_runner: ^2.4.8
-  riverpod_generator: ^2.3.11
-  freezed: ^2.4.7
-  json_serializable: ^6.7.1
+  build_runner: ^2.5.4
+  riverpod_generator: ^2.6.4
+  freezed: ^2.5.8
+  json_serializable: ^6.9.5
 
   # Development Tools
   flutter_lints: ^5.0.0
   flutterfire_cli: ^1.0.1-dev.4
-  analyzer: ^6.7.0
+  analyzer: ^7.6.0
 
 flutter_launcher_icons:
   android: "launcher_icon"
@@ -107,4 +107,4 @@ json_serializable:
 # Dependency Resolution
 dependency_overrides:
   watcher: ^1.1.0
-  webview_flutter_wkwebview: 3.4.0
+  webview_flutter_wkwebview: ^3.25.1

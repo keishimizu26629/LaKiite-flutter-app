@@ -99,11 +99,13 @@ class ScheduleCard extends StatelessWidget {
                         ),
                         margin: const EdgeInsets.symmetric(horizontal: 4),
                         decoration: BoxDecoration(
-                          color:
-                              Theme.of(context).primaryColor.withOpacity(0.1),
+                          color: Theme.of(context)
+                              .primaryColor
+                              .withValues(alpha: 0.1),
                           border: Border.all(
-                            color:
-                                Theme.of(context).primaryColor.withOpacity(0.8),
+                            color: Theme.of(context)
+                                .primaryColor
+                                .withValues(alpha: 0.8),
                             width: 2,
                           ),
                           borderRadius: BorderRadius.circular(8),

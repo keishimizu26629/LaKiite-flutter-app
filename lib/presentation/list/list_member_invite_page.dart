@@ -50,7 +50,8 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
 
                   return ListTile(
                     enabled: !isInList,
-                    tileColor: isInList ? Colors.grey.withOpacity(0.1) : null,
+                    tileColor:
+                        isInList ? Colors.grey.withValues(alpha: 0.1) : null,
                     leading: CircleAvatar(
                       backgroundImage: friend.iconUrl != null
                           ? NetworkImage(friend.iconUrl!)

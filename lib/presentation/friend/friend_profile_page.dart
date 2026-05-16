@@ -73,8 +73,9 @@ class FriendProfilePage extends ConsumerWidget {
                         children: [
                           CircleAvatar(
                             radius: 40,
-                            backgroundColor:
-                                Theme.of(context).primaryColor.withOpacity(0.1),
+                            backgroundColor: Theme.of(context)
+                                .primaryColor
+                                .withValues(alpha: 0.1),
                             backgroundImage: user.iconUrl != null
                                 ? NetworkImage(user.iconUrl!)
                                 : null,
@@ -118,7 +119,7 @@ class FriendProfilePage extends ConsumerWidget {
                                           fontSize: 16,
                                           color: Theme.of(context)
                                               .primaryColor
-                                              .withOpacity(0.8),
+                                              .withValues(alpha: 0.8),
                                         ),
                                       ),
                                       const SizedBox(width: 6),
@@ -151,8 +152,9 @@ class FriendProfilePage extends ConsumerWidget {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           border: Border.all(
-                            color:
-                                Theme.of(context).primaryColor.withOpacity(0.3),
+                            color: Theme.of(context)
+                                .primaryColor
+                                .withValues(alpha: 0.3),
                             width: 1,
                           ),
                           borderRadius: BorderRadius.circular(8),
