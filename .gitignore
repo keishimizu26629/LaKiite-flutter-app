@@ -37,6 +37,7 @@
 /build/
 build/ios/XCBuildData/
 ios/build/
+ios/.derived-data-log-*
 
 # Web related
 lib/generated_plugin_registrant.dart
