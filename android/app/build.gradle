@@ -100,11 +100,17 @@ android {
         dev {
             dimension "environment"
             applicationId "com.inoworl.lakiite.dev"
+            manifestPlaceholders = [
+                    adMobApplicationId: "ca-app-pub-3940256099942544~3347511713"
+            ]
             versionNameSuffix "-dev"
         }
         prod {
             dimension "environment"
             applicationId "com.inoworl.lakiite"
+            manifestPlaceholders = [
+                    adMobApplicationId: "ca-app-pub-6315199114988889~9761758494"
+            ]
         }
     }
 
