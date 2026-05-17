@@ -91,6 +91,7 @@ jobs:
       - name: flutter build ipa
         run: |
           flutter build ipa --release \
+            --flavor prod \
             --export-options-plist=ios/ExportOptions.plist \
             --dart-define-from-file="dart_define.json" \
             -t "lib/main.dart" \
