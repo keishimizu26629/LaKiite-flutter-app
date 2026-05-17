@@ -50,6 +50,7 @@ jobs:
         run: |
           echo "${{ secrets.IOS_CERTIFICATES_P12_BASE64 }}" | base64 -d > certificates.p12
           security import certificates.p12 -k build.keychain -P "${{ secrets.IOS_CERTIFICATES_P12_PASSWORD }}" -A
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
 
       # 証明書の一覧を表示する。
       - name: List available certificates
@@ -61,7 +62,7 @@ jobs:
         run: |
           # ios/project.pbxproj を上書きする設定を Dart-Defines.xcconfig に書き込む。
           touch Dart-Defines.xcconfig
-          echo "PROVISIONING_PROFILE_SPECIFIER = LaKiite Prod Distribution" >> Dart-Defines.xcconfig
+          echo "PROVISIONING_PROFILE_SPECIFIER = LaKiite Prod App Store" >> Dart-Defines.xcconfig
           echo "CODE_SIGN_STYLE = Manual" >> Dart-Defines.xcconfig
           echo "DEVELOPMENT_TEAM = ${{ secrets.APPLE_TEAM_ID }}" >> Dart-Defines.xcconfig
           echo "CODE_SIGN_IDENTITY = Apple Distribution" >> Dart-Defines.xcconfig
