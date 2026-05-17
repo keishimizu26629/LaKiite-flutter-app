@@ -111,6 +111,18 @@ final bannerAd = AdMobService.createBannerAd();
 ✅ AdMob初期化完了
 ```
 
+### iOS SKAdNetwork設定
+
+iOSではGoogle Mobile Ads SDKが起動時に`SKAdNetworkItems`の不足を警告することがあります。`ios/Runner/Info.plist`にはGoogle公式ドキュメントのSKAdNetwork IDを設定済みです。
+
+設定漏れの再発防止として、以下のテストで必須IDの存在と重複なしを確認しています。
+
+```bash
+fvm flutter test test/utils/skadnetwork_info_plist_test.dart --dart-define=FLUTTER_TEST=true
+```
+
+SKAdNetwork IDはGoogle側で更新されることがあるため、AdMob SDK更新時やストア提出前に公式ドキュメントも確認してください。
+
 ## AdMob審査について
 
 ### 現在の状態
