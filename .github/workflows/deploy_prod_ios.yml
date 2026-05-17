@@ -60,26 +60,14 @@ jobs:
 
       - name: Prepare Xcode build settings for Distribution
         run: |
-          # ios/project.pbxproj を上書きする設定を Dart-Defines.xcconfig に書き込む。
-          touch Dart-Defines.xcconfig
-          echo "PROVISIONING_PROFILE_SPECIFIER = LaKiite Prod App Store" >> Dart-Defines.xcconfig
-          echo "CODE_SIGN_STYLE = Manual" >> Dart-Defines.xcconfig
-          echo "DEVELOPMENT_TEAM = ${{ secrets.APPLE_TEAM_ID }}" >> Dart-Defines.xcconfig
-          echo "CODE_SIGN_IDENTITY = Apple Distribution" >> Dart-Defines.xcconfig
-          mv Dart-Defines.xcconfig ios/Flutter/
-
           # ios/ExportOptions.plist を ProdExportOptions.plist からコピーして作成する。
           cp ios/ProdExportOptions.plist ios/ExportOptions.plist
 
-          # ios/project.pbxproj から関連する設定を削除する。
-          sed -i '' '/PROVISIONING_PROFILE_SPECIFIER = /d' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' '/CODE_SIGN_STYLE = /d' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' '/DEVELOPMENT_TEAM = /d' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' '/CODE_SIGN_IDENTITY = /d' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' '/CODE_SIGN_IDENTITY\[sdk=iphoneos\*\] = /d' ios/Runner.xcodeproj/project.pbxproj
-
-          # 最終的な Dart-Defines.xcconfig の内容を表示
-          cat ios/Flutter/Dart-Defines.xcconfig
+          # Release-prod の署名設定が残っていることをCIログで確認する。
+          xcodebuild -project ios/Runner.xcodeproj \
+            -scheme prod \
+            -configuration Release-prod \
+            -showBuildSettings | grep -E "PRODUCT_BUNDLE_IDENTIFIER|DEVELOPMENT_TEAM|CODE_SIGN_STYLE|CODE_SIGN_IDENTITY|PROVISIONING_PROFILE_SPECIFIER"
 
       - name: Calculate Build Number
         id: calculate_build_number
