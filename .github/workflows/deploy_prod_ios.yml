@@ -92,8 +92,12 @@ jobs:
         run: echo "LATEST_COMMIT_MESSAGES=$(git log -n 10 --pretty=format:'%s' | tr '\n' '; ')" >> $GITHUB_ENV
 
       - name: Setup App Store Connect API Key
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
         run: |
-          echo "${{ secrets.ASC_PRIVATE_KEY_P8_BASE64 }}" | base64 -d > AuthKey.p8
+          mkdir -p private_keys
+          echo "${{ secrets.ASC_PRIVATE_KEY_P8_BASE64 }}" | base64 -d > "private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          chmod 600 "private_keys/AuthKey_${ASC_KEY_ID}.p8"
 
       - name: Upload to TestFlight
         run: |
@@ -102,5 +106,4 @@ jobs:
             -t ios \
             -f "$IPA_FILE" \
             --apiKey "${{ secrets.ASC_KEY_ID }}" \
-            --apiIssuer "${{ secrets.ASC_ISSUER_ID }}" \
-            --apiKeyFile AuthKey.p8
+            --apiIssuer "${{ secrets.ASC_ISSUER_ID }}"
