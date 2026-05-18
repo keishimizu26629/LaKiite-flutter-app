@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 60
     environment: dev
 
@@ -18,7 +18,7 @@ jobs:
         run: |
           xcode-select -p
           xcodebuild -version
-          echo "Using default Xcode for Xcode 16 compatibility"
+          echo "Using default Xcode for iOS 26 SDK upload compliance"
 
       - name: Setup CI
         uses: ./.github/actions/setup
