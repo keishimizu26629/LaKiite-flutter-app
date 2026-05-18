@@ -3,40 +3,34 @@ import 'package:lakiite/infrastructure/user_fcm_token_service.dart';
 
 void main() {
   group('UserFcmTokenService.extractFcmTokens', () {
-    test('platform別トークンとlegacyトークンを重複排除して返す', () {
+    test('fcmTokens配列から重複排除して返す', () {
       final tokens = UserFcmTokenService.extractFcmTokens({
-        'fcmToken': 'legacy-ios-token',
-        'fcmTokens': {
-          'android': {
-            'token': 'android-token',
-            'platform': 'android',
-          },
-          'ios': {
-            'token': 'legacy-ios-token',
-            'platform': 'ios',
-          },
-        },
+        'fcmTokens': [
+          'android-token',
+          'ios-token',
+          'android-token',
+        ],
       });
 
-      expect(tokens, ['android-token', 'legacy-ios-token']);
+      expect(tokens, ['android-token', 'ios-token']);
     });
 
-    test('legacyトークンのみの既存データも読み込める', () {
+    test('legacy fcmTokenのみの既存データは読み込まない', () {
       final tokens = UserFcmTokenService.extractFcmTokens({
         'fcmToken': 'legacy-token',
       });
 
-      expect(tokens, ['legacy-token']);
+      expect(tokens, isEmpty);
     });
 
     test('空文字や不正な形式は除外する', () {
       final tokens = UserFcmTokenService.extractFcmTokens({
         'fcmToken': '',
-        'fcmTokens': {
-          'android': {'token': ''},
-          'ios': {'value': 'missing-token-key'},
-          'web': 'web-token',
-        },
+        'fcmTokens': [
+          '',
+          123,
+          'web-token',
+        ],
       });
 
       expect(tokens, ['web-token']);

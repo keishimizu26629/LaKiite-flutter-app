@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -19,13 +17,7 @@ class UserFcmTokenService {
   final FirebaseAuth _auth;
   final PushNotificationService _pushNotificationService;
 
-  static const String _legacyTokenField = 'fcmToken';
-  static const String _tokenPlatformField = 'fcmTokenPlatform';
-  static const String _tokenUpdatedAtField = 'fcmTokenUpdatedAt';
   static const String _tokensField = 'fcmTokens';
-  static const String _tokenValueField = 'token';
-  static const String _platformField = 'platform';
-  static const String _updatedAtField = 'updatedAt';
 
   /// 現在のユーザーのFCMトークンを更新する
   Future<bool> updateCurrentUserFcmToken() async {
@@ -45,21 +37,10 @@ class UserFcmTokenService {
       AppLogger.debug(
           'FCMトークン更新: ユーザーID=${user.uid}, トークン=${maskNotificationToken(token)}');
 
-      final platform = _currentPlatformKey();
-
-      // Firebase Functionsが参照する従来フィールドは後方互換のため維持しつつ、
-      // iOS/Androidのトークン上書きを避けるためplatform別にも保存する。
+      // ZENと同じく、複数端末のトークンを配列で保持する。
+      // 単一fcmTokenフィールドは使わず、iOS/Androidや複数端末の上書きを避ける。
       await _firestore.collection('users').doc(user.uid).set({
-        _legacyTokenField: token,
-        _tokenPlatformField: platform,
-        _tokenUpdatedAtField: FieldValue.serverTimestamp(),
-        _tokensField: {
-          platform: {
-            _tokenValueField: token,
-            _platformField: platform,
-            _updatedAtField: FieldValue.serverTimestamp(),
-          },
-        },
+        _tokensField: FieldValue.arrayUnion([token]),
       }, SetOptions(merge: true));
 
       AppLogger.debug('FCMトークン更新: 完了');
@@ -92,23 +73,15 @@ class UserFcmTokenService {
           return;
         }
 
-        final platform = _currentPlatformKey();
         final token = await _pushNotificationService.refreshToken();
-        final updates = <String, dynamic>{
-          '$_tokensField.$platform': FieldValue.delete(),
-        };
-
-        final data = docSnapshot.data();
-        if (data != null &&
-            token != null &&
-            data[_legacyTokenField] is String &&
-            data[_legacyTokenField] == token) {
-          updates[_legacyTokenField] = FieldValue.delete();
-          updates[_tokenPlatformField] = FieldValue.delete();
-          updates[_tokenUpdatedAtField] = FieldValue.delete();
+        if (token == null) {
+          AppLogger.warning('FCMトークン削除: 現在端末のトークンが取得できませんでした');
+          return;
         }
 
-        await docRef.update(updates);
+        await docRef.update({
+          _tokensField: FieldValue.arrayRemove([token]),
+        });
 
         AppLogger.debug('FCMトークン削除: 完了');
       } catch (e) {
@@ -145,13 +118,8 @@ class UserFcmTokenService {
         return null;
       }
 
-      final data = doc.data();
-      if (data == null) {
-        AppLogger.warning('FCMトークン取得: ユーザーデータがありません - $userId');
-        return null;
-      }
-
-      final token = data['fcmToken'] as String?;
+      final tokens = extractFcmTokens(doc.data());
+      final token = tokens.isEmpty ? null : tokens.first;
       AppLogger.debug('FCMトークン取得: トークン=${maskNotificationToken(token)}');
 
       return token;
@@ -162,9 +130,7 @@ class UserFcmTokenService {
     }
   }
 
-  /// 特定ユーザーに紐づくFCMトークンを全platform分取得する。
-  ///
-  /// 旧実装の `fcmToken` も読み込むため、既存データやFunctionsとの後方互換を保てる。
+  /// 特定ユーザーに紐づくFCMトークンを全端末分取得する。
   Future<List<String>> getUserFcmTokens(String userId) async {
     try {
       AppLogger.debug('FCMトークン一覧取得: ユーザーID=$userId');
@@ -194,47 +160,15 @@ class UserFcmTokenService {
 
     final tokens = <String>{};
 
-    final platformTokens = data[_tokensField];
-    if (platformTokens is Map) {
-      for (final entry in platformTokens.values) {
-        if (entry is String && entry.isNotEmpty) {
-          tokens.add(entry);
-        } else if (entry is Map) {
-          final token = entry[_tokenValueField];
-          if (token is String && token.isNotEmpty) {
-            tokens.add(token);
-          }
+    final rawTokens = data[_tokensField];
+    if (rawTokens is Iterable) {
+      for (final token in rawTokens) {
+        if (token is String && token.isNotEmpty) {
+          tokens.add(token);
         }
       }
     }
 
-    final legacyToken = data[_legacyTokenField];
-    if (legacyToken is String && legacyToken.isNotEmpty) {
-      tokens.add(legacyToken);
-    }
-
     return tokens.toList(growable: false);
-  }
-
-  static String _currentPlatformKey() {
-    if (kIsWeb) {
-      return 'web';
-    }
-    if (Platform.isAndroid) {
-      return 'android';
-    }
-    if (Platform.isIOS) {
-      return 'ios';
-    }
-    if (Platform.isMacOS) {
-      return 'macos';
-    }
-    if (Platform.isWindows) {
-      return 'windows';
-    }
-    if (Platform.isLinux) {
-      return 'linux';
-    }
-    return 'unknown';
   }
 }
