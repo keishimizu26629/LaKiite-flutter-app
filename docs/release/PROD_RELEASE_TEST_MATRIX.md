@@ -69,11 +69,10 @@ fvm flutter test integration_test/login_signup_home_navigation_integration_test.
 
 | ID | 通知種別 | 発火操作 | 受信者 | iOS | Android | 両OS必須度 | 備考 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| N-01 | 前日予定通知 | 予定の前日通知バッチ/Functions | 予定対象ユーザー | 必須 | 必須 | 高 | 以前TestFlightで受信確認済み。Androidでも確認する |
-| N-02 | 友達申請 | AがBへ友達申請 | B | 必須 | 必須 | 高 | 代表Pushとして両OSで確認する |
-| N-03 | グループ招待 | AがBをグループ招待 | B | 必須 | 片方代表で可 | 中 | 片OSで種別網羅、もう片OSは余裕があれば確認 |
-| N-04 | リアクション | BがAの予定へリアクション | A | 必須 | 片方代表で可 | 中 | 片OSで種別網羅、もう片OSは余裕があれば確認 |
-| N-05 | コメント | BがAの予定へコメント | A | 未実装確認 | 未実装確認 | 低 | `addComment` は現状 `TODO: 通知機能は後で実装` |
+| N-01 | 友達申請 | AがBへ友達申請 | B | 必須 | 必須 | 高 | 代表Pushとして両OSで確認する |
+| N-02 | グループ招待 | AがBをグループ招待 | B | 必須 | 片方代表で可 | 中 | 片OSで種別網羅、もう片OSは余裕があれば確認 |
+| N-03 | リアクション | BがAの予定へリアクション | A | 必須 | 片方代表で可 | 中 | 片OSで種別網羅、もう片OSは余裕があれば確認 |
+| N-04 | コメント | BがAの予定へコメント | A | 未実装確認 | 未実装確認 | 低 | `addComment` は現状 `TODO: 通知機能は後で実装` |
 
 ## Push通知状態
 
@@ -93,7 +92,6 @@ fvm flutter test integration_test/login_signup_home_navigation_integration_test.
 | P0 | prod版を新規インストールできる | 必須 | 必須 |
 | P0 | prodログイン/新規登録ができる | 必須 | 必須 |
 | P0 | FCM tokenがprod Firestoreに保存される | 必須 | 必須 |
-| P0 | 前日予定通知が届く | 必須 | 必須 |
 | P0 | 友達申請通知が届く | 必須 | 必須 |
 | P0 | Backgroundで通知表示 | 必須 | 必須 |
 | P0 | Terminatedで通知表示/タップ起動 | 必須 | 必須 |
@@ -106,5 +104,6 @@ fvm flutter test integration_test/login_signup_home_navigation_integration_test.
 
 - 「Push通知が届くか」はiOS/Android両方で確認する。
 - 「通知種別ごとの業務ロジック」は片方のOSで網羅し、もう片方は代表ケースで確認する。
-- 前日予定通知と友達申請通知はリリース前P0として両OSで確認する。
+- 友達申請通知はリリース前P0として両OSで確認する。
+- 前日予定通知は現時点のリリース要件から除外する。
 - コメント通知は現状未実装扱い。リリース要件に含める場合は別途実装が必要。
