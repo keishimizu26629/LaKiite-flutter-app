@@ -19,8 +19,8 @@ platform :ios do
   lane :dev do
     # Set environment-specific configuration
     ENV["APP_IDENTIFIER"] = "com.inoworl.lakiite.dev"
-    ENV["SCHEME"] = "Runner"
-    ENV["CONFIGURATION"] = "Release"
+    ENV["SCHEME"] = "dev"
+    ENV["CONFIGURATION"] = "Release-dev"
 
     # Skip prepare_build due to Flutter SDK permission issues
     # prepare_build
@@ -37,8 +37,8 @@ platform :ios do
   lane :prod do
     # Set environment-specific configuration
     ENV["APP_IDENTIFIER"] = "com.inoworl.lakiite"
-    ENV["SCHEME"] = "Runner"
-    ENV["CONFIGURATION"] = "Release"
+    ENV["SCHEME"] = "prod"
+    ENV["CONFIGURATION"] = "Release-prod"
 
     prepare_build
     build_and_upload_prod
@@ -186,8 +186,8 @@ platform :ios do
     # Build and sign the app using fastlane
     build_app(
       workspace: "Runner.xcworkspace",
-      scheme: "Runner",
-      configuration: "Release-dev",
+      scheme: ENV["SCHEME"],
+      configuration: ENV["CONFIGURATION"],
       export_method: "app-store",
       output_directory: "./build",
       output_name: "#{ipa_output_name}.ipa",
@@ -271,7 +271,7 @@ platform :ios do
 
   private_lane :build_and_upload_prod do
     # Build Flutter iOS app for Production
-    sh "cd .. && fvm flutter build ios --release --dart-define-from-file=dart_define/prod_dart_define.json"
+    sh "cd .. && fvm flutter build ios --release --flavor prod --dart-define-from-file=dart_define/prod_dart_define.json"
 
     # Build and archive with locale fix
     ENV["LANG"] = "en_US.UTF-8"
@@ -279,8 +279,9 @@ platform :ios do
     ENV["LC_ALL"] = "en_US.UTF-8"
 
     build_app(
+      workspace: "Runner.xcworkspace",
       scheme: ENV["SCHEME"],
-      configuration: "Release",
+      configuration: ENV["CONFIGURATION"],
       export_method: "app-store",
       clean: true,
       output_directory: "./build",
