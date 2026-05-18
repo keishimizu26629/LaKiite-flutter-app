@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 45
     environment: prod
 
@@ -18,14 +18,16 @@ jobs:
         run: |
           xcode-select -p
           xcodebuild -version
-          echo "Using default Xcode for Xcode 16 compatibility"
+          echo "Using default Xcode for iOS 26 SDK upload compliance"
 
       - name: Setup CI
         uses: ./.github/actions/setup
 
       - name: Restore Firebase config files
         run: |
-          echo "${{ secrets.PROD_GOOGLESERVICE_INFO_PLIST_BASE64 }}" | base64 -d > ios/Runner/GoogleService-Info.plist
+          echo "${{ secrets.PROD_GOOGLESERVICE_INFO_PLIST_BASE64 }}" | base64 -d > ios/Runner/Firebase/Prod/GoogleService-Info.plist
+          cp ios/Runner/Firebase/Prod/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
+          echo "${{ secrets.PROD_FIREBASE_OPTIONS_DART_BASE64 }}" | base64 -d > lib/firebase_options.dart
 
       - name: Restore dart-define config
         run: |
@@ -60,26 +62,14 @@ jobs:
 
       - name: Prepare Xcode build settings for Distribution
         run: |
-          # ios/project.pbxproj を上書きする設定を Dart-Defines.xcconfig に書き込む。
-          touch Dart-Defines.xcconfig
-          echo "PROVISIONING_PROFILE_SPECIFIER = LaKiite Prod App Store" >> Dart-Defines.xcconfig
-          echo "CODE_SIGN_STYLE = Manual" >> Dart-Defines.xcconfig
-          echo "DEVELOPMENT_TEAM = ${{ secrets.APPLE_TEAM_ID }}" >> Dart-Defines.xcconfig
-          echo "CODE_SIGN_IDENTITY = Apple Distribution" >> Dart-Defines.xcconfig
-          mv Dart-Defines.xcconfig ios/Flutter/
-
           # ios/ExportOptions.plist を ProdExportOptions.plist からコピーして作成する。
           cp ios/ProdExportOptions.plist ios/ExportOptions.plist
 
-          # ios/project.pbxproj から関連する設定を削除する。
-          sed -i '' '/PROVISIONING_PROFILE_SPECIFIER = /d' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' '/CODE_SIGN_STYLE = /d' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' '/DEVELOPMENT_TEAM = /d' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' '/CODE_SIGN_IDENTITY = /d' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' '/CODE_SIGN_IDENTITY\[sdk=iphoneos\*\] = /d' ios/Runner.xcodeproj/project.pbxproj
-
-          # 最終的な Dart-Defines.xcconfig の内容を表示
-          cat ios/Flutter/Dart-Defines.xcconfig
+          # Release-prod の署名設定が残っていることをCIログで確認する。
+          xcodebuild -project ios/Runner.xcodeproj \
+            -scheme prod \
+            -configuration Release-prod \
+            -showBuildSettings | grep -E "PRODUCT_BUNDLE_IDENTIFIER|DEVELOPMENT_TEAM|CODE_SIGN_STYLE|CODE_SIGN_IDENTITY|PROVISIONING_PROFILE_SPECIFIER"
 
       - name: Calculate Build Number
         id: calculate_build_number
@@ -102,8 +92,12 @@ jobs:
         run: echo "LATEST_COMMIT_MESSAGES=$(git log -n 10 --pretty=format:'%s' | tr '\n' '; ')" >> $GITHUB_ENV
 
       - name: Setup App Store Connect API Key
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
         run: |
-          echo "${{ secrets.ASC_PRIVATE_KEY_P8_BASE64 }}" | base64 -d > AuthKey.p8
+          mkdir -p private_keys
+          echo "${{ secrets.ASC_PRIVATE_KEY_P8_BASE64 }}" | base64 -d > "private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          chmod 600 "private_keys/AuthKey_${ASC_KEY_ID}.p8"
 
       - name: Upload to TestFlight
         run: |
@@ -112,5 +106,4 @@ jobs:
             -t ios \
             -f "$IPA_FILE" \
             --apiKey "${{ secrets.ASC_KEY_ID }}" \
-            --apiIssuer "${{ secrets.ASC_ISSUER_ID }}" \
-            --apiKeyFile AuthKey.p8
+            --apiIssuer "${{ secrets.ASC_ISSUER_ID }}"
