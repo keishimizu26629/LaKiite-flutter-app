@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import '../infrastructure/firebase/push_notification_service.dart';
 import '../utils/logger.dart';
 import '../utils/notification_token_log_formatter.dart';
@@ -15,6 +16,8 @@ class UserFcmTokenService {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
   final PushNotificationService _pushNotificationService;
+
+  static const String _tokensField = 'fcmTokens';
 
   /// 現在のユーザーのFCMトークンを更新する
   Future<bool> updateCurrentUserFcmToken() async {
@@ -34,10 +37,10 @@ class UserFcmTokenService {
       AppLogger.debug(
           'FCMトークン更新: ユーザーID=${user.uid}, トークン=${maskNotificationToken(token)}');
 
-      // Firebase Functionsが参照する場所（users/{userId}直下）に保存
-      // updateではなくsetを使用してドキュメントが存在しない場合でも確実に保存
+      // ZENと同じく、複数端末のトークンを配列で保持する。
+      // 単一fcmTokenフィールドは使わず、iOS/Androidや複数端末の上書きを避ける。
       await _firestore.collection('users').doc(user.uid).set({
-        'fcmToken': token,
+        _tokensField: FieldValue.arrayUnion([token]),
       }, SetOptions(merge: true));
 
       AppLogger.debug('FCMトークン更新: 完了');
@@ -70,16 +73,14 @@ class UserFcmTokenService {
           return;
         }
 
-        // fcmTokenフィールドが存在するか確認
-        final data = docSnapshot.data();
-        if (data == null || !data.containsKey('fcmToken')) {
-          AppLogger.warning('FCMトークン削除: fcmTokenフィールドが存在しません');
-          return; // 既に削除されているか存在しない場合は何もしない
+        final token = await _pushNotificationService.refreshToken();
+        if (token == null) {
+          AppLogger.warning('FCMトークン削除: 現在端末のトークンが取得できませんでした');
+          return;
         }
 
-        // トークンを削除（Firebase Functionsが参照する場所）
         await docRef.update({
-          'fcmToken': FieldValue.delete(),
+          _tokensField: FieldValue.arrayRemove([token]),
         });
 
         AppLogger.debug('FCMトークン削除: 完了');
@@ -117,13 +118,8 @@ class UserFcmTokenService {
         return null;
       }
 
-      final data = doc.data();
-      if (data == null) {
-        AppLogger.warning('FCMトークン取得: ユーザーデータがありません - $userId');
-        return null;
-      }
-
-      final token = data['fcmToken'] as String?;
+      final tokens = extractFcmTokens(doc.data());
+      final token = tokens.isEmpty ? null : tokens.first;
       AppLogger.debug('FCMトークン取得: トークン=${maskNotificationToken(token)}');
 
       return token;
@@ -132,5 +128,47 @@ class UserFcmTokenService {
       AppLogger.error('スタックトレース: $stack');
       return null;
     }
+  }
+
+  /// 特定ユーザーに紐づくFCMトークンを全端末分取得する。
+  Future<List<String>> getUserFcmTokens(String userId) async {
+    try {
+      AppLogger.debug('FCMトークン一覧取得: ユーザーID=$userId');
+
+      final doc = await _firestore.collection('users').doc(userId).get();
+      if (!doc.exists) {
+        AppLogger.warning('FCMトークン一覧取得: ユーザーが存在しません - $userId');
+        return const [];
+      }
+
+      final tokens = extractFcmTokens(doc.data());
+      AppLogger.debug(
+          'FCMトークン一覧取得: ${tokens.length}件 (${tokens.map(maskNotificationToken).join(', ')})');
+      return tokens;
+    } catch (e, stack) {
+      AppLogger.error('FCMトークン一覧取得エラー: $e');
+      AppLogger.error('スタックトレース: $stack');
+      return const [];
+    }
+  }
+
+  @visibleForTesting
+  static List<String> extractFcmTokens(Map<String, dynamic>? data) {
+    if (data == null) {
+      return const [];
+    }
+
+    final tokens = <String>{};
+
+    final rawTokens = data[_tokensField];
+    if (rawTokens is Iterable) {
+      for (final token in rawTokens) {
+        if (token is String && token.isNotEmpty) {
+          tokens.add(token);
+        }
+      }
+    }
+
+    return tokens.toList(growable: false);
   }
 }

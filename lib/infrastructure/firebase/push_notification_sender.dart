@@ -10,14 +10,30 @@ import '../../config/app_config.dart';
 /// Cloud FunctionsにPOSTリクエストを送信して通知を配信します
 /// 実際の実装ではCloud Functions側で認証とセキュリティチェックを行う必要があります
 class PushNotificationSender {
-  PushNotificationSender({
+  factory PushNotificationSender({
     String? cloudFunctionUrl,
     UserFcmTokenService? fcmTokenService,
-  })  : _cloudFunctionUrl =
-            cloudFunctionUrl ?? AppConfig.instance.pushNotificationUrl,
-        _fcmTokenService = fcmTokenService ?? UserFcmTokenService();
+    Future<List<String>> Function(String userId)? tokenResolver,
+    http.Client? httpClient,
+  }) {
+    final resolvedTokenResolver = tokenResolver ??
+        (fcmTokenService ?? UserFcmTokenService()).getUserFcmTokens;
+    return PushNotificationSender._(
+      cloudFunctionUrl ?? AppConfig.instance.pushNotificationUrl,
+      resolvedTokenResolver,
+      httpClient ?? http.Client(),
+    );
+  }
+
+  PushNotificationSender._(
+    this._cloudFunctionUrl,
+    this._tokenResolver,
+    this._httpClient,
+  );
+
   final String _cloudFunctionUrl;
-  final UserFcmTokenService _fcmTokenService;
+  final Future<List<String>> Function(String userId) _tokenResolver;
+  final http.Client _httpClient;
   static const int _tokenPreviewLength = 20;
 
   Future<bool> sendFriendRequestNotification({
@@ -139,18 +155,38 @@ class PushNotificationSender {
     required Map<String, dynamic> data,
   }) async {
     try {
-      final token = await _fetchRecipientToken(toUserId, logContext);
-      if (token == null) {
+      final tokens = await _fetchRecipientTokens(toUserId, logContext);
+      if (tokens.isEmpty) {
         return false;
       }
 
-      final payload = {
-        'token': token,
-        'notification': notificationBody,
-        'data': data,
-      };
+      var successCount = 0;
+      for (final token in tokens) {
+        final payload = {
+          'token': token,
+          'notification': notificationBody,
+          'data': data,
+        };
 
-      return await _postNotification(payload, logContext);
+        final didSend = await _postNotification(payload, logContext, token);
+        if (didSend) {
+          successCount++;
+        }
+      }
+
+      if (successCount == 0) {
+        AppLogger.error('$logContext 送信失敗: 全${tokens.length}件のトークンで失敗');
+        return false;
+      }
+
+      if (successCount < tokens.length) {
+        AppLogger.warning(
+            '$logContext 一部送信成功: $successCount/${tokens.length}件');
+      } else {
+        AppLogger.debug('$logContext 全トークン送信成功: $successCount件');
+      }
+
+      return true;
     } catch (e, stack) {
       AppLogger.error('$logContext 送信例外: $e');
       AppLogger.error('スタックトレース: $stack');
@@ -158,20 +194,26 @@ class PushNotificationSender {
     }
   }
 
-  Future<String?> _fetchRecipientToken(String userId, String logContext) async {
-    AppLogger.info('🔍 $logContext: 宛先ユーザーのFCMトークンを取得中...');
-    final token = await _fcmTokenService.getUserFcmToken(userId);
-    if (token == null) {
+  Future<List<String>> _fetchRecipientTokens(
+      String userId, String logContext) async {
+    AppLogger.info('🔍 $logContext: 宛先ユーザーのFCMトークン一覧を取得中...');
+    final tokens = _deduplicateTokens(await _tokenResolver(userId));
+    if (tokens.isEmpty) {
       AppLogger.warning('❌ $logContext: 宛先ユーザーのFCMトークンがありません - $userId');
-      return null;
+      return const [];
     }
-    AppLogger.info('✅ $logContext: FCMトークン取得成功: ${_previewToken(token)}');
-    return token;
+
+    AppLogger.info(
+        '✅ $logContext: FCMトークン取得成功: ${tokens.length}件 (${tokens.map(_previewToken).join(', ')})');
+    return tokens;
   }
 
   Future<bool> _postNotification(
-      Map<String, dynamic> payload, String logContext) async {
-    final response = await http.post(
+    Map<String, dynamic> payload,
+    String logContext,
+    String token,
+  ) async {
+    final response = await _httpClient.post(
       Uri.parse(_cloudFunctionUrl),
       headers: {
         'Content-Type': 'application/json',
@@ -180,13 +222,18 @@ class PushNotificationSender {
     );
 
     if (response.statusCode == 200) {
-      AppLogger.debug('$logContext 送信成功: ${response.body}');
+      AppLogger.debug(
+          '$logContext 送信成功: ${_previewToken(token)} ${response.body}');
       return true;
     }
 
     AppLogger.error(
-        '$logContext 送信エラー: ${response.statusCode} - ${response.body}');
+        '$logContext 送信エラー: ${_previewToken(token)} ${response.statusCode} - ${response.body}');
     return false;
+  }
+
+  List<String> _deduplicateTokens(List<String> tokens) {
+    return tokens.where((token) => token.isNotEmpty).toSet().toList();
   }
 
   String _previewToken(String token) {

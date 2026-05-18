@@ -17,7 +17,7 @@ class DebugNotificationPage extends StatefulWidget {
 
 class _DebugNotificationPageState extends State<DebugNotificationPage> {
   String? _fcmToken;
-  String? _firestoreToken;
+  List<String> _firestoreTokens = const [];
   String? _currentUserId;
   bool _isLoading = false;
   bool _isSimulator = false;
@@ -109,7 +109,7 @@ class _DebugNotificationPageState extends State<DebugNotificationPage> {
       }
 
       // Firestoreに保存されているトークンを取得
-      String? firestoreToken;
+      var firestoreTokens = const <String>[];
       try {
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
@@ -117,7 +117,14 @@ class _DebugNotificationPageState extends State<DebugNotificationPage> {
             .get();
 
         if (userDoc.exists) {
-          firestoreToken = userDoc.data()?['fcmToken'];
+          final rawTokens = userDoc.data()?['fcmTokens'];
+          if (rawTokens is Iterable) {
+            firestoreTokens = rawTokens
+                .whereType<String>()
+                .where((token) => token.isNotEmpty)
+                .toSet()
+                .toList(growable: false);
+          }
         }
       } catch (e) {
         AppLogger.error('Firestoreからのトークン取得エラー: $e');
@@ -125,7 +132,7 @@ class _DebugNotificationPageState extends State<DebugNotificationPage> {
 
       setState(() {
         _fcmToken = token;
-        _firestoreToken = firestoreToken;
+        _firestoreTokens = firestoreTokens;
 
         // デバッグ情報を生成
         _debugInfo = _generateDebugInfo();
@@ -192,11 +199,11 @@ class _DebugNotificationPageState extends State<DebugNotificationPage> {
 
     buffer.writeln('');
     buffer.writeln('🗄️ Firestore保存状況:');
-    if (_firestoreToken != null) {
+    if (_firestoreTokens.isNotEmpty) {
       buffer.writeln('✅ Firestoreにトークン保存済み');
-      buffer.writeln('保存済みトークン長: ${_firestoreToken!.length}文字');
+      buffer.writeln('保存済みトークン数: ${_firestoreTokens.length}件');
 
-      if (_fcmToken != null && _fcmToken == _firestoreToken) {
+      if (_fcmToken != null && _firestoreTokens.contains(_fcmToken)) {
         buffer.writeln('✅ トークン一致: OK');
       } else {
         buffer.writeln('⚠️ トークン不一致: 要更新');
@@ -483,10 +490,11 @@ class _DebugNotificationPageState extends State<DebugNotificationPage> {
                           ),
                         ),
                         const Spacer(),
-                        if (_firestoreToken != null)
+                        if (_firestoreTokens.isNotEmpty)
                           IconButton(
                             icon: const Icon(Icons.copy),
-                            onPressed: () => _copyToClipboard(_firestoreToken!),
+                            onPressed: () =>
+                                _copyToClipboard(_firestoreTokens.join('\n')),
                             tooltip: 'コピー',
                           ),
                       ],
@@ -496,26 +504,30 @@ class _DebugNotificationPageState extends State<DebugNotificationPage> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _firestoreToken != null
-                            ? (_fcmToken == _firestoreToken
+                        color: _firestoreTokens.isNotEmpty
+                            ? (_fcmToken != null &&
+                                    _firestoreTokens.contains(_fcmToken)
                                 ? Colors.green.shade50
                                 : Colors.orange.shade50)
                             : Colors.red.shade50,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: _firestoreToken != null
-                              ? (_fcmToken == _firestoreToken
+                          color: _firestoreTokens.isNotEmpty
+                              ? (_fcmToken != null &&
+                                      _firestoreTokens.contains(_fcmToken)
                                   ? Colors.green.shade300
                                   : Colors.orange.shade300)
                               : Colors.red.shade300,
                         ),
                       ),
                       child: SelectableText(
-                        _firestoreToken ?? 'Firestoreにトークンが保存されていません',
+                        _firestoreTokens.isEmpty
+                            ? 'Firestoreにトークンが保存されていません'
+                            : _firestoreTokens.join('\n'),
                         style: TextStyle(
                           fontFamily: 'monospace',
                           fontSize: 12,
-                          color: _firestoreToken != null
+                          color: _firestoreTokens.isNotEmpty
                               ? Colors.black87
                               : Colors.red,
                         ),
