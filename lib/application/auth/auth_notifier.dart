@@ -91,7 +91,7 @@ class AuthNotifier extends _$AuthNotifier {
     state = const AsyncLoading();
 
     // サインイン処理を実行
-    state = await AsyncValue.guard(() async {
+    final signInResult = await AsyncValue.guard(() async {
       final user = await _authRepository.signIn(email, password);
       // サインイン結果に応じて状態を更新
       if (user != null) {
@@ -112,6 +112,7 @@ class AuthNotifier extends _$AuthNotifier {
         return AuthState.unauthenticated();
       }
     });
+    state = signInResult;
 
     state.whenOrNull(
       data: (authState) => AppLogger.debugOnly(
@@ -119,6 +120,13 @@ class AuthNotifier extends _$AuthNotifier {
       error: (error, stackTrace) =>
           AppLogger.errorOnly('signIn失敗', error, stackTrace),
     );
+
+    if (signInResult.hasError) {
+      Error.throwWithStackTrace(
+        signInResult.error!,
+        signInResult.stackTrace ?? StackTrace.current,
+      );
+    }
   }
 
   /// 新規ユーザー登録を行う
@@ -141,7 +149,7 @@ class AuthNotifier extends _$AuthNotifier {
     state = const AsyncLoading();
 
     // ユーザー登録処理を実行
-    state = await AsyncValue.guard(() async {
+    final signUpResult = await AsyncValue.guard(() async {
       // AuthRepositoryは従来通りnameのみを受け取るため、
       // displayNameの処理は後でupdateProfileで対応する
       final user = await _authRepository.signUp(email, password, name);
@@ -175,6 +183,7 @@ class AuthNotifier extends _$AuthNotifier {
         return AuthState.unauthenticated();
       }
     });
+    state = signUpResult;
 
     state.whenOrNull(
       data: (authState) => AppLogger.debugOnly(
@@ -182,6 +191,13 @@ class AuthNotifier extends _$AuthNotifier {
       error: (error, stackTrace) =>
           AppLogger.errorOnly('signUp失敗', error, stackTrace),
     );
+
+    if (signUpResult.hasError) {
+      Error.throwWithStackTrace(
+        signUpResult.error!,
+        signUpResult.stackTrace ?? StackTrace.current,
+      );
+    }
   }
 
   /// サインアウトを行う

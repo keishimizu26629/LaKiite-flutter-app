@@ -118,6 +118,36 @@ void main() {
       expect(find.byType(LoginPage), findsOneWidget);
     });
 
+    testWidgets('ログイン失敗時はFirebaseの生エラーを表示しない', (tester) async {
+      TestProviders.mockAuthRepository.setShouldFailLogin(true);
+
+      await tester.pumpWidget(
+        TestUtils.createTestApp(
+          overrides: TestProviders.forLoginForm,
+          child: const LoginPage(),
+        ),
+      );
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'メールアドレス'),
+        'test@example.com',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'パスワード'),
+        'wrong-password',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(ElevatedButton));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('パスワードが間違っています'), findsOneWidget);
+      expect(find.textContaining('FirebaseAuthException'), findsNothing);
+      expect(find.textContaining('[firebase_auth/'), findsNothing);
+      expect(find.textContaining('Exception:'), findsNothing);
+    });
+
     testWidgets('パスワードフィールドが隠されている', (tester) async {
       await tester.pumpWidget(
         TestUtils.createTestApp(

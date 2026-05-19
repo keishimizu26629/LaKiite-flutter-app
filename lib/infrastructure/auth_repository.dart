@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../domain/interfaces/i_auth_repository.dart';
 import '../domain/interfaces/i_user_repository.dart';
 import '../domain/entity/user.dart';
+import '../utils/auth_error_message.dart';
 import '../utils/logger.dart';
 
 class AuthRepository implements IAuthRepository {
@@ -89,6 +90,9 @@ class AuthRepository implements IAuthRepository {
       // エラーが発生した場合は認証をクリア
       AppLogger.errorOnly('AuthRepository.signIn例外', e);
       await _auth.signOut();
+      if (e is FirebaseAuthException) {
+        throw UserFacingException(signInErrorMessage(e));
+      }
       rethrow;
     }
   }
@@ -162,20 +166,9 @@ class AuthRepository implements IAuthRepository {
       }
 
       if (e is FirebaseAuthException) {
-        switch (e.code) {
-          case 'email-already-in-use':
-            throw Exception('このメールアドレスは既に使用されています');
-          case 'invalid-email':
-            throw Exception('無効なメールアドレスです');
-          case 'operation-not-allowed':
-            throw Exception('メール/パスワード認証が無効になっています');
-          case 'weak-password':
-            throw Exception('パスワードが脆弱です');
-          default:
-            throw Exception('認証エラーが発生しました: ${e.message}');
-        }
+        throw UserFacingException(signUpErrorMessage(e));
       }
-      throw Exception('アカウント作成に失敗しました: ${e.toString()}');
+      throw UserFacingException(signUpErrorMessage(e));
     }
   }
 

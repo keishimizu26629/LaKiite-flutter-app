@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../presentation_provider.dart';
 import '../signup/signup.dart';
+import '../../utils/auth_error_message.dart';
 import '../../utils/logger.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -42,16 +43,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       AppLogger.debugOnly('LoginPage._handleLogin後 state=$authState');
       if (mounted && authState.hasError) {
         final error = authState.error;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ログインに失敗しました: ${error.toString()}')),
-        );
+        _showLoginError(error);
       }
     } catch (e) {
       AppLogger.errorOnly('LoginPage._handleLogin例外', e);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ログインに失敗しました: ${e.toString()}')),
-        );
+        _showLoginError(e);
       }
     } finally {
       if (mounted) {
@@ -60,6 +57,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         });
       }
     }
+  }
+
+  void _showLoginError(Object? error) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(signInErrorMessage(error))),
+    );
   }
 
   void _navigateToSignup() {
