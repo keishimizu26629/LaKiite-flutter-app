@@ -45,6 +45,7 @@ class MockUserCredential implements firebase_auth.UserCredential {
 class MockFirebaseAuth implements firebase_auth.FirebaseAuth {
   firebase_auth.User? _currentUser;
   firebase_auth.FirebaseAuthException? _signInException;
+  firebase_auth.FirebaseAuthException? _signUpException;
   bool didSignOut = false;
 
   @override
@@ -58,12 +59,28 @@ class MockFirebaseAuth implements firebase_auth.FirebaseAuth {
     _signInException = exception;
   }
 
+  void setSignUpException(firebase_auth.FirebaseAuthException exception) {
+    _signUpException = exception;
+  }
+
   @override
   Future<firebase_auth.UserCredential> signInWithEmailAndPassword({
     required String email,
     required String password,
   }) async {
     final exception = _signInException;
+    if (exception != null) {
+      throw exception;
+    }
+    return MockUserCredential(MockUser());
+  }
+
+  @override
+  Future<firebase_auth.UserCredential> createUserWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    final exception = _signUpException;
     if (exception != null) {
       throw exception;
     }
@@ -236,6 +253,40 @@ void main() {
         )),
       );
       expect(mockFirebaseAuth.didSignOut, isTrue);
+    });
+  });
+
+  group('AuthRepository - サインアップエラー', () {
+    late AuthRepository authRepository;
+    late MockFirebaseAuth mockFirebaseAuth;
+    late MockUserRepository mockUserRepository;
+
+    setUp(() {
+      mockFirebaseAuth = MockFirebaseAuth();
+      mockUserRepository = MockUserRepository();
+      authRepository = AuthRepository(mockFirebaseAuth, mockUserRepository);
+    });
+
+    test('email-already-in-use はユーザー向け文言に変換する', () async {
+      mockFirebaseAuth.setSignUpException(
+        firebase_auth.FirebaseAuthException(
+          code: 'email-already-in-use',
+          message: 'The email address is already in use by another account.',
+        ),
+      );
+
+      await expectLater(
+        authRepository.signUp('test@example.com', 'password123', 'テストユーザー'),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          allOf(
+            contains('このメールアドレスは既に使用されています'),
+            isNot(contains('Firebase')),
+            isNot(contains('already in use')),
+          ),
+        )),
+      );
     });
   });
 

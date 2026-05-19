@@ -166,20 +166,9 @@ class AuthRepository implements IAuthRepository {
       }
 
       if (e is FirebaseAuthException) {
-        switch (e.code) {
-          case 'email-already-in-use':
-            throw Exception('このメールアドレスは既に使用されています');
-          case 'invalid-email':
-            throw Exception('無効なメールアドレスです');
-          case 'operation-not-allowed':
-            throw Exception('メール/パスワード認証が無効になっています');
-          case 'weak-password':
-            throw Exception('パスワードが脆弱です');
-          default:
-            throw Exception('認証エラーが発生しました: ${e.message}');
-        }
+        throw UserFacingException(signUpErrorMessage(e));
       }
-      throw Exception('アカウント作成に失敗しました: ${e.toString()}');
+      throw UserFacingException(signUpErrorMessage(e));
     }
   }
 
