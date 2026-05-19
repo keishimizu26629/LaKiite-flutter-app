@@ -9,6 +9,8 @@ import 'config/admob_config.dart';
 import 'config/router/app_router.dart';
 import 'infrastructure/admob_service.dart';
 import 'infrastructure/firebase/push_notification_service.dart';
+import 'infrastructure/notification_navigation_service.dart';
+import 'presentation/notification/notification_list_page.dart';
 import 'presentation/theme/app_theme.dart';
 import 'application/app_lifecycle/app_lifecycle_notifier.dart';
 import 'utils/logger.dart';
@@ -143,6 +145,14 @@ class MyApp extends ConsumerWidget {
 
     // アプリライフサイクルの監視を開始
     ref.watch(appLifecycleProvider);
+
+    NotificationNavigationService.instance.configureNotificationListBuilder(
+      (_) => const NotificationListPage(),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationNavigationService.instance.flushPendingNavigation();
+    });
 
     return MaterialApp.router(
       title: 'LaKiite',
