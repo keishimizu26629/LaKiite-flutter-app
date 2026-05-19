@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../domain/interfaces/i_auth_repository.dart';
 import '../domain/interfaces/i_user_repository.dart';
 import '../domain/entity/user.dart';
+import '../utils/auth_error_message.dart';
 import '../utils/logger.dart';
 
 class AuthRepository implements IAuthRepository {
@@ -89,6 +90,9 @@ class AuthRepository implements IAuthRepository {
       // エラーが発生した場合は認証をクリア
       AppLogger.errorOnly('AuthRepository.signIn例外', e);
       await _auth.signOut();
+      if (e is FirebaseAuthException) {
+        throw UserFacingException(signInErrorMessage(e));
+      }
       rethrow;
     }
   }

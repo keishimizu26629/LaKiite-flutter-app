@@ -44,12 +44,36 @@ class MockUserCredential implements firebase_auth.UserCredential {
 
 class MockFirebaseAuth implements firebase_auth.FirebaseAuth {
   firebase_auth.User? _currentUser;
+  firebase_auth.FirebaseAuthException? _signInException;
+  bool didSignOut = false;
 
   @override
   firebase_auth.User? get currentUser => _currentUser;
 
   void setCurrentUser(firebase_auth.User? user) {
     _currentUser = user;
+  }
+
+  void setSignInException(firebase_auth.FirebaseAuthException exception) {
+    _signInException = exception;
+  }
+
+  @override
+  Future<firebase_auth.UserCredential> signInWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    final exception = _signInException;
+    if (exception != null) {
+      throw exception;
+    }
+    return MockUserCredential(MockUser());
+  }
+
+  @override
+  Future<void> signOut() async {
+    didSignOut = true;
+    _currentUser = null;
   }
 
   @override
@@ -156,6 +180,65 @@ class MockUserRepository implements IUserRepository {
 }
 
 void main() {
+  group('AuthRepository - ログインエラー', () {
+    late AuthRepository authRepository;
+    late MockFirebaseAuth mockFirebaseAuth;
+    late MockUserRepository mockUserRepository;
+
+    setUp(() {
+      mockFirebaseAuth = MockFirebaseAuth();
+      mockUserRepository = MockUserRepository();
+      authRepository = AuthRepository(mockFirebaseAuth, mockUserRepository);
+    });
+
+    test('invalid-credential はパスワード誤りとしてユーザー向け文言に変換する', () async {
+      mockFirebaseAuth.setSignInException(
+        firebase_auth.FirebaseAuthException(
+          code: 'invalid-credential',
+          message:
+              'The supplied auth credential is incorrect, malformed or has expired.',
+        ),
+      );
+
+      await expectLater(
+        authRepository.signIn('test@example.com', 'wrong-password'),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          allOf(
+            contains('パスワードが間違っています'),
+            isNot(contains('Firebase')),
+            isNot(contains('auth credential')),
+          ),
+        )),
+      );
+      expect(mockFirebaseAuth.didSignOut, isTrue);
+    });
+
+    test('invalid-email はメールアドレス形式のエラーとしてユーザー向け文言に変換する', () async {
+      mockFirebaseAuth.setSignInException(
+        firebase_auth.FirebaseAuthException(
+          code: 'invalid-email',
+          message: 'The email address is badly formatted.',
+        ),
+      );
+
+      await expectLater(
+        authRepository.signIn('invalid-email', 'password123'),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          allOf(
+            contains('メールアドレスの形式が正しくありません'),
+            isNot(contains('Firebase')),
+            isNot(contains('badly formatted')),
+          ),
+        )),
+      );
+      expect(mockFirebaseAuth.didSignOut, isTrue);
+    });
+  });
+
   group('AuthRepository - アカウント削除機能', () {
     late AuthRepository authRepository;
     late MockFirebaseAuth mockFirebaseAuth;
