@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../domain/entity/notification.dart';
 import '../domain/interfaces/i_notification_repository.dart';
+import 'notification_repository_update_data.dart';
 import '../utils/logger.dart';
 
 /// 通知関連のFirestoreとのデータアクセスを管理するリポジトリクラス
@@ -231,10 +232,10 @@ class NotificationRepository implements INotificationRepository {
   Future<void> acceptNotification(String notificationId) async {
     AppLogger.debug('Accepting notification: $notificationId');
     try {
-      await _firestore.collection('notifications').doc(notificationId).update({
-        'status': NotificationStatus.accepted.name,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      await _firestore
+          .collection('notifications')
+          .doc(notificationId)
+          .update(NotificationRepositoryUpdateData.accepted());
       AppLogger.debug('Notification accepted successfully: $notificationId');
     } catch (e) {
       AppLogger.error('Error accepting notification: $e');
@@ -249,11 +250,10 @@ class NotificationRepository implements INotificationRepository {
   Future<void> rejectNotification(String notificationId) async {
     AppLogger.debug('Rejecting notification: $notificationId');
     try {
-      await _firestore.collection('notifications').doc(notificationId).update({
-        'status': NotificationStatus.rejected.name,
-        'rejectionCount': FieldValue.increment(1),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      await _firestore
+          .collection('notifications')
+          .doc(notificationId)
+          .update(NotificationRepositoryUpdateData.rejected());
       AppLogger.debug('Notification rejected successfully: $notificationId');
     } catch (e) {
       AppLogger.error('Error rejecting notification: $e');

@@ -202,23 +202,10 @@ class _NotificationItem extends ConsumerWidget {
     final notifier = ref.watch(notificationNotifierProvider.notifier);
     final state = ref.watch(notificationNotifierProvider);
 
-    // 通知を既読にする関数
-    Future<void> markAsRead() async {
-      if (!notification.isRead) {
-        // 非同期で処理を実行し、結果を待たない
-        notifier.markAsRead(notification.id).catchError((e) {
-          AppLogger.error('既読処理でエラー発生: $e');
-          // エラーが発生しても処理を継続
-        });
-      }
-    }
-
     // 通知を承認する関数
     Future<void> acceptNotification() async {
       try {
-        // 既読処理を開始
-        markAsRead();
-        // 承認処理を実行
+        // 承認処理はRepository側で既読化も同時に行う
         await notifier.acceptNotification(notification.id);
       } catch (e) {
         if (context.mounted) {
@@ -235,9 +222,7 @@ class _NotificationItem extends ConsumerWidget {
     // 通知を拒否する関数
     Future<void> rejectNotification() async {
       try {
-        // 既読処理を開始
-        markAsRead();
-        // 拒否処理を実行
+        // 拒否処理はRepository側で既読化も同時に行う
         await notifier.rejectNotification(notification.id);
       } catch (e) {
         if (context.mounted) {

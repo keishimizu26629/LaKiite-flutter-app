@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../firebase_options.dart';
 import '../user_fcm_token_service.dart';
+import '../notification_navigation_service.dart';
 import '../../utils/logger.dart';
 import '../../utils/notification_token_log_formatter.dart';
 
@@ -433,6 +434,7 @@ class PushNotificationService {
         AppLogger.info('🚀 通知本文: ${message.notification?.body}');
         AppLogger.info('🚀 データペイロード: ${message.data}');
         _handleMessage(message);
+        _openNotificationListFromNotification();
       } else {
         AppLogger.debug('🚀 アプリ起動時に処理すべき通知はありません');
       }
@@ -444,7 +446,12 @@ class PushNotificationService {
       AppLogger.info('👆 通知本文: ${message.notification?.body}');
       AppLogger.info('👆 データペイロード: ${message.data}');
       _handleMessage(message);
+      _openNotificationListFromNotification();
     });
+  }
+
+  void _openNotificationListFromNotification() {
+    NotificationNavigationService.instance.openNotificationList();
   }
 
   bool _isPhysicalDevice() {
@@ -475,7 +482,13 @@ class PushNotificationService {
       android: initializationSettingsAndroid,
     );
 
-    await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    await _flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (_) {
+        AppLogger.info('👆 フォアグラウンド通知をタップしました');
+        _openNotificationListFromNotification();
+      },
+    );
     AppLogger.debug('ローカル通知を初期化しました');
   }
 

@@ -14,6 +14,7 @@ import '../../presentation/settings/account_deletion_webview_page.dart';
 import '../../presentation/signup/signup.dart';
 import '../../presentation/splash/splash_screen.dart';
 import '../../presentation/presentation_provider.dart';
+import '../../infrastructure/notification_navigation_service.dart';
 
 /// アプリケーションのルーティング設定を提供するプロバイダー
 ///
@@ -30,6 +31,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = ref.watch(goRouterRefreshProvider);
 
   return GoRouter(
+    navigatorKey: NotificationNavigationService.instance.navigatorKey,
     refreshListenable: refreshNotifier,
     initialLocation: SplashScreen.path,
     redirect: (context, state) {
