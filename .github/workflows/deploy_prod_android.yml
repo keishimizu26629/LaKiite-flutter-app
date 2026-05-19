@@ -10,7 +10,7 @@ jobs:
     environment: prod
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5.0.1
         with:
           fetch-depth: 0
 
@@ -18,7 +18,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Setup Java
-        uses: actions/setup-java@v3.9.0
+        uses: actions/setup-java@v5.2.0
         with:
           distribution: 'zulu'
           java-version: '17.x'
@@ -110,5 +110,5 @@ jobs:
           serviceAccountJson: /tmp/google_play_console_api_service_account_key.json
           packageName: ${{ secrets.PROD_ANDROID_PACKAGE_NAME }}
           releaseFiles: build/app/outputs/bundle/prodRelease/app-prod-release.aab
-          track: internal
+          tracks: internal
           status: completed

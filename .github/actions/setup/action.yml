@@ -16,11 +16,11 @@ runs:
 
     - name: Setup Flutter
       id: flutter-action
-      uses: subosito/flutter-action@v2.8.0
+      uses: subosito/flutter-action@v2.9.1
       with:
         flutter-version: ${{ steps.flutter_sdk_version.outputs.version }}
         channel: stable
-        cache: true
+        cache: false
 
     - name: Get dependencies
       run: flutter pub get
