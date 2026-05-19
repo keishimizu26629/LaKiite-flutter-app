@@ -103,6 +103,45 @@ void main() {
       expect(find.byType(SignupPage), findsOneWidget);
     });
 
+    testWidgets('既存Emailの新規登録失敗時はFirebaseの生エラーを表示しない', (tester) async {
+      TestProviders.mockAuthRepository.setShouldFailSignUp(true);
+
+      await tester.pumpWidget(
+        TestUtils.createTestApp(
+          overrides: TestProviders.forSignupForm,
+          child: const SignupPage(),
+        ),
+      );
+
+      await tester.enterText(
+        find.widgetWithText(TextField, '名前(フルネーム)'),
+        'テストユーザー',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'メールアドレス'),
+        'test@example.com',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'パスワード'),
+        'password123',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ElevatedButton),
+          matching: find.text('新規登録'),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.text('このメールアドレスは既に使用されています'), findsOneWidget);
+      expect(find.textContaining('FirebaseAuthException'), findsNothing);
+      expect(find.textContaining('[firebase_auth/'), findsNothing);
+      expect(find.textContaining('Exception:'), findsNothing);
+    });
+
     testWidgets('表示名が空の場合はnameが使用される', (tester) async {
       await tester.pumpWidget(
         TestUtils.createTestApp(
