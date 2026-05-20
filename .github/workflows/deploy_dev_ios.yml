@@ -32,6 +32,11 @@ jobs:
         run: |
           echo "${{ secrets.DEV_DART_DEFINE_JSON_BASE64 }}" | base64 -d > dart_define/dev_dart_define.json
 
+      - name: Generate dev launcher icons
+        run: |
+          dart run scripts/create_dev_icon.dart
+          dart run flutter_launcher_icons -f flutter_launcher_icons-development.yaml
+
       - name: Setup Provisioning Profile Directory
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
@@ -97,6 +102,7 @@ jobs:
           PROVISIONING_PROFILE_BASE64: ${{ secrets.DEV_PROVISIONING_PROFILE_BASE64 }}
           DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
           IPA_OUTPUT_NAME: ${{ secrets.IPA_OUTPUT_NAME }}
+          DEV_ATTACH_BUILD_TO_APP_STORE_VERSION: ${{ vars.DEV_ATTACH_BUILD_TO_APP_STORE_VERSION }}
 
           # CI環境設定
           FASTLANE_DISABLE_PTY: 1

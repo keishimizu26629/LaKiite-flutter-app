@@ -4,6 +4,55 @@
 
 default_platform(:ios)
 
+def truthy_env?(name)
+  ["1", "true", "yes", "y", "on"].include?(ENV.fetch(name, "").to_s.strip.downcase)
+end
+
+def attach_build_to_edit_app_store_version(app_identifier:, build_number:, asc_key_id:, asc_issuer_id:, api_key_path:)
+  require "spaceship"
+
+  Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
+    key_id: asc_key_id,
+    issuer_id: asc_issuer_id,
+    filepath: File.expand_path(api_key_path),
+    in_house: false
+  )
+
+  app = Spaceship::ConnectAPI::App.find(app_identifier)
+  UI.user_error!("App Store Connect app #{app_identifier} is missing. Please create it first.") if app.nil?
+
+  app_store_version = app.get_edit_app_store_version(
+    platform: Spaceship::ConnectAPI::Platform::IOS,
+    includes: "build"
+  )
+  UI.user_error!("Editable iOS App Store version was not found for #{app_identifier}") if app_store_version.nil?
+
+  builds = Spaceship::ConnectAPI::Build.all(
+    app_id: app.id,
+    build_number: build_number,
+    platform: Spaceship::ConnectAPI::Platform::IOS,
+    processing_states: "VALID",
+    sort: "-uploadedDate",
+    limit: 10
+  )
+  build = builds.first
+  UI.user_error!("Valid App Store candidate build #{build_number} was not found") if build.nil?
+
+  current_build = begin
+    app_store_version.get_build
+  rescue
+    nil
+  end
+
+  if current_build&.id == build.id
+    UI.message "App Store version #{app_store_version.version_string} already uses build #{build_number}"
+    return
+  end
+
+  app_store_version.select_build(build_id: build.id)
+  UI.message "Attached build #{build_number} to App Store version #{app_store_version.version_string}"
+end
+
 platform :ios do
   # Avoid PTY issues in some shells/environments
   ENV["FASTLANE_DISABLE_PTY"] = "1"
@@ -251,9 +300,19 @@ platform :ios do
     upload_to_testflight(
       api_key: api_key,
       ipa: existing_ipa,
-      skip_waiting_for_build_processing: true,
+      skip_waiting_for_build_processing: !truthy_env?("DEV_ATTACH_BUILD_TO_APP_STORE_VERSION"),
       skip_submission: true
     )
+
+    if truthy_env?("DEV_ATTACH_BUILD_TO_APP_STORE_VERSION")
+      attach_build_to_edit_app_store_version(
+        app_identifier: ENV["APP_IDENTIFIER"],
+        build_number: build_number,
+        asc_key_id: asc_key_id,
+        asc_issuer_id: asc_issuer_id,
+        api_key_path: asc_api_key_path
+      )
+    end
 
     UI.success "🎉 Dev IPA build completed successfully!"
     UI.message "📁 IPA file: #{existing_ipa}"
