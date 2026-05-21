@@ -18,8 +18,9 @@ enum NotificationFilter {
   final String label;
 }
 
-final notificationFilterProvider =
-    StateProvider<NotificationFilter>((ref) => NotificationFilter.all);
+final notificationFilterProvider = StateProvider<NotificationFilter>(
+  (ref) => NotificationFilter.all,
+);
 
 class NotificationListPage extends ConsumerWidget {
   const NotificationListPage({super.key});
@@ -34,10 +35,7 @@ class NotificationListPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text(
           '通知',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -81,7 +79,9 @@ class NotificationListPage extends ConsumerWidget {
                       backgroundColor: Colors.grey[100],
                       selectedColor: Theme.of(context).primaryColor,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                     ),
                   );
                 }).toList(),
@@ -101,15 +101,13 @@ class NotificationListPage extends ConsumerWidget {
 }
 
 class _NotificationList extends ConsumerWidget {
-  const _NotificationList({
-    required this.asyncValue,
-    required this.filter,
-  });
+  const _NotificationList({required this.asyncValue, required this.filter});
   final AsyncValue<List<domain.Notification>> asyncValue;
   final NotificationFilter filter;
 
   List<domain.Notification> _filterNotifications(
-      List<domain.Notification> notifications) {
+    List<domain.Notification> notifications,
+  ) {
     switch (filter) {
       case NotificationFilter.all:
         return notifications;
@@ -119,8 +117,10 @@ class _NotificationList extends ConsumerWidget {
             .toList();
       case NotificationFilter.pending:
         return notifications
-            .where((notification) =>
-                notification.status == domain.NotificationStatus.pending)
+            .where(
+              (notification) =>
+                  notification.status == domain.NotificationStatus.pending,
+            )
             .toList();
     }
   }
@@ -145,10 +145,7 @@ class _NotificationList extends ConsumerWidget {
                   filter == NotificationFilter.all
                       ? '通知はありません'
                       : '${filter.label}の通知はありません',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -164,25 +161,16 @@ class _NotificationList extends ConsumerWidget {
           },
         );
       },
-      loading: () => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red[300],
-            ),
+            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
             const SizedBox(height: 16),
             Text(
               'エラーが発生しました',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -192,9 +180,7 @@ class _NotificationList extends ConsumerWidget {
 }
 
 class _NotificationItem extends ConsumerWidget {
-  const _NotificationItem({
-    required this.notification,
-  });
+  const _NotificationItem({required this.notification});
   final domain.Notification notification;
 
   @override
@@ -328,7 +314,8 @@ class _NotificationItem extends ConsumerWidget {
             if (notification.relatedItemId != null) {
               try {
                 AppLogger.debug(
-                    '通知タップ: type=${notification.type.name}, id=${notification.id}, relatedItemId=${notification.relatedItemId}');
+                  '通知タップ: type=${notification.type.name}, id=${notification.id}, relatedItemId=${notification.relatedItemId}',
+                );
 
                 // スケジュール情報を取得する前にローディング表示
                 if (context.mounted) {
@@ -349,7 +336,8 @@ class _NotificationItem extends ConsumerWidget {
 
                 if (schedule != null && context.mounted) {
                   AppLogger.debug(
-                      'スケジュール取得成功: ${schedule.id}, 通知ID: ${notification.id}');
+                    'スケジュール取得成功: ${schedule.id}, 通知ID: ${notification.id}',
+                  );
 
                   // 通知IDを明示的に渡してスケジュール詳細ページに遷移
                   Navigator.of(context).push(
@@ -358,13 +346,16 @@ class _NotificationItem extends ConsumerWidget {
                         schedule: schedule,
                         fromNotification: true,
                         notificationId: notification.id,
+                        notificationType: notification.type,
+                        interactionId: notification.interactionId,
                       ),
                     ),
                   );
                 } else if (context.mounted) {
                   // スケジュールが見つからない場合
                   AppLogger.warning(
-                      'スケジュールが見つかりません: ${notification.relatedItemId}');
+                    'スケジュールが見つかりません: ${notification.relatedItemId}',
+                  );
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('予定が見つかりませんでした'),
@@ -424,9 +415,7 @@ class _NotificationItem extends ConsumerWidget {
                   child: SizedBox(
                     width: 24,
                     height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
               ),
@@ -476,10 +465,7 @@ class _NotificationItem extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(
                   DateFormatter.formatRelativeTime(notification.createdAt),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                 ),
               ],
             ),
@@ -507,8 +493,9 @@ class _NotificationItem extends ConsumerWidget {
                         label: const Text('拒否'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Theme.of(context).primaryColor,
-                          side:
-                              BorderSide(color: Theme.of(context).primaryColor),
+                          side: BorderSide(
+                            color: Theme.of(context).primaryColor,
+                          ),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 8,
@@ -525,12 +512,12 @@ class _NotificationItem extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: notification.status ==
                               domain.NotificationStatus.accepted
-                          ? Theme.of(context)
-                              .primaryColor
-                              .withValues(alpha: 0.1)
-                          : Theme.of(context)
-                              .primaryColor
-                              .withValues(alpha: 0.05),
+                          ? Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.1)
+                          : Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
@@ -541,9 +528,9 @@ class _NotificationItem extends ConsumerWidget {
                         color: notification.status ==
                                 domain.NotificationStatus.accepted
                             ? Theme.of(context).primaryColor
-                            : Theme.of(context)
-                                .primaryColor
-                                .withValues(alpha: 0.8),
+                            : Theme.of(
+                                context,
+                              ).primaryColor.withValues(alpha: 0.8),
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),

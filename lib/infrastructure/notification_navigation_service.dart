@@ -18,8 +18,10 @@ class NotificationNavigationService {
   NotificationListPageBuilder? _notificationListBuilder;
 
   bool _hasPendingNotificationListOpen = false;
+  bool _isNavigationReady = false;
 
   bool get hasPendingNotificationListOpen => _hasPendingNotificationListOpen;
+  bool get isNavigationReady => _isNavigationReady;
 
   void configureNotificationListBuilder(
     NotificationListPageBuilder notificationListBuilder,
@@ -27,7 +29,22 @@ class NotificationNavigationService {
     _notificationListBuilder = notificationListBuilder;
   }
 
+  void markNavigationReady() {
+    _isNavigationReady = true;
+    flushPendingNavigation();
+  }
+
+  void markNavigationNotReady() {
+    _isNavigationReady = false;
+  }
+
   void openNotificationList() {
+    if (!_isNavigationReady) {
+      AppLogger.debug('通知一覧への遷移を保留しました: 認証後の画面が未準備');
+      _hasPendingNotificationListOpen = true;
+      return;
+    }
+
     final navigator = navigatorKey.currentState;
     if (navigator == null) {
       AppLogger.debug('通知一覧への遷移を保留しました: Navigator未準備');
@@ -43,15 +60,14 @@ class NotificationNavigationService {
     }
 
     _hasPendingNotificationListOpen = false;
-    navigator.push(
-      MaterialPageRoute(
-        builder: notificationListBuilder,
-      ),
-    );
+    navigator.push(MaterialPageRoute(builder: notificationListBuilder));
   }
 
   void flushPendingNavigation() {
     if (!_hasPendingNotificationListOpen) {
+      return;
+    }
+    if (!_isNavigationReady) {
       return;
     }
     openNotificationList();
