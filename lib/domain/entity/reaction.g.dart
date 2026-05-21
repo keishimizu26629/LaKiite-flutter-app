@@ -11,7 +11,7 @@ _$ReactionImpl _$$ReactionImplFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       scheduleId: json['scheduleId'] as String,
       userId: json['userId'] as String,
-      type: json['type'] as String,
+      type: $enumDecode(_$ReactionTypeEnumMap, json['type']),
       userDisplayName: json['userDisplayName'] as String,
       userPhotoUrl: json['userPhotoUrl'] as String?,
       createdAt:
@@ -23,8 +23,13 @@ Map<String, dynamic> _$$ReactionImplToJson(_$ReactionImpl instance) =>
       'id': instance.id,
       'scheduleId': instance.scheduleId,
       'userId': instance.userId,
-      'type': instance.type,
+      'type': _$ReactionTypeEnumMap[instance.type]!,
       'userDisplayName': instance.userDisplayName,
       'userPhotoUrl': instance.userPhotoUrl,
       'createdAt': const TimestampConverter().toJson(instance.createdAt),
     };
+
+const _$ReactionTypeEnumMap = {
+  ReactionType.going: 'going',
+  ReactionType.thinking: 'thinking',
+};

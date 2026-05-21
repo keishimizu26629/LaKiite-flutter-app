@@ -23,14 +23,18 @@ mixin _$Reaction {
   String get id => throw _privateConstructorUsedError;
   String get scheduleId => throw _privateConstructorUsedError;
   String get userId => throw _privateConstructorUsedError;
-  String get type => throw _privateConstructorUsedError;
+  ReactionType get type => throw _privateConstructorUsedError;
   String get userDisplayName => throw _privateConstructorUsedError;
   String? get userPhotoUrl => throw _privateConstructorUsedError;
   @TimestampConverter()
   DateTime get createdAt => throw _privateConstructorUsedError;
 
+  /// Serializes this Reaction to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of Reaction
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $ReactionCopyWith<Reaction> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -44,7 +48,7 @@ abstract class $ReactionCopyWith<$Res> {
       {String id,
       String scheduleId,
       String userId,
-      String type,
+      ReactionType type,
       String userDisplayName,
       String? userPhotoUrl,
       @TimestampConverter() DateTime createdAt});
@@ -60,6 +64,8 @@ class _$ReactionCopyWithImpl<$Res, $Val extends Reaction>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of Reaction
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -87,7 +93,7 @@ class _$ReactionCopyWithImpl<$Res, $Val extends Reaction>
       type: null == type
           ? _value.type
           : type // ignore: cast_nullable_to_non_nullable
-              as String,
+              as ReactionType,
       userDisplayName: null == userDisplayName
           ? _value.userDisplayName
           : userDisplayName // ignore: cast_nullable_to_non_nullable
@@ -116,7 +122,7 @@ abstract class _$$ReactionImplCopyWith<$Res>
       {String id,
       String scheduleId,
       String userId,
-      String type,
+      ReactionType type,
       String userDisplayName,
       String? userPhotoUrl,
       @TimestampConverter() DateTime createdAt});
@@ -130,6 +136,8 @@ class __$$ReactionImplCopyWithImpl<$Res>
       _$ReactionImpl _value, $Res Function(_$ReactionImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of Reaction
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -157,7 +165,7 @@ class __$$ReactionImplCopyWithImpl<$Res>
       type: null == type
           ? _value.type
           : type // ignore: cast_nullable_to_non_nullable
-              as String,
+              as ReactionType,
       userDisplayName: null == userDisplayName
           ? _value.userDisplayName
           : userDisplayName // ignore: cast_nullable_to_non_nullable
@@ -196,7 +204,7 @@ class _$ReactionImpl implements _Reaction {
   @override
   final String userId;
   @override
-  final String type;
+  final ReactionType type;
   @override
   final String userDisplayName;
   @override
@@ -228,12 +236,14 @@ class _$ReactionImpl implements _Reaction {
                 other.createdAt == createdAt));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, scheduleId, userId, type,
       userDisplayName, userPhotoUrl, createdAt);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of Reaction
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$ReactionImplCopyWith<_$ReactionImpl> get copyWith =>
@@ -252,7 +262,7 @@ abstract class _Reaction implements Reaction {
           {required final String id,
           required final String scheduleId,
           required final String userId,
-          required final String type,
+          required final ReactionType type,
           required final String userDisplayName,
           final String? userPhotoUrl,
           @TimestampConverter() required final DateTime createdAt}) =
@@ -268,7 +278,7 @@ abstract class _Reaction implements Reaction {
   @override
   String get userId;
   @override
-  String get type;
+  ReactionType get type;
   @override
   String get userDisplayName;
   @override
@@ -276,8 +286,11 @@ abstract class _Reaction implements Reaction {
   @override
   @TimestampConverter()
   DateTime get createdAt;
+
+  /// Create a copy of Reaction
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$ReactionImplCopyWith<_$ReactionImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

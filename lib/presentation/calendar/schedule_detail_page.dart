@@ -16,6 +16,7 @@ import 'package:lakiite/presentation/widgets/default_user_icon.dart';
 import 'package:lakiite/domain/entity/notification.dart' as domain;
 import 'package:lakiite/application/notification/notification_notifier.dart';
 import 'package:lakiite/presentation/widgets/reaction_icon_widget.dart';
+import 'package:lakiite/presentation/widgets/reaction_type_view_extension.dart';
 
 /// スケジュールの詳細情報を表示するページ
 ///
@@ -434,10 +435,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                               const SizedBox(width: 4),
                                               Text(
                                                 userReaction != null
-                                                    ? (userReaction.type ==
-                                                            ReactionType.going
-                                                        ? '行きます！'
-                                                        : '考え中！')
+                                                    ? userReaction.type.label
                                                     : 'リアクション',
                                                 style: TextStyle(
                                                   color: userReaction != null
@@ -468,7 +466,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                             child: Row(
                                               children: [
                                                 const Text('🙋 '),
-                                                const Text('行きます！'),
+                                                Text(ReactionType.going.label),
                                                 const Spacer(),
                                                 if (userReaction?.type ==
                                                     ReactionType.going)
@@ -487,7 +485,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                             child: Row(
                                               children: [
                                                 const Text('🤔 '),
-                                                const Text('考え中！'),
+                                                Text(ReactionType
+                                                    .thinking.label),
                                                 const Spacer(),
                                                 if (userReaction?.type ==
                                                     ReactionType.thinking)
@@ -707,7 +706,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
                               right: 0,
                               bottom: 0,
                               child: Text(
-                                reaction.type == 'going' ? '🙋' : '🤔',
+                                reaction.type.emoji,
                                 style: const TextStyle(fontSize: 16),
                               ),
                             ),

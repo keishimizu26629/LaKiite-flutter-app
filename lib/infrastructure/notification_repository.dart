@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../domain/entity/notification.dart';
 import '../domain/interfaces/i_notification_repository.dart';
+import 'mapper/notification_mapper.dart';
 import 'notification_repository_update_data.dart';
 import '../utils/logger.dart';
 
@@ -15,10 +16,10 @@ class NotificationRepository implements INotificationRepository {
   /// [notification] 作成する通知オブジェクト
   @override
   Future<void> createNotification(Notification notification) async {
-    AppLogger.debug('Creating notification: ${notification.toFirestore()}');
+    AppLogger.debug('Creating notification: $notification');
     try {
       final docRef = _firestore.collection('notifications').doc();
-      final data = notification.toFirestore();
+      final data = NotificationMapper.toFirestore(notification);
       AppLogger.debug('Notification data to save: $data');
       await docRef.set(data);
       AppLogger.debug(
@@ -41,7 +42,7 @@ class NotificationRepository implements INotificationRepository {
       await _firestore
           .collection('notifications')
           .doc(notification.id)
-          .update(notification.toFirestore());
+          .update(NotificationMapper.toFirestore(notification));
       AppLogger.debug('Notification updated successfully: ${notification.id}');
     } catch (e) {
       AppLogger.error('Error updating notification: $e');
@@ -66,9 +67,8 @@ class NotificationRepository implements INotificationRepository {
         return null;
       }
       final data = doc.data()!;
-      data['id'] = doc.id;
       AppLogger.debug('Notification retrieved successfully: $notificationId');
-      return Notification.fromJson(data);
+      return NotificationMapper.fromFirestore(id: doc.id, data: data);
     } catch (e) {
       AppLogger.error('Error getting notification: $e');
       rethrow;
@@ -159,8 +159,7 @@ class NotificationRepository implements INotificationRepository {
   List<Notification> _mapQuerySnapshotToNotifications(QuerySnapshot snapshot) {
     final notifications = snapshot.docs.map((doc) {
       final data = doc.data() as Map<String, dynamic>;
-      data['id'] = doc.id;
-      return Notification.fromJson(data);
+      return NotificationMapper.fromFirestore(id: doc.id, data: data);
     }).toList();
     AppLogger.debug('Received ${notifications.length} notifications');
     return notifications;
