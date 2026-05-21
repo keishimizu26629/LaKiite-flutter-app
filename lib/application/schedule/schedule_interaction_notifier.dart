@@ -3,10 +3,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/schedule_comment.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
+import 'package:lakiite/app/di/providers.dart';
+import 'package:lakiite/application/auth/auth_notifier.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/application/notification/notification_notifier.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
 import '../../infrastructure/firebase/push_notification_sender.dart';
 
 final scheduleInteractionNotifierProvider = StateNotifierProvider.family<
