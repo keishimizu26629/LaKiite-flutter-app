@@ -6,7 +6,7 @@ import '../../domain/interfaces/i_auth_repository.dart';
 import '../../domain/entity/user.dart';
 import '../../infrastructure/auth_repository.dart';
 import '../../infrastructure/user_fcm_token_service.dart';
-import '../../presentation/presentation_provider.dart';
+import '../../app/di/providers.dart';
 import '../../utils/logger.dart';
 import '../../utils/webview_monitor.dart';
 import 'auth_state.dart';

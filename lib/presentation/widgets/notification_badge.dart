@@ -122,22 +122,3 @@ class FriendRequestBadge extends ConsumerWidget {
     );
   }
 }
-
-/// グループ招待の未読通知を表示するバッジウィジェット
-///
-/// [child] バッジを表示する対象のウィジェット
-class GroupInvitationBadge extends ConsumerWidget {
-  const GroupInvitationBadge({
-    super.key,
-    required this.child,
-  });
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return NotificationBadge(
-      type: NotificationType.groupInvitation,
-      child: child,
-    );
-  }
-}

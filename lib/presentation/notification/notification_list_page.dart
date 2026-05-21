@@ -7,7 +7,6 @@ import '../../utils/logger.dart';
 import '../../presentation/calendar/schedule_detail_page.dart';
 import '../../presentation/presentation_provider.dart';
 import '../../presentation/friend/friend_profile_page.dart';
-import '../../presentation/group/group_detail_page.dart';
 
 enum NotificationFilter {
   all('すべて'),
@@ -274,39 +273,11 @@ class _NotificationItem extends ConsumerWidget {
             );
             break;
           case domain.NotificationType.groupInvitation:
-            // グループ詳細画面へ遷移
-            if (notification.groupId != null) {
-              // グループIDを使って詳細画面に遷移
-              try {
-                // 代替アプローチ: IDを渡して詳細ページで取得
-                final userGroups = await ref
-                    .read(groupRepositoryProvider)
-                    .watchUserGroups(currentUser.id)
-                    .first;
-
-                final group = userGroups.firstWhere(
-                  (g) => g.id == notification.groupId,
-                  orElse: () => throw Exception('Group not found'),
-                );
-
-                if (context.mounted) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => GroupDetailPage(group: group),
-                    ),
-                  );
-                }
-              } catch (error) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('グループの取得に失敗しました: $error'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('グループ機能は現在利用できません'),
+              ),
+            );
             break;
           case domain.NotificationType.reaction:
           case domain.NotificationType.comment:

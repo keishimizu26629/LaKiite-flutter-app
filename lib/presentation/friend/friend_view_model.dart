@@ -1,8 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entity/user.dart';
-import '../../domain/entity/group.dart';
 import '../../domain/interfaces/i_user_repository.dart';
-import '../../domain/interfaces/i_group_repository.dart';
 import '../presentation_provider.dart';
 
 /// ホーム画面のビューモデルを提供するプロバイダー
@@ -15,8 +13,7 @@ import '../presentation_provider.dart';
 final homeViewModelProvider =
     StateNotifierProvider<HomeViewModel, AsyncValue<HomeState>>((ref) {
   final userRepository = ref.watch(userRepositoryProvider);
-  final groupRepository = ref.watch(groupRepositoryProvider);
-  return HomeViewModel(userRepository, groupRepository);
+  return HomeViewModel(userRepository);
 });
 
 /// ホーム画面の状態を表現するクラス
@@ -24,18 +21,15 @@ final homeViewModelProvider =
 /// プロパティ:
 /// - [user] 現在のユーザー情報
 /// - [friends] フレンドリスト
-/// - [groups] 所属グループリスト
 class HomeState {
   /// HomeStateのコンストラクタ
   ///
   /// パラメータ:
   /// - [user] 現在のユーザー情報(オプション)
   /// - [friends] フレンドリスト(デフォルトは空リスト)
-  /// - [groups] 所属グループリスト(デフォルトは空リスト)
   HomeState({
     this.user,
     this.friends = const [],
-    this.groups = const [],
   });
 
   /// 現在のユーザー情報
@@ -44,27 +38,21 @@ class HomeState {
   /// フレンドのリスト
   final List<UserModel> friends;
 
-  /// 所属グループのリスト
-  final List<Group> groups;
-
   /// 状態を更新するためのコピーメソッド
   ///
   /// パラメータ:
   /// - [user] 更新するユーザー情報(オプション)
   /// - [friends] 更新するフレンドリスト(オプション)
-  /// - [groups] 更新するグループリスト(オプション)
   ///
   /// 戻り値:
   /// - [HomeState]: 更新された新しい状態インスタンス
   HomeState copyWith({
     UserModel? user,
     List<UserModel>? friends,
-    List<Group>? groups,
   }) {
     return HomeState(
       user: user ?? this.user,
       friends: friends ?? this.friends,
-      groups: groups ?? this.groups,
     );
   }
 }
@@ -73,17 +61,13 @@ class HomeState {
 ///
 /// プロパティ:
 /// - [_userRepository] ユーザー情報の操作を行うリポジトリ
-/// - [_groupRepository] グループ情報の操作を行うリポジトリ
 class HomeViewModel extends StateNotifier<AsyncValue<HomeState>> {
   /// HomeViewModelのコンストラクタ
   ///
   /// パラメータ:
   /// - [_userRepository] ユーザー情報の操作を行うリポジトリ
-  /// - [_groupRepository] グループ情報の操作を行うリポジトリ
-  HomeViewModel(this._userRepository, this._groupRepository)
-      : super(const AsyncValue.loading());
+  HomeViewModel(this._userRepository) : super(const AsyncValue.loading());
   final IUserRepository _userRepository;
-  final IGroupRepository _groupRepository;
 
   /// ユーザーの関連データを読み込む
   ///
@@ -93,7 +77,6 @@ class HomeViewModel extends StateNotifier<AsyncValue<HomeState>> {
   /// 処理内容:
   /// 1. ユーザー情報の取得
   /// 2. フレンド情報の取得
-  /// 3. グループ情報の取得
   Future<void> loadUserData(String userId) async {
     try {
       // ローディング状態に設定
@@ -114,16 +97,10 @@ class HomeViewModel extends StateNotifier<AsyncValue<HomeState>> {
       final friends =
           (await Future.wait(friendsFutures)).whereType<UserModel>().toList();
 
-      // グループ情報を取得し、ユーザーが所属するグループをフィルタリング
-      final groups = await _groupRepository.getGroups();
-      final userGroups =
-          groups.where((group) => group.memberIds.contains(userId)).toList();
-
       // 取得したデータで状態を更新
       state = AsyncValue.data(HomeState(
         user: user,
         friends: friends,
-        groups: userGroups,
       ));
     } catch (e, stack) {
       // エラーが発生した場合はエラー状態を設定
