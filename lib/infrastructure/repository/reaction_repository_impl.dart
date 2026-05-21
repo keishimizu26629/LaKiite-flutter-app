@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lakiite/domain/entity/reaction.dart';
 import 'package:lakiite/domain/repository/reaction_repository.dart';
+import 'package:lakiite/domain/entity/schedule_reaction.dart';
 
+/// Firestore を使ってスケジュールリアクションを読み書きする repository 実装。
 class ReactionRepositoryImpl implements ReactionRepository {
   ReactionRepositoryImpl(this._firestore);
   final FirebaseFirestore _firestore;
@@ -30,7 +32,10 @@ class ReactionRepositoryImpl implements ReactionRepository {
 
   @override
   Future<void> addReaction(
-      String scheduleId, String userId, String type) async {
+    String scheduleId,
+    String userId,
+    ReactionType type,
+  ) async {
     final userDoc = await _firestore.collection('users').doc(userId).get();
     final userData = userDoc.data();
 
@@ -41,7 +46,10 @@ class ReactionRepositoryImpl implements ReactionRepository {
         .doc(userId)
         .set({
       'userId': userId,
-      'type': type,
+      'type': switch (type) {
+        ReactionType.going => 'going',
+        ReactionType.thinking => 'thinking',
+      },
       'userDisplayName': userData?['displayName'] as String,
       'userPhotoUrl': userData?['iconUrl'] as String?,
       'createdAt': FieldValue.serverTimestamp(),

@@ -1,16 +1,24 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'schedule_reaction.dart';
+
 part 'reaction.freezed.dart';
 part 'reaction.g.dart';
 
+@freezed
+
+/// スケジュールに対するユーザーのリアクションを表すドメインモデル。
+///
+/// Firestore 上ではリアクション種別は文字列で保存されるが、domain では
+/// [ReactionType] として扱うことで取り得る値を型で表現する。
 @freezed
 class Reaction with _$Reaction {
   const factory Reaction({
     required String id,
     required String scheduleId,
     required String userId,
-    required String type,
+    required ReactionType type,
     required String userDisplayName,
     String? userPhotoUrl,
     @TimestampConverter() required DateTime createdAt,
