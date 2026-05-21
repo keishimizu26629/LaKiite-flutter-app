@@ -1,121 +1,40 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-class PublicProfile {
-  const PublicProfile({
-    required this.displayName,
-    required this.searchId,
-    this.iconUrl,
-    this.shortBio,
-  });
+part 'user_profile.freezed.dart';
 
-  factory PublicProfile.fromFirestore(Map<String, dynamic> data) {
-    return PublicProfile(
-      displayName: data['displayName'] as String,
-      searchId: data['searchId'] as String,
-      iconUrl: data['iconUrl'] as String?,
-      shortBio: data['shortBio'] as String?,
-    );
-  }
-  final String displayName;
-  final String searchId;
-  final String? iconUrl;
-  final String? shortBio;
-
-  Map<String, dynamic> toFirestore() {
-    return {
-      'displayName': displayName,
-      'searchId': searchId,
-      if (iconUrl != null) 'iconUrl': iconUrl,
-      if (shortBio != null) 'shortBio': shortBio,
-    };
-  }
+/// 他ユーザーにも公開されるプロフィール情報。
+@freezed
+class PublicProfile with _$PublicProfile {
+  const factory PublicProfile({
+    required String displayName,
+    required String searchId,
+    String? iconUrl,
+    String? shortBio,
+  }) = _PublicProfile;
 }
 
-class PrivateProfile {
-  const PrivateProfile({
-    required this.name,
-    required this.lists,
-    required this.createdAt,
-    this.fcmToken,
-  });
-
-  factory PrivateProfile.fromFirestore(Map<String, dynamic> data) {
-    return PrivateProfile(
-      name: data['name'] as String? ?? '',
-      lists: List<String>.from(data['lists'] ?? []),
-      createdAt: data['createdAt'] != null
-          ? (data['createdAt'] as Timestamp).toDate()
-          : DateTime.now(),
-      fcmToken: data['fcmToken'] as String?,
-    );
-  }
-  final String name;
-  final List<String> lists;
-  final DateTime createdAt;
-  final String? fcmToken;
-
-  Map<String, dynamic> toFirestore() {
-    return {
-      'name': name,
-      'lists': lists,
-      'createdAt': Timestamp.fromDate(createdAt),
-      if (fcmToken != null) 'fcmToken': fcmToken,
-    };
-  }
-}
-
-class UserProfile {
-  const UserProfile({
-    required this.id,
-    required this.publicProfile,
-    required this.privateProfile,
-    required this.friends,
-    required this.groups,
-    this.fcmToken,
-  });
-
-  factory UserProfile.fromFirestore(Map<String, dynamic> data, String id) {
-    return UserProfile(
-      id: id,
-      publicProfile: PublicProfile.fromFirestore(data),
-      privateProfile: PrivateProfile.fromFirestore(data['private'] ?? {}),
-      friends: List<String>.from(data['friends'] ?? []),
-      groups: List<String>.from(data['groups'] ?? []),
-      fcmToken: data['fcmToken'],
-    );
-  }
-  final String id;
-  final PublicProfile publicProfile;
-  final PrivateProfile privateProfile;
-  final List<String> friends;
-  final List<String> groups;
-  final String? fcmToken;
-
-  Map<String, dynamic> toFirestore() {
-    return {
-      ...publicProfile.toFirestore(),
-      'private': privateProfile.toFirestore(),
-      'friends': friends,
-      'groups': groups,
-      if (fcmToken != null) 'fcmToken': fcmToken,
-    };
-  }
-
-  UserProfile copyWith({
-    String? id,
-    PublicProfile? publicProfile,
-    PrivateProfile? privateProfile,
-    List<String>? friends,
-    List<String>? groups,
+/// 本人と内部処理で扱う非公開プロフィール情報。
+@freezed
+class PrivateProfile with _$PrivateProfile {
+  const factory PrivateProfile({
+    required String name,
+    required List<String> lists,
+    required DateTime createdAt,
     String? fcmToken,
-  }) {
-    return UserProfile(
-      id: id ?? this.id,
-      publicProfile: publicProfile ?? this.publicProfile,
-      privateProfile: privateProfile ?? this.privateProfile,
-      friends: friends ?? this.friends,
-      groups: groups ?? this.groups,
-      fcmToken: fcmToken ?? this.fcmToken,
-    );
-  }
+  }) = _PrivateProfile;
+}
+
+/// 公開プロフィール、非公開プロフィール、所属関係をまとめたユーザープロフィール。
+///
+/// Firestore の保存形式は持たず、変換は infrastructure の mapper が担当する。
+@freezed
+class UserProfile with _$UserProfile {
+  const factory UserProfile({
+    required String id,
+    required PublicProfile publicProfile,
+    required PrivateProfile privateProfile,
+    required List<String> friends,
+    required List<String> groups,
+    String? fcmToken,
+  }) = _UserProfile;
 }

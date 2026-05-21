@@ -5,11 +5,17 @@ import 'package:lakiite/utils/logger.dart';
 part 'schedule_reaction.freezed.dart';
 part 'schedule_reaction.g.dart';
 
+/// スケジュール投稿に対してユーザーが選択できるリアクション種別。
+///
+/// Firestore には [JsonValue] の文字列で保存される。
 enum ReactionType {
+  /// 参加意思を示すリアクション。
   @JsonValue('going')
-  going, // 行きます！🙋
+  going,
+
+  /// 検討中であることを示すリアクション。
   @JsonValue('thinking')
-  thinking, // 考え中！🤔
+  thinking,
 }
 
 @freezed
