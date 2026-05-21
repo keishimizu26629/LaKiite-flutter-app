@@ -4,6 +4,7 @@ import '../home/home_page.dart';
 import '../friend/friend_list_page.dart';
 import '../my_page/my_page.dart';
 import '../widgets/auth_dependent_builder.dart';
+import '../../infrastructure/notification_navigation_service.dart';
 
 class BottomNavigationPage extends ConsumerStatefulWidget {
   const BottomNavigationPage({super.key});
@@ -19,12 +20,9 @@ class _BottomNavigationPageState extends ConsumerState<BottomNavigationPage> {
   Widget build(BuildContext context) {
     return AuthDependentBuilder(
       onAuthenticated: (_) => const _AuthenticatedBottomNavigationShell(),
-      onLoading: (_) => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      onUnauthenticated: (_) => const Scaffold(
-        body: SizedBox.shrink(),
-      ),
+      onLoading: (_) =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      onUnauthenticated: (_) => const Scaffold(body: SizedBox.shrink()),
     );
   }
 }
@@ -54,12 +52,24 @@ class _AuthenticatedBottomNavigationShellState
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      NotificationNavigationService.instance.markNavigationReady();
+    });
+  }
+
+  @override
+  void dispose() {
+    NotificationNavigationService.instance.markNavigationNotReady();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -80,9 +90,7 @@ class _AuthenticatedBottomNavigationShellState
             fontWeight: FontWeight.bold,
             fontSize: 12,
           ),
-          unselectedLabelStyle: const TextStyle(
-            fontSize: 12,
-          ),
+          unselectedLabelStyle: const TextStyle(fontSize: 12),
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined),

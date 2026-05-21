@@ -31,6 +31,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
     required this.schedule,
     this.fromNotification = false,
     this.notificationId,
+    this.notificationType,
+    this.interactionId,
     super.key,
   });
 
@@ -43,12 +45,23 @@ class ScheduleDetailPage extends HookConsumerWidget {
   /// 遷移元の通知ID（通知からの遷移時のみ）
   final String? notificationId;
 
+  /// 遷移元の通知タイプ（通知からの遷移時のみ）
+  final domain.NotificationType? notificationType;
+
+  /// 遷移元通知が指すリアクションまたはコメントID
+  final String? interactionId;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(authNotifierProvider);
     final interactions = ref.watch(
       scheduleInteractionNotifierProvider(schedule.id),
     );
+    final scrollController = useScrollController();
+    final reactionSectionKey = useMemoized(GlobalKey.new);
+    final commentSectionKey = useMemoized(GlobalKey.new);
+    final targetCommentKey = useMemoized(GlobalKey.new);
+    final didScrollToNotificationTarget = useRef(false);
 
     // スケジュールのリアルタイム監視を行うStreamProviderを作成
     final scheduleStreamProvider = StreamProvider<Schedule?>((ref) {
@@ -74,7 +87,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
     useEffect(() {
       // 通知からの遷移情報をログ出力
       developer.log(
-          'スケジュール詳細ページが開かれました - fromNotification: $fromNotification, notificationId: ${notificationId ?? "null"}');
+        'スケジュール詳細ページが開かれました - fromNotification: $fromNotification, notificationId: ${notificationId ?? "null"}',
+      );
 
       // 通常の既読処理を実行
       _markRelatedNotificationsAsRead(ref);
@@ -86,6 +100,62 @@ class ScheduleDetailPage extends HookConsumerWidget {
 
       return null;
     }, []);
+
+    useEffect(
+      () {
+        if (!fromNotification || didScrollToNotificationTarget.value) {
+          return null;
+        }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!context.mounted || didScrollToNotificationTarget.value) {
+            return;
+          }
+
+          GlobalKey? targetKey;
+          switch (notificationType) {
+            case domain.NotificationType.reaction:
+              targetKey = reactionSectionKey;
+              break;
+            case domain.NotificationType.comment:
+              final hasTargetComment = interactionId != null &&
+                  interactions.comments.any(
+                    (comment) => comment.id == interactionId,
+                  );
+              targetKey =
+                  hasTargetComment ? targetCommentKey : commentSectionKey;
+              break;
+            case domain.NotificationType.friend:
+            case domain.NotificationType.groupInvitation:
+            case null:
+              targetKey = null;
+              break;
+          }
+
+          final targetContext = targetKey?.currentContext;
+          if (targetContext == null) {
+            return;
+          }
+
+          didScrollToNotificationTarget.value = true;
+          Scrollable.ensureVisible(
+            targetContext,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOutCubic,
+            alignment: 0.08,
+          );
+        });
+
+        return null;
+      },
+      [
+        fromNotification,
+        notificationType,
+        interactionId,
+        interactions.comments.length,
+        interactions.reactions.length,
+      ],
+    );
 
     // ここでリアクションデータをログ出力
     // developer.log('スケジュールID: ${currentSchedule.id}');
@@ -108,9 +178,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => EditSchedulePage(
-                        schedule: currentSchedule,
-                      ),
+                      builder: (context) =>
+                          EditSchedulePage(schedule: currentSchedule),
                     ),
                   );
                 },
@@ -132,6 +201,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
           children: [
             Expanded(
               child: SingleChildScrollView(
+                controller: scrollController,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -153,16 +223,21 @@ class ScheduleDetailPage extends HookConsumerWidget {
                           // 日時情報
                           Row(
                             children: [
-                              const Icon(Icons.calendar_today,
-                                  color: Colors.indigo),
+                              const Icon(
+                                Icons.calendar_today,
+                                color: Colors.indigo,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   _formatDateTimeRange(
-                                      currentSchedule.startDateTime,
-                                      currentSchedule.endDateTime),
+                                    currentSchedule.startDateTime,
+                                    currentSchedule.endDateTime,
+                                  ),
                                   style: const TextStyle(
-                                      fontSize: 16, color: Colors.black87),
+                                    fontSize: 16,
+                                    color: Colors.black87,
+                                  ),
                                 ),
                               ),
                             ],
@@ -175,14 +250,18 @@ class ScheduleDetailPage extends HookConsumerWidget {
                               padding: const EdgeInsets.only(top: 8.0),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.location_on,
-                                      color: Colors.redAccent),
+                                  const Icon(
+                                    Icons.location_on,
+                                    color: Colors.redAccent,
+                                  ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       currentSchedule.location!,
                                       style: const TextStyle(
-                                          fontSize: 16, color: Colors.black87),
+                                        fontSize: 16,
+                                        color: Colors.black87,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -196,7 +275,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                 CircleAvatar(
                                   radius: 16,
                                   backgroundImage: NetworkImage(
-                                      currentSchedule.ownerPhotoUrl!),
+                                    currentSchedule.ownerPhotoUrl!,
+                                  ),
                                 )
                               else
                                 const DefaultUserIcon(size: 32),
@@ -204,20 +284,35 @@ class ScheduleDetailPage extends HookConsumerWidget {
                               Text(
                                 currentSchedule.ownerDisplayName,
                                 style: const TextStyle(
-                                    fontSize: 14, color: Colors.black54),
+                                  fontSize: 14,
+                                  color: Colors.black54,
+                                ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 16),
                           // インタラクション情報（リアクション数・コメント数）
                           Container(
+                            key: reactionSectionKey,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.grey[200],
+                              color: notificationType ==
+                                      domain.NotificationType.reaction
+                                  ? Theme.of(
+                                      context,
+                                    ).primaryColor.withValues(alpha: 0.08)
+                                  : Colors.grey[200],
                               borderRadius: BorderRadius.circular(8),
+                              border: notificationType ==
+                                      domain.NotificationType.reaction
+                                  ? Border.all(
+                                      color: Theme.of(context).primaryColor,
+                                      width: 1.5,
+                                    )
+                                  : null,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -231,14 +326,17 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                           width: 30,
                                           height: 30,
                                           child: ReactionIconWidget(
-                                            hasGoing: interactions.reactions
-                                                .any((r) =>
-                                                    r.type ==
-                                                    ReactionType.going),
-                                            hasThinking: interactions.reactions
-                                                .any((r) =>
-                                                    r.type ==
-                                                    ReactionType.thinking),
+                                            hasGoing:
+                                                interactions.reactions.any(
+                                              (r) =>
+                                                  r.type == ReactionType.going,
+                                            ),
+                                            hasThinking:
+                                                interactions.reactions.any(
+                                              (r) =>
+                                                  r.type ==
+                                                  ReactionType.thinking,
+                                            ),
                                           ),
                                         )
                                       else
@@ -303,8 +401,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                       PopupMenuButton<ReactionType>(
                                         elevation: 3.0,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
@@ -313,10 +412,12 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                           ),
                                           decoration: BoxDecoration(
                                             color: Colors.grey[100],
-                                            borderRadius:
-                                                BorderRadius.circular(20),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
                                             border: Border.all(
-                                                color: Colors.grey[300]!),
+                                              color: Colors.grey[300]!,
+                                            ),
                                           ),
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
@@ -325,8 +426,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                                 Icons.add_reaction,
                                                 size: 20,
                                                 color: userReaction != null
-                                                    ? Theme.of(context)
-                                                        .primaryColor
+                                                    ? Theme.of(
+                                                        context,
+                                                      ).primaryColor
                                                     : Colors.grey,
                                               ),
                                               const SizedBox(width: 4),
@@ -339,8 +441,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                                     : 'リアクション',
                                                 style: TextStyle(
                                                   color: userReaction != null
-                                                      ? Theme.of(context)
-                                                          .primaryColor
+                                                      ? Theme.of(
+                                                          context,
+                                                        ).primaryColor
                                                       : Colors.grey,
                                                 ),
                                               ),
@@ -350,11 +453,14 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                         onSelected: (ReactionType type) {
                                           ref
                                               .read(
-                                                  scheduleInteractionNotifierProvider(
-                                                          currentSchedule.id)
-                                                      .notifier)
+                                                scheduleInteractionNotifierProvider(
+                                                  currentSchedule.id,
+                                                ).notifier,
+                                              )
                                               .toggleReaction(
-                                                  authState.user!.id, type);
+                                                authState.user!.id,
+                                                type,
+                                              );
                                         },
                                         itemBuilder: (context) => [
                                           PopupMenuItem(
@@ -366,10 +472,13 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                                 const Spacer(),
                                                 if (userReaction?.type ==
                                                     ReactionType.going)
-                                                  const Text('✓',
-                                                      style: TextStyle(
-                                                          color: AppTheme
-                                                              .primaryColor)),
+                                                  const Text(
+                                                    '✓',
+                                                    style: TextStyle(
+                                                      color:
+                                                          AppTheme.primaryColor,
+                                                    ),
+                                                  ),
                                               ],
                                             ),
                                           ),
@@ -382,10 +491,13 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                                 const Spacer(),
                                                 if (userReaction?.type ==
                                                     ReactionType.thinking)
-                                                  const Text('✓',
-                                                      style: TextStyle(
-                                                          color: AppTheme
-                                                              .primaryColor)),
+                                                  const Text(
+                                                    '✓',
+                                                    style: TextStyle(
+                                                      color:
+                                                          AppTheme.primaryColor,
+                                                    ),
+                                                  ),
                                               ],
                                             ),
                                           ),
@@ -407,6 +519,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
                     // コメント一覧
                     if (interactions.comments.isNotEmpty)
                       Padding(
+                        key: commentSectionKey,
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -419,7 +532,12 @@ class ScheduleDetailPage extends HookConsumerWidget {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            _buildCommentsSection(context, interactions, ref),
+                            _buildCommentsSection(
+                              context,
+                              interactions,
+                              ref,
+                              targetCommentKey,
+                            ),
                           ],
                         ),
                       ),
@@ -458,21 +576,22 @@ class ScheduleDetailPage extends HookConsumerWidget {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(
-                        Icons.send,
-                        color: Colors.white,
-                      ),
+                      icon: const Icon(Icons.send, color: Colors.white),
                       onPressed: () {
                         // コメント送信処理
                         final authState = ref.read(authNotifierProvider).value;
                         if (authState?.user != null &&
                             commentController.text.isNotEmpty) {
                           ref
-                              .read(scheduleInteractionNotifierProvider(
-                                      currentSchedule.id)
-                                  .notifier)
+                              .read(
+                                scheduleInteractionNotifierProvider(
+                                  currentSchedule.id,
+                                ).notifier,
+                              )
                               .addComment(
-                                  authState!.user!.id, commentController.text);
+                                authState!.user!.id,
+                                commentController.text,
+                              );
                           commentController.clear();
                         }
                       },
@@ -504,17 +623,18 @@ class ScheduleDetailPage extends HookConsumerWidget {
     // リポジトリから取得したリアクションデータをログ出力
     developer.log('リポジトリから取得したリアクション: ${reactions.length}件');
     for (final reaction in reactions) {
-      developer
-          .log('取得したリアクション: userId=${reaction.userId}, type=${reaction.type}');
+      developer.log(
+        '取得したリアクション: userId=${reaction.userId}, type=${reaction.type}',
+      );
     }
 
     if (!context.mounted) return;
 
     // リアクションが存在しない場合は通知を表示
     if (reactions.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('リアクションがありません')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('リアクションがありません')));
       return;
     }
 
@@ -529,10 +649,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
               children: [
                 const Text(
                   'リアクションした人',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 IconButton(
@@ -544,10 +661,12 @@ class ScheduleDetailPage extends HookConsumerWidget {
             const SizedBox(height: 16),
             FutureBuilder<List<UserModel>>(
               future: Future.wait(
-                reactions.map((reaction) => ref
-                    .read(userRepositoryProvider)
-                    .getUser(reaction.userId)
-                    .then((user) => user!)),
+                reactions.map(
+                  (reaction) => ref
+                      .read(userRepositoryProvider)
+                      .getUser(reaction.userId)
+                      .then((user) => user!),
+                ),
               ),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
@@ -571,15 +690,17 @@ class ScheduleDetailPage extends HookConsumerWidget {
                       // 追加のデバッグログ
                       developer.log('リアクションオブジェクト: $reaction');
                       developer.log(
-                          'リアクションタイプ: ${reaction.type} (${reaction.type.runtimeType})');
+                        'リアクションタイプ: ${reaction.type} (${reaction.type.runtimeType})',
+                      );
 
                       return ListTile(
                         leading: Stack(
                           children: [
                             user.iconUrl != null
                                 ? CircleAvatar(
-                                    backgroundImage:
-                                        NetworkImage(user.iconUrl!),
+                                    backgroundImage: NetworkImage(
+                                      user.iconUrl!,
+                                    ),
                                   )
                                 : const DefaultUserIcon(),
                             Positioned(
@@ -656,23 +777,26 @@ class ScheduleDetailPage extends HookConsumerWidget {
 
       // 全通知の詳細をログ出力
       for (final notification in notifications) {
-        developer
-            .log('通知: id=${notification.id}, type=${notification.type.name}, '
-                'isRead=${notification.isRead}, '
-                'relatedItemId=${notification.relatedItemId ?? "null"}, '
-                'sendUserId=${notification.sendUserId}, '
-                'receiveUserId=${notification.receiveUserId}, '
-                'status=${notification.status.name}, '
-                'createdAt=${notification.createdAt}');
+        developer.log(
+          '通知: id=${notification.id}, type=${notification.type.name}, '
+          'isRead=${notification.isRead}, '
+          'relatedItemId=${notification.relatedItemId ?? "null"}, '
+          'sendUserId=${notification.sendUserId}, '
+          'receiveUserId=${notification.receiveUserId}, '
+          'status=${notification.status.name}, '
+          'createdAt=${notification.createdAt}',
+        );
       }
 
       // このスケジュールに関連する未読のリアクション・コメント通知をフィルタリング
       final unreadRelatedNotifications = notifications
-          .where((notification) =>
-              !notification.isRead &&
-              (notification.type == domain.NotificationType.reaction ||
-                  notification.type == domain.NotificationType.comment) &&
-              notification.relatedItemId == schedule.id)
+          .where(
+            (notification) =>
+                !notification.isRead &&
+                (notification.type == domain.NotificationType.reaction ||
+                    notification.type == domain.NotificationType.comment) &&
+                notification.relatedItemId == schedule.id,
+          )
           .toList();
 
       developer.log('未読の関連通知数: ${unreadRelatedNotifications.length}件');
@@ -680,9 +804,10 @@ class ScheduleDetailPage extends HookConsumerWidget {
 
       // フィルタリングされた通知の詳細ログ
       for (final notification in unreadRelatedNotifications) {
-        developer
-            .log('関連通知: id=${notification.id}, type=${notification.type.name}, '
-                'relatedItemId=${notification.relatedItemId}');
+        developer.log(
+          '関連通知: id=${notification.id}, type=${notification.type.name}, '
+          'relatedItemId=${notification.relatedItemId}',
+        );
       }
 
       // 各通知を既読にする（非同期で実行、結果を待たない）
@@ -690,7 +815,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
 
       for (final notification in unreadRelatedNotifications) {
         developer.log(
-            '通知を既読にします: ${notification.id}, type=${notification.type.name}');
+          '通知を既読にします: ${notification.id}, type=${notification.type.name}',
+        );
         try {
           await notifier.markAsRead(notification.id);
           developer.log('通知を既読にしました: ${notification.id}');
@@ -715,7 +841,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
   ///
   /// 返り値: 非同期処理の完了を表す[Future]
   Future<void> _markSpecificNotificationAsRead(
-      WidgetRef ref, String notificationId) async {
+    WidgetRef ref,
+    String notificationId,
+  ) async {
     try {
       developer.log('特定の通知を既読にします: notificationId=$notificationId');
 
@@ -747,6 +875,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
     BuildContext context,
     ScheduleInteractionState interactions,
     WidgetRef ref,
+    GlobalKey targetCommentKey,
   ) {
     // 現在のユーザーIDを取得
     final currentUserId = ref.read(authNotifierProvider).value?.user?.id;
@@ -762,8 +891,12 @@ class ScheduleDetailPage extends HookConsumerWidget {
           // 自分のコメントかどうかをチェック
           final isMyComment =
               currentUserId != null && comment.userId == currentUserId;
+          final isTargetComment = fromNotification &&
+              notificationType == domain.NotificationType.comment &&
+              interactionId == comment.id;
 
           return Padding(
+            key: isTargetComment ? targetCommentKey : null,
             padding: const EdgeInsets.only(bottom: 16),
             child: IntrinsicHeight(
               child: Row(
@@ -784,11 +917,21 @@ class ScheduleDetailPage extends HookConsumerWidget {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest
-                                .withValues(alpha: 0.5),
+                            color: isTargetComment
+                                ? Theme.of(
+                                    context,
+                                  ).primaryColor.withValues(alpha: 0.08)
+                                : Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest
+                                    .withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(12),
+                            border: isTargetComment
+                                ? Border.all(
+                                    color: Theme.of(context).primaryColor,
+                                    width: 1.5,
+                                  )
+                                : null,
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -828,12 +971,18 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                           value: 'delete',
                                           child: Row(
                                             children: [
-                                              Icon(Icons.delete,
-                                                  size: 16, color: Colors.red),
+                                              Icon(
+                                                Icons.delete,
+                                                size: 16,
+                                                color: Colors.red,
+                                              ),
                                               SizedBox(width: 8),
-                                              Text('削除',
-                                                  style: TextStyle(
-                                                      color: Colors.red)),
+                                              Text(
+                                                '削除',
+                                                style: TextStyle(
+                                                  color: Colors.red,
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),
@@ -843,10 +992,16 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                         final currentRef = ref;
                                         if (value == 'edit') {
                                           _editComment(
-                                              context, currentRef, comment);
+                                            context,
+                                            currentRef,
+                                            comment,
+                                          );
                                         } else if (value == 'delete') {
                                           _deleteComment(
-                                              context, currentRef, comment);
+                                            context,
+                                            currentRef,
+                                            comment,
+                                          );
                                         }
                                       },
                                     ),
@@ -855,9 +1010,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
                               const SizedBox(height: 4),
                               Text(
                                 comment.content,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                ),
+                                style: const TextStyle(fontSize: 14),
                               ),
                             ],
                           ),
@@ -867,13 +1020,14 @@ class ScheduleDetailPage extends HookConsumerWidget {
                           child: Text(
                             comment.isEdited
                                 ? '${DateFormat('M月d日 HH:mm').format(comment.createdAt)} (編集済み)'
-                                : DateFormat('M月d日 HH:mm')
-                                    .format(comment.createdAt),
+                                : DateFormat(
+                                    'M月d日 HH:mm',
+                                  ).format(comment.createdAt),
                             style: TextStyle(
                               fontSize: 12,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -891,7 +1045,10 @@ class ScheduleDetailPage extends HookConsumerWidget {
 
   // コメント削除の確認ダイアログを表示
   void _deleteComment(
-      BuildContext context, WidgetRef ref, ScheduleComment comment) {
+    BuildContext context,
+    WidgetRef ref,
+    ScheduleComment comment,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -910,13 +1067,14 @@ class ScheduleDetailPage extends HookConsumerWidget {
               // コメントを削除
               ref
                   .read(
-                      scheduleInteractionNotifierProvider(schedule.id).notifier)
+                    scheduleInteractionNotifierProvider(schedule.id).notifier,
+                  )
                   .deleteComment(comment.id);
 
               // 削除完了メッセージ
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('コメントを削除しました')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('コメントを削除しました')));
             },
             child: const Text('削除', style: TextStyle(color: Colors.red)),
           ),
@@ -927,12 +1085,16 @@ class ScheduleDetailPage extends HookConsumerWidget {
 
   // コメント編集ダイアログを表示
   void _editComment(
-      BuildContext context, WidgetRef ref, ScheduleComment comment) {
+    BuildContext context,
+    WidgetRef ref,
+    ScheduleComment comment,
+  ) {
     // 編集用テキストコントローラー
     final editController = TextEditingController(text: comment.content);
 
     developer.log(
-        'コメント編集開始: id=${comment.id}, userId=${comment.userId}, currentAuthUser=${ref.read(authNotifierProvider).value?.user?.id}');
+      'コメント編集開始: id=${comment.id}, userId=${comment.userId}, currentAuthUser=${ref.read(authNotifierProvider).value?.user?.id}',
+    );
 
     showDialog(
       context: context,
@@ -941,9 +1103,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
         content: TextField(
           controller: editController,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'コメントを入力...',
-          ),
+          decoration: const InputDecoration(hintText: 'コメントを入力...'),
           maxLines: 3,
         ),
         actions: [
@@ -959,7 +1119,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
               }
 
               developer.log(
-                  'コメント編集を実行: commentId=${comment.id}, content=${editController.text}');
+                'コメント編集を実行: commentId=${comment.id}, content=${editController.text}',
+              );
 
               // ダイアログを閉じる
               Navigator.of(context).pop();
@@ -976,18 +1137,22 @@ class ScheduleDetailPage extends HookConsumerWidget {
               try {
                 // リクエスト情報をログ出力
                 developer.log(
-                    'コメント更新リクエスト: scheduleId=${schedule.id}, commentId=${comment.id}, commentUserId=${comment.userId}');
+                  'コメント更新リクエスト: scheduleId=${schedule.id}, commentId=${comment.id}, commentUserId=${comment.userId}',
+                );
                 developer.log(
-                    '認証状態: ${ref.read(authNotifierProvider).value?.user != null ? "ログイン中" : "未ログイン"}');
+                  '認証状態: ${ref.read(authNotifierProvider).value?.user != null ? "ログイン中" : "未ログイン"}',
+                );
                 if (ref.read(authNotifierProvider).value?.user != null) {
                   developer.log(
-                      '現在のユーザーID: ${ref.read(authNotifierProvider).value!.user!.id}');
+                    '現在のユーザーID: ${ref.read(authNotifierProvider).value!.user!.id}',
+                  );
                 }
 
                 // コメントを更新
                 ref
-                    .read(scheduleInteractionNotifierProvider(schedule.id)
-                        .notifier)
+                    .read(
+                      scheduleInteractionNotifierProvider(schedule.id).notifier,
+                    )
                     .updateComment(comment.id, editController.text)
                     .then((_) {
                   developer.log('コメント更新成功: ${comment.id}');
@@ -1039,7 +1204,10 @@ class ScheduleDetailPage extends HookConsumerWidget {
   }
 
   void _showDeleteConfirmDialog(
-      BuildContext context, WidgetRef ref, Schedule schedule) {
+    BuildContext context,
+    WidgetRef ref,
+    Schedule schedule,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1061,9 +1229,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
                   .deleteSchedule(schedule.id);
 
               // 削除完了メッセージを表示してページを閉じる
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('予定を削除しました')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('予定を削除しました')));
 
               // 予定詳細ページを閉じる
               Navigator.of(context).pop();

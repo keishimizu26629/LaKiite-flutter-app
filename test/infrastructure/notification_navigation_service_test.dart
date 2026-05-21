@@ -6,9 +6,8 @@ void main() {
   group('NotificationNavigationService', () {
     testWidgets('通知一覧をNavigatorへpushできる', (tester) async {
       final service = NotificationNavigationService(
-        notificationListBuilder: (_) => const Scaffold(
-          body: Text('notification list'),
-        ),
+        notificationListBuilder: (_) =>
+            const Scaffold(body: Text('notification list')),
       );
 
       await tester.pumpWidget(
@@ -18,20 +17,52 @@ void main() {
         ),
       );
 
+      service.markNavigationReady();
       service.openNotificationList();
       await tester.pumpAndSettle();
 
       expect(find.text('notification list'), findsOneWidget);
     });
 
-    testWidgets('Navigator準備前の通知タップは保留し、準備後に通知一覧を開く', (tester) async {
+    testWidgets('認証後の画面準備前の通知タップは保留する', (tester) async {
       final service = NotificationNavigationService(
-        notificationListBuilder: (_) => const Scaffold(
-          body: Text('notification list'),
-        ),
+        notificationListBuilder: (_) =>
+            const Scaffold(body: Text('notification list')),
       );
 
       service.openNotificationList();
+      expect(service.hasPendingNotificationListOpen, isTrue);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: service.navigatorKey,
+          home: const Scaffold(body: Text('home')),
+        ),
+      );
+
+      service.flushPendingNavigation();
+      await tester.pumpAndSettle();
+
+      expect(service.hasPendingNotificationListOpen, isTrue);
+      expect(find.text('notification list'), findsNothing);
+
+      service.markNavigationReady();
+      await tester.pumpAndSettle();
+
+      expect(service.hasPendingNotificationListOpen, isFalse);
+      expect(find.text('notification list'), findsOneWidget);
+    });
+
+    testWidgets('Navigator準備前の通知タップは保留し、準備後に通知一覧を開く', (tester) async {
+      final service = NotificationNavigationService(
+        notificationListBuilder: (_) =>
+            const Scaffold(body: Text('notification list')),
+      );
+
+      service.openNotificationList();
+      expect(service.hasPendingNotificationListOpen, isTrue);
+
+      service.markNavigationReady();
       expect(service.hasPendingNotificationListOpen, isTrue);
 
       await tester.pumpWidget(
