@@ -9,6 +9,10 @@ import 'package:lakiite/domain/interfaces/i_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
 import 'package:lakiite/presentation/my_page/my_page_view_model.dart'
     show timelineSchedulesProvider;
+import 'package:lakiite/presentation/my_page/my_page_view_model.dart'
+    as my_page;
+import 'package:lakiite/presentation/presentation_provider.dart'
+    as presentation;
 import 'package:lakiite/presentation/presentation_provider.dart';
 
 import '../../mock/repositories/mock_auth_repository.dart';
@@ -197,6 +201,16 @@ void main() {
       expect(state.value, isEmpty);
 
       subscription.close();
+    });
+
+    test('my_page は userSchedulesStreamProvider を再定義しない', () {
+      expect(
+        identical(
+          my_page.userSchedulesStreamProvider,
+          presentation.userSchedulesStreamProvider,
+        ),
+        isTrue,
+      );
     });
 
     test('timelineSchedulesProvider はログアウト時に空配列へ切り替わる', () async {

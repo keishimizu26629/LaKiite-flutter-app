@@ -15,6 +15,9 @@ import '../../presentation/presentation_provider.dart';
 import '../../infrastructure/providers.dart';
 import 'package:lakiite/utils/logger.dart';
 
+export '../../presentation/presentation_provider.dart'
+    show userSchedulesStreamProvider;
+
 final selectedImageProvider = StateProvider<File?>((ref) => null);
 
 final myPageEditingProvider = StateProvider<bool>((ref) => false);
@@ -31,23 +34,6 @@ final timelineSchedulesProvider = StreamProvider<List<Schedule>>((ref) {
       return ref
           .watch(scheduleRepositoryProvider)
           .watchUserSchedules(state.user!.id);
-    },
-    loading: () => Stream.value([]),
-    error: (_, __) => Stream.value([]),
-  );
-});
-
-final userSchedulesStreamProvider =
-    StreamProvider.family<List<Schedule>, String>((ref, userId) {
-  final authState = ref.watch(authNotifierProvider);
-
-  return authState.when(
-    data: (state) {
-      if (state.status != AuthStatus.authenticated || state.user == null) {
-        return Stream.value([]);
-      }
-
-      return ref.watch(scheduleRepositoryProvider).watchUserSchedules(userId);
     },
     loading: () => Stream.value([]),
     error: (_, __) => Stream.value([]),
