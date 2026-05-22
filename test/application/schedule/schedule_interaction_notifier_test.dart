@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lakiite/app/di/providers.dart';
 import 'package:lakiite/application/auth/auth_notifier.dart' as auth;
 import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/application/notification/notification_notifier.dart'
@@ -20,7 +21,6 @@ import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
 import 'package:lakiite/domain/interfaces/i_user_repository.dart';
 import 'package:lakiite/domain/value/user_id.dart';
 import 'package:lakiite/infrastructure/firebase/push_notification_sender.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
 
 class _StubAuthNotifier extends auth.AuthNotifier {
   _StubAuthNotifier(this._state);
@@ -71,7 +71,9 @@ class _FakeScheduleRepository implements IScheduleRepository {
 
   @override
   Stream<List<Schedule>> watchUserSchedulesForMonth(
-          String userId, DateTime displayMonth) =>
+    String userId,
+    DateTime displayMonth,
+  ) =>
       Stream<List<Schedule>>.error(UnimplementedError());
 }
 
@@ -145,47 +147,61 @@ class _FakeUserRepository implements IUserRepository {
 class _FakeNotificationRepository implements INotificationRepository {
   @override
   Future<void> createNotification(
-      domain_notification.Notification notification) async {}
+    domain_notification.Notification notification,
+  ) async {}
 
   @override
   Future<void> updateNotification(
-          domain_notification.Notification notification) =>
+    domain_notification.Notification notification,
+  ) =>
       Future.error(UnimplementedError());
 
   @override
   Future<domain_notification.Notification?> getNotification(
-          String notificationId) =>
+    String notificationId,
+  ) =>
       Future.error(UnimplementedError());
 
   @override
   Stream<List<domain_notification.Notification>> watchReceivedNotifications(
-          String userId) =>
+    String userId,
+  ) =>
       const Stream.empty();
 
   @override
   Stream<List<domain_notification.Notification>>
       watchReceivedNotificationsByType(
-              String userId, domain_notification.NotificationType type) =>
+    String userId,
+    domain_notification.NotificationType type,
+  ) =>
           const Stream.empty();
 
   @override
   Stream<List<domain_notification.Notification>> watchSentNotifications(
-          String userId) =>
+    String userId,
+  ) =>
       const Stream.empty();
 
   @override
   Stream<List<domain_notification.Notification>> watchSentNotificationsByType(
-          String userId, domain_notification.NotificationType type) =>
+    String userId,
+    domain_notification.NotificationType type,
+  ) =>
       const Stream.empty();
 
   @override
   Future<bool> hasPendingFriendRequest(
-          String fromUserId, String toUserId) async =>
+    String fromUserId,
+    String toUserId,
+  ) async =>
       false;
 
   @override
   Future<bool> hasPendingGroupInvitation(
-          String fromUserId, String toUserId, String groupId) async =>
+    String fromUserId,
+    String toUserId,
+    String groupId,
+  ) async =>
       false;
 
   @override
@@ -205,7 +221,9 @@ class _FakeNotificationRepository implements INotificationRepository {
 
   @override
   Stream<int> watchUnreadCountByType(
-          String userId, domain_notification.NotificationType type) =>
+    String userId,
+    domain_notification.NotificationType type,
+  ) =>
       const Stream.empty();
 }
 
@@ -246,16 +264,17 @@ class _FakeScheduleInteractionRepository
         _latestReactions = null,
         _commentsController =
             StreamController<List<ScheduleComment>>.broadcast() {
-    _reactionsController =
-        StreamController<List<ScheduleReaction>>.broadcast(onListen: () {
-      if (!_reactionListener.isCompleted) {
-        _reactionListener.complete();
-      }
-      final latest = _latestReactions;
-      if (latest != null) {
-        _reactionsController.add(latest);
-      }
-    });
+    _reactionsController = StreamController<List<ScheduleReaction>>.broadcast(
+      onListen: () {
+        if (!_reactionListener.isCompleted) {
+          _reactionListener.complete();
+        }
+        final latest = _latestReactions;
+        if (latest != null) {
+          _reactionsController.add(latest);
+        }
+      },
+    );
     _commentsController.add(const <ScheduleComment>[]);
   }
 
@@ -283,7 +302,10 @@ class _FakeScheduleInteractionRepository
 
   @override
   Future<String> addReaction(
-      String scheduleId, String userId, ReactionType type) {
+    String scheduleId,
+    String userId,
+    ReactionType type,
+  ) {
     addReactionCompleter ??= Completer<String>();
     return addReactionCompleter!.future;
   }
@@ -318,7 +340,10 @@ class _FakeScheduleInteractionRepository
 
   @override
   Future<void> updateComment(
-          String scheduleId, String commentId, String content) =>
+    String scheduleId,
+    String commentId,
+    String content,
+  ) =>
       Future.error(UnimplementedError());
 
   @override
@@ -340,122 +365,123 @@ void main() {
       AppConfig.initialize(Environment.development);
     });
 
-    test('toggleReaction should retain concurrent reactions from other users',
-        () async {
-      final user = UserModel(
-        publicProfile: PublicUserModel(
-          id: 'user-1',
-          displayName: 'User One',
-          searchId: UserId('USRTEST1'),
-          iconUrl: null,
-          shortBio: null,
-        ),
-        privateProfile: PrivateUserModel(
-          id: 'user-1',
-          name: 'User One',
-          friends: const [],
-          groups: const [],
-          lists: const [],
+    test(
+      'toggleReaction should retain concurrent reactions from other users',
+      () async {
+        final user = UserModel(
+          publicProfile: PublicUserModel(
+            id: 'user-1',
+            displayName: 'User One',
+            searchId: UserId('USRTEST1'),
+            iconUrl: null,
+            shortBio: null,
+          ),
+          privateProfile: PrivateUserModel(
+            id: 'user-1',
+            name: 'User One',
+            friends: const [],
+            groups: const [],
+            lists: const [],
+            createdAt: DateTime(2024, 1, 1),
+          ),
+        );
+
+        final schedule = Schedule(
+          id: 'schedule-1',
+          title: 'Sample',
+          description: 'Desc',
+          startDateTime: DateTime(2024, 1, 1, 10),
+          endDateTime: DateTime(2024, 1, 1, 12),
+          ownerId: user.id,
+          ownerDisplayName: user.displayName,
+          sharedLists: const [],
+          visibleTo: const [],
           createdAt: DateTime(2024, 1, 1),
-        ),
-      );
+          updatedAt: DateTime(2024, 1, 1),
+        );
 
-      final schedule = Schedule(
-        id: 'schedule-1',
-        title: 'Sample',
-        description: 'Desc',
-        startDateTime: DateTime(2024, 1, 1, 10),
-        endDateTime: DateTime(2024, 1, 1, 12),
-        ownerId: user.id,
-        ownerDisplayName: user.displayName,
-        sharedLists: const [],
-        visibleTo: const [],
-        createdAt: DateTime(2024, 1, 1),
-        updatedAt: DateTime(2024, 1, 1),
-      );
+        final repository = _FakeScheduleInteractionRepository();
+        addTearDown(repository.dispose);
 
-      final repository = _FakeScheduleInteractionRepository();
-      addTearDown(repository.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(user)),
+            ),
+            scheduleInteractionRepositoryProvider.overrideWithValue(repository),
+            scheduleInteractionNotifierProvider.overrideWith((ref, scheduleId) {
+              return ScheduleInteractionNotifier(
+                ref.watch(scheduleInteractionRepositoryProvider),
+                scheduleId,
+                ref,
+                enablePushNotifications: false,
+              );
+            }),
+            scheduleRepositoryProvider.overrideWithValue(
+              _FakeScheduleRepository(schedule),
+            ),
+            userRepositoryProvider.overrideWithValue(_FakeUserRepository(user)),
+            notification.notificationRepositoryProvider.overrideWithValue(
+              _FakeNotificationRepository(),
+            ),
+            notification.notificationNotifierProvider.overrideWith((ref) {
+              return _FakeNotificationNotifier(ref);
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final container = ProviderContainer(
-        overrides: [
-          authNotifierProvider.overrideWith(
-              () => _StubAuthNotifier(AuthState.authenticated(user))),
-          scheduleInteractionRepositoryProvider.overrideWithValue(repository),
-          scheduleInteractionNotifierProvider.overrideWith((ref, scheduleId) {
-            return ScheduleInteractionNotifier(
-              ref.watch(scheduleInteractionRepositoryProvider),
-              scheduleId,
-              ref,
-              enablePushNotifications: false,
-            );
-          }),
-          scheduleRepositoryProvider.overrideWithValue(
-            _FakeScheduleRepository(schedule),
-          ),
-          userRepositoryProvider.overrideWithValue(
-            _FakeUserRepository(user),
-          ),
-          notification.notificationRepositoryProvider
-              .overrideWithValue(_FakeNotificationRepository()),
-          notification.notificationNotifierProvider.overrideWith((ref) {
-            return _FakeNotificationNotifier(ref);
-          }),
-        ],
-      );
-      addTearDown(container.dispose);
+        final provider = scheduleInteractionNotifierProvider(schedule.id);
 
-      final provider = scheduleInteractionNotifierProvider(schedule.id);
+        // Ensure notifier is created and subscriptions are active.
+        container.read(provider);
+        await repository.waitForReactionListener();
 
-      // Ensure notifier is created and subscriptions are active.
-      container.read(provider);
-      await repository.waitForReactionListener();
+        final existing = ScheduleReaction(
+          id: 'reaction-1',
+          userId: 'friend-1',
+          type: ReactionType.going,
+          createdAt: DateTime(2024, 1, 1),
+          userDisplayName: 'Friend',
+        );
+        repository.emitReactions([existing]);
+        await Future.microtask(() {});
 
-      final existing = ScheduleReaction(
-        id: 'reaction-1',
-        userId: 'friend-1',
-        type: ReactionType.going,
-        createdAt: DateTime(2024, 1, 1),
-        userDisplayName: 'Friend',
-      );
-      repository.emitReactions([existing]);
-      await Future.microtask(() {});
+        expect(container.read(provider).reactions.map((r) => r.id), [
+          'reaction-1',
+        ]);
 
-      expect(
-        container.read(provider).reactions.map((r) => r.id),
-        ['reaction-1'],
-      );
+        final remote = ScheduleReaction(
+          id: 'reaction-2',
+          userId: 'friend-2',
+          type: ReactionType.thinking,
+          createdAt: DateTime(2024, 1, 1, 1),
+          userDisplayName: 'Friend Two',
+        );
 
-      final remote = ScheduleReaction(
-        id: 'reaction-2',
-        userId: 'friend-2',
-        type: ReactionType.thinking,
-        createdAt: DateTime(2024, 1, 1, 1),
-        userDisplayName: 'Friend Two',
-      );
+        repository.addReactionCompleter = Completer<String>();
 
-      repository.addReactionCompleter = Completer<String>();
+        final toggleFuture = container
+            .read(provider.notifier)
+            .toggleReaction(user.id, ReactionType.going);
 
-      final toggleFuture = container
-          .read(provider.notifier)
-          .toggleReaction(user.id, ReactionType.going);
+        await Future.microtask(() {});
 
-      await Future.microtask(() {});
+        repository.emitReactions([existing, remote]);
+        await Future.microtask(() {});
 
-      repository.emitReactions([existing, remote]);
-      await Future.microtask(() {});
+        repository.addReactionCompleter!.complete('reaction-current-user');
 
-      repository.addReactionCompleter!.complete('reaction-current-user');
+        await toggleFuture;
 
-      await toggleFuture;
+        final finalState = container.read(provider);
 
-      final finalState = container.read(provider);
-
-      expect(finalState.reactions.length, 3);
-      expect(
-        finalState.reactions.map((r) => r.id),
-        containsAll(['reaction-1', 'reaction-2', 'reaction-current-user']),
-      );
-    });
+        expect(finalState.reactions.length, 3);
+        expect(
+          finalState.reactions.map((r) => r.id),
+          containsAll(['reaction-1', 'reaction-2', 'reaction-current-user']),
+        );
+      },
+    );
   });
 }

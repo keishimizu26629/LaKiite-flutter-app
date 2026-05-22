@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lakiite/application/auth/auth_notifier.dart';
 import 'package:lakiite/application/auth/auth_state.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
 import '../bottom_navigation/bottom_navigation.dart';
 import '../login/login_page.dart';
 

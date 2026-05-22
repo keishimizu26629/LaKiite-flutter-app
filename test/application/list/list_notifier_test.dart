@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lakiite/app/di/providers.dart';
+import 'package:lakiite/application/auth/auth_notifier.dart';
+import 'package:lakiite/application/list/list_notifier.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/domain/interfaces/i_list_repository.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
 
 import '../../../mock/repositories/mock_auth_repository.dart';
 import '../../../mock/repositories/mock_user_repository.dart';
@@ -38,8 +40,7 @@ class _TrackingListRepository implements IListRepository {
     required String ownerId,
     String? iconUrl,
     String? description,
-  }) =>
-      Future.error(UnimplementedError());
+  }) => Future.error(UnimplementedError());
 
   @override
   Future<void> deleteList(String listId) => Future.error(UnimplementedError());

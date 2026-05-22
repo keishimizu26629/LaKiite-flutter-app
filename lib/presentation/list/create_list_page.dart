@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../application/auth/auth_notifier.dart';
 import '../../application/auth/auth_state.dart';
-import '../presentation_provider.dart';
+import '../../application/list/list_notifier.dart';
 
 /// プライベートリスト作成画面を表示するウィジェット
 ///

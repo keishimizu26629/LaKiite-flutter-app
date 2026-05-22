@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lakiite/application/auth/auth_notifier.dart' as notifier;
 import 'package:lakiite/application/auth/auth_state.dart';
+import 'package:lakiite/app/di/providers.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
 import 'package:lakiite/domain/interfaces/i_user_repository.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../mock/repository/mock_auth_repository.dart';
 
@@ -21,12 +21,8 @@ class _ThrowingScheduleRepository implements IScheduleRepository {
 }
 
 /// テスト用のプロバイダーコンテナーを作成する関数
-ProviderContainer createTestProviderContainer({
-  List<Override>? overrides,
-}) {
-  return ProviderContainer(
-    overrides: overrides ?? [],
-  );
+ProviderContainer createTestProviderContainer({List<Override>? overrides}) {
+  return ProviderContainer(overrides: overrides ?? []);
 }
 
 void main() {
@@ -74,8 +70,9 @@ void main() {
       );
       mockAuthRepository.setCurrentUser(testUser);
 
-      final authNotifier =
-          container.read(notifier.authNotifierProvider.notifier);
+      final authNotifier = container.read(
+        notifier.authNotifierProvider.notifier,
+      );
 
       // 実行: アカウント削除を実行
       bool result;
@@ -93,8 +90,11 @@ void main() {
       try {
         final state = container.read(notifier.authNotifierProvider);
         expect(state.hasValue, isTrue, reason: '認証状態に値が存在することを確認');
-        expect(state.value?.isAuthenticated, isFalse,
-            reason: '認証状態が未認証になっていることを確認');
+        expect(
+          state.value?.isAuthenticated,
+          isFalse,
+          reason: '認証状態が未認証になっていることを確認',
+        );
       } catch (e) {
         // 認証状態の確認でエラーが発生しても、主要な機能（削除）は成功している
         print('認証状態確認でエラー（無視）: $e');
@@ -110,8 +110,9 @@ void main() {
       mockAuthRepository.setCurrentUser(testUser);
       mockAuthRepository.setShouldFailDelete(true);
 
-      final authNotifier =
-          container.read(notifier.authNotifierProvider.notifier);
+      final authNotifier = container.read(
+        notifier.authNotifierProvider.notifier,
+      );
 
       // 実行 & 検証: 適切な例外が投げられることを確認
       try {
@@ -128,8 +129,9 @@ void main() {
       // 準備: 未ログイン状態
       mockAuthRepository.setCurrentUser(null);
 
-      final authNotifier =
-          container.read(notifier.authNotifierProvider.notifier);
+      final authNotifier = container.read(
+        notifier.authNotifierProvider.notifier,
+      );
 
       // 実行 & 検証: 適切な例外が投げられることを確認
       try {
@@ -149,8 +151,9 @@ void main() {
       );
       mockAuthRepository.setCurrentUser(testUser);
 
-      final authNotifier =
-          container.read(notifier.authNotifierProvider.notifier);
+      final authNotifier = container.read(
+        notifier.authNotifierProvider.notifier,
+      );
 
       // 実行: アカウント削除
       bool result;
@@ -184,13 +187,15 @@ void main() {
       );
       mockAuthRepository.setCurrentUser(testUser);
 
-      final authNotifier =
-          container.read(notifier.authNotifierProvider.notifier);
+      final authNotifier = container.read(
+        notifier.authNotifierProvider.notifier,
+      );
 
       // 実行: 再認証
       try {
-        final result =
-            await authNotifier.reauthenticateWithPassword('password123');
+        final result = await authNotifier.reauthenticateWithPassword(
+          'password123',
+        );
         expect(result, equals(true), reason: '再認証が成功することを確認');
       } catch (e) {
         fail('再認証でエラーが発生しました: $e');
@@ -205,8 +210,9 @@ void main() {
       );
       mockAuthRepository.setCurrentUser(testUser);
 
-      final authNotifier =
-          container.read(notifier.authNotifierProvider.notifier);
+      final authNotifier = container.read(
+        notifier.authNotifierProvider.notifier,
+      );
 
       // 実行 & 検証: 空のパスワードで再認証エラー
       try {
@@ -226,13 +232,15 @@ void main() {
       );
       mockAuthRepository.setCurrentUser(testUser);
 
-      final authNotifier =
-          container.read(notifier.authNotifierProvider.notifier);
+      final authNotifier = container.read(
+        notifier.authNotifierProvider.notifier,
+      );
 
       // 実行: 再認証付きアカウント削除
       try {
-        final result =
-            await authNotifier.deleteAccountWithReauth('password123');
+        final result = await authNotifier.deleteAccountWithReauth(
+          'password123',
+        );
         expect(result, equals(true), reason: '再認証付きアカウント削除が成功することを確認');
       } catch (e) {
         fail('再認証付きアカウント削除でエラーが発生しました: $e');
@@ -266,8 +274,9 @@ void main() {
             });
           }),
           userRepositoryProvider.overrideWithValue(_ThrowingUserRepository()),
-          scheduleRepositoryProvider
-              .overrideWithValue(_ThrowingScheduleRepository()),
+          scheduleRepositoryProvider.overrideWithValue(
+            _ThrowingScheduleRepository(),
+          ),
         ],
       );
 
@@ -277,8 +286,9 @@ void main() {
       );
       mockAuthRepository.setCurrentUser(testUser);
 
-      final authNotifier =
-          isolatedContainer.read(notifier.authNotifierProvider.notifier);
+      final authNotifier = isolatedContainer.read(
+        notifier.authNotifierProvider.notifier,
+      );
 
       final result = await authNotifier.deleteAccount();
       expect(result, isTrue);
@@ -299,8 +309,9 @@ void main() {
             });
           }),
           userRepositoryProvider.overrideWithValue(_ThrowingUserRepository()),
-          scheduleRepositoryProvider
-              .overrideWithValue(_ThrowingScheduleRepository()),
+          scheduleRepositoryProvider.overrideWithValue(
+            _ThrowingScheduleRepository(),
+          ),
         ],
       );
 
@@ -310,8 +321,9 @@ void main() {
       );
       mockAuthRepository.setCurrentUser(testUser);
 
-      final authNotifier =
-          isolatedContainer.read(notifier.authNotifierProvider.notifier);
+      final authNotifier = isolatedContainer.read(
+        notifier.authNotifierProvider.notifier,
+      );
 
       final result = await authNotifier.deleteAccountWithReauth('password123');
       expect(result, isTrue);

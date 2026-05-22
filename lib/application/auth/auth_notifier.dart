@@ -19,7 +19,7 @@ part 'auth_notifier.g.dart';
 /// - [ref] Riverpodのプロバイダー参照
 ///
 /// 依存:
-/// - [userRepositoryProvider] ユーザー情報管理用（presentation_provider.dartで定義）
+/// - [userRepositoryProvider] ユーザー情報管理用（app/di/providers.dartで定義）
 /// - [FirebaseAuth] 認証基盤
 ///
 /// 戻り値:
@@ -115,10 +115,13 @@ class AuthNotifier extends _$AuthNotifier {
     state = signInResult;
 
     state.whenOrNull(
-      data: (authState) => AppLogger.debugOnly(
-          'signIn完了: status=${authState.status}, userId=${authState.user?.id}'),
-      error: (error, stackTrace) =>
-          AppLogger.errorOnly('signIn失敗', error, stackTrace),
+      data:
+          (authState) => AppLogger.debugOnly(
+            'signIn完了: status=${authState.status}, userId=${authState.user?.id}',
+          ),
+      error:
+          (error, stackTrace) =>
+              AppLogger.errorOnly('signIn失敗', error, stackTrace),
     );
 
     if (signInResult.hasError) {
@@ -140,10 +143,15 @@ class AuthNotifier extends _$AuthNotifier {
   /// 戻り値:
   /// - 登録成功時は[AuthState.authenticated]
   /// - 失敗時は[AuthState.unauthenticated]
-  Future<void> signUp(String email, String password, String name,
-      {String? displayName}) async {
+  Future<void> signUp(
+    String email,
+    String password,
+    String name, {
+    String? displayName,
+  }) async {
     AppLogger.debugOnly(
-        'signUp開始: email=$email, name=$name, displayName=${displayName ?? '(null)'}');
+      'signUp開始: email=$email, name=$name, displayName=${displayName ?? '(null)'}',
+    );
 
     // ローディング状態に設定
     state = const AsyncLoading();
@@ -186,10 +194,13 @@ class AuthNotifier extends _$AuthNotifier {
     state = signUpResult;
 
     state.whenOrNull(
-      data: (authState) => AppLogger.debugOnly(
-          'signUp完了: status=${authState.status}, userId=${authState.user?.id}'),
-      error: (error, stackTrace) =>
-          AppLogger.errorOnly('signUp失敗', error, stackTrace),
+      data:
+          (authState) => AppLogger.debugOnly(
+            'signUp完了: status=${authState.status}, userId=${authState.user?.id}',
+          ),
+      error:
+          (error, stackTrace) =>
+              AppLogger.errorOnly('signUp失敗', error, stackTrace),
     );
 
     if (signUpResult.hasError) {
@@ -267,8 +278,9 @@ class AuthNotifier extends _$AuthNotifier {
       // iOS の場合のみ実行
       if (Platform.isIOS) {
         // WKWebView のキャッシュを完全にクリア
-        await const MethodChannel('flutter/webview')
-            .invokeMethod('clearWebViewCache');
+        await const MethodChannel(
+          'flutter/webview',
+        ).invokeMethod('clearWebViewCache');
         AppLogger.debug('WebViewキャッシュをクリアしました');
       }
     } on MissingPluginException catch (e) {
@@ -283,8 +295,9 @@ class AuthNotifier extends _$AuthNotifier {
     try {
       if (Platform.isIOS) {
         // iOS WebView プラットフォームビューのリセット
-        const MethodChannel('flutter/platform_views')
-            .setMethodCallHandler(null);
+        const MethodChannel(
+          'flutter/platform_views',
+        ).setMethodCallHandler(null);
         AppLogger.debug('プラットフォームビューをリセットしました');
       }
     } catch (e) {
@@ -346,8 +359,9 @@ class AuthNotifier extends _$AuthNotifier {
   Future<bool> reauthenticateWithPassword(String password) async {
     try {
       AppLogger.debug('再認証処理を開始します');
-      final success =
-          await _authRepository.reauthenticateWithPassword(password);
+      final success = await _authRepository.reauthenticateWithPassword(
+        password,
+      );
       if (success) {
         AppLogger.debug('再認証が正常に完了しました');
       }

@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lakiite/app/di/providers.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
 import 'package:lakiite/domain/interfaces/i_user_repository.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
 
 class _FakeFirebaseUser implements firebase_auth.User {
   _FakeFirebaseUser(this._uid);
@@ -66,8 +66,9 @@ class _TrackingScheduleRepository implements IScheduleRepository {
 
   @override
   Stream<List<Schedule>> watchUserSchedulesForMonth(
-          String userId, DateTime displayMonth) =>
-      const Stream.empty();
+    String userId,
+    DateTime displayMonth,
+  ) => const Stream.empty();
 
   @override
   Stream<List<Schedule>> watchListSchedules(String listId) =>
@@ -103,7 +104,7 @@ void main() {
     late _FakeFirebaseAuth firebaseAuth;
     late ProviderSubscription<IUserRepository> userRepositorySubscription;
     late ProviderSubscription<IScheduleRepository>
-        scheduleRepositorySubscription;
+    scheduleRepositorySubscription;
     var userRepositoryInstanceCount = 0;
     var scheduleRepositoryInstanceCount = 0;
 
@@ -148,21 +149,23 @@ void main() {
 
       final signedInUserRepository =
           container.read(userRepositoryProvider) as _TrackingUserRepository;
-      final signedInScheduleRepository = container.read(
-        scheduleRepositoryProvider,
-      ) as _TrackingScheduleRepository;
+      final signedInScheduleRepository =
+          container.read(scheduleRepositoryProvider)
+              as _TrackingScheduleRepository;
 
       firebaseAuth.setCurrentUser(null);
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
       final signedOutUserRepository =
           container.read(userRepositoryProvider) as _TrackingUserRepository;
-      final signedOutScheduleRepository = container.read(
-        scheduleRepositoryProvider,
-      ) as _TrackingScheduleRepository;
+      final signedOutScheduleRepository =
+          container.read(scheduleRepositoryProvider)
+              as _TrackingScheduleRepository;
 
-      expect(signedOutUserRepository.instanceId,
-          isNot(signedInUserRepository.instanceId));
+      expect(
+        signedOutUserRepository.instanceId,
+        isNot(signedInUserRepository.instanceId),
+      );
       expect(
         signedOutScheduleRepository.instanceId,
         isNot(signedInScheduleRepository.instanceId),
@@ -175,18 +178,18 @@ void main() {
 
       final userARepository =
           container.read(userRepositoryProvider) as _TrackingUserRepository;
-      final scheduleUserARepository = container.read(
-        scheduleRepositoryProvider,
-      ) as _TrackingScheduleRepository;
+      final scheduleUserARepository =
+          container.read(scheduleRepositoryProvider)
+              as _TrackingScheduleRepository;
 
       firebaseAuth.setCurrentUser(_FakeFirebaseUser('user-b'));
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
       final userBRepository =
           container.read(userRepositoryProvider) as _TrackingUserRepository;
-      final scheduleUserBRepository = container.read(
-        scheduleRepositoryProvider,
-      ) as _TrackingScheduleRepository;
+      final scheduleUserBRepository =
+          container.read(scheduleRepositoryProvider)
+              as _TrackingScheduleRepository;
 
       expect(userBRepository.instanceId, isNot(userARepository.instanceId));
       expect(

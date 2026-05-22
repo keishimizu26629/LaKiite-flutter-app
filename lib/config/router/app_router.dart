@@ -13,7 +13,7 @@ import '../../presentation/settings/settings_page.dart';
 import '../../presentation/settings/account_deletion_webview_page.dart';
 import '../../presentation/signup/signup.dart';
 import '../../presentation/splash/splash_screen.dart';
-import '../../presentation/presentation_provider.dart';
+import '../../application/auth/auth_notifier.dart';
 import '../../infrastructure/notification_navigation_service.dart';
 
 /// アプリケーションのルーティング設定を提供するプロバイダー

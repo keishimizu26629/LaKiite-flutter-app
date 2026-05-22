@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lakiite/application/auth/auth_notifier.dart';
+import 'package:lakiite/application/schedule/schedule_notifier.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
+import 'package:lakiite/presentation/list/list_providers.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/presentation/list/list_detail_page.dart';
 
