@@ -7,6 +7,8 @@ import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/domain/interfaces/i_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
+import 'package:lakiite/application/schedule/schedule_notifier.dart'
+    as schedule_app;
 import 'package:lakiite/presentation/my_page/my_page_view_model.dart'
     show timelineSchedulesProvider;
 import 'package:lakiite/presentation/my_page/my_page_view_model.dart'
@@ -209,6 +211,16 @@ void main() {
       expect(state.value, isEmpty);
 
       subscription.close();
+    });
+
+    test('presentation_provider は scheduleNotifierProvider を再定義しない', () {
+      expect(
+        identical(
+          schedule_app.scheduleNotifierProvider,
+          presentation.scheduleNotifierProvider,
+        ),
+        isTrue,
+      );
     });
 
     test('presentation_provider は userSchedulesStreamProvider を再定義しない', () {
