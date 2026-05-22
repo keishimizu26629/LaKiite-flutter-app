@@ -11,6 +11,8 @@ import 'package:lakiite/presentation/my_page/my_page_view_model.dart'
     show timelineSchedulesProvider;
 import 'package:lakiite/presentation/my_page/my_page_view_model.dart'
     as my_page;
+import 'package:lakiite/presentation/calendar/calendar_providers.dart'
+    as calendar;
 import 'package:lakiite/presentation/presentation_provider.dart'
     as presentation;
 import 'package:lakiite/presentation/presentation_provider.dart';
@@ -208,6 +210,16 @@ void main() {
         identical(
           my_page.userSchedulesStreamProvider,
           presentation.userSchedulesStreamProvider,
+        ),
+        isTrue,
+      );
+    });
+
+    test('presentation_provider は selectedDateProvider を再定義しない', () {
+      expect(
+        identical(
+          calendar.selectedDateProvider,
+          presentation.selectedDateProvider,
         ),
         isTrue,
       );

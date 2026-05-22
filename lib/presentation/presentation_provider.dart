@@ -15,6 +15,8 @@ export 'package:lakiite/application/notification/notification_notifier.dart'
     show currentUserIdProvider;
 export 'package:lakiite/application/auth/auth_notifier.dart'
     show authNotifierProvider, authRepositoryProvider;
+export 'package:lakiite/presentation/calendar/calendar_providers.dart'
+    show selectedDateProvider;
 
 /// 認証状態プロバイダー群
 // 認証状態の変更を監視するプロバイダー
@@ -157,9 +159,4 @@ final userSchedulesStreamProvider =
     loading: () => Stream.value([]),
     error: (_, __) => Stream.value([]),
   );
-});
-
-// 現在選択されている日付を保持するプロバイダー
-final selectedDateProvider = StateProvider<DateTime>((ref) {
-  return DateTime.now();
 });
