@@ -13,6 +13,8 @@ import 'package:lakiite/presentation/my_page/my_page_view_model.dart'
     as my_page;
 import 'package:lakiite/presentation/calendar/calendar_providers.dart'
     as calendar;
+import 'package:lakiite/presentation/calendar/schedule_providers.dart'
+    as calendar_schedule;
 import 'package:lakiite/presentation/list/list_providers.dart' as list_feature;
 import 'package:lakiite/presentation/friend/friend_providers.dart'
     as friend_feature;
@@ -207,6 +209,16 @@ void main() {
       expect(state.value, isEmpty);
 
       subscription.close();
+    });
+
+    test('presentation_provider は userSchedulesStreamProvider を再定義しない', () {
+      expect(
+        identical(
+          calendar_schedule.userSchedulesStreamProvider,
+          presentation.userSchedulesStreamProvider,
+        ),
+        isTrue,
+      );
     });
 
     test('my_page は userSchedulesStreamProvider を再定義しない', () {

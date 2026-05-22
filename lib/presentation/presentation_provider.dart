@@ -1,12 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lakiite/app/di/providers.dart';
 import 'package:lakiite/application/auth/auth_notifier.dart';
-import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/application/list/list_notifier.dart';
 import 'package:lakiite/application/list/list_state.dart';
 import 'package:lakiite/application/schedule/schedule_notifier.dart';
 import 'package:lakiite/application/schedule/schedule_state.dart';
-import '../domain/entity/schedule.dart';
 
 export 'package:lakiite/app/di/providers.dart';
 export 'package:lakiite/application/notification/notification_notifier.dart'
@@ -15,6 +12,8 @@ export 'package:lakiite/application/auth/auth_notifier.dart'
     show authNotifierProvider, authRepositoryProvider;
 export 'package:lakiite/presentation/calendar/calendar_providers.dart'
     show selectedDateProvider;
+export 'package:lakiite/presentation/calendar/schedule_providers.dart'
+    show userSchedulesStreamProvider;
 export 'package:lakiite/presentation/list/list_providers.dart'
     show listStreamProvider, userListsStreamProvider;
 export 'package:lakiite/presentation/friend/friend_providers.dart'
@@ -42,23 +41,3 @@ final listNotifierProvider =
     AutoDisposeAsyncNotifierProvider<ListNotifier, ListState>(
   ListNotifier.new,
 );
-
-/// ユーザーのスケジュール一覧をリアルタイムで監視するStreamプロバイダー
-///
-/// [userId] 監視対象のユーザーID
-final userSchedulesStreamProvider =
-    StreamProvider.family<List<Schedule>, String>((ref, userId) {
-  final authState = ref.watch(authNotifierProvider);
-
-  return authState.when(
-    data: (state) {
-      if (state.status != AuthStatus.authenticated || state.user == null) {
-        return Stream.value([]);
-      }
-
-      return ref.watch(scheduleRepositoryProvider).watchUserSchedules(userId);
-    },
-    loading: () => Stream.value([]),
-    error: (_, __) => Stream.value([]),
-  );
-});
