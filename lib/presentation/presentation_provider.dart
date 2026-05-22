@@ -19,6 +19,8 @@ export 'package:lakiite/presentation/calendar/calendar_providers.dart'
     show selectedDateProvider;
 export 'package:lakiite/presentation/list/list_providers.dart'
     show userListsStreamProvider;
+export 'package:lakiite/presentation/friend/friend_providers.dart'
+    show userFriendsProvider, userFriendsStreamProvider;
 
 /// 認証状態プロバイダー群
 // 認証状態の変更を監視するプロバイダー
@@ -81,43 +83,6 @@ final listStreamProvider =
     loading: () => Stream.value(null),
     error: (_, __) => Stream.value(null),
   );
-});
-
-/// 認証済みユーザーのフレンド一覧を監視するStreamプロバイダー
-///
-/// UserManagerを使用してフレンド情報を提供します。
-final userFriendsStreamProvider =
-    StreamProvider.autoDispose<List<PublicUserModel>>((ref) {
-  final authState = ref.watch(authNotifierProvider);
-
-  return authState.when(
-    data: (state) {
-      if (state.status != AuthStatus.authenticated || state.user == null) {
-        return Stream.value([]);
-      }
-
-      return ref
-          .watch(userManagerProvider)
-          .watchAuthenticatedUserFriends(state.user!.id);
-    },
-    loading: () => Stream.value([]),
-    error: (_, __) => Stream.value([]),
-  );
-});
-
-/// 認証済みユーザーのフレンド一覧を取得するFutureプロバイダー
-/// アプリ起動時、承認時、手動更新時にのみデータを再取得する
-final userFriendsProvider =
-    FutureProvider.autoDispose<List<PublicUserModel>>((ref) async {
-  final authState = await ref.watch(authNotifierProvider.future);
-
-  if (authState.status == AuthStatus.authenticated && authState.user != null) {
-    return await ref
-        .watch(userManagerProvider)
-        .getAuthenticatedUserFriends(authState.user!.id);
-  } else {
-    return [];
-  }
 });
 
 /// ユーザーのスケジュール一覧をリアルタイムで監視するStreamプロバイダー
