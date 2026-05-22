@@ -19,6 +19,7 @@ import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
 import 'package:lakiite/domain/interfaces/i_user_repository.dart';
 import 'package:lakiite/domain/value/user_id.dart';
+import 'package:lakiite/infrastructure/firebase/push_notification_sender.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 
 class _StubAuthNotifier extends auth.AuthNotifier {
@@ -210,7 +211,14 @@ class _FakeNotificationRepository implements INotificationRepository {
 
 class _FakeNotificationNotifier extends notification.NotificationNotifier {
   _FakeNotificationNotifier(Ref ref)
-      : super(_FakeNotificationRepository(), ref);
+      : super(
+          _FakeNotificationRepository(),
+          PushNotificationSender(
+            cloudFunctionUrl: 'https://example.test/push',
+            tokenResolver: (_) async => const [],
+          ),
+          ref,
+        );
 
   @override
   Future<void> createReactionNotification({
