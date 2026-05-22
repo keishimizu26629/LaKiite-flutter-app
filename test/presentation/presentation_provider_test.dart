@@ -16,6 +16,7 @@ import 'package:lakiite/presentation/calendar/calendar_providers.dart'
 import 'package:lakiite/presentation/list/list_providers.dart' as list_feature;
 import 'package:lakiite/presentation/friend/friend_providers.dart'
     as friend_feature;
+import 'package:lakiite/presentation/user/user_providers.dart' as user_feature;
 import 'package:lakiite/presentation/presentation_provider.dart'
     as presentation;
 import 'package:lakiite/presentation/presentation_provider.dart';
@@ -245,6 +246,16 @@ void main() {
       expect(state.value, isEmpty);
 
       subscription.close();
+    });
+
+    test('presentation_provider は userStreamProvider を再定義しない', () {
+      expect(
+        identical(
+          user_feature.userStreamProvider,
+          presentation.userStreamProvider,
+        ),
+        isTrue,
+      );
     });
 
     test('presentation_provider は friend providers を再定義しない', () {

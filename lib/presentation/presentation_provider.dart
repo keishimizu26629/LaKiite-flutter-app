@@ -6,7 +6,6 @@ import 'package:lakiite/application/list/list_notifier.dart';
 import 'package:lakiite/application/list/list_state.dart';
 import 'package:lakiite/application/schedule/schedule_notifier.dart';
 import 'package:lakiite/application/schedule/schedule_state.dart';
-import 'package:lakiite/domain/entity/user.dart';
 import '../domain/entity/schedule.dart';
 
 export 'package:lakiite/app/di/providers.dart';
@@ -20,6 +19,8 @@ export 'package:lakiite/presentation/list/list_providers.dart'
     show listStreamProvider, userListsStreamProvider;
 export 'package:lakiite/presentation/friend/friend_providers.dart'
     show userFriendsProvider, userFriendsStreamProvider;
+export 'package:lakiite/presentation/user/user_providers.dart'
+    show userStreamProvider;
 
 /// 認証状態プロバイダー群
 // 認証状態の変更を監視するプロバイダー
@@ -41,28 +42,6 @@ final listNotifierProvider =
     AutoDisposeAsyncNotifierProvider<ListNotifier, ListState>(
   ListNotifier.new,
 );
-
-/// 統合されたユーザー情報をリアルタイムで監視するStreamプロバイダー
-///
-/// [userId] 監視対象のユーザーID
-///
-/// UserManagerを使用して統合されたユーザー情報を提供します。
-final userStreamProvider =
-    StreamProvider.family<UserModel?, String>((ref, userId) {
-  final authState = ref.watch(authNotifierProvider);
-
-  return authState.when(
-    data: (state) {
-      if (state.status != AuthStatus.authenticated || state.user == null) {
-        return Stream.value(null);
-      }
-
-      return ref.watch(userManagerProvider).watchIntegratedUser(userId);
-    },
-    loading: () => Stream.value(null),
-    error: (_, __) => Stream.value(null),
-  );
-});
 
 /// ユーザーのスケジュール一覧をリアルタイムで監視するStreamプロバイダー
 ///
