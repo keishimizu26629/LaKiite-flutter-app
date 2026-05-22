@@ -2,13 +2,15 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lakiite/application/auth/auth_notifier.dart' as auth_app;
+import 'package:lakiite/application/list/list_notifier.dart' as list_app;
+import 'package:lakiite/application/schedule/schedule_notifier.dart'
+    as schedule_app;
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/domain/interfaces/i_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
-import 'package:lakiite/application/schedule/schedule_notifier.dart'
-    as schedule_app;
 import 'package:lakiite/presentation/my_page/my_page_view_model.dart'
     show timelineSchedulesProvider;
 import 'package:lakiite/presentation/my_page/my_page_view_model.dart'
@@ -192,6 +194,23 @@ void main() {
       scheduleRepository.dispose();
       mockAuthRepository.dispose();
       container.dispose();
+    });
+
+    test('application notifier providers are re-exported without redefining',
+        () {
+      expect(
+        identical(authStateStreamProvider, auth_app.authStateStreamProvider),
+        isTrue,
+      );
+      expect(
+        identical(
+            scheduleNotifierProvider, schedule_app.scheduleNotifierProvider),
+        isTrue,
+      );
+      expect(
+        identical(listNotifierProvider, list_app.listNotifierProvider),
+        isTrue,
+      );
     });
 
     test('userSchedulesStreamProvider はログアウト時に空配列へ切り替わる', () async {
