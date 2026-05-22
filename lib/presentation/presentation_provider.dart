@@ -17,6 +17,8 @@ export 'package:lakiite/application/auth/auth_notifier.dart'
     show authNotifierProvider, authRepositoryProvider;
 export 'package:lakiite/presentation/calendar/calendar_providers.dart'
     show selectedDateProvider;
+export 'package:lakiite/presentation/list/list_providers.dart'
+    show userListsStreamProvider;
 
 /// 認証状態プロバイダー群
 // 認証状態の変更を監視するプロバイダー
@@ -38,29 +40,6 @@ final listNotifierProvider =
     AutoDisposeAsyncNotifierProvider<ListNotifier, ListState>(
   ListNotifier.new,
 );
-
-/// 認証済みユーザーのリストを監視するStreamプロバイダー
-///
-/// 認証状態に基づいて適切にリストを提供します。
-/// Application層のビジネスロジックに依存しません。
-final userListsStreamProvider =
-    StreamProvider.autoDispose<List<UserList>>((ref) {
-  final authState = ref.watch(authNotifierProvider);
-
-  return authState.when(
-    data: (state) {
-      if (state.status != AuthStatus.authenticated || state.user == null) {
-        return Stream.value([]);
-      }
-
-      return ref
-          .watch(listManagerProvider)
-          .watchAuthenticatedUserLists(state.user!.id);
-    },
-    loading: () => Stream.value([]),
-    error: (_, __) => Stream.value([]),
-  );
-});
 
 /// 統合されたユーザー情報をリアルタイムで監視するStreamプロバイダー
 ///

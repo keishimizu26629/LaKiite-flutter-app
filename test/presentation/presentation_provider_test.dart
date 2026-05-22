@@ -13,6 +13,7 @@ import 'package:lakiite/presentation/my_page/my_page_view_model.dart'
     as my_page;
 import 'package:lakiite/presentation/calendar/calendar_providers.dart'
     as calendar;
+import 'package:lakiite/presentation/list/list_providers.dart' as list_feature;
 import 'package:lakiite/presentation/presentation_provider.dart'
     as presentation;
 import 'package:lakiite/presentation/presentation_provider.dart';
@@ -242,6 +243,16 @@ void main() {
       expect(state.value, isEmpty);
 
       subscription.close();
+    });
+
+    test('presentation_provider は userListsStreamProvider を再定義しない', () {
+      expect(
+        identical(
+          list_feature.userListsStreamProvider,
+          presentation.userListsStreamProvider,
+        ),
+        isTrue,
+      );
     });
 
     test('userListsStreamProvider はログアウト時に空配列へ切り替わる', () async {
