@@ -264,6 +264,16 @@ void main() {
       );
     });
 
+    test('presentation_provider は listStreamProvider を再定義しない', () {
+      expect(
+        identical(
+          list_feature.listStreamProvider,
+          presentation.listStreamProvider,
+        ),
+        isTrue,
+      );
+    });
+
     test('presentation_provider は userListsStreamProvider を再定義しない', () {
       expect(
         identical(

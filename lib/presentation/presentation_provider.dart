@@ -6,7 +6,6 @@ import 'package:lakiite/application/list/list_notifier.dart';
 import 'package:lakiite/application/list/list_state.dart';
 import 'package:lakiite/application/schedule/schedule_notifier.dart';
 import 'package:lakiite/application/schedule/schedule_state.dart';
-import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import '../domain/entity/schedule.dart';
 
@@ -18,7 +17,7 @@ export 'package:lakiite/application/auth/auth_notifier.dart'
 export 'package:lakiite/presentation/calendar/calendar_providers.dart'
     show selectedDateProvider;
 export 'package:lakiite/presentation/list/list_providers.dart'
-    show userListsStreamProvider;
+    show listStreamProvider, userListsStreamProvider;
 export 'package:lakiite/presentation/friend/friend_providers.dart'
     show userFriendsProvider, userFriendsStreamProvider;
 
@@ -59,26 +58,6 @@ final userStreamProvider =
       }
 
       return ref.watch(userManagerProvider).watchIntegratedUser(userId);
-    },
-    loading: () => Stream.value(null),
-    error: (_, __) => Stream.value(null),
-  );
-});
-
-/// 特定のリストをリアルタイムで監視するStreamプロバイダー
-///
-/// [listId] 監視対象のリストID
-final listStreamProvider =
-    StreamProvider.family<UserList?, String>((ref, listId) {
-  final authState = ref.watch(authNotifierProvider);
-
-  return authState.when(
-    data: (state) {
-      if (state.status != AuthStatus.authenticated || state.user == null) {
-        return Stream.value(null);
-      }
-
-      return ref.watch(listManagerProvider).watchList(listId);
     },
     loading: () => Stream.value(null),
     error: (_, __) => Stream.value(null),
