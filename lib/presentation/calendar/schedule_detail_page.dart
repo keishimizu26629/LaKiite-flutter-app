@@ -12,6 +12,7 @@ import 'package:lakiite/domain/entity/schedule_comment.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
 import 'package:lakiite/application/schedule/schedule_notifier.dart';
+import 'package:lakiite/presentation/calendar/schedule_detail_logic.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
 import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
 import 'package:lakiite/presentation/widgets/default_user_icon.dart';
@@ -729,18 +730,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
 
   /// 日時の範囲をフォーマットするヘルパーメソッド
   String _formatDateTimeRange(DateTime start, DateTime end) {
-    final dateFormat = DateFormat('yyyy年M月d日（E）', 'ja_JP');
-    final timeFormat = DateFormat('HH:mm', 'ja_JP');
-
-    // 同日の場合は日付を1つだけ表示
-    if (start.year == end.year &&
-        start.month == end.month &&
-        start.day == end.day) {
-      return '${dateFormat.format(start)} ${timeFormat.format(start)} - ${timeFormat.format(end)}';
-    } else {
-      // 日付が異なる場合は両方の日付を表示
-      return '${dateFormat.format(start)} ${timeFormat.format(start)} - ${dateFormat.format(end)} ${timeFormat.format(end)}';
-    }
+    return ScheduleDetailLogic.formatDateTimeRange(start, end);
   }
 
   /// スケジュールに関連する通知を既読にします
@@ -755,12 +745,15 @@ class ScheduleDetailPage extends HookConsumerWidget {
     try {
       // 現在のユーザーを取得
       final authState = ref.read(authNotifierProvider).value;
-      if (authState?.user == null) return;
-
-      final userId = authState!.user!.id;
+      final userId = authState?.user?.id;
 
       // このスケジュールの所有者が自分でなければ何もしない
-      if (schedule.ownerId != userId) return;
+      if (!ScheduleDetailLogic.canMarkRelatedNotificationsAsRead(
+        scheduleOwnerId: schedule.ownerId,
+        currentUserId: userId,
+      )) {
+        return;
+      }
 
       developer.log('スケジュール詳細ページでの通知既読処理を開始: scheduleId=${schedule.id}');
 
@@ -790,15 +783,11 @@ class ScheduleDetailPage extends HookConsumerWidget {
       }
 
       // このスケジュールに関連する未読のリアクション・コメント通知をフィルタリング
-      final unreadRelatedNotifications = notifications
-          .where(
-            (notification) =>
-                !notification.isRead &&
-                (notification.type == domain.NotificationType.reaction ||
-                    notification.type == domain.NotificationType.comment) &&
-                notification.relatedItemId == schedule.id,
-          )
-          .toList();
+      final unreadRelatedNotifications =
+          ScheduleDetailLogic.unreadRelatedNotifications(
+        notifications: notifications,
+        scheduleId: schedule.id,
+      );
 
       developer.log('未読の関連通知数: ${unreadRelatedNotifications.length}件');
       developer.log('現在のスケジュールID: ${schedule.id}');
@@ -882,8 +871,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
     final currentUserId = ref.read(authNotifierProvider).value?.user?.id;
 
     // コメントを日時の昇順でソート
-    final sortedComments = [...interactions.comments]
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final sortedComments =
+        ScheduleDetailLogic.sortedComments(interactions.comments);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -891,10 +880,13 @@ class ScheduleDetailPage extends HookConsumerWidget {
         ...sortedComments.map((comment) {
           // 自分のコメントかどうかをチェック
           final isMyComment =
-              currentUserId != null && comment.userId == currentUserId;
-          final isTargetComment = fromNotification &&
-              notificationType == domain.NotificationType.comment &&
-              interactionId == comment.id;
+              ScheduleDetailLogic.isMyComment(currentUserId, comment);
+          final isTargetComment = ScheduleDetailLogic.isTargetComment(
+            fromNotification: fromNotification,
+            notificationType: notificationType,
+            interactionId: interactionId,
+            comment: comment,
+          );
 
           return Padding(
             key: isTargetComment ? targetCommentKey : null,
