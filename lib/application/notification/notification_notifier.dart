@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entity/notification.dart' as domain;
 import '../../domain/interfaces/i_notification_repository.dart';
+import '../../domain/interfaces/i_user_repository.dart';
 import '../../infrastructure/notification_repository.dart';
 import '../../infrastructure/firebase/push_notification_service.dart';
 import '../../utils/logger.dart';
@@ -16,6 +17,11 @@ typedef NotificationType = domain.NotificationType;
 /// 通知リポジトリのインスタンスを提供する
 final notificationRepositoryProvider = Provider<INotificationRepository>((ref) {
   return NotificationRepository();
+});
+
+/// Push通知送信サービスのインスタンスを提供する
+final pushNotificationSenderProvider = Provider<PushNotificationSender>((ref) {
+  return PushNotificationSender();
 });
 
 /// 現在のユーザーIDを提供するプロバイダー
@@ -118,9 +124,11 @@ final sentNotificationsByTypeProvider =
 /// 各操作の実行中はローディング状態を提供し、
 /// エラーが発生した場合はエラー状態を提供する
 class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
-  NotificationNotifier(this._repository, this._ref)
-      : _pushNotificationSender = PushNotificationSender(),
-        super(const AsyncValue.data(null));
+  NotificationNotifier(
+    this._repository,
+    this._pushNotificationSender,
+    this._ref,
+  ) : super(const AsyncValue.data(null));
   final INotificationRepository _repository;
   final PushNotificationSender _pushNotificationSender;
   final Ref _ref;
@@ -216,6 +224,11 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
       // 通知の内容を取得して、通知タイプを確認
       final notification = await _repository.getNotification(notificationId);
 
+      if (notification != null &&
+          notification.type == NotificationType.friend) {
+        await _connectFriendUsers(notification);
+      }
+
       // 通知を承認
       await _repository.acceptNotification(notificationId);
 
@@ -244,6 +257,32 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }
+  }
+
+  Future<void> _connectFriendUsers(Notification notification) async {
+    final userRepo = _ref.read(userRepositoryProvider);
+    await _addFriendIfNeeded(
+      userRepo,
+      userId: notification.receiveUserId,
+      friendId: notification.sendUserId,
+    );
+    await _addFriendIfNeeded(
+      userRepo,
+      userId: notification.sendUserId,
+      friendId: notification.receiveUserId,
+    );
+  }
+
+  Future<void> _addFriendIfNeeded(
+    IUserRepository userRepo, {
+    required String userId,
+    required String friendId,
+  }) async {
+    final user = await userRepo.getUser(userId);
+    if (user?.friends.contains(friendId) ?? false) {
+      return;
+    }
+    await userRepo.addToList(userId, friendId);
   }
 
   /// 通知を拒否する
@@ -387,5 +426,6 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
 final notificationNotifierProvider =
     StateNotifierProvider<NotificationNotifier, AsyncValue<void>>((ref) {
   final repository = ref.watch(notificationRepositoryProvider);
-  return NotificationNotifier(repository, ref);
+  final pushNotificationSender = ref.watch(pushNotificationSenderProvider);
+  return NotificationNotifier(repository, pushNotificationSender, ref);
 });
