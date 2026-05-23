@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lakiite/presentation/widgets/schedule_tile.dart';
 import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
-import '../../presentation_provider.dart';
+import '../../calendar/schedule_providers.dart';
 
 /// ユーザーの予定一覧を表示するウィジェット
 ///

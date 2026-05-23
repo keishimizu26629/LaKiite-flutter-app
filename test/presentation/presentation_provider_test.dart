@@ -13,6 +13,18 @@ import 'package:lakiite/domain/interfaces/i_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
 import 'package:lakiite/presentation/my_page/my_page_view_model.dart'
     show timelineSchedulesProvider;
+import 'package:lakiite/presentation/my_page/my_page_view_model.dart'
+    as my_page;
+import 'package:lakiite/presentation/calendar/calendar_providers.dart'
+    as calendar;
+import 'package:lakiite/presentation/calendar/schedule_providers.dart'
+    as calendar_schedule;
+import 'package:lakiite/presentation/list/list_providers.dart' as list_feature;
+import 'package:lakiite/presentation/friend/friend_providers.dart'
+    as friend_feature;
+import 'package:lakiite/presentation/user/user_providers.dart' as user_feature;
+import 'package:lakiite/presentation/presentation_provider.dart'
+    as presentation;
 import 'package:lakiite/presentation/presentation_provider.dart';
 
 import '../../mock/repositories/mock_auth_repository.dart';
@@ -220,6 +232,46 @@ void main() {
       subscription.close();
     });
 
+    test('presentation_provider は scheduleNotifierProvider を再定義しない', () {
+      expect(
+        identical(
+          schedule_app.scheduleNotifierProvider,
+          presentation.scheduleNotifierProvider,
+        ),
+        isTrue,
+      );
+    });
+
+    test('presentation_provider は userSchedulesStreamProvider を再定義しない', () {
+      expect(
+        identical(
+          calendar_schedule.userSchedulesStreamProvider,
+          presentation.userSchedulesStreamProvider,
+        ),
+        isTrue,
+      );
+    });
+
+    test('my_page は userSchedulesStreamProvider を再定義しない', () {
+      expect(
+        identical(
+          my_page.userSchedulesStreamProvider,
+          presentation.userSchedulesStreamProvider,
+        ),
+        isTrue,
+      );
+    });
+
+    test('presentation_provider は selectedDateProvider を再定義しない', () {
+      expect(
+        identical(
+          calendar.selectedDateProvider,
+          presentation.selectedDateProvider,
+        ),
+        isTrue,
+      );
+    });
+
     test('timelineSchedulesProvider はログアウト時に空配列へ切り替わる', () async {
       await container.read(authNotifierProvider.future);
 
@@ -237,6 +289,53 @@ void main() {
       expect(state.value, isEmpty);
 
       subscription.close();
+    });
+
+    test('presentation_provider は userStreamProvider を再定義しない', () {
+      expect(
+        identical(
+          user_feature.userStreamProvider,
+          presentation.userStreamProvider,
+        ),
+        isTrue,
+      );
+    });
+
+    test('presentation_provider は friend providers を再定義しない', () {
+      expect(
+        identical(
+          friend_feature.userFriendsStreamProvider,
+          presentation.userFriendsStreamProvider,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          friend_feature.userFriendsProvider,
+          presentation.userFriendsProvider,
+        ),
+        isTrue,
+      );
+    });
+
+    test('presentation_provider は listStreamProvider を再定義しない', () {
+      expect(
+        identical(
+          list_feature.listStreamProvider,
+          presentation.listStreamProvider,
+        ),
+        isTrue,
+      );
+    });
+
+    test('presentation_provider は userListsStreamProvider を再定義しない', () {
+      expect(
+        identical(
+          list_feature.userListsStreamProvider,
+          presentation.userListsStreamProvider,
+        ),
+        isTrue,
+      );
     });
 
     test('userListsStreamProvider はログアウト時に空配列へ切り替わる', () async {

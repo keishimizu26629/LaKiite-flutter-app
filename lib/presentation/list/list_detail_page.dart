@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../app/di/providers.dart';
+import '../../application/list/list_notifier.dart';
 import '../../domain/entity/list.dart';
 import '../../domain/entity/user.dart';
-import '../presentation_provider.dart';
 import 'list_member_invite_page.dart';
 import 'list_edit_page.dart';
+import 'list_providers.dart';
 
 /// プライベートリストの詳細画面を表示するウィジェット
 ///

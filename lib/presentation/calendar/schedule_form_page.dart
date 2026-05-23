@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lakiite/application/auth/auth_notifier.dart';
+import 'package:lakiite/application/schedule/schedule_notifier.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
+import 'package:lakiite/presentation/calendar/schedule_form_logic.dart';
+import 'package:lakiite/presentation/list/list_providers.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/presentation/list/list_detail_page.dart';
 
@@ -145,29 +148,29 @@ class ScheduleFormPage extends HookConsumerWidget {
     final locationController =
         useTextEditingController(text: schedule?.location);
 
-    // 初期日付の設定: scheduleがあればその日付、なければinitialDateを使用、どちらもなければ現在日時
-    final initialStartDate = schedule?.startDateTime ??
-        (initialDate != null
-            ? DateTime(initialDate!.year, initialDate!.month, initialDate!.day,
-                TimeOfDay.now().hour, TimeOfDay.now().minute)
-            : DateTime.now());
+    final now = DateTime.now();
+    final initialStartDate = ScheduleFormLogic.initialStartDate(
+      schedule: schedule,
+      initialDate: initialDate,
+      now: now,
+    );
 
     final selectedStartDate = useState<DateTime>(initialStartDate);
 
-    final selectedStartTime = useState<TimeOfDay>(TimeOfDay(
-        hour: initialStartDate.hour, minute: initialStartDate.minute));
+    final selectedStartTime =
+        useState<TimeOfDay>(ScheduleFormLogic.timeOf(initialStartDate));
 
-    // 終了日時も同様に設定（開始日時の1時間後）
-    final initialEndDate = schedule?.endDateTime ??
-        (initialDate != null
-            ? DateTime(initialDate!.year, initialDate!.month, initialDate!.day,
-                TimeOfDay.now().hour + 1, TimeOfDay.now().minute)
-            : DateTime.now().add(const Duration(hours: 1)));
+    final initialEndDate = ScheduleFormLogic.initialEndDate(
+      schedule: schedule,
+      initialDate: initialDate,
+      now: now,
+    );
 
     final selectedEndDate = useState<DateTime>(initialEndDate);
 
     final selectedEndTime = useState<TimeOfDay>(
-        TimeOfDay(hour: initialEndDate.hour, minute: initialEndDate.minute));
+      ScheduleFormLogic.timeOf(initialEndDate),
+    );
 
     final hasTitleError = useState<bool>(false);
     final hasLocationError = useState<bool>(false);
@@ -189,9 +192,10 @@ class ScheduleFormPage extends HookConsumerWidget {
     // 編集時の初期値設定
     useEffect(() {
       if (schedule != null && listsAsync.hasValue) {
-        final existingLists = listsAsync.value!
-            .where((list) => schedule!.sharedLists.contains(list.id))
-            .toList();
+        final existingLists = ScheduleFormLogic.selectedListsForSchedule(
+          schedule: schedule,
+          lists: listsAsync.value!,
+        );
         selectedLists.value = existingLists;
       }
       return null;
@@ -199,23 +203,12 @@ class ScheduleFormPage extends HookConsumerWidget {
 
     // 時間の整合性をチェックする関数
     void validateTime() {
-      final startDateTime = DateTime(
-        selectedStartDate.value.year,
-        selectedStartDate.value.month,
-        selectedStartDate.value.day,
-        selectedStartTime.value.hour,
-        selectedStartTime.value.minute,
+      hasTimeError.value = ScheduleFormLogic.hasInvalidTimeRange(
+        startDate: selectedStartDate.value,
+        startTime: selectedStartTime.value,
+        endDate: selectedEndDate.value,
+        endTime: selectedEndTime.value,
       );
-
-      final endDateTime = DateTime(
-        selectedEndDate.value.year,
-        selectedEndDate.value.month,
-        selectedEndDate.value.day,
-        selectedEndTime.value.hour,
-        selectedEndTime.value.minute,
-      );
-
-      hasTimeError.value = endDateTime.isBefore(startDateTime);
     }
 
     // 初期表示時と時間変更時にバリデーションを実行
@@ -262,20 +255,14 @@ class ScheduleFormPage extends HookConsumerWidget {
         return;
       }
 
-      final startDateTime = DateTime(
-        selectedStartDate.value.year,
-        selectedStartDate.value.month,
-        selectedStartDate.value.day,
-        selectedStartTime.value.hour,
-        selectedStartTime.value.minute,
+      final startDateTime = ScheduleFormLogic.combineDateAndTime(
+        selectedStartDate.value,
+        selectedStartTime.value,
       );
 
-      final endDateTime = DateTime(
-        selectedEndDate.value.year,
-        selectedEndDate.value.month,
-        selectedEndDate.value.day,
-        selectedEndTime.value.hour,
-        selectedEndTime.value.minute,
+      final endDateTime = ScheduleFormLogic.combineDateAndTime(
+        selectedEndDate.value,
+        selectedEndTime.value,
       );
 
       if (endDateTime.isBefore(startDateTime)) {
@@ -299,8 +286,8 @@ class ScheduleFormPage extends HookConsumerWidget {
 
       AppLogger.debug('ScheduleFormPage: Preparing to save schedule');
       AppLogger.debug('Current user ID: ${currentUser.id}');
-      AppLogger.debug(
-          'Selected lists: ${selectedLists.value.map((l) => l.id).toList()}');
+      final selectedListIds = ScheduleFormLogic.listIds(selectedLists.value);
+      AppLogger.debug('Selected lists: $selectedListIds');
 
       try {
         if (schedule != null) {
@@ -310,12 +297,12 @@ class ScheduleFormPage extends HookConsumerWidget {
             schedule!.copyWith(
               title: titleController.text,
               description: descriptionController.text,
-              location: locationController.text.isEmpty
-                  ? null
-                  : locationController.text,
+              location: ScheduleFormLogic.optionalLocation(
+                locationController.text,
+              ),
               startDateTime: startDateTime,
               endDateTime: endDateTime,
-              sharedLists: selectedLists.value.map((l) => l.id).toList(),
+              sharedLists: selectedListIds,
               visibleTo: [currentUser.id],
               updatedAt: DateTime.now(),
             ),
@@ -329,20 +316,19 @@ class ScheduleFormPage extends HookConsumerWidget {
           AppLogger.debug('StartDateTime: $startDateTime');
           AppLogger.debug('EndDateTime: $endDateTime');
           AppLogger.debug('OwnerId: ${currentUser.id}');
-          AppLogger.debug(
-              'SharedLists: ${selectedLists.value.map((l) => l.id).toList()}');
+          AppLogger.debug('SharedLists: $selectedListIds');
           AppLogger.debug('VisibleTo: [${currentUser.id}]');
 
           await scheduleNotifier.createSchedule(
             title: titleController.text,
             description: descriptionController.text,
-            location: locationController.text.isEmpty
-                ? null
-                : locationController.text,
+            location: ScheduleFormLogic.optionalLocation(
+              locationController.text,
+            ),
             startDateTime: startDateTime,
             endDateTime: endDateTime,
             ownerId: currentUser.id,
-            sharedLists: selectedLists.value.map((l) => l.id).toList(),
+            sharedLists: selectedListIds,
             visibleTo: [currentUser.id],
           );
           AppLogger.debug('ScheduleFormPage: Schedule created successfully');

@@ -3,7 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../application/notification/notification_notifier.dart';
 import '../../domain/entity/notification.dart' as domain;
 import '../../utils/logger.dart';
-import '../../presentation/presentation_provider.dart';
+import 'friend_providers.dart';
 
 class FriendRequestListPage extends ConsumerWidget {
   const FriendRequestListPage({super.key});

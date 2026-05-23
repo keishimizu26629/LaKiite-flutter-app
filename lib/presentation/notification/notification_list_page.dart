@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../app/di/providers.dart';
+import '../../application/auth/auth_notifier.dart';
 import '../../application/notification/notification_notifier.dart';
 import '../../domain/entity/notification.dart' as domain;
 import '../../utils/date_formatter.dart';
 import '../../utils/logger.dart';
 import '../../presentation/calendar/schedule_detail_page.dart';
-import '../../presentation/presentation_provider.dart';
 import '../../presentation/friend/friend_profile_page.dart';
 
 enum NotificationFilter {

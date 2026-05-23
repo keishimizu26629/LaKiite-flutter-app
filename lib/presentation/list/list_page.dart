@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../presentation_provider.dart';
 import 'create_list_page.dart';
 import 'list_detail_page.dart';
+import 'list_providers.dart';
 
 /// プライベートリスト一覧を表示するウィジェット
 ///
