@@ -134,6 +134,34 @@ void main() {
         contains('2026年5月2日'),
       );
     });
+
+    test('コメント編集はtrim後に空でない場合だけ送信できる', () {
+      expect(ScheduleDetailLogic.canSubmitComment('コメント'), isTrue);
+      expect(ScheduleDetailLogic.canSubmitComment('  コメント  '), isTrue);
+      expect(ScheduleDetailLogic.canSubmitComment(''), isFalse);
+      expect(ScheduleDetailLogic.canSubmitComment('   '), isFalse);
+    });
+
+    test('コメント更新エラー文言を既存表示へ変換する', () {
+      expect(
+        ScheduleDetailLogic.commentUpdateErrorMessage(
+          Exception('permission-denied'),
+        ),
+        'コメント更新に失敗しました: 権限エラー - Firebaseルールによりアクセスが拒否されました',
+      );
+      expect(
+        ScheduleDetailLogic.commentUpdateErrorMessage(Exception('content')),
+        'コメント更新に失敗しました: フィールド名の不一致（contentフィールド）',
+      );
+      expect(
+        ScheduleDetailLogic.commentUpdateErrorMessage(Exception('text')),
+        'コメント更新に失敗しました: フィールド名の不一致（textフィールド）',
+      );
+      expect(
+        ScheduleDetailLogic.commentUpdateErrorMessage(Exception('other')),
+        'コメント更新に失敗しました',
+      );
+    });
   });
 }
 

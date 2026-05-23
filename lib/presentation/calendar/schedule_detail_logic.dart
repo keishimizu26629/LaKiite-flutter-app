@@ -76,4 +76,25 @@ class ScheduleDetailLogic {
         start.month == end.month &&
         start.day == end.day;
   }
+
+  /// コメント編集で送信可能な入力かどうかを返す。
+  static bool canSubmitComment(String content) {
+    return content.trim().isNotEmpty;
+  }
+
+  /// コメント更新エラーを画面表示用の文言へ変換する。
+  static String commentUpdateErrorMessage(Object error) {
+    var errorMsg = 'コメント更新に失敗しました';
+    final errorText = error.toString();
+
+    if (errorText.contains('permission-denied')) {
+      errorMsg += ': 権限エラー - Firebaseルールによりアクセスが拒否されました';
+    } else if (errorText.contains('content')) {
+      errorMsg += ': フィールド名の不一致（contentフィールド）';
+    } else if (errorText.contains('text')) {
+      errorMsg += ': フィールド名の不一致（textフィールド）';
+    }
+
+    return errorMsg;
+  }
 }
