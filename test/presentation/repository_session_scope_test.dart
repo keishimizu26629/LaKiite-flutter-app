@@ -68,7 +68,8 @@ class _TrackingScheduleRepository implements IScheduleRepository {
   Stream<List<Schedule>> watchUserSchedulesForMonth(
     String userId,
     DateTime displayMonth,
-  ) => const Stream.empty();
+  ) =>
+      const Stream.empty();
 
   @override
   Stream<List<Schedule>> watchListSchedules(String listId) =>
@@ -104,7 +105,7 @@ void main() {
     late _FakeFirebaseAuth firebaseAuth;
     late ProviderSubscription<IUserRepository> userRepositorySubscription;
     late ProviderSubscription<IScheduleRepository>
-    scheduleRepositorySubscription;
+        scheduleRepositorySubscription;
     var userRepositoryInstanceCount = 0;
     var scheduleRepositoryInstanceCount = 0;
 
@@ -149,18 +150,16 @@ void main() {
 
       final signedInUserRepository =
           container.read(userRepositoryProvider) as _TrackingUserRepository;
-      final signedInScheduleRepository =
-          container.read(scheduleRepositoryProvider)
-              as _TrackingScheduleRepository;
+      final signedInScheduleRepository = container
+          .read(scheduleRepositoryProvider) as _TrackingScheduleRepository;
 
       firebaseAuth.setCurrentUser(null);
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
       final signedOutUserRepository =
           container.read(userRepositoryProvider) as _TrackingUserRepository;
-      final signedOutScheduleRepository =
-          container.read(scheduleRepositoryProvider)
-              as _TrackingScheduleRepository;
+      final signedOutScheduleRepository = container
+          .read(scheduleRepositoryProvider) as _TrackingScheduleRepository;
 
       expect(
         signedOutUserRepository.instanceId,
@@ -178,18 +177,16 @@ void main() {
 
       final userARepository =
           container.read(userRepositoryProvider) as _TrackingUserRepository;
-      final scheduleUserARepository =
-          container.read(scheduleRepositoryProvider)
-              as _TrackingScheduleRepository;
+      final scheduleUserARepository = container.read(scheduleRepositoryProvider)
+          as _TrackingScheduleRepository;
 
       firebaseAuth.setCurrentUser(_FakeFirebaseUser('user-b'));
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
       final userBRepository =
           container.read(userRepositoryProvider) as _TrackingUserRepository;
-      final scheduleUserBRepository =
-          container.read(scheduleRepositoryProvider)
-              as _TrackingScheduleRepository;
+      final scheduleUserBRepository = container.read(scheduleRepositoryProvider)
+          as _TrackingScheduleRepository;
 
       expect(userBRepository.instanceId, isNot(userARepository.instanceId));
       expect(

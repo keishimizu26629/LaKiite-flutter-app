@@ -40,7 +40,8 @@ class _TrackingListRepository implements IListRepository {
     required String ownerId,
     String? iconUrl,
     String? description,
-  }) => Future.error(UnimplementedError());
+  }) =>
+      Future.error(UnimplementedError());
 
   @override
   Future<void> deleteList(String listId) => Future.error(UnimplementedError());

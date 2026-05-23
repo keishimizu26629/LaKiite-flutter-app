@@ -115,13 +115,11 @@ class AuthNotifier extends _$AuthNotifier {
     state = signInResult;
 
     state.whenOrNull(
-      data:
-          (authState) => AppLogger.debugOnly(
-            'signIn完了: status=${authState.status}, userId=${authState.user?.id}',
-          ),
-      error:
-          (error, stackTrace) =>
-              AppLogger.errorOnly('signIn失敗', error, stackTrace),
+      data: (authState) => AppLogger.debugOnly(
+        'signIn完了: status=${authState.status}, userId=${authState.user?.id}',
+      ),
+      error: (error, stackTrace) =>
+          AppLogger.errorOnly('signIn失敗', error, stackTrace),
     );
 
     if (signInResult.hasError) {
@@ -194,13 +192,11 @@ class AuthNotifier extends _$AuthNotifier {
     state = signUpResult;
 
     state.whenOrNull(
-      data:
-          (authState) => AppLogger.debugOnly(
-            'signUp完了: status=${authState.status}, userId=${authState.user?.id}',
-          ),
-      error:
-          (error, stackTrace) =>
-              AppLogger.errorOnly('signUp失敗', error, stackTrace),
+      data: (authState) => AppLogger.debugOnly(
+        'signUp完了: status=${authState.status}, userId=${authState.user?.id}',
+      ),
+      error: (error, stackTrace) =>
+          AppLogger.errorOnly('signUp失敗', error, stackTrace),
     );
 
     if (signUpResult.hasError) {

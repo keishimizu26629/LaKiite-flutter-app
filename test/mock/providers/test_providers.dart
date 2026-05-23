@@ -19,14 +19,14 @@ class TestProviders {
 
   /// 基本的なモックプロバイダー
   static List<Override> get basic => [
-    authRepositoryProvider.overrideWithValue(mockAuthRepository),
-    scheduleRepositoryProvider.overrideWithValue(mockScheduleRepository),
-    listRepositoryProvider.overrideWithValue(mockListRepository),
-    notificationRepositoryProvider.overrideWithValue(
-      mockNotificationRepository,
-    ),
-    userRepositoryProvider.overrideWithValue(mockUserRepository),
-  ];
+        authRepositoryProvider.overrideWithValue(mockAuthRepository),
+        scheduleRepositoryProvider.overrideWithValue(mockScheduleRepository),
+        listRepositoryProvider.overrideWithValue(mockListRepository),
+        notificationRepositoryProvider.overrideWithValue(
+          mockNotificationRepository,
+        ),
+        userRepositoryProvider.overrideWithValue(mockUserRepository),
+      ];
 
   /// 認証済み状態のモックプロバイダー
   static List<Override> get authenticated {
