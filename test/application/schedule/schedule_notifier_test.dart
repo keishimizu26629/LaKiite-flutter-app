@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lakiite/app/di/providers.dart';
+import 'package:lakiite/application/auth/auth_notifier.dart';
+import 'package:lakiite/application/schedule/schedule_notifier.dart';
 import 'package:lakiite/application/schedule/schedule_state.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
 
 import '../../../mock/repositories/mock_auth_repository.dart';
 import '../../../mock/repositories/mock_user_repository.dart';
@@ -31,7 +33,9 @@ class _TrackingScheduleRepository implements IScheduleRepository {
 
   @override
   Stream<List<Schedule>> watchUserSchedulesForMonth(
-      String userId, DateTime displayMonth) {
+    String userId,
+    DateTime displayMonth,
+  ) {
     watchUserSchedulesForMonthCallCount++;
     if (monthError != null) {
       return Stream<List<Schedule>>.error(monthError!);
@@ -124,10 +128,7 @@ void main() {
 
       final scheduleState = container.read(scheduleNotifierProvider);
       expect(scheduleRepository.cancelCount, 1);
-      expect(
-        scheduleState.value,
-        const ScheduleState.initial(),
-      );
+      expect(scheduleState.value, const ScheduleState.initial());
     });
 
     test('認証直後にログアウトした場合は遅延後の購読開始を行わない', () async {
@@ -135,8 +136,10 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 450));
 
       expect(scheduleRepository.watchUserSchedulesCallCount, 0);
-      expect(container.read(scheduleNotifierProvider).value,
-          const ScheduleState.initial());
+      expect(
+        container.read(scheduleNotifierProvider).value,
+        const ScheduleState.initial(),
+      );
     });
 
     test('月別購読の permission-denied は初期状態へ戻して終了する', () async {
@@ -150,10 +153,14 @@ void main() {
           .watchUserSchedulesForMonth('test-user-id', DateTime(2026, 3, 1));
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      expect(scheduleRepository.watchUserSchedulesForMonthCallCount,
-          greaterThanOrEqualTo(1));
-      expect(container.read(scheduleNotifierProvider).value,
-          const ScheduleState.initial());
+      expect(
+        scheduleRepository.watchUserSchedulesForMonthCallCount,
+        greaterThanOrEqualTo(1),
+      );
+      expect(
+        container.read(scheduleNotifierProvider).value,
+        const ScheduleState.initial(),
+      );
     });
   });
 }

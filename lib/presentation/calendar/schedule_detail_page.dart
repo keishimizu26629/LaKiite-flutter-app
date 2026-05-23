@@ -3,13 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:intl/intl.dart';
+import 'package:lakiite/app/di/providers.dart';
+import 'package:lakiite/application/auth/auth_notifier.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/schedule_reaction.dart';
-import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/domain/entity/schedule_comment.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
+import 'package:lakiite/application/schedule/schedule_notifier.dart';
+import 'package:lakiite/presentation/calendar/schedule_detail_logic.dart';
+import 'package:lakiite/presentation/calendar/widgets/comment_edit_dialog.dart';
+import 'package:lakiite/presentation/calendar/widgets/delete_confirmation_dialog.dart';
+import 'package:lakiite/presentation/calendar/widgets/reaction_users_sheet.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
 import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
 import 'package:lakiite/presentation/widgets/default_user_icon.dart';
@@ -637,108 +642,27 @@ class ScheduleDetailPage extends HookConsumerWidget {
       return;
     }
 
+    final usersFuture = Future.wait(
+      reactions.map(
+        (reaction) => ref
+            .read(userRepositoryProvider)
+            .getUser(reaction.userId)
+            .then((user) => user!),
+      ),
+    );
+
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                const Text(
-                  'リアクションした人',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            FutureBuilder<List<UserModel>>(
-              future: Future.wait(
-                reactions.map(
-                  (reaction) => ref
-                      .read(userRepositoryProvider)
-                      .getUser(reaction.userId)
-                      .then((user) => user!),
-                ),
-              ),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (snapshot.hasError) {
-                  return Center(child: Text('エラー: ${snapshot.error}'));
-                }
-
-                final users = snapshot.data!;
-                developer.log('リアクションユーザー: ${users.length}人');
-                return SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.3,
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: users.length,
-                    itemBuilder: (context, index) {
-                      final user = users[index];
-                      final reaction = reactions[index];
-                      // 追加のデバッグログ
-                      developer.log('リアクションオブジェクト: $reaction');
-                      developer.log(
-                        'リアクションタイプ: ${reaction.type} (${reaction.type.runtimeType})',
-                      );
-
-                      return ListTile(
-                        leading: Stack(
-                          children: [
-                            user.iconUrl != null
-                                ? CircleAvatar(
-                                    backgroundImage: NetworkImage(
-                                      user.iconUrl!,
-                                    ),
-                                  )
-                                : const DefaultUserIcon(),
-                            Positioned(
-                              right: 0,
-                              bottom: 0,
-                              child: Text(
-                                reaction.type.emoji,
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                            ),
-                          ],
-                        ),
-                        title: Text(user.displayName),
-                      );
-                    },
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
+      builder: (context) => ReactionUsersSheet(
+        reactions: reactions,
+        usersFuture: usersFuture,
       ),
     );
   }
 
   /// 日時の範囲をフォーマットするヘルパーメソッド
   String _formatDateTimeRange(DateTime start, DateTime end) {
-    final dateFormat = DateFormat('yyyy年M月d日（E）', 'ja_JP');
-    final timeFormat = DateFormat('HH:mm', 'ja_JP');
-
-    // 同日の場合は日付を1つだけ表示
-    if (start.year == end.year &&
-        start.month == end.month &&
-        start.day == end.day) {
-      return '${dateFormat.format(start)} ${timeFormat.format(start)} - ${timeFormat.format(end)}';
-    } else {
-      // 日付が異なる場合は両方の日付を表示
-      return '${dateFormat.format(start)} ${timeFormat.format(start)} - ${dateFormat.format(end)} ${timeFormat.format(end)}';
-    }
+    return ScheduleDetailLogic.formatDateTimeRange(start, end);
   }
 
   /// スケジュールに関連する通知を既読にします
@@ -753,12 +677,15 @@ class ScheduleDetailPage extends HookConsumerWidget {
     try {
       // 現在のユーザーを取得
       final authState = ref.read(authNotifierProvider).value;
-      if (authState?.user == null) return;
-
-      final userId = authState!.user!.id;
+      final userId = authState?.user?.id;
 
       // このスケジュールの所有者が自分でなければ何もしない
-      if (schedule.ownerId != userId) return;
+      if (!ScheduleDetailLogic.canMarkRelatedNotificationsAsRead(
+        scheduleOwnerId: schedule.ownerId,
+        currentUserId: userId,
+      )) {
+        return;
+      }
 
       developer.log('スケジュール詳細ページでの通知既読処理を開始: scheduleId=${schedule.id}');
 
@@ -788,15 +715,11 @@ class ScheduleDetailPage extends HookConsumerWidget {
       }
 
       // このスケジュールに関連する未読のリアクション・コメント通知をフィルタリング
-      final unreadRelatedNotifications = notifications
-          .where(
-            (notification) =>
-                !notification.isRead &&
-                (notification.type == domain.NotificationType.reaction ||
-                    notification.type == domain.NotificationType.comment) &&
-                notification.relatedItemId == schedule.id,
-          )
-          .toList();
+      final unreadRelatedNotifications =
+          ScheduleDetailLogic.unreadRelatedNotifications(
+        notifications: notifications,
+        scheduleId: schedule.id,
+      );
 
       developer.log('未読の関連通知数: ${unreadRelatedNotifications.length}件');
       developer.log('現在のスケジュールID: ${schedule.id}');
@@ -880,8 +803,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
     final currentUserId = ref.read(authNotifierProvider).value?.user?.id;
 
     // コメントを日時の昇順でソート
-    final sortedComments = [...interactions.comments]
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final sortedComments =
+        ScheduleDetailLogic.sortedComments(interactions.comments);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -889,10 +812,13 @@ class ScheduleDetailPage extends HookConsumerWidget {
         ...sortedComments.map((comment) {
           // 自分のコメントかどうかをチェック
           final isMyComment =
-              currentUserId != null && comment.userId == currentUserId;
-          final isTargetComment = fromNotification &&
-              notificationType == domain.NotificationType.comment &&
-              interactionId == comment.id;
+              ScheduleDetailLogic.isMyComment(currentUserId, comment);
+          final isTargetComment = ScheduleDetailLogic.isTargetComment(
+            fromNotification: fromNotification,
+            notificationType: notificationType,
+            interactionId: interactionId,
+            comment: comment,
+          );
 
           return Padding(
             key: isTargetComment ? targetCommentKey : null,
@@ -1050,34 +976,18 @@ class ScheduleDetailPage extends HookConsumerWidget {
   ) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('コメントの削除'),
-        content: const Text('このコメントを削除してもよろしいですか？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () {
-              // ダイアログを閉じる
-              Navigator.of(context).pop();
+      builder: (dialogContext) => DeleteConfirmationDialog(
+        title: 'コメントの削除',
+        content: 'このコメントを削除してもよろしいですか？',
+        onDelete: () {
+          ref
+              .read(scheduleInteractionNotifierProvider(schedule.id).notifier)
+              .deleteComment(comment.id);
 
-              // コメントを削除
-              ref
-                  .read(
-                    scheduleInteractionNotifierProvider(schedule.id).notifier,
-                  )
-                  .deleteComment(comment.id);
-
-              // 削除完了メッセージ
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('コメントを削除しました')));
-            },
-            child: const Text('削除', style: TextStyle(color: Colors.red)),
-          ),
-        ],
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('コメントを削除しました')));
+        },
       ),
     );
   }
@@ -1088,116 +998,70 @@ class ScheduleDetailPage extends HookConsumerWidget {
     WidgetRef ref,
     ScheduleComment comment,
   ) {
-    // 編集用テキストコントローラー
-    final editController = TextEditingController(text: comment.content);
-
     developer.log(
       'コメント編集開始: id=${comment.id}, userId=${comment.userId}, currentAuthUser=${ref.read(authNotifierProvider).value?.user?.id}',
     );
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('コメントの編集'),
-        content: TextField(
-          controller: editController,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'コメントを入力...'),
-          maxLines: 3,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () {
-              // 空のコメントは無視
-              if (editController.text.trim().isEmpty) {
-                return;
-              }
+      builder: (dialogContext) => CommentEditDialog(
+        initialContent: comment.content,
+        onSave: (content) {
+          developer.log('コメント編集を実行: commentId=${comment.id}, content=$content');
+          final scaffoldMessenger = ScaffoldMessenger.of(context);
+          scaffoldMessenger.showSnackBar(
+            const SnackBar(
+              content: Text('コメントを更新中...'),
+              duration: Duration(seconds: 2),
+            ),
+          );
 
+          try {
+            developer.log(
+              'コメント更新リクエスト: scheduleId=${schedule.id}, commentId=${comment.id}, commentUserId=${comment.userId}',
+            );
+            developer.log(
+              '認証状態: ${ref.read(authNotifierProvider).value?.user != null ? "ログイン中" : "未ログイン"}',
+            );
+            if (ref.read(authNotifierProvider).value?.user != null) {
               developer.log(
-                'コメント編集を実行: commentId=${comment.id}, content=${editController.text}',
+                '現在のユーザーID: ${ref.read(authNotifierProvider).value!.user!.id}',
               );
+            }
 
-              // ダイアログを閉じる
-              Navigator.of(context).pop();
-
-              // 編集処理中を示すスナックバーを表示
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
+            ref
+                .read(scheduleInteractionNotifierProvider(schedule.id).notifier)
+                .updateComment(comment.id, content)
+                .then((_) {
+              developer.log('コメント更新成功: ${comment.id}');
               scaffoldMessenger.showSnackBar(
-                const SnackBar(
-                  content: Text('コメントを更新中...'),
-                  duration: Duration(seconds: 2),
+                const SnackBar(content: Text('コメントを編集しました')),
+              );
+            }).catchError((error) {
+              developer.log('コメント更新エラー詳細: $error', error: error);
+              developer.log('スタックトレース: ${StackTrace.current}');
+              final errorMsg =
+                  ScheduleDetailLogic.commentUpdateErrorMessage(error);
+
+              scaffoldMessenger.showSnackBar(
+                SnackBar(
+                  content: Text('エラー: $errorMsg'),
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 4),
                 ),
               );
-
-              try {
-                // リクエスト情報をログ出力
-                developer.log(
-                  'コメント更新リクエスト: scheduleId=${schedule.id}, commentId=${comment.id}, commentUserId=${comment.userId}',
-                );
-                developer.log(
-                  '認証状態: ${ref.read(authNotifierProvider).value?.user != null ? "ログイン中" : "未ログイン"}',
-                );
-                if (ref.read(authNotifierProvider).value?.user != null) {
-                  developer.log(
-                    '現在のユーザーID: ${ref.read(authNotifierProvider).value!.user!.id}',
-                  );
-                }
-
-                // コメントを更新
-                ref
-                    .read(
-                      scheduleInteractionNotifierProvider(schedule.id).notifier,
-                    )
-                    .updateComment(comment.id, editController.text)
-                    .then((_) {
-                  developer.log('コメント更新成功: ${comment.id}');
-                  // 編集完了メッセージ
-                  scaffoldMessenger.showSnackBar(
-                    const SnackBar(content: Text('コメントを編集しました')),
-                  );
-                }).catchError((error) {
-                  developer.log('コメント更新エラー詳細: $error', error: error);
-                  // スタックトレースも記録
-                  developer.log('スタックトレース: ${StackTrace.current}');
-
-                  // より詳細なエラーメッセージを表示
-                  var errorMsg = 'コメント更新に失敗しました';
-                  if (error.toString().contains('permission-denied')) {
-                    errorMsg += ': 権限エラー - Firebaseルールによりアクセスが拒否されました';
-                  } else if (error.toString().contains('content')) {
-                    errorMsg += ': フィールド名の不一致（contentフィールド）';
-                  } else if (error.toString().contains('text')) {
-                    errorMsg += ': フィールド名の不一致（textフィールド）';
-                  }
-
-                  // エラー表示
-                  scaffoldMessenger.showSnackBar(
-                    SnackBar(
-                      content: Text('エラー: $errorMsg'),
-                      backgroundColor: Colors.red,
-                      duration: const Duration(seconds: 4),
-                    ),
-                  );
-                });
-              } catch (e) {
-                developer.log('コメント更新中に例外が発生: $e', error: e);
-                developer.log('スタックトレース: ${StackTrace.current}');
-                // エラー表示
-                scaffoldMessenger.showSnackBar(
-                  SnackBar(
-                    content: Text('エラー: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            child: const Text('保存'),
-          ),
-        ],
+            });
+          } catch (e) {
+            developer.log('コメント更新中に例外が発生: $e', error: e);
+            developer.log('スタックトレース: ${StackTrace.current}');
+            scaffoldMessenger.showSnackBar(
+              SnackBar(
+                content: Text('エラー: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
       ),
     );
   }
@@ -1209,35 +1073,20 @@ class ScheduleDetailPage extends HookConsumerWidget {
   ) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('予定の削除'),
-        content: const Text('この予定を削除してもよろしいですか？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () {
-              // ダイアログを閉じる
-              Navigator.of(context).pop();
+      builder: (dialogContext) => DeleteConfirmationDialog(
+        title: '予定の削除',
+        content: 'この予定を削除してもよろしいですか？',
+        onDelete: () {
+          ref
+              .read(scheduleNotifierProvider.notifier)
+              .deleteSchedule(schedule.id);
 
-              // 予定を削除
-              ref
-                  .read(scheduleNotifierProvider.notifier)
-                  .deleteSchedule(schedule.id);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('予定を削除しました')));
 
-              // 削除完了メッセージを表示してページを閉じる
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('予定を削除しました')));
-
-              // 予定詳細ページを閉じる
-              Navigator.of(context).pop();
-            },
-            child: const Text('削除', style: TextStyle(color: Colors.red)),
-          ),
-        ],
+          Navigator.of(context).pop();
+        },
       ),
     );
   }

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lakiite/app/di/providers.dart';
 import 'package:intl/intl.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
 import 'package:lakiite/presentation/widgets/reaction_icon_widget.dart';
 

@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../presentation_provider.dart';
+import '../../application/auth/auth_notifier.dart';
 
 final loginViewModelProvider =
     StateNotifierProvider<LoginViewModel, AsyncValue<void>>(

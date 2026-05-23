@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../application/auth/auth_notifier.dart';
 import '../../application/auth/auth_state.dart';
 import '../list/create_list_page.dart';
 import '../list/list_detail_page.dart';
-import '../presentation_provider.dart';
+import '../list/list_providers.dart';
+import 'friend_providers.dart';
 import '../friend/friend_search_page.dart';
 import '../friend/friend_profile_page.dart';
 import '../widgets/notification_button.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../presentation_provider.dart';
+import '../../app/di/providers.dart';
 import '../../domain/value/user_id.dart';
 import '../my_page/my_page_view_model.dart';
 

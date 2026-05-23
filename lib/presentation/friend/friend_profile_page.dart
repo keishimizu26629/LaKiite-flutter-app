@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../app/di/providers.dart';
+import '../../application/auth/auth_notifier.dart';
 import '../../domain/entity/schedule.dart';
 import '../../domain/entity/user.dart';
-import '../../presentation/presentation_provider.dart';
+import '../calendar/schedule_providers.dart';
 import '../widgets/schedule_tile.dart';
 import '../../utils/logger.dart';
 

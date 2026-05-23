@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/auth/auth_notifier.dart';
 import '../../application/auth/auth_state.dart';
-import '../presentation_provider.dart';
 
 /// 認証済みの場合のみ [onAuthenticated] を表示する。
 /// 認証済み subtree は userId をキーに再生成されるため、

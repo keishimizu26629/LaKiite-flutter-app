@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:lakiite/application/auth/auth_state.dart';
+import '../../app/di/providers.dart';
+import '../../application/auth/auth_notifier.dart';
 import '../../infrastructure/image_picker_service.dart' as picker;
 import '../../domain/entity/user.dart';
 import '../../domain/entity/schedule.dart';
@@ -11,9 +13,10 @@ import '../../domain/interfaces/i_user_repository.dart';
 import '../../domain/interfaces/i_schedule_repository.dart';
 import '../../domain/interfaces/i_storage_service.dart';
 import '../../domain/interfaces/i_image_processor_service.dart';
-import '../../presentation/presentation_provider.dart';
 import '../../infrastructure/providers.dart';
 import 'package:lakiite/utils/logger.dart';
+
+export '../calendar/schedule_providers.dart' show userSchedulesStreamProvider;
 
 final selectedImageProvider = StateProvider<File?>((ref) => null);
 
@@ -31,23 +34,6 @@ final timelineSchedulesProvider = StreamProvider<List<Schedule>>((ref) {
       return ref
           .watch(scheduleRepositoryProvider)
           .watchUserSchedules(state.user!.id);
-    },
-    loading: () => Stream.value([]),
-    error: (_, __) => Stream.value([]),
-  );
-});
-
-final userSchedulesStreamProvider =
-    StreamProvider.family<List<Schedule>, String>((ref, userId) {
-  final authState = ref.watch(authNotifierProvider);
-
-  return authState.when(
-    data: (state) {
-      if (state.status != AuthStatus.authenticated || state.user == null) {
-        return Stream.value([]);
-      }
-
-      return ref.watch(scheduleRepositoryProvider).watchUserSchedules(userId);
     },
     loading: () => Stream.value([]),
     error: (_, __) => Stream.value([]),

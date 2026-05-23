@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../app/di/providers.dart';
 import '../../domain/entity/user.dart';
 import '../../domain/interfaces/i_user_repository.dart';
-import '../presentation_provider.dart';
 
 /// ホーム画面のビューモデルを提供するプロバイダー
 ///

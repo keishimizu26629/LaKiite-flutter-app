@@ -2,9 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../app/di/providers.dart';
+import '../../application/list/list_notifier.dart';
 import '../../domain/entity/list.dart';
 import '../../domain/entity/user.dart';
-import '../presentation_provider.dart';
 
 class ListEditPage extends ConsumerStatefulWidget {
   const ListEditPage({super.key, required this.list});

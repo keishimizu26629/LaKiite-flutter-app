@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../presentation_provider.dart';
 import '../signup/signup.dart';
+import '../../application/auth/auth_notifier.dart';
 import '../../utils/auth_error_message.dart';
 import '../../utils/logger.dart';
 

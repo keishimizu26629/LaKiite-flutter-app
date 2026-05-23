@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lakiite/app/di/providers.dart';
+import 'package:lakiite/application/auth/auth_notifier.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/notification.dart';
-import 'package:lakiite/presentation/presentation_provider.dart';
 import '../repository/mock_auth_repository.dart';
 import '../repository/mock_schedule_repository.dart';
 import '../repository/mock_list_repository.dart';
@@ -21,8 +22,9 @@ class TestProviders {
         authRepositoryProvider.overrideWithValue(mockAuthRepository),
         scheduleRepositoryProvider.overrideWithValue(mockScheduleRepository),
         listRepositoryProvider.overrideWithValue(mockListRepository),
-        notificationRepositoryProvider
-            .overrideWithValue(mockNotificationRepository),
+        notificationRepositoryProvider.overrideWithValue(
+          mockNotificationRepository,
+        ),
         userRepositoryProvider.overrideWithValue(mockUserRepository),
       ];
 
