@@ -49,6 +49,36 @@ void main() {
     expect(find.text('🙋'), findsOneWidget);
     expect(find.text('🤔'), findsOneWidget);
   });
+
+  testWidgets('リアクションしたユーザーが削除済みでもsnapshotの名前で表示する', (tester) async {
+    final reactions = [
+      Reaction(
+        id: 'reaction-1',
+        scheduleId: 'schedule-1',
+        userId: 'deleted-user-1',
+        type: ReactionType.going,
+        userDisplayName: '削除前の名前',
+        createdAt: DateTime(2026, 5, 1),
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ReactionUsersSheet(
+            reactions: reactions,
+            usersFuture: Future.value([]),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    expect(find.text('削除前の名前'), findsOneWidget);
+    expect(find.text('退会済みユーザー'), findsNothing);
+    expect(find.text('🙋'), findsOneWidget);
+  });
 }
 
 UserModel _user({
