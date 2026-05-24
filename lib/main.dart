@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'config/app_config.dart';
 import 'config/admob_config.dart';
+import 'config/firebase_emulator_config.dart';
 import 'config/router/app_router.dart';
 import 'infrastructure/admob_service.dart';
 import 'infrastructure/firebase/push_notification_service.dart';
@@ -72,24 +73,34 @@ Future<void> startApp([
       AppLogger.info(
           'Firebase使用中アプリ: name=${defaultApp.name}, projectId=${defaultApp.options.projectId}, appId=${defaultApp.options.appId}, senderId=${defaultApp.options.messagingSenderId}, iosBundleId=${defaultApp.options.iosBundleId}');
 
-      // プッシュ通知サービスの初期化
-      AppLogger.info('🚀 プッシュ通知サービスの初期化を開始...');
-      await PushNotificationService.instance.initialize();
+      await connectFirebaseEmulatorsIfNeeded();
 
-      const forceRefreshFcmTokenOnStartup = bool.fromEnvironment(
-        'FORCE_REFRESH_FCM_TOKEN_ON_STARTUP',
-        defaultValue: false,
-      );
-      if (forceRefreshFcmTokenOnStartup) {
-        AppLogger.info('🔄 FCMトークンの強制更新を実行...');
-        await PushNotificationService.instance.forceUpdateFCMToken();
-        AppLogger.info('✅ FCMトークンの強制更新が完了');
+      const skipPushNotificationSetup = bool.fromEnvironment('TEST_MODE',
+              defaultValue: false) ||
+          bool.fromEnvironment('USE_FIREBASE_EMULATOR', defaultValue: false);
+
+      if (!skipPushNotificationSetup) {
+        // プッシュ通知サービスの初期化
+        AppLogger.info('🚀 プッシュ通知サービスの初期化を開始...');
+        await PushNotificationService.instance.initialize();
+
+        const forceRefreshFcmTokenOnStartup = bool.fromEnvironment(
+          'FORCE_REFRESH_FCM_TOKEN_ON_STARTUP',
+          defaultValue: false,
+        );
+        if (forceRefreshFcmTokenOnStartup) {
+          AppLogger.info('🔄 FCMトークンの強制更新を実行...');
+          await PushNotificationService.instance.forceUpdateFCMToken();
+          AppLogger.info('✅ FCMトークンの強制更新が完了');
+        }
+
+        // アプリ起動時にバッジカウントをクリア
+        AppLogger.info('🧹 アプリ起動時のバッジカウントクリアを実行...');
+        await PushNotificationService.instance.clearBadgeCount();
+        AppLogger.info('✅ バッジカウントクリアが完了');
+      } else {
+        AppLogger.info('テスト環境のためプッシュ通知初期化をスキップします');
       }
-
-      // アプリ起動時にバッジカウントをクリア
-      AppLogger.info('🧹 アプリ起動時のバッジカウントクリアを実行...');
-      await PushNotificationService.instance.clearBadgeCount();
-      AppLogger.info('✅ バッジカウントクリアが完了');
 
       // AdMobの初期化
       await AdMobService.initialize();
