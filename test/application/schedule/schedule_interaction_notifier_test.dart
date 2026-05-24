@@ -213,6 +213,10 @@ class _FakeNotificationRepository implements INotificationRepository {
       Future.error(UnimplementedError());
 
   @override
+  Future<void> expireNotification(String notificationId) =>
+      Future.error(UnimplementedError());
+
+  @override
   Future<void> markAsRead(String notificationId) =>
       Future.error(UnimplementedError());
 

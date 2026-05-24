@@ -44,6 +44,9 @@ abstract class INotificationRepository {
   /// 通知を拒否
   Future<void> rejectNotification(String notificationId);
 
+  /// 通知を期限切れにする
+  Future<void> expireNotification(String notificationId);
+
   /// 通知を既読にする
   Future<void> markAsRead(String notificationId);
 

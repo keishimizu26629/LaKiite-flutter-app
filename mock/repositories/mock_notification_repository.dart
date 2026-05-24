@@ -52,6 +52,9 @@ class MockNotificationRepository implements INotificationRepository {
   Future<void> rejectNotification(String notificationId) async {}
 
   @override
+  Future<void> expireNotification(String notificationId) async {}
+
+  @override
   Future<void> updateNotification(Notification notification) async {}
 
   @override
