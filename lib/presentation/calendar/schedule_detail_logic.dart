@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 import 'package:lakiite/domain/entity/notification.dart' as domain;
 import 'package:lakiite/domain/entity/schedule_comment.dart';
 import 'package:lakiite/domain/entity/user.dart';
+import 'package:lakiite/presentation/user_display_text.dart';
 
 /// 予定詳細画面で使う表示判定と抽出処理を担う純粋ロジック。
 ///
@@ -106,6 +107,6 @@ class ScheduleDetailLogic {
 
   /// コメント投稿者名を表示用に返す。
   static String commentAuthorDisplayName(ScheduleComment comment) {
-    return comment.userDisplayName ?? '退会済みユーザー';
+    return comment.userDisplayName ?? retiredUserDisplayName;
   }
 }
