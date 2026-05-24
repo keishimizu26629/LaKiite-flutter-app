@@ -43,7 +43,9 @@ class AdMobConfig {
   static void initialize({bool forceTestMode = false}) {
     // テスト環境かどうかを確認
     const isTestEnvironment =
-        bool.fromEnvironment('FLUTTER_TEST', defaultValue: false);
+        bool.fromEnvironment('FLUTTER_TEST', defaultValue: false) ||
+            bool.fromEnvironment('TEST_MODE', defaultValue: false) ||
+            bool.fromEnvironment('USE_FIREBASE_EMULATOR', defaultValue: false);
 
     if (isTestEnvironment || forceTestMode) {
       // テスト環境ではダミー値を設定

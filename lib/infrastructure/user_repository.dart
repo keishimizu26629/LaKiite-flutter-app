@@ -188,8 +188,10 @@ class UserRepository implements IUserRepository {
 
     // トランザクションでアイコンURLを更新
     await _firestore.runTransaction((transaction) async {
-      // 公開プロフィールのiconUrlを更新
       final userDoc = await transaction.get(userRef);
+      final privateDoc = await transaction.get(privateRef);
+
+      // 公開プロフィールのiconUrlを更新
       if (userDoc.exists) {
         final userData = userDoc.data() ?? {};
         userData['iconUrl'] = downloadUrl;
@@ -197,14 +199,16 @@ class UserRepository implements IUserRepository {
       }
 
       // プライベートプロフィールにも同じURLを保存
-      final privateDoc = await transaction.get(privateRef);
       if (privateDoc.exists) {
         final privateData = privateDoc.data() ?? {};
         if (privateData['profile'] == null) {
           privateData['profile'] = {};
         }
-        final profile = privateData['profile'] as Map<String, dynamic>;
+        final profile = Map<String, dynamic>.from(
+          privateData['profile'] as Map,
+        );
         profile['iconUrl'] = downloadUrl;
+        privateData['profile'] = profile;
         transaction.update(privateRef, privateData);
       }
     });
