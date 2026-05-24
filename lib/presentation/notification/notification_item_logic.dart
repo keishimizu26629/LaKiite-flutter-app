@@ -1,4 +1,5 @@
 import '../../domain/entity/notification.dart' as domain;
+import '../user_display_text.dart';
 
 /// 通知一覧アイテムの表示文言を決める純粋ロジック。
 class NotificationItemLogic {
@@ -21,7 +22,7 @@ class NotificationItemLogic {
         notification.sendUserDisplayName ?? notification.sendUserId;
     return switch ((notification.type, notification.status)) {
       (domain.NotificationType.friend, domain.NotificationStatus.expired) =>
-        '退会済みユーザーからのフレンド申請です',
+        '$retiredUserDisplayNameからのフレンド申請です',
       (domain.NotificationType.friend, _) => '$fromNameさんからフレンド申請が届いています',
       (domain.NotificationType.groupInvitation, _) =>
         '$fromNameさんからグループ招待が届いています',

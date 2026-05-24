@@ -50,7 +50,7 @@ void main() {
     expect(find.text('🤔'), findsOneWidget);
   });
 
-  testWidgets('リアクションしたユーザーが削除済みでもsnapshotの名前で表示する', (tester) async {
+  testWidgets('リアクションしたユーザーが削除済みの場合は退会済みユーザーとして表示する', (tester) async {
     final reactions = [
       Reaction(
         id: 'reaction-1',
@@ -75,8 +75,8 @@ void main() {
 
     await tester.pump();
 
-    expect(find.text('削除前の名前'), findsOneWidget);
-    expect(find.text('退会済みユーザー'), findsNothing);
+    expect(find.text('退会済みユーザー'), findsOneWidget);
+    expect(find.text('削除前の名前'), findsNothing);
     expect(find.text('🙋'), findsOneWidget);
   });
 }

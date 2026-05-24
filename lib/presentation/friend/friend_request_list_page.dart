@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../application/notification/notification_notifier.dart';
 import '../../domain/entity/notification.dart' as domain;
+import '../../presentation/user_display_text.dart';
 import '../../utils/logger.dart';
 import 'friend_providers.dart';
 
@@ -136,7 +137,7 @@ class FriendRequestCard extends StatelessWidget {
   /// 友達申請カードの主文言。
   String get _title {
     if (_isExpired) {
-      return '退会済みユーザーからの友達申請です';
+      return '$retiredUserDisplayNameからの友達申請です';
     }
 
     final senderName = request.sendUserDisplayName ?? request.sendUserId;

@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:lakiite/domain/entity/reaction.dart';
 import 'package:lakiite/domain/entity/user.dart';
+import 'package:lakiite/presentation/user_display_text.dart';
 import 'package:lakiite/presentation/widgets/default_user_icon.dart';
 import 'package:lakiite/presentation/widgets/reaction_type_view_extension.dart';
 
@@ -64,7 +65,7 @@ class ReactionUsersSheet extends StatelessWidget {
                     final reaction = reactions[index];
                     final user = usersById[reaction.userId];
                     final displayName =
-                        user?.displayName ?? reaction.userDisplayName;
+                        user?.displayName ?? retiredUserDisplayName;
                     final iconUrl = user?.iconUrl ?? reaction.userPhotoUrl;
                     developer.log('リアクションオブジェクト: $reaction');
                     developer.log(
