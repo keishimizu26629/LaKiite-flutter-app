@@ -178,8 +178,43 @@ void main() {
       final updatedReceiver = await userRepository.getUser(receiver.id);
 
       expect(accepted?.status, NotificationStatus.accepted);
+      expect(accepted?.isRead, isTrue);
       expect(updatedSender?.friends, contains(receiver.id));
       expect(updatedReceiver?.friends, contains(sender.id));
+    });
+
+    test('申請元ユーザーが削除済みの友達申請を承認すると通知を期限切れとして既読にする', () async {
+      final receiver = BaseMock.createTestUser(
+        id: 'receiver-id',
+        name: '受信者',
+        displayName: '受信者',
+      );
+      userRepository.addTestUser(receiver);
+      notificationRepository.addTestNotification(
+        Notification(
+          id: 'deleted-sender-request-id',
+          type: NotificationType.friend,
+          sendUserId: 'deleted-sender-id',
+          receiveUserId: receiver.id,
+          sendUserDisplayName: '削除済み申請者',
+          receiveUserDisplayName: receiver.displayName,
+          status: NotificationStatus.pending,
+          createdAt: DateTime(2026, 5, 22),
+          updatedAt: DateTime(2026, 5, 22),
+        ),
+      );
+
+      await container
+          .read(notification_app.notificationNotifierProvider.notifier)
+          .acceptNotification('deleted-sender-request-id');
+
+      final expired = await notificationRepository
+          .getNotification('deleted-sender-request-id');
+      final updatedReceiver = await userRepository.getUser(receiver.id);
+
+      expect(expired?.status, NotificationStatus.expired);
+      expect(expired?.isRead, isTrue);
+      expect(updatedReceiver?.friends, isNot(contains('deleted-sender-id')));
     });
 
     test('予定を追加すると保存済み予定として取得できる', () async {

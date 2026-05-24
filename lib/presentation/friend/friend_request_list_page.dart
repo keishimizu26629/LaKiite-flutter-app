@@ -130,10 +130,21 @@ class FriendRequestCard extends StatelessWidget {
   final Future<void> Function() onAccept;
   final VoidCallback onReject;
 
+  /// 送信者が退会済みなどで承認できない友達申請かどうか。
+  bool get _isExpired => request.status == domain.NotificationStatus.expired;
+
+  /// 友達申請カードの主文言。
+  String get _title {
+    if (_isExpired) {
+      return '退会済みユーザーからの友達申請です';
+    }
+
+    final senderName = request.sendUserDisplayName ?? request.sendUserId;
+    return '$senderNameさんから友達申請が届いています';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final senderName = request.sendUserDisplayName ?? request.sendUserId;
-
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
@@ -142,7 +153,7 @@ class FriendRequestCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '$senderNameさんから友達申請が届いています',
+              _title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: request.isRead ? Colors.black87 : Colors.black,
                     fontWeight:
@@ -150,7 +161,15 @@ class FriendRequestCard extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 16),
-            if (request.status == domain.NotificationStatus.pending)
+            if (_isExpired)
+              const Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  'このユーザーは退会済みのため承認できません',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              )
+            else if (request.status == domain.NotificationStatus.pending)
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [

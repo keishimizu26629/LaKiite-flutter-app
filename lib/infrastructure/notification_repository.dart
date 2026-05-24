@@ -260,6 +260,24 @@ class NotificationRepository implements INotificationRepository {
     }
   }
 
+  /// 通知を期限切れにする
+  ///
+  /// [notificationId] 期限切れにする通知のID
+  @override
+  Future<void> expireNotification(String notificationId) async {
+    AppLogger.debug('Expiring notification: $notificationId');
+    try {
+      await _firestore
+          .collection('notifications')
+          .doc(notificationId)
+          .update(NotificationRepositoryUpdateData.expired());
+      AppLogger.debug('Notification expired successfully: $notificationId');
+    } catch (e) {
+      AppLogger.error('Error expiring notification: $e');
+      rethrow;
+    }
+  }
+
   /// 通知を既読にする
   ///
   /// [notificationId] 既読にする通知のID

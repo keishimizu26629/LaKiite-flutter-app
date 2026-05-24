@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'accept_friend_request_use_case.dart';
 import '../../domain/entity/notification.dart' as domain;
 import '../../domain/interfaces/i_notification_repository.dart';
-import '../../domain/interfaces/i_user_repository.dart';
 import '../../infrastructure/notification_repository.dart';
 import '../../infrastructure/firebase/push_notification_service.dart';
 import '../../utils/logger.dart';
@@ -22,6 +22,15 @@ final notificationRepositoryProvider = Provider<INotificationRepository>((ref) {
 /// Push通知送信サービスのインスタンスを提供する
 final pushNotificationSenderProvider = Provider<PushNotificationSender>((ref) {
   return PushNotificationSender();
+});
+
+/// 友達申請承認UseCaseを提供する。
+final acceptFriendRequestUseCaseProvider =
+    Provider<AcceptFriendRequestUseCase>((ref) {
+  return AcceptFriendRequestUseCase(
+    notificationRepository: ref.watch(notificationRepositoryProvider),
+    userRepository: ref.watch(userRepositoryProvider),
+  );
 });
 
 /// 現在のユーザーIDを提供するプロバイダー
@@ -226,11 +235,13 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
 
       if (notification != null &&
           notification.type == NotificationType.friend) {
-        await _connectFriendUsers(notification);
+        await _ref
+            .read(acceptFriendRequestUseCaseProvider)
+            .execute(notificationId);
+      } else {
+        // 通知を承認
+        await _repository.acceptNotification(notificationId);
       }
-
-      // 通知を承認
-      await _repository.acceptNotification(notificationId);
 
       // キャッシュクリア処理
       if (notification != null &&
@@ -257,32 +268,6 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }
-  }
-
-  Future<void> _connectFriendUsers(Notification notification) async {
-    final userRepo = _ref.read(userRepositoryProvider);
-    await _addFriendIfNeeded(
-      userRepo,
-      userId: notification.receiveUserId,
-      friendId: notification.sendUserId,
-    );
-    await _addFriendIfNeeded(
-      userRepo,
-      userId: notification.sendUserId,
-      friendId: notification.receiveUserId,
-    );
-  }
-
-  Future<void> _addFriendIfNeeded(
-    IUserRepository userRepo, {
-    required String userId,
-    required String friendId,
-  }) async {
-    final user = await userRepo.getUser(userId);
-    if (user?.friends.contains(friendId) ?? false) {
-      return;
-    }
-    await userRepo.addToList(userId, friendId);
   }
 
   /// 通知を拒否する

@@ -644,12 +644,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
 
     final usersFuture = Future.wait(
       reactions.map(
-        (reaction) => ref
-            .read(userRepositoryProvider)
-            .getUser(reaction.userId)
-            .then((user) => user!),
+        (reaction) => ref.read(userRepositoryProvider).getUser(reaction.userId),
       ),
-    );
+    ).then(ScheduleDetailLogic.availableReactionUsers);
 
     showModalBottomSheet(
       context: context,
@@ -866,7 +863,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    comment.userDisplayName ?? 'ユーザー',
+                                    ScheduleDetailLogic
+                                        .commentAuthorDisplayName(comment),
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,

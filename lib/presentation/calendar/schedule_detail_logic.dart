@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 import 'package:lakiite/domain/entity/notification.dart' as domain;
 import 'package:lakiite/domain/entity/schedule_comment.dart';
+import 'package:lakiite/domain/entity/user.dart';
 
 /// 予定詳細画面で使う表示判定と抽出処理を担う純粋ロジック。
 ///
@@ -96,5 +97,15 @@ class ScheduleDetailLogic {
     }
 
     return errorMsg;
+  }
+
+  /// リアクションユーザー取得結果から、削除済みなどで取得できないユーザーを除外する。
+  static List<UserModel> availableReactionUsers(List<UserModel?> users) {
+    return users.whereType<UserModel>().toList();
+  }
+
+  /// コメント投稿者名を表示用に返す。
+  static String commentAuthorDisplayName(ScheduleComment comment) {
+    return comment.userDisplayName ?? '退会済みユーザー';
   }
 }

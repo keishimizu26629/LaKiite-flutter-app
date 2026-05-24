@@ -8,6 +8,7 @@ import '../../utils/date_formatter.dart';
 import '../../utils/logger.dart';
 import '../../presentation/calendar/schedule_detail_page.dart';
 import '../../presentation/friend/friend_profile_page.dart';
+import 'notification_item_logic.dart';
 
 enum NotificationFilter {
   all('すべて'),
@@ -493,9 +494,7 @@ class _NotificationItem extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
-                      notification.status == domain.NotificationStatus.accepted
-                          ? '承認済み'
-                          : '拒否済み',
+                      NotificationItemLogic.statusLabel(notification.status),
                       style: TextStyle(
                         color: notification.status ==
                                 domain.NotificationStatus.accepted
@@ -590,17 +589,6 @@ class _NotificationItem extends ConsumerWidget {
   }
 
   String _buildSubtitle() {
-    final fromName =
-        notification.sendUserDisplayName ?? notification.sendUserId;
-    switch (notification.type) {
-      case domain.NotificationType.friend:
-        return '$fromNameさんからフレンド申請が届いています';
-      case domain.NotificationType.groupInvitation:
-        return '$fromNameさんからグループ招待が届いています';
-      case domain.NotificationType.reaction:
-        return '$fromNameさんがあなたの投稿にリアクションしました';
-      case domain.NotificationType.comment:
-        return '$fromNameさんがあなたの投稿にコメントしました';
-    }
+    return NotificationItemLogic.subtitle(notification);
   }
 }

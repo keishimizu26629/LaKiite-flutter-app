@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:lakiite/domain/entity/notification.dart' as domain;
 import 'package:lakiite/domain/entity/schedule_comment.dart';
+import 'package:lakiite/domain/entity/user.dart';
+import 'package:lakiite/domain/value/user_id.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_logic.dart';
 
 void main() {
@@ -162,12 +164,40 @@ void main() {
         'コメント更新に失敗しました',
       );
     });
+
+    test('リアクション投稿者の取得結果から削除済みユーザーを除外する', () {
+      final existingUser = _user(id: 'user-1', displayName: 'ユーザー1');
+
+      expect(
+        ScheduleDetailLogic.availableReactionUsers([
+          existingUser,
+          null,
+        ]),
+        [existingUser],
+      );
+    });
+
+    test('コメント投稿者名がない場合は退会済みユーザーとして表示する', () {
+      expect(
+        ScheduleDetailLogic.commentAuthorDisplayName(
+          _comment(userDisplayName: '投稿者'),
+        ),
+        '投稿者',
+      );
+      expect(
+        ScheduleDetailLogic.commentAuthorDisplayName(
+          _comment(userDisplayName: null),
+        ),
+        '退会済みユーザー',
+      );
+    });
   });
 }
 
 ScheduleComment _comment({
   String id = 'comment-1',
   String userId = 'user-1',
+  String? userDisplayName,
   DateTime? createdAt,
 }) {
   return ScheduleComment(
@@ -175,6 +205,7 @@ ScheduleComment _comment({
     userId: userId,
     content: 'コメント',
     createdAt: createdAt ?? DateTime(2026, 5, 1),
+    userDisplayName: userDisplayName,
   );
 }
 
@@ -194,5 +225,28 @@ domain.Notification _notification({
     updatedAt: DateTime(2026, 5, 1),
     isRead: isRead,
     relatedItemId: relatedItemId,
+  );
+}
+
+UserModel _user({
+  required String id,
+  required String displayName,
+}) {
+  return UserModel(
+    publicProfile: PublicUserModel(
+      id: id,
+      displayName: displayName,
+      searchId: UserId('USRTEST1'),
+      iconUrl: null,
+      shortBio: null,
+    ),
+    privateProfile: PrivateUserModel(
+      id: id,
+      name: displayName,
+      friends: const [],
+      groups: const [],
+      lists: const [],
+      createdAt: DateTime(2026, 5, 1),
+    ),
   );
 }

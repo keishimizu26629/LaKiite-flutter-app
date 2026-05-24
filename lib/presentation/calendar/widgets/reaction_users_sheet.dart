@@ -51,16 +51,21 @@ class ReactionUsersSheet extends StatelessWidget {
                 return Center(child: Text('エラー: ${snapshot.error}'));
               }
 
-              final users = snapshot.data!;
-              developer.log('リアクションユーザー: ${users.length}人');
+              final usersById = {
+                for (final user in snapshot.data!) user.id: user,
+              };
+              developer.log('リアクションユーザー: ${usersById.length}人');
               return SizedBox(
                 height: MediaQuery.of(context).size.height * 0.3,
                 child: ListView.builder(
                   shrinkWrap: true,
-                  itemCount: users.length,
+                  itemCount: reactions.length,
                   itemBuilder: (context, index) {
-                    final user = users[index];
                     final reaction = reactions[index];
+                    final user = usersById[reaction.userId];
+                    final displayName =
+                        user?.displayName ?? reaction.userDisplayName;
+                    final iconUrl = user?.iconUrl ?? reaction.userPhotoUrl;
                     developer.log('リアクションオブジェクト: $reaction');
                     developer.log(
                       'リアクションタイプ: ${reaction.type} (${reaction.type.runtimeType})',
@@ -69,9 +74,9 @@ class ReactionUsersSheet extends StatelessWidget {
                     return ListTile(
                       leading: Stack(
                         children: [
-                          user.iconUrl != null
+                          iconUrl != null
                               ? CircleAvatar(
-                                  backgroundImage: NetworkImage(user.iconUrl!),
+                                  backgroundImage: NetworkImage(iconUrl),
                                 )
                               : const DefaultUserIcon(),
                           Positioned(
@@ -84,7 +89,7 @@ class ReactionUsersSheet extends StatelessWidget {
                           ),
                         ],
                       ),
-                      title: Text(user.displayName),
+                      title: Text(displayName),
                     );
                   },
                 ),

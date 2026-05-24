@@ -21,4 +21,12 @@ class NotificationRepositoryUpdateData {
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
+
+  static Map<String, Object> expired() {
+    return {
+      'status': NotificationStatus.expired.name,
+      'isRead': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+  }
 }
