@@ -1,6 +1,9 @@
 import 'package:lakiite/domain/entity/notification.dart';
 import 'package:lakiite/domain/interfaces/i_notification_repository.dart';
 
+/// 通知Repositoryの簡易モック。
+///
+/// 手動確認や軽量なUI確認で使うため、Firestoreへの永続化副作用は持たない。
 class MockNotificationRepository implements INotificationRepository {
   final List<Notification> _notifications = [];
 
@@ -51,6 +54,9 @@ class MockNotificationRepository implements INotificationRepository {
   @override
   Future<void> rejectNotification(String notificationId) async {}
 
+  /// 処理不能になった通知を期限切れ扱いにする。
+  ///
+  /// このモックは永続化を行わないため、期限切れ更新の副作用は持たない。
   @override
   Future<void> expireNotification(String notificationId) async {}
 
