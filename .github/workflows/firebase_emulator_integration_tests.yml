@@ -3,6 +3,17 @@ name: Firebase Emulator Integration Tests
 on:
   push:
     branches: [main]
+    paths:
+      - "lib/**"
+      - "integration_test/**"
+      - "android/**"
+      - "ios/**"
+      - "assets/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - "firebase.json"
+      - ".firebaserc"
+      - ".github/workflows/firebase_emulator_integration_tests.yml"
   workflow_dispatch:
 
 env:
@@ -90,7 +101,10 @@ jobs:
           arch: x86_64
           profile: pixel_6
           script: |
-            firebase emulators:exec --only auth,firestore,storage --project "$FIREBASE_EMULATOR_PROJECT_ID" "flutter test integration_test/social_schedule_emulator_flow_test.dart -d emulator-5554 --flavor dev --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2 --dart-define=TEST_MODE=true --dart-define=FLAVOR=development"
+            adb reverse tcp:9099 tcp:9099
+            adb reverse tcp:8080 tcp:8080
+            adb reverse tcp:9199 tcp:9199
+            firebase emulators:exec --only auth,firestore,storage --project "$FIREBASE_EMULATOR_PROJECT_ID" "flutter test integration_test/social_schedule_emulator_flow_test.dart -d emulator-5554 --flavor dev --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FIREBASE_EMULATOR_HOST=127.0.0.1 --dart-define=TEST_MODE=true --dart-define=FLAVOR=development"
 
   ios:
     name: iOS Firebase Emulator Smoke Test

@@ -3,6 +3,21 @@ name: PR Tests
 on:
   pull_request:
     branches: [main, develop]
+    paths:
+      - "lib/**"
+      - "test/**"
+      - "integration_test/**"
+      - "android/**"
+      - "ios/**"
+      - "assets/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - "analysis_options.yaml"
+      - "build.yaml"
+      - "firebase.json"
+      - ".firebaserc"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/firebase_emulator_integration_tests.yml"
 
 env:
   FLUTTER_VERSION: "3.41.5"
