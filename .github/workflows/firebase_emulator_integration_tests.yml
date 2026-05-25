@@ -1,11 +1,15 @@
-name: Firebase Emulator Integration Tests
+name: Firebase Emulator E2E Smoke Tests
+run-name: Firebase Emulator E2E Smoke (${{ github.event_name }} - ${{ github.ref_name }})
 
+# Heavy native-device smoke tests. Keep this workflow off pull_request; it is
+# intended for manual runs and post-merge main branch smoke verification.
 on:
   push:
     branches: [main]
     paths:
       - "lib/**"
       - "integration_test/**"
+      - "patrol_test/**"
       - "android/**"
       - "ios/**"
       - "assets/**"
@@ -20,11 +24,15 @@ env:
   FLUTTER_VERSION: "3.41.5"
   FIREBASE_EMULATOR_PROJECT_ID: demo-lakiite-emulator-test
 
+concurrency:
+  group: firebase-emulator-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   android:
     name: Android Firebase Emulator Smoke Test
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
 
     steps:
       - name: Checkout repository
@@ -118,6 +126,7 @@ jobs:
           flutter packages pub run build_runner build --delete-conflicting-outputs
 
       - name: Run Android integration test
+        timeout-minutes: 45
         uses: reactivecircus/android-emulator-runner@v2.35.0
         with:
           api-level: 35
@@ -153,7 +162,7 @@ jobs:
   ios:
     name: iOS Firebase Emulator Smoke Test
     runs-on: macos-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
 
     steps:
       - name: Checkout repository
@@ -255,6 +264,7 @@ jobs:
           xcrun simctl bootstatus "$DEVICE_ID" -b
 
       - name: Run iOS integration test
+        timeout-minutes: 45
         run: |
           xcrun simctl list devices "$IOS_SIMULATOR_ID" || true
           xcrun simctl spawn "$IOS_SIMULATOR_ID" launchctl print system || true
