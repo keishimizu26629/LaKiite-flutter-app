@@ -241,4 +241,4 @@ jobs:
         run: |
           xcrun simctl list devices "$IOS_SIMULATOR_ID" || true
           xcrun simctl spawn "$IOS_SIMULATOR_ID" launchctl print system || true
-          firebase --config firebase.ci.json emulators:exec --only auth,firestore,storage --project "$FIREBASE_EMULATOR_PROJECT_ID" "bash -lc 'set -euo pipefail; nc -vz 127.0.0.1 9099; nc -vz 127.0.0.1 8080; nc -vz 127.0.0.1 9199; patrol test --target patrol_test/firebase_emulator_smoke_test.dart --device $IOS_SIMULATOR_ID --simulator --flavor dev --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FIREBASE_EMULATOR_HOST=localhost --dart-define=TEST_MODE=true --dart-define=FLAVOR=development'"
+          firebase --config firebase.ci.json emulators:exec --only auth,firestore,storage --project "$FIREBASE_EMULATOR_PROJECT_ID" "bash -lc 'set -euo pipefail; nc -vz 127.0.0.1 9099; nc -vz 127.0.0.1 8080; nc -vz 127.0.0.1 9199; patrol test --target patrol_test/firebase_emulator_smoke_test.dart --device $IOS_SIMULATOR_ID --flavor dev --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FIREBASE_EMULATOR_HOST=localhost --dart-define=TEST_MODE=true --dart-define=FLAVOR=development'"
