@@ -121,6 +121,7 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
+          emulator-boot-timeout: 1800
           script: |
             firebase --config firebase.ci.json emulators:exec --only auth,firestore,storage --project "$FIREBASE_EMULATOR_PROJECT_ID" "flutter test integration_test/social_schedule_emulator_flow_test.dart -d emulator-5554 --flavor dev --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2 --dart-define=TEST_MODE=true --dart-define=FLAVOR=development"
 
