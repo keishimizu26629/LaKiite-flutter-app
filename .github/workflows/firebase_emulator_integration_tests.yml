@@ -3,6 +3,17 @@ name: Firebase Emulator Integration Tests
 on:
   push:
     branches: [main]
+    paths:
+      - "lib/**"
+      - "integration_test/**"
+      - "android/**"
+      - "ios/**"
+      - "assets/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - "firebase.json"
+      - ".firebaserc"
+      - ".github/workflows/firebase_emulator_integration_tests.yml"
   workflow_dispatch:
 
 env:
