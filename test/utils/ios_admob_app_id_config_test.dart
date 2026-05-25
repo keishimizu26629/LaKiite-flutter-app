@@ -63,18 +63,10 @@ Map<String, dynamic> _readDartDefine(String path) {
 }
 
 List<Map<String, String>> _extractRunnerTargetBuildSettings(String project) {
-  final buildSettingsBlocks = RegExp(
-    r'buildSettings = \{(?<settings>[\s\S]*?)\n\t+\};',
-  ).allMatches(project);
-
   final result = <Map<String, String>>[];
 
-  for (final match in buildSettingsBlocks) {
-    final settings = match.namedGroup('settings')!;
-    if (!settings.contains('PRODUCT_BUNDLE_IDENTIFIER')) {
-      continue;
-    }
-
+  for (final configuration in _runnerBuildConfigurationReferences(project)) {
+    final settings = _extractBuildSettingsBlock(project, configuration.key);
     result.add({
       'PRODUCT_BUNDLE_IDENTIFIER':
           _extractBuildSetting(settings, 'PRODUCT_BUNDLE_IDENTIFIER'),
@@ -84,6 +76,40 @@ List<Map<String, String>> _extractRunnerTargetBuildSettings(String project) {
   }
 
   return result;
+}
+
+List<MapEntry<String, String>> _runnerBuildConfigurationReferences(
+  String project,
+) {
+  final configurationList = RegExp(
+    r'Build configuration list for PBXNativeTarget "Runner" \*/ = \{[\s\S]*?buildConfigurations = \((?<configs>[\s\S]*?)\);',
+  ).firstMatch(project);
+
+  if (configurationList == null) {
+    throw StateError('Runner target build configuration list was not found.');
+  }
+
+  return RegExp(r'(?<id>[A-Z0-9]+) /\* (?<name>[^*]+) \*/')
+      .allMatches(configurationList.namedGroup('configs')!)
+      .map((match) {
+    return MapEntry(
+      match.namedGroup('id')!,
+      match.namedGroup('name')!.trim(),
+    );
+  }).toList();
+}
+
+String _extractBuildSettingsBlock(String project, String configurationId) {
+  final block = RegExp(
+    '${RegExp.escape(configurationId)} /\\* [^*]+ \\*/ = \\{[\\s\\S]*?buildSettings = \\{(?<settings>[\\s\\S]*?)\\n\\t+\\};',
+  ).firstMatch(project);
+
+  if (block == null) {
+    throw StateError(
+        'Runner build configuration $configurationId was not found.');
+  }
+
+  return block.namedGroup('settings')!;
 }
 
 String _extractBuildSetting(String settings, String key) {

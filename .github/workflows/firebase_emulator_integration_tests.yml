@@ -1,11 +1,15 @@
-name: Firebase Emulator Integration Tests
+name: Firebase Emulator E2E Smoke Tests
+run-name: Firebase Emulator E2E Smoke (${{ github.event_name }} - ${{ github.ref_name }})
 
+# Heavy native-device smoke tests. Keep this workflow off pull_request; it is
+# intended for manual runs and post-merge main branch smoke verification.
 on:
   push:
     branches: [main]
     paths:
       - "lib/**"
       - "integration_test/**"
+      - "patrol_test/**"
       - "android/**"
       - "ios/**"
       - "assets/**"
@@ -20,11 +24,15 @@ env:
   FLUTTER_VERSION: "3.41.5"
   FIREBASE_EMULATOR_PROJECT_ID: demo-lakiite-emulator-test
 
+concurrency:
+  group: firebase-emulator-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   android:
     name: Android Firebase Emulator Smoke Test
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
 
     steps:
       - name: Checkout repository
@@ -45,6 +53,9 @@ jobs:
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
+
+      - name: Install Patrol CLI
+        run: flutter pub global activate patrol_cli
 
       - name: Create emulator Firebase config files
         run: |
@@ -115,6 +126,7 @@ jobs:
           flutter packages pub run build_runner build --delete-conflicting-outputs
 
       - name: Run Android integration test
+        timeout-minutes: 45
         uses: reactivecircus/android-emulator-runner@v2.35.0
         with:
           api-level: 35
@@ -123,12 +135,34 @@ jobs:
           profile: pixel_6
           emulator-boot-timeout: 1800
           script: |
-            firebase --config firebase.ci.json emulators:exec --only auth,firestore,storage --project "$FIREBASE_EMULATOR_PROJECT_ID" "flutter test integration_test/social_schedule_emulator_flow_test.dart -d emulator-5554 --flavor dev --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2 --dart-define=TEST_MODE=true --dart-define=FLAVOR=development"
+            adb devices -l
+            adb reverse tcp:9099 tcp:9099 || true
+            adb reverse tcp:8080 tcp:8080 || true
+            adb reverse tcp:9199 tcp:9199 || true
+            adb reverse --list || true
+            firebase --config firebase.ci.json emulators:exec --only auth,firestore,storage --project "$FIREBASE_EMULATOR_PROJECT_ID" "bash -lc 'set -euo pipefail; nc -vz 127.0.0.1 9099; nc -vz 127.0.0.1 8080; nc -vz 127.0.0.1 9199; adb reverse --list || true; patrol test --target patrol_test/firebase_emulator_smoke_test.dart --device emulator-5554 --flavor dev --show-flutter-logs --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2 --dart-define=TEST_MODE=true --dart-define=FLAVOR=development'"
+
+      - name: Collect Android Patrol diagnostics
+        if: always()
+        run: |
+          mkdir -p ci-diagnostics/android
+          cp -R build/app/reports/androidTests ci-diagnostics/android/reports 2>/dev/null || true
+          cp -R build/app/outputs/androidTest-results ci-diagnostics/android/results 2>/dev/null || true
+          adb devices -l > ci-diagnostics/android/adb-devices.txt 2>&1 || true
+          find build -maxdepth 5 -type f | sort > ci-diagnostics/android/build-files.txt 2>/dev/null || true
+
+      - name: Upload Android Patrol diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-patrol-diagnostics
+          path: ci-diagnostics/android
+          if-no-files-found: ignore
 
   ios:
     name: iOS Firebase Emulator Smoke Test
     runs-on: macos-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
 
     steps:
       - name: Checkout repository
@@ -149,6 +183,9 @@ jobs:
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
+
+      - name: Install Patrol CLI
+        run: flutter pub global activate patrol_cli
 
       - name: Create emulator Firebase config files
         run: |
@@ -227,5 +264,29 @@ jobs:
           xcrun simctl bootstatus "$DEVICE_ID" -b
 
       - name: Run iOS integration test
+        timeout-minutes: 45
         run: |
-          firebase --config firebase.ci.json emulators:exec --only auth,firestore,storage --project "$FIREBASE_EMULATOR_PROJECT_ID" "flutter test integration_test/social_schedule_emulator_flow_test.dart -d $IOS_SIMULATOR_ID --no-dds --flavor dev --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FIREBASE_EMULATOR_HOST=localhost --dart-define=TEST_MODE=true --dart-define=FLAVOR=development"
+          xcrun simctl list devices "$IOS_SIMULATOR_ID" || true
+          xcrun simctl spawn "$IOS_SIMULATOR_ID" launchctl print system || true
+          firebase --config firebase.ci.json emulators:exec --only auth,firestore,storage --project "$FIREBASE_EMULATOR_PROJECT_ID" "bash -lc 'set -euo pipefail; nc -vz 127.0.0.1 9099; nc -vz 127.0.0.1 8080; nc -vz 127.0.0.1 9199; patrol test --target patrol_test/firebase_emulator_smoke_test.dart --device $IOS_SIMULATOR_ID --flavor dev --show-flutter-logs --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FIREBASE_EMULATOR_HOST=localhost --dart-define=TEST_MODE=true --dart-define=FLAVOR=development'"
+
+      - name: Collect iOS Patrol diagnostics
+        if: always()
+        run: |
+          mkdir -p ci-diagnostics/ios
+          xcrun simctl list devices > ci-diagnostics/ios/simctl-devices.txt 2>&1 || true
+          for result in build/ios_results_*.xcresult; do
+            [ -e "$result" ] || continue
+            name=$(basename "$result")
+            xcrun xcresulttool get test-results summary --path "$result" > "ci-diagnostics/ios/${name}.summary.json" 2>&1 || true
+            xcrun xcresulttool get test-results tests --path "$result" > "ci-diagnostics/ios/${name}.tests.json" 2>&1 || true
+          done
+          find build -maxdepth 5 -type f | sort > ci-diagnostics/ios/build-files.txt 2>/dev/null || true
+
+      - name: Upload iOS Patrol diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-patrol-diagnostics
+          path: ci-diagnostics/ios
+          if-no-files-found: ignore
