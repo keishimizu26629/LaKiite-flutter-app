@@ -2,7 +2,7 @@ name: PR Tests
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches: [main, dev]
     paths:
       - "lib/**"
       - "test/**"
@@ -17,6 +17,7 @@ on:
       - "firebase.json"
       - ".firebaserc"
       - ".github/workflows/ci.yml"
+      - ".github/workflows/deploy_firebase_hosting.yml"
       - ".github/workflows/firebase_emulator_integration_tests.yml"
 
 env:
@@ -99,7 +100,7 @@ jobs:
     needs: analyze
     strategy:
       matrix:
-        test-type: [unit, widget, integration]
+        test-type: [unit, widget]
 
     steps:
       - name: Checkout repository
@@ -162,18 +163,6 @@ jobs:
       - name: Run widget tests
         if: matrix.test-type == 'widget'
         run: flutter test test/presentation/ --dart-define=FLUTTER_TEST=true
-
-      - name: Setup integration test environment
-        if: matrix.test-type == 'integration'
-        run: |
-          flutter config --enable-web
-          sudo apt-get update && sudo apt-get install -y xvfb
-
-      - name: Run integration tests
-        if: matrix.test-type == 'integration'
-        run: |
-          echo "統合テストは一時的にスキップしています"
-          exit 0
 
       - name: Upload coverage
         if: matrix.test-type == 'unit'
