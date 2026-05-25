@@ -82,6 +82,7 @@ coverage/
 test-results/
 test_driver/screenshots/
 integration_test/screenshots/
+patrol_test/test_bundle.dart
 *.coverage
 *.lcov
 
