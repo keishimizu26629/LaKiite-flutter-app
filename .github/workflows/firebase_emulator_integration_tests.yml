@@ -140,7 +140,6 @@ jobs:
           cp -R build/app/reports/androidTests ci-diagnostics/android/reports 2>/dev/null || true
           cp -R build/app/outputs/androidTest-results ci-diagnostics/android/results 2>/dev/null || true
           adb devices -l > ci-diagnostics/android/adb-devices.txt 2>&1 || true
-          adb logcat -d -t 3000 > ci-diagnostics/android/logcat.txt 2>&1 || true
           find build -maxdepth 5 -type f | sort > ci-diagnostics/android/build-files.txt 2>/dev/null || true
 
       - name: Upload Android Patrol diagnostics
