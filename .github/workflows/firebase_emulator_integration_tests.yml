@@ -123,7 +123,12 @@ jobs:
           profile: pixel_6
           emulator-boot-timeout: 1800
           script: |
-            firebase --config firebase.ci.json emulators:exec --only auth,firestore,storage --project "$FIREBASE_EMULATOR_PROJECT_ID" "flutter test integration_test/social_schedule_emulator_flow_test.dart -d emulator-5554 --flavor dev --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2 --dart-define=TEST_MODE=true --dart-define=FLAVOR=development"
+            adb devices -l
+            adb reverse tcp:9099 tcp:9099 || true
+            adb reverse tcp:8080 tcp:8080 || true
+            adb reverse tcp:9199 tcp:9199 || true
+            adb reverse --list || true
+            firebase --config firebase.ci.json emulators:exec --only auth,firestore,storage --project "$FIREBASE_EMULATOR_PROJECT_ID" "bash -lc 'set -euo pipefail; nc -vz 127.0.0.1 9099; nc -vz 127.0.0.1 8080; nc -vz 127.0.0.1 9199; adb reverse --list || true; adb shell nc -vz 10.0.2.2 9099 || true; flutter test integration_test/social_schedule_emulator_flow_test.dart -d emulator-5554 --flavor dev --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FIREBASE_EMULATOR_HOST=10.0.2.2 --dart-define=TEST_MODE=true --dart-define=FLAVOR=development'"
 
   ios:
     name: iOS Firebase Emulator Smoke Test
@@ -228,4 +233,6 @@ jobs:
 
       - name: Run iOS integration test
         run: |
-          firebase --config firebase.ci.json emulators:exec --only auth,firestore,storage --project "$FIREBASE_EMULATOR_PROJECT_ID" "flutter test integration_test/social_schedule_emulator_flow_test.dart -d $IOS_SIMULATOR_ID --no-dds --flavor dev --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FIREBASE_EMULATOR_HOST=localhost --dart-define=TEST_MODE=true --dart-define=FLAVOR=development"
+          xcrun simctl list devices "$IOS_SIMULATOR_ID" || true
+          xcrun simctl spawn "$IOS_SIMULATOR_ID" launchctl print system || true
+          firebase --config firebase.ci.json emulators:exec --only auth,firestore,storage --project "$FIREBASE_EMULATOR_PROJECT_ID" "bash -lc 'set -euo pipefail; nc -vz 127.0.0.1 9099; nc -vz 127.0.0.1 8080; nc -vz 127.0.0.1 9199; flutter test integration_test/social_schedule_emulator_flow_test.dart -d $IOS_SIMULATOR_ID --flavor dev --dart-define=USE_FIREBASE_EMULATOR=true --dart-define=FIREBASE_EMULATOR_HOST=localhost --dart-define=TEST_MODE=true --dart-define=FLAVOR=development'"
