@@ -2,7 +2,7 @@ name: PR Tests
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches: [main, dev]
     paths:
       - "lib/**"
       - "test/**"
@@ -17,6 +17,7 @@ on:
       - "firebase.json"
       - ".firebaserc"
       - ".github/workflows/ci.yml"
+      - ".github/workflows/deploy_firebase_hosting.yml"
       - ".github/workflows/firebase_emulator_integration_tests.yml"
 
 env:
