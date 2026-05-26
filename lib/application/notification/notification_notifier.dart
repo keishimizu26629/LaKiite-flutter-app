@@ -29,7 +29,6 @@ final acceptFriendRequestUseCaseProvider =
     Provider<AcceptFriendRequestUseCase>((ref) {
   return AcceptFriendRequestUseCase(
     notificationRepository: ref.watch(notificationRepositoryProvider),
-    userRepository: ref.watch(userRepositoryProvider),
   );
 });
 
@@ -254,10 +253,6 @@ class NotificationNotifier extends StateNotifier<AsyncValue<void>> {
             userRepo.clearCache();
             AppLogger.debug('フレンド申請承認時にUserRepositoryキャッシュをクリアしました');
           }
-
-          // プロバイダー自体も無効化してより確実にキャッシュをクリア
-          _ref.invalidate(userRepositoryProvider);
-          AppLogger.debug('フレンド申請承認時にuserRepositoryProviderを無効化しました');
         } catch (e) {
           // キャッシュクリアに失敗しても処理は続行
           AppLogger.error('フレンド申請承認時のキャッシュクリアに失敗: $e');
