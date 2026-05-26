@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lakiite/presentation/calendar/schedule_form_page.dart';
 import '../../mock/providers/test_providers.dart';
 import '../../mock/base_mock.dart';
 import '../../utils/test_utils.dart';
@@ -166,6 +167,48 @@ void main() {
     });
 
     group('Schedule Form Widget Tests', () {
+      testWidgets('必須項目はフォーカスや入力途中でエラー表示せず保存ボタンを無効化する', (tester) async {
+        await tester.pumpWidget(
+          TestUtils.createTestApp(
+            overrides: TestProviders.forScheduleCreation,
+            child: const ScheduleFormPage(),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        expect(find.text('タイトルを入力してください'), findsNothing);
+        expect(find.textContaining('場所を入力してください'), findsNothing);
+
+        await tester.tap(find.widgetWithText(TextField, 'タイトル'));
+        await tester.pump();
+
+        expect(find.text('タイトルを入力してください'), findsNothing);
+        expect(find.textContaining('場所を入力してください'), findsNothing);
+
+        await tester.enterText(
+          find.widgetWithText(TextField, 'タイトル'),
+          'テスト予定',
+        );
+        await tester.pump();
+
+        expect(find.text('タイトルを入力してください'), findsNothing);
+        expect(find.textContaining('場所を入力してください'), findsNothing);
+
+        var saveButton = tester
+            .widget<FloatingActionButton>(find.byType(FloatingActionButton));
+        expect(saveButton.onPressed, isNull);
+
+        await tester.enterText(
+          find.widgetWithText(TextField, '場所'),
+          '未定',
+        );
+        await tester.pump();
+
+        saveButton = tester
+            .widget<FloatingActionButton>(find.byType(FloatingActionButton));
+        expect(saveButton.onPressed, isNotNull);
+      });
+
       testWidgets('スケジュール作成フォームが正しく表示される', (tester) async {
         await tester.pumpWidget(
           TestUtils.createTestApp(

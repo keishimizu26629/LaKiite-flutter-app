@@ -108,4 +108,12 @@ class ScheduleFormLogic {
     }
     return location;
   }
+
+  /// 保存に必要なテキスト項目が入力済みかどうかを返す。
+  static bool hasRequiredScheduleFields({
+    required String title,
+    required String location,
+  }) {
+    return title.trim().isNotEmpty && location.trim().isNotEmpty;
+  }
 }

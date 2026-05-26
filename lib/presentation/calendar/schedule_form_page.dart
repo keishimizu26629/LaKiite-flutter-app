@@ -172,9 +172,13 @@ class ScheduleFormPage extends HookConsumerWidget {
       ScheduleFormLogic.timeOf(initialEndDate),
     );
 
-    final hasTitleError = useState<bool>(false);
-    final hasLocationError = useState<bool>(false);
     final hasTimeError = useState<bool>(false);
+    final hasRequiredFields = useState<bool>(
+      ScheduleFormLogic.hasRequiredScheduleFields(
+        title: titleController.text,
+        location: locationController.text,
+      ),
+    );
 
     final selectedLists = useState<List<UserList>>([]);
     final listsAsync = ref.watch(userListsStreamProvider);
@@ -222,16 +226,18 @@ class ScheduleFormPage extends HookConsumerWidget {
       selectedEndTime.value
     ]);
 
-    // バリデーション関数
-    void validateInputs() {
-      hasTitleError.value = titleController.text.trim().isEmpty;
-      hasLocationError.value = locationController.text.trim().isEmpty;
+    // 保存ボタンの有効状態だけを更新する。入力途中の必須エラー表示は行わない。
+    void updateRequiredFieldsState() {
+      hasRequiredFields.value = ScheduleFormLogic.hasRequiredScheduleFields(
+        title: titleController.text,
+        location: locationController.text,
+      );
     }
 
     // テキストフィールドの変更を監視
     useEffect(() {
       void listener() {
-        validateInputs();
+        updateRequiredFieldsState();
       }
 
       titleController.addListener(listener);
@@ -247,11 +253,11 @@ class ScheduleFormPage extends HookConsumerWidget {
     Future<void> handleSave() async {
       AppLogger.debug('ScheduleFormPage: Save button pressed');
 
-      if (titleController.text.isEmpty) {
-        AppLogger.warning('ScheduleFormPage: Title is empty');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('タイトルを入力してください')),
-        );
+      if (!ScheduleFormLogic.hasRequiredScheduleFields(
+        title: titleController.text,
+        location: locationController.text,
+      )) {
+        AppLogger.warning('ScheduleFormPage: Required fields are empty');
         return;
       }
 
@@ -358,10 +364,10 @@ class ScheduleFormPage extends HookConsumerWidget {
           children: [
             TextField(
               controller: titleController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'タイトル',
-                border: const OutlineInputBorder(),
-                errorText: hasTitleError.value ? 'タイトルを入力してください' : null,
+                border: OutlineInputBorder(),
+                helperText: '必須',
               ),
             ),
             const SizedBox(height: 16),
@@ -376,13 +382,10 @@ class ScheduleFormPage extends HookConsumerWidget {
             const SizedBox(height: 16),
             TextField(
               controller: locationController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: '場所',
-                border: const OutlineInputBorder(),
-                errorText: hasLocationError.value
-                    ? '場所を入力してください。場所が未定の場合は「未定」と入力してください。'
-                    : null,
-                helperText: '場所が未定の場合は「未定」と入力してください。',
+                border: OutlineInputBorder(),
+                helperText: '必須。場所が未定の場合は「未定」と入力してください。',
               ),
             ),
             const SizedBox(height: 16),
@@ -569,9 +572,7 @@ class ScheduleFormPage extends HookConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            if (hasTimeError.value ||
-                hasTitleError.value ||
-                hasLocationError.value)
+            if (hasTimeError.value)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 8),
                 padding: const EdgeInsets.all(8),
@@ -583,40 +584,6 @@ class ScheduleFormPage extends HookConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (hasTitleError.value)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline,
-                                color: Colors.red, size: 16),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'タイトルを入力してください',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (hasLocationError.value)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline,
-                                color: Colors.red, size: 16),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '場所を入力してください。場所が未定の場合は「未定」と入力してください。',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     if (hasTimeError.value)
                       const Row(
                         children: [
@@ -761,16 +728,12 @@ class ScheduleFormPage extends HookConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: (hasTimeError.value ||
-                hasTitleError.value ||
-                hasLocationError.value)
+        onPressed: (hasTimeError.value || !hasRequiredFields.value)
             ? null
             : handleSave,
         icon: const Icon(Icons.save),
         label: const Text('保存'),
-        backgroundColor: (hasTimeError.value ||
-                hasTitleError.value ||
-                hasLocationError.value)
+        backgroundColor: (hasTimeError.value || !hasRequiredFields.value)
             ? Colors.grey
             : null,
       ),

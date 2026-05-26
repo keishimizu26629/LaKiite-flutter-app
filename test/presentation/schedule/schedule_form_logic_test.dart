@@ -108,6 +108,44 @@ void main() {
       expect(ScheduleFormLogic.optionalLocation('  '), '  ');
       expect(ScheduleFormLogic.optionalLocation('会議室'), '会議室');
     });
+
+    test('タイトルと場所が入力されている場合だけ必須項目入力済みになる', () {
+      expect(
+        ScheduleFormLogic.hasRequiredScheduleFields(
+          title: '予定',
+          location: '未定',
+        ),
+        isTrue,
+      );
+      expect(
+        ScheduleFormLogic.hasRequiredScheduleFields(
+          title: '',
+          location: '未定',
+        ),
+        isFalse,
+      );
+      expect(
+        ScheduleFormLogic.hasRequiredScheduleFields(
+          title: '   ',
+          location: '未定',
+        ),
+        isFalse,
+      );
+      expect(
+        ScheduleFormLogic.hasRequiredScheduleFields(
+          title: '予定',
+          location: '',
+        ),
+        isFalse,
+      );
+      expect(
+        ScheduleFormLogic.hasRequiredScheduleFields(
+          title: '予定',
+          location: '   ',
+        ),
+        isFalse,
+      );
+    });
   });
 }
 
