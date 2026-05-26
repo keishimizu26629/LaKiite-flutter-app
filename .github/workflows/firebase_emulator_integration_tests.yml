@@ -1,23 +1,9 @@
 name: Firebase Emulator E2E Smoke Tests
 run-name: Firebase Emulator E2E Smoke (${{ github.event_name }} - ${{ github.ref_name }})
 
-# Heavy native-device smoke tests. Keep this workflow off pull_request; it is
-# intended for manual runs and post-merge main branch smoke verification.
+# Heavy native-device smoke tests are intentionally manual-only. PR coverage
+# is provided by unit/widget tests with mocked repositories and providers.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "lib/**"
-      - "integration_test/**"
-      - "patrol_test/**"
-      - "android/**"
-      - "ios/**"
-      - "assets/**"
-      - "pubspec.yaml"
-      - "pubspec.lock"
-      - "firebase.json"
-      - ".firebaserc"
-      - ".github/workflows/firebase_emulator_integration_tests.yml"
   workflow_dispatch:
 
 env:
