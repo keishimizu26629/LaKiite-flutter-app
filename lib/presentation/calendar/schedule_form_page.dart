@@ -172,13 +172,24 @@ class ScheduleFormPage extends HookConsumerWidget {
       ScheduleFormLogic.timeOf(initialEndDate),
     );
 
-    final hasTimeError = useState<bool>(false);
-    final hasRequiredFields = useState<bool>(
-      ScheduleFormLogic.hasRequiredScheduleFields(
+    ScheduleFormValidationResult currentValidationResult() {
+      return ScheduleFormLogic.validateScheduleForm(
         title: titleController.text,
         location: locationController.text,
-      ),
+        startDate: selectedStartDate.value,
+        startTime: selectedStartTime.value,
+        endDate: selectedEndDate.value,
+        endTime: selectedEndTime.value,
+      );
+    }
+
+    final formValidationResult = useState<ScheduleFormValidationResult>(
+      currentValidationResult(),
     );
+
+    void updateValidationResult() {
+      formValidationResult.value = currentValidationResult();
+    }
 
     final selectedLists = useState<List<UserList>>([]);
     final listsAsync = ref.watch(userListsStreamProvider);
@@ -205,19 +216,9 @@ class ScheduleFormPage extends HookConsumerWidget {
       return null;
     }, [listsAsync]);
 
-    // 時間の整合性をチェックする関数
-    void validateTime() {
-      hasTimeError.value = ScheduleFormLogic.hasInvalidTimeRange(
-        startDate: selectedStartDate.value,
-        startTime: selectedStartTime.value,
-        endDate: selectedEndDate.value,
-        endTime: selectedEndTime.value,
-      );
-    }
-
-    // 初期表示時と時間変更時にバリデーションを実行
+    // 初期表示時と日時変更時にフォーム全体の検証結果を更新する。
     useEffect(() {
-      validateTime();
+      updateValidationResult();
       return null;
     }, [
       selectedStartDate.value,
@@ -226,18 +227,10 @@ class ScheduleFormPage extends HookConsumerWidget {
       selectedEndTime.value
     ]);
 
-    // 保存ボタンの有効状態だけを更新する。入力途中の必須エラー表示は行わない。
-    void updateRequiredFieldsState() {
-      hasRequiredFields.value = ScheduleFormLogic.hasRequiredScheduleFields(
-        title: titleController.text,
-        location: locationController.text,
-      );
-    }
-
     // テキストフィールドの変更を監視
     useEffect(() {
       void listener() {
-        updateRequiredFieldsState();
+        updateValidationResult();
       }
 
       titleController.addListener(listener);
@@ -253,10 +246,10 @@ class ScheduleFormPage extends HookConsumerWidget {
     Future<void> handleSave() async {
       AppLogger.debug('ScheduleFormPage: Save button pressed');
 
-      if (!ScheduleFormLogic.hasRequiredScheduleFields(
-        title: titleController.text,
-        location: locationController.text,
-      )) {
+      final validationResult = currentValidationResult();
+      formValidationResult.value = validationResult;
+
+      if (!validationResult.hasRequiredFields) {
         AppLogger.warning('ScheduleFormPage: Required fields are empty');
         return;
       }
@@ -271,7 +264,7 @@ class ScheduleFormPage extends HookConsumerWidget {
         selectedEndTime.value,
       );
 
-      if (endDateTime.isBefore(startDateTime)) {
+      if (validationResult.hasInvalidTimeRange) {
         AppLogger.warning('ScheduleFormPage: End date is before start date');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('終了日時は開始日時より後に設定してください')),
@@ -454,7 +447,7 @@ class ScheduleFormPage extends HookConsumerWidget {
                           );
                           if (result != null) {
                             selectedStartTime.value = result;
-                            validateTime();
+                            updateValidationResult();
                           }
                         },
                         child: Container(
@@ -545,7 +538,7 @@ class ScheduleFormPage extends HookConsumerWidget {
                           );
                           if (result != null) {
                             selectedEndTime.value = result;
-                            validateTime();
+                            updateValidationResult();
                           }
                         },
                         child: Container(
@@ -572,7 +565,7 @@ class ScheduleFormPage extends HookConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            if (hasTimeError.value)
+            if (formValidationResult.value.hasInvalidTimeRange)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 8),
                 padding: const EdgeInsets.all(8),
@@ -584,7 +577,7 @@ class ScheduleFormPage extends HookConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (hasTimeError.value)
+                    if (formValidationResult.value.hasInvalidTimeRange)
                       const Row(
                         children: [
                           Icon(Icons.error_outline,
@@ -728,14 +721,11 @@ class ScheduleFormPage extends HookConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: (hasTimeError.value || !hasRequiredFields.value)
-            ? null
-            : handleSave,
+        onPressed: formValidationResult.value.canSave ? handleSave : null,
         icon: const Icon(Icons.save),
         label: const Text('保存'),
-        backgroundColor: (hasTimeError.value || !hasRequiredFields.value)
-            ? Colors.grey
-            : null,
+        backgroundColor:
+            formValidationResult.value.canSave ? null : Colors.grey,
       ),
     );
   }

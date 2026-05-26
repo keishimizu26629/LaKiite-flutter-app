@@ -2,6 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 
+/// 予定フォーム全体の検証結果。
+class ScheduleFormValidationResult {
+  const ScheduleFormValidationResult({
+    required this.hasRequiredFields,
+    required this.hasInvalidTimeRange,
+  });
+
+  /// タイトル・場所など保存に必要な項目が入力済みかどうか。
+  final bool hasRequiredFields;
+
+  /// 終了日時が開始日時より前かどうか。
+  final bool hasInvalidTimeRange;
+
+  /// 現在の入力値で保存できるかどうか。
+  bool get canSave => hasRequiredFields && !hasInvalidTimeRange;
+}
+
 /// 予定フォームで使う入力値の組み立てと正規化を担う純粋ロジック。
 ///
 /// Widgetは表示状態とユーザー操作に集中し、日時計算や保存値の正規化はこのクラスへ集約する。
@@ -115,5 +132,28 @@ class ScheduleFormLogic {
     required String location,
   }) {
     return title.trim().isNotEmpty && location.trim().isNotEmpty;
+  }
+
+  /// 予定フォーム全体の保存可否に必要な検証結果を返す。
+  static ScheduleFormValidationResult validateScheduleForm({
+    required String title,
+    required String location,
+    required DateTime startDate,
+    required TimeOfDay startTime,
+    required DateTime endDate,
+    required TimeOfDay endTime,
+  }) {
+    return ScheduleFormValidationResult(
+      hasRequiredFields: hasRequiredScheduleFields(
+        title: title,
+        location: location,
+      ),
+      hasInvalidTimeRange: hasInvalidTimeRange(
+        startDate: startDate,
+        startTime: startTime,
+        endDate: endDate,
+        endTime: endTime,
+      ),
+    );
   }
 }
