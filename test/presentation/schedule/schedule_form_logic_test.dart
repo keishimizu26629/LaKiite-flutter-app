@@ -108,6 +108,82 @@ void main() {
       expect(ScheduleFormLogic.optionalLocation('  '), '  ');
       expect(ScheduleFormLogic.optionalLocation('会議室'), '会議室');
     });
+
+    test('タイトルと場所が入力されている場合だけ必須項目入力済みになる', () {
+      expect(
+        ScheduleFormLogic.hasRequiredScheduleFields(
+          title: '予定',
+          location: '未定',
+        ),
+        isTrue,
+      );
+      expect(
+        ScheduleFormLogic.hasRequiredScheduleFields(
+          title: '',
+          location: '未定',
+        ),
+        isFalse,
+      );
+      expect(
+        ScheduleFormLogic.hasRequiredScheduleFields(
+          title: '   ',
+          location: '未定',
+        ),
+        isFalse,
+      );
+      expect(
+        ScheduleFormLogic.hasRequiredScheduleFields(
+          title: '予定',
+          location: '',
+        ),
+        isFalse,
+      );
+      expect(
+        ScheduleFormLogic.hasRequiredScheduleFields(
+          title: '予定',
+          location: '   ',
+        ),
+        isFalse,
+      );
+    });
+
+    test('フォーム全体の保存可否を検証結果として返す', () {
+      final validResult = ScheduleFormLogic.validateScheduleForm(
+        title: '予定',
+        location: '未定',
+        startDate: DateTime(2026, 1, 1),
+        startTime: const TimeOfDay(hour: 10, minute: 0),
+        endDate: DateTime(2026, 1, 1),
+        endTime: const TimeOfDay(hour: 11, minute: 0),
+      );
+      expect(validResult.hasRequiredFields, isTrue);
+      expect(validResult.hasInvalidTimeRange, isFalse);
+      expect(validResult.canSave, isTrue);
+
+      final missingRequiredResult = ScheduleFormLogic.validateScheduleForm(
+        title: '予定',
+        location: '   ',
+        startDate: DateTime(2026, 1, 1),
+        startTime: const TimeOfDay(hour: 10, minute: 0),
+        endDate: DateTime(2026, 1, 1),
+        endTime: const TimeOfDay(hour: 11, minute: 0),
+      );
+      expect(missingRequiredResult.hasRequiredFields, isFalse);
+      expect(missingRequiredResult.hasInvalidTimeRange, isFalse);
+      expect(missingRequiredResult.canSave, isFalse);
+
+      final invalidTimeResult = ScheduleFormLogic.validateScheduleForm(
+        title: '予定',
+        location: '未定',
+        startDate: DateTime(2026, 1, 1),
+        startTime: const TimeOfDay(hour: 11, minute: 0),
+        endDate: DateTime(2026, 1, 1),
+        endTime: const TimeOfDay(hour: 10, minute: 0),
+      );
+      expect(invalidTimeResult.hasRequiredFields, isTrue);
+      expect(invalidTimeResult.hasInvalidTimeRange, isTrue);
+      expect(invalidTimeResult.canSave, isFalse);
+    });
   });
 }
 
