@@ -29,6 +29,14 @@ class MockNotificationRepository extends BaseMock
     _notifications.clear();
   }
 
+  Notification? findTestNotification(String notificationId) {
+    try {
+      return _notifications.firstWhere((n) => n.id == notificationId);
+    } catch (e) {
+      return null;
+    }
+  }
+
   @override
   Future<void> createNotification(Notification notification) async {
     await Future.delayed(const Duration(milliseconds: 200));
