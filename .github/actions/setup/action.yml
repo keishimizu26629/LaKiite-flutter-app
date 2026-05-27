@@ -1,6 +1,12 @@
 name: Setup CI
 description: Setup CI environment for LaKiite Flutter app
 
+inputs:
+  flutter-cache:
+    description: Enable subosito/flutter-action cache
+    required: false
+    default: "false"
+
 runs:
   using: "composite"
   steps:
@@ -20,7 +26,7 @@ runs:
       with:
         flutter-version: ${{ steps.flutter_sdk_version.outputs.version }}
         channel: stable
-        cache: false
+        cache: ${{ inputs.flutter-cache }}
 
     - name: Get dependencies
       run: flutter pub get
