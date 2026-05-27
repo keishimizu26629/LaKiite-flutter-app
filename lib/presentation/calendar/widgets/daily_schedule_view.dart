@@ -256,6 +256,7 @@ class DailyScheduleView extends HookConsumerWidget {
                 return Column(
                   children: [
                     DailyAllDayScheduleList(
+                      date: date,
                       schedules: allDaySchedules,
                       currentUserId: currentUserId,
                     ),

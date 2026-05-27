@@ -5,15 +5,19 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/application/notification/notification_notifier.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/presentation/widgets/default_user_icon.dart';
+import 'package:lakiite/presentation/calendar/widgets/all_day_schedule_card.dart';
+import 'package:lakiite/presentation/calendar/widgets/daily_all_day_schedule_page.dart';
 import 'package:lakiite/presentation/calendar/widgets/schedule_ownership_style.dart';
 
 class DailyAllDayScheduleList extends StatelessWidget {
   const DailyAllDayScheduleList({
+    required this.date,
     required this.schedules,
     required this.currentUserId,
     super.key,
   });
 
+  final DateTime date;
   final List<Schedule> schedules;
   final String? currentUserId;
 
@@ -38,68 +42,38 @@ class DailyAllDayScheduleList extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ...visibleSchedules.map((schedule) {
-            final ownershipStyle = ScheduleOwnershipStyle.resolve(
-              context,
+          ...visibleSchedules.map(
+            (schedule) => AllDayScheduleCard(
               schedule: schedule,
               currentUserId: currentUserId,
-            );
-            return InkWell(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        ScheduleDetailPage(schedule: schedule),
-                  ),
-                );
-              },
-              child: Container(
-                width: double.infinity,
-                margin: const EdgeInsets.symmetric(vertical: 3),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: ownershipStyle.backgroundColor,
-                  border: Border.all(
-                    color: ownershipStyle.borderColor,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.event_available,
-                      size: 16,
-                      color: ownershipStyle.textColor,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        schedule.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: ownershipStyle.textColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
+            ),
+          ),
           if (remainingCount > 0)
             Align(
               alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 3),
-                child: Text(
-                  '+$remainingCount',
-                  style: TextStyle(fontSize: 16.8, color: Colors.grey[700]),
+              child: Semantics(
+                label: '終日予定をすべて表示 +$remainingCount',
+                button: true,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(4),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => DailyAllDaySchedulePage(
+                          date: date,
+                          schedules: sortedSchedules,
+                          currentUserId: currentUserId,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Text(
+                      '+$remainingCount',
+                      style: TextStyle(fontSize: 16.8, color: Colors.grey[700]),
+                    ),
+                  ),
                 ),
               ),
             ),

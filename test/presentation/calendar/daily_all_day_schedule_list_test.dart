@@ -31,6 +31,7 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: DailyAllDayScheduleList(
+            date: baseDate,
             schedules: schedules,
             currentUserId: 'owner',
           ),
@@ -55,6 +56,14 @@ void main() {
         tester.getTopRight(find.byType(DailyAllDayScheduleList)).dx;
     final plusOneRight = tester.getTopRight(find.text('+1')).dx;
     expect(listRight - plusOneRight, lessThan(20));
+
+    await tester.tap(find.text('+1'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('終日予定'), findsOneWidget);
+    expect(find.text('古い予定'), findsOneWidget);
+    expect(find.text('次の予定'), findsOneWidget);
+    expect(find.text('新しい予定'), findsOneWidget);
   });
 
   testWidgets('終日予定が2件の場合は内容分の高さだけ確保する', (tester) async {
@@ -78,6 +87,7 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: DailyAllDayScheduleList(
+            date: baseDate,
             schedules: schedules,
             currentUserId: 'owner',
           ),
