@@ -47,6 +47,14 @@ void main() {
     final earlyTop = tester.getTopLeft(find.text('古い予定')).dy;
     final middleTop = tester.getTopLeft(find.text('次の予定')).dy;
     expect(earlyTop, lessThan(middleTop));
+
+    final plusOneText = tester.widget<Text>(find.text('+1'));
+    expect(plusOneText.style?.fontSize, 16.8);
+
+    final listRight =
+        tester.getTopRight(find.byType(DailyAllDayScheduleList)).dx;
+    final plusOneRight = tester.getTopRight(find.text('+1')).dx;
+    expect(listRight - plusOneRight, lessThan(20));
   });
 
   testWidgets('終日予定が2件の場合は内容分の高さだけ確保する', (tester) async {

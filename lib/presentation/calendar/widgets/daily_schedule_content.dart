@@ -94,12 +94,12 @@ class DailyAllDayScheduleList extends StatelessWidget {
           }),
           if (remainingCount > 0)
             Align(
-              alignment: Alignment.centerLeft,
+              alignment: Alignment.centerRight,
               child: Padding(
                 padding: const EdgeInsets.only(top: 3),
                 child: Text(
                   '+$remainingCount',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                  style: TextStyle(fontSize: 16.8, color: Colors.grey[700]),
                 ),
               ),
             ),
