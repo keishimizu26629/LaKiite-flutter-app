@@ -8,6 +8,7 @@ import 'package:lakiite/presentation/widgets/default_user_icon.dart';
 import 'package:lakiite/presentation/calendar/widgets/daily_schedule_list_page.dart';
 import 'package:lakiite/presentation/calendar/widgets/schedule_ownership_style.dart';
 import 'package:lakiite/presentation/calendar/widgets/schedule_list_card.dart';
+import 'package:lakiite/presentation/schedule/schedule_display_order.dart';
 
 class DailyAllDayScheduleList extends StatelessWidget {
   const DailyAllDayScheduleList({
@@ -29,8 +30,7 @@ class DailyAllDayScheduleList extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final sortedSchedules = List<Schedule>.from(schedules)
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final sortedSchedules = ScheduleDisplayOrder.sortedWithinDay(schedules);
     final visibleSchedules = sortedSchedules.take(2).toList();
     final remainingCount = sortedSchedules.length - visibleSchedules.length;
 
@@ -159,14 +159,7 @@ class DailyScheduleContent extends HookConsumerWidget {
     AppLogger.debug('DailyScheduleContent - スケジュール数: ${schedules.length}');
 
     final currentUserId = ref.watch(currentUserIdProvider);
-    final sortedSchedules = List<Schedule>.from(schedules)
-      ..sort((a, b) {
-        final startComparison = a.startDateTime.compareTo(b.startDateTime);
-        if (startComparison != 0) {
-          return startComparison;
-        }
-        return a.createdAt.compareTo(b.createdAt);
-      });
+    final sortedSchedules = ScheduleDisplayOrder.sortedWithinDay(schedules);
 
     // 重なり合うスケジュールをグループ化
     final scheduleGroups = _groupOverlappingSchedules(sortedSchedules);

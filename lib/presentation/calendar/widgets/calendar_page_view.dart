@@ -7,6 +7,7 @@ import 'package:lakiite/presentation/calendar/calendar_providers.dart';
 import 'package:lakiite/presentation/calendar/schedule_providers.dart';
 import 'package:lakiite/presentation/calendar/widgets/daily_schedule_view.dart';
 import 'package:lakiite/presentation/calendar/widgets/schedule_ownership_style.dart';
+import 'package:lakiite/presentation/schedule/schedule_display_order.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
 import 'dart:convert';
@@ -900,6 +901,9 @@ class CalendarPageContent extends HookConsumerWidget {
           }
         }
       }
+      for (final entry in result.entries) {
+        result[entry.key] = ScheduleDisplayOrder.sortedWithinDay(entry.value);
+      }
       return result;
     }
 
@@ -919,6 +923,9 @@ class CalendarPageContent extends HookConsumerWidget {
       }
     }
 
+    for (final entry in result.entries) {
+      result[entry.key] = ScheduleDisplayOrder.sortedWithinDay(entry.value);
+    }
     return result;
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/calendar/widgets/schedule_list_card.dart';
+import 'package:lakiite/presentation/schedule/schedule_display_order.dart';
 
 class DailyScheduleListPage extends StatelessWidget {
   const DailyScheduleListPage({
@@ -29,19 +30,7 @@ class DailyScheduleListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final allDaySchedules = schedules
-        .where((schedule) => schedule.isAllDay)
-        .toList()
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    final timedSchedules =
-        schedules.where((schedule) => !schedule.isAllDay).toList()
-          ..sort((a, b) {
-            final startComparison = a.startDateTime.compareTo(b.startDateTime);
-            if (startComparison != 0) {
-              return startComparison;
-            }
-            return a.createdAt.compareTo(b.createdAt);
-          });
+    final sortedSchedules = ScheduleDisplayOrder.sortedWithinDay(schedules);
 
     return Scaffold(
       appBar: AppBar(title: const Text('予定一覧')),
@@ -53,17 +42,12 @@ class DailyScheduleListPage extends StatelessWidget {
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          ...allDaySchedules.map(
+          ...sortedSchedules.map(
             (schedule) => ScheduleListCard(
               schedule: schedule,
               currentUserId: currentUserId,
-            ),
-          ),
-          ...timedSchedules.map(
-            (schedule) => ScheduleListCard(
-              schedule: schedule,
-              currentUserId: currentUserId,
-              trailingText: _formatTimeRange(schedule),
+              trailingText:
+                  schedule.isAllDay ? null : _formatTimeRange(schedule),
             ),
           ),
         ],
