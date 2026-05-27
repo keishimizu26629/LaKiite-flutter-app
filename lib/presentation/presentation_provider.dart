@@ -10,7 +10,7 @@ export 'package:lakiite/application/schedule/schedule_notifier.dart'
 export 'package:lakiite/presentation/calendar/calendar_providers.dart'
     show selectedDateProvider;
 export 'package:lakiite/presentation/calendar/schedule_providers.dart'
-    show userSchedulesStreamProvider;
+    show calendarMonthSchedulesProvider, userSchedulesStreamProvider;
 export 'package:lakiite/presentation/friend/friend_providers.dart'
     show userFriendsProvider, userFriendsStreamProvider;
 export 'package:lakiite/presentation/list/list_providers.dart'

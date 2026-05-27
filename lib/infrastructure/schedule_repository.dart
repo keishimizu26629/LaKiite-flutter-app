@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../domain/entity/schedule.dart';
 import '../domain/interfaces/i_schedule_repository.dart';
+import '../domain/value/schedule_month_range.dart';
 import '../utils/logger.dart';
 import 'mapper/schedule_mapper.dart';
 
@@ -335,22 +336,18 @@ class ScheduleRepository implements IScheduleRepository {
     try {
       await _ensureAuthenticated();
 
-      // 表示月の6ヶ月前の1日を計算
-      final sixMonthsAgo =
-          DateTime(displayMonth.year, displayMonth.month - 6, 1);
-
-      // 日付形式を正確に整形（必ず2桁になるようにフォーマット）
-      final year = sixMonthsAgo.year.toString();
-      final month = sixMonthsAgo.month.toString().padLeft(2, '0');
-      final day = sixMonthsAgo.day.toString().padLeft(2, '0');
-      final sixMonthsAgoIso = '$year-$month-${day}T00:00:00.000';
+      final range = ScheduleMonthRange.forDisplayMonth(displayMonth);
 
       // 最初に素早くキャッシュからデータを取得（データがあれば即時返却）
       try {
         final cachedSnapshot = await _firestore
             .collection('schedules')
             .where('visibleTo', arrayContains: userId)
-            .where('startDateTime', isGreaterThanOrEqualTo: sixMonthsAgoIso)
+            .where(
+              'startDateTime',
+              isGreaterThanOrEqualTo: range.startInclusiveIso,
+            )
+            .where('startDateTime', isLessThan: range.endExclusiveIso)
             .orderBy('startDateTime', descending: false)
             .get(const GetOptions(source: Source.cache));
 
@@ -379,7 +376,11 @@ class ScheduleRepository implements IScheduleRepository {
       final stream = _firestore
           .collection('schedules')
           .where('visibleTo', arrayContains: userId)
-          .where('startDateTime', isGreaterThanOrEqualTo: sixMonthsAgoIso)
+          .where(
+            'startDateTime',
+            isGreaterThanOrEqualTo: range.startInclusiveIso,
+          )
+          .where('startDateTime', isLessThan: range.endExclusiveIso)
           .orderBy('startDateTime', descending: false)
           .snapshots();
 
