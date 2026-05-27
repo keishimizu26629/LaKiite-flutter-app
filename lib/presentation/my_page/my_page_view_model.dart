@@ -1,20 +1,23 @@
 import 'dart:io';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lakiite/application/auth/auth_state.dart';
+import 'package:lakiite/utils/logger.dart';
+
 import '../../app/di/providers.dart';
 import '../../application/auth/auth_notifier.dart';
-import '../../infrastructure/image_picker_service.dart' as picker;
-import '../../domain/entity/user.dart';
 import '../../domain/entity/schedule.dart';
-import '../../domain/value/user_id.dart';
-import '../../domain/interfaces/i_user_repository.dart';
+import '../../domain/entity/user.dart';
+import '../../domain/interfaces/i_image_cropper_service.dart';
+import '../../domain/interfaces/i_image_processor_service.dart';
 import '../../domain/interfaces/i_schedule_repository.dart';
 import '../../domain/interfaces/i_storage_service.dart';
-import '../../domain/interfaces/i_image_processor_service.dart';
+import '../../domain/interfaces/i_user_repository.dart';
+import '../../domain/value/user_id.dart';
+import '../../infrastructure/image_picker_service.dart' as picker;
 import '../../infrastructure/providers.dart';
-import 'package:lakiite/utils/logger.dart';
 
 export '../calendar/schedule_providers.dart' show userSchedulesStreamProvider;
 
@@ -49,11 +52,13 @@ final myPageViewModelProvider =
   final scheduleRepository = ref.watch(scheduleRepositoryProvider);
   final storageService = ref.watch(storageServiceProvider);
   final imageProcessorService = ref.watch(imageProcessorServiceProvider);
+  final imageCropperService = ref.watch(imageCropperServiceProvider);
   return MyPageViewModel(
     userRepository,
     scheduleRepository,
     storageService,
     imageProcessorService,
+    imageCropperService,
     ref,
   );
 });
@@ -64,12 +69,14 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
     this._scheduleRepository,
     this._storageService,
     this._imageProcessorService,
+    this._imageCropperService,
     this._ref,
   ) : super(const AsyncValue.loading());
   final IUserRepository _userRepository;
   final IScheduleRepository _scheduleRepository;
   final IStorageService _storageService;
   final IImageProcessorService _imageProcessorService;
+  final IImageCropperService _imageCropperService;
   final Ref _ref;
 
   Future<void> pickImage() async {
@@ -91,9 +98,24 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
           throw Exception('画像ファイルが見つかりません');
         }
 
+        AppLogger.debug('画像切り取りを開始します');
+        final croppedImageFile = await _imageCropperService.cropImage(
+          sourceFile: imageFile,
+          aspectRatioX: 1,
+          aspectRatioY: 1,
+        );
+        if (croppedImageFile == null) {
+          AppLogger.debug('画像の切り取りがキャンセルされました');
+          return;
+        }
+        if (!croppedImageFile.existsSync()) {
+          throw Exception('切り取り後の画像ファイルが見つかりません');
+        }
+        AppLogger.debug('切り取り後の画像パス: ${croppedImageFile.path}');
+
         AppLogger.debug('画像圧縮を開始します');
         final compressedImageFile = await _imageProcessorService.compressImage(
-          imageFile,
+          croppedImageFile,
           minWidth: 300,
           minHeight: 300,
           quality: 85,
