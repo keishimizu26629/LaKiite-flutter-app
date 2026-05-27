@@ -6,6 +6,91 @@ import 'package:lakiite/application/notification/notification_notifier.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/presentation/widgets/default_user_icon.dart';
 
+class DailyAllDayScheduleList extends StatelessWidget {
+  const DailyAllDayScheduleList({required this.schedules, super.key});
+
+  final List<Schedule> schedules;
+
+  @override
+  Widget build(BuildContext context) {
+    if (schedules.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 150),
+        child: SingleChildScrollView(
+          child: Column(
+            children: schedules.map((schedule) {
+              return InkWell(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ScheduleDetailPage(schedule: schedule),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.symmetric(vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.08),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).primaryColor.withValues(alpha: 0.55),
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.event_available, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          schedule.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '終日',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class DailyScheduleContent extends HookConsumerWidget {
   const DailyScheduleContent({
     required this.date,
@@ -67,7 +152,8 @@ class DailyScheduleContent extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // 日付情報をログ出力
     AppLogger.debug(
-        'DailyScheduleContent - 表示日付: ${date.year}年${date.month}月${date.day}日');
+      'DailyScheduleContent - 表示日付: ${date.year}年${date.month}月${date.day}日',
+    );
     AppLogger.debug('DailyScheduleContent - スケジュール数: ${schedules.length}');
 
     final currentUserId = ref.watch(currentUserIdProvider);
@@ -94,10 +180,7 @@ class DailyScheduleContent extends HookConsumerWidget {
                       top: hour * 60.0,
                       child: Text(
                         '${hour.toString().padLeft(2, '0')}:00',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ),
                 ],
@@ -114,10 +197,7 @@ class DailyScheduleContent extends HookConsumerWidget {
                       top: hour * 60.0,
                       left: 0,
                       right: 0,
-                      child: Container(
-                        height: 1,
-                        color: Colors.grey[200],
-                      ),
+                      child: Container(height: 1, color: Colors.grey[200]),
                     ),
                   // 現在時刻の線
                   if (date.year == DateTime.now().toUtc().toLocal().year &&
@@ -125,7 +205,8 @@ class DailyScheduleContent extends HookConsumerWidget {
                       date.day == DateTime.now().toUtc().toLocal().day)
                     Positioned(
                       top: _calculateTimePosition(
-                          DateTime.now().toUtc().toLocal()),
+                        DateTime.now().toUtc().toLocal(),
+                      ),
                       left: 0,
                       right: 0,
                       child: Container(
@@ -155,7 +236,8 @@ class DailyScheduleContent extends HookConsumerWidget {
 
                           // デバッグログを追加
                           AppLogger.debug(
-                              'DailyScheduleContent - 予定: ${schedule.title}, オーナーID: ${schedule.ownerId}, currentUserId: $currentUserId, isOwner: $isOwner, isOwnerWithCheck: $isOwnerWithCheck');
+                            'DailyScheduleContent - 予定: ${schedule.title}, オーナーID: ${schedule.ownerId}, currentUserId: $currentUserId, isOwner: $isOwner, isOwnerWithCheck: $isOwnerWithCheck',
+                          );
 
                           return Positioned(
                             top: _calculateTimePosition(startTime),
@@ -168,20 +250,22 @@ class DailyScheduleContent extends HookConsumerWidget {
                               onTap: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        ScheduleDetailPage(schedule: schedule),
+                                    builder: (context) => ScheduleDetailPage(
+                                      schedule: schedule,
+                                    ),
                                   ),
                                 );
                               },
                               child: Container(
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 2),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: isOwnerWithCheck
                                       ? Colors.grey.withValues(alpha: 0.1)
-                                      : Theme.of(context)
-                                          .primaryColor
-                                          .withValues(alpha: 0.1),
+                                      : Theme.of(
+                                          context,
+                                        ).primaryColor.withValues(alpha: 0.1),
                                   border: Border.all(
                                     color: isOwnerWithCheck
                                         ? Colors.grey.withValues(alpha: 0.8)
@@ -216,7 +300,8 @@ class DailyScheduleContent extends HookConsumerWidget {
                                             CircleAvatar(
                                               radius: 8,
                                               backgroundImage: NetworkImage(
-                                                  schedule.ownerPhotoUrl!),
+                                                schedule.ownerPhotoUrl!,
+                                              ),
                                             )
                                           else
                                             const DefaultUserIcon(size: 16),

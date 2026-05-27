@@ -81,13 +81,54 @@ class ScheduleFormLogic {
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 
-  /// 終了日時が開始日時より前かどうかを返す。
+  /// 終日予定の開始日時として保存する値を返す。
+  static DateTime startOfDay(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
+  /// 終日予定の終了日時として保存する値を返す。
+  static DateTime endOfDay(DateTime date) {
+    return DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+  }
+
+  /// 入力値から保存用の開始日時を返す。
+  static DateTime scheduleStartDateTime({
+    required DateTime startDate,
+    required TimeOfDay startTime,
+    required bool isAllDay,
+  }) {
+    if (isAllDay) {
+      return startOfDay(startDate);
+    }
+
+    return combineDateAndTime(startDate, startTime);
+  }
+
+  /// 入力値から保存用の終了日時を返す。
+  static DateTime scheduleEndDateTime({
+    required DateTime endDate,
+    required TimeOfDay endTime,
+    required bool isAllDay,
+  }) {
+    if (isAllDay) {
+      return endOfDay(endDate);
+    }
+
+    return combineDateAndTime(endDate, endTime);
+  }
+
+  /// 終了日時または終了日が開始より前かどうかを返す。
   static bool hasInvalidTimeRange({
     required DateTime startDate,
     required TimeOfDay startTime,
     required DateTime endDate,
     required TimeOfDay endTime,
+    bool isAllDay = false,
   }) {
+    if (isAllDay) {
+      return startOfDay(endDate).isBefore(startOfDay(startDate));
+    }
+
     final startDateTime = combineDateAndTime(startDate, startTime);
     final endDateTime = combineDateAndTime(endDate, endTime);
     return endDateTime.isBefore(startDateTime);
@@ -132,6 +173,7 @@ class ScheduleFormLogic {
     required TimeOfDay startTime,
     required DateTime endDate,
     required TimeOfDay endTime,
+    bool isAllDay = false,
   }) {
     return ScheduleFormValidationResult(
       hasRequiredFields: hasRequiredScheduleFields(title: title),
@@ -140,6 +182,7 @@ class ScheduleFormLogic {
         startTime: startTime,
         endDate: endDate,
         endTime: endTime,
+        isAllDay: isAllDay,
       ),
     );
   }

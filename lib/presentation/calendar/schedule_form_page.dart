@@ -167,6 +167,7 @@ class ScheduleFormPage extends HookConsumerWidget {
     final selectedEndTime = useState<TimeOfDay>(
       ScheduleFormLogic.timeOf(initialEndDate),
     );
+    final isAllDay = useState<bool>(schedule?.isAllDay ?? false);
 
     ScheduleFormValidationResult currentValidationResult() {
       return ScheduleFormLogic.validateScheduleForm(
@@ -175,6 +176,7 @@ class ScheduleFormPage extends HookConsumerWidget {
         startTime: selectedStartTime.value,
         endDate: selectedEndDate.value,
         endTime: selectedEndTime.value,
+        isAllDay: isAllDay.value,
       );
     }
 
@@ -198,6 +200,7 @@ class ScheduleFormPage extends HookConsumerWidget {
     AppLogger.debug('Start Time: ${selectedStartTime.value}');
     AppLogger.debug('End Date: ${selectedEndDate.value}');
     AppLogger.debug('End Time: ${selectedEndTime.value}');
+    AppLogger.debug('Is All Day: ${isAllDay.value}');
 
     // 編集時の初期値設定
     useEffect(() {
@@ -222,6 +225,7 @@ class ScheduleFormPage extends HookConsumerWidget {
         selectedStartTime.value,
         selectedEndDate.value,
         selectedEndTime.value,
+        isAllDay.value,
       ],
     );
 
@@ -253,21 +257,27 @@ class ScheduleFormPage extends HookConsumerWidget {
         return;
       }
 
-      final startDateTime = ScheduleFormLogic.combineDateAndTime(
-        selectedStartDate.value,
-        selectedStartTime.value,
+      final startDateTime = ScheduleFormLogic.scheduleStartDateTime(
+        startDate: selectedStartDate.value,
+        startTime: selectedStartTime.value,
+        isAllDay: isAllDay.value,
       );
 
-      final endDateTime = ScheduleFormLogic.combineDateAndTime(
-        selectedEndDate.value,
-        selectedEndTime.value,
+      final endDateTime = ScheduleFormLogic.scheduleEndDateTime(
+        endDate: selectedEndDate.value,
+        endTime: selectedEndTime.value,
+        isAllDay: isAllDay.value,
       );
 
       if (validationResult.hasInvalidTimeRange) {
         AppLogger.warning('ScheduleFormPage: End date is before start date');
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('終了日時は開始日時より後に設定してください')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isAllDay.value ? '終了日は開始日以降に設定してください' : '終了日時は開始日時より後に設定してください',
+            ),
+          ),
+        );
         return;
       }
 
@@ -300,6 +310,7 @@ class ScheduleFormPage extends HookConsumerWidget {
               ),
               startDateTime: startDateTime,
               endDateTime: endDateTime,
+              isAllDay: isAllDay.value,
               sharedLists: selectedListIds,
               visibleTo: [currentUser.id],
               updatedAt: DateTime.now(),
@@ -313,6 +324,7 @@ class ScheduleFormPage extends HookConsumerWidget {
           AppLogger.debug('Location: ${locationController.text}');
           AppLogger.debug('StartDateTime: $startDateTime');
           AppLogger.debug('EndDateTime: $endDateTime');
+          AppLogger.debug('IsAllDay: ${isAllDay.value}');
           AppLogger.debug('OwnerId: ${currentUser.id}');
           AppLogger.debug('SharedLists: $selectedListIds');
           AppLogger.debug('VisibleTo: [${currentUser.id}]');
@@ -325,6 +337,7 @@ class ScheduleFormPage extends HookConsumerWidget {
             ),
             startDateTime: startDateTime,
             endDateTime: endDateTime,
+            isAllDay: isAllDay.value,
             ownerId: currentUser.id,
             sharedLists: selectedListIds,
             visibleTo: [currentUser.id],
@@ -378,232 +391,266 @@ class ScheduleFormPage extends HookConsumerWidget {
             ),
             const SizedBox(height: 16),
             const Text(
-              '開始日時',
+              '日時',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('日付'),
-                      const SizedBox(height: 4),
-                      InkWell(
-                        onTap: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: selectedStartDate.value,
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(
-                              const Duration(days: 365 * 2),
-                            ),
-                          );
-                          if (picked != null) {
-                            selectedStartDate.value = picked;
-                            if (selectedEndDate.value.isBefore(picked)) {
-                              selectedEndDate.value = picked;
-                            }
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 8,
-                            horizontal: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '${selectedStartDate.value.year}年${selectedStartDate.value.month}月${selectedStartDate.value.day}日',
-                              ),
-                              const Icon(Icons.calendar_today, size: 20),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('終日（時間未定など）'),
+                    value: isAllDay.value,
+                    onChanged: (value) {
+                      isAllDay.value = value;
+                      updateValidationResult();
+                    },
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('時間'),
-                      const SizedBox(height: 4),
-                      InkWell(
-                        onTap: () async {
-                          final result = await showDialog<TimeOfDay>(
-                            context: context,
-                            builder: (context) => CustomTimePickerDialog(
-                              initialTime: selectedStartTime.value,
-                            ),
-                          );
-                          if (result != null) {
-                            selectedStartTime.value = result;
-                            updateValidationResult();
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 8,
-                            horizontal: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '${selectedStartTime.value.hour.toString().padLeft(2, '0')}:${((selectedStartTime.value.minute ~/ 15) * 15).toString().padLeft(2, '0')}',
-                              ),
-                              const Icon(Icons.access_time, size: 20),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+                  const Divider(height: 24),
+                  Text(
+                    isAllDay.value ? '開始日' : '開始日時',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              '終了日時',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 8),
+                  Row(
                     children: [
-                      const Text('日付'),
-                      const SizedBox(height: 4),
-                      InkWell(
-                        onTap: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: selectedEndDate.value,
-                            firstDate: selectedStartDate.value,
-                            lastDate: DateTime.now().toUtc().toLocal().add(
-                                  const Duration(days: 365 * 2),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('日付'),
+                            const SizedBox(height: 4),
+                            InkWell(
+                              onTap: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: selectedStartDate.value,
+                                  firstDate: DateTime.now(),
+                                  lastDate: DateTime.now().add(
+                                    const Duration(days: 365 * 2),
+                                  ),
+                                );
+                                if (picked != null) {
+                                  selectedStartDate.value = picked;
+                                  if (selectedEndDate.value.isBefore(picked)) {
+                                    selectedEndDate.value = picked;
+                                  }
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 12,
                                 ),
-                          );
-                          if (picked != null) {
-                            selectedEndDate.value = picked;
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 8,
-                            horizontal: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '${selectedEndDate.value.year}年${selectedEndDate.value.month}月${selectedEndDate.value.day}日',
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '${selectedStartDate.value.year}年${selectedStartDate.value.month}月${selectedStartDate.value.day}日',
+                                    ),
+                                    const Icon(Icons.calendar_today, size: 20),
+                                  ],
+                                ),
                               ),
-                              const Icon(Icons.calendar_today, size: 20),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('時間'),
-                      const SizedBox(height: 4),
-                      InkWell(
-                        onTap: () async {
-                          final result = await showDialog<TimeOfDay>(
-                            context: context,
-                            builder: (context) => CustomTimePickerDialog(
-                              initialTime: selectedEndTime.value,
                             ),
-                          );
-                          if (result != null) {
-                            selectedEndTime.value = result;
-                            updateValidationResult();
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 8,
-                            horizontal: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          ],
+                        ),
+                      ),
+                      if (!isAllDay.value) ...[
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                '${selectedEndTime.value.hour.toString().padLeft(2, '0')}:${((selectedEndTime.value.minute ~/ 15) * 15).toString().padLeft(2, '0')}',
+                              const Text('時間'),
+                              const SizedBox(height: 4),
+                              InkWell(
+                                onTap: () async {
+                                  final result = await showDialog<TimeOfDay>(
+                                    context: context,
+                                    builder: (context) =>
+                                        CustomTimePickerDialog(
+                                      initialTime: selectedStartTime.value,
+                                    ),
+                                  );
+                                  if (result != null) {
+                                    selectedStartTime.value = result;
+                                    updateValidationResult();
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                    horizontal: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '${selectedStartTime.value.hour.toString().padLeft(2, '0')}:${((selectedStartTime.value.minute ~/ 15) * 15).toString().padLeft(2, '0')}',
+                                      ),
+                                      const Icon(Icons.access_time, size: 20),
+                                    ],
+                                  ),
+                                ),
                               ),
-                              const Icon(Icons.access_time, size: 20),
                             ],
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (formValidationResult.value.hasInvalidTimeRange)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  border: Border.all(color: Colors.red),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (formValidationResult.value.hasInvalidTimeRange)
-                      const Row(
+                  const SizedBox(height: 16),
+                  Text(
+                    isAllDay.value ? '終了日' : '終了日時',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('日付'),
+                            const SizedBox(height: 4),
+                            InkWell(
+                              onTap: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: selectedEndDate.value,
+                                  firstDate: selectedStartDate.value,
+                                  lastDate:
+                                      DateTime.now().toUtc().toLocal().add(
+                                            const Duration(days: 365 * 2),
+                                          ),
+                                );
+                                if (picked != null) {
+                                  selectedEndDate.value = picked;
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '${selectedEndDate.value.year}年${selectedEndDate.value.month}月${selectedEndDate.value.day}日',
+                                    ),
+                                    const Icon(Icons.calendar_today, size: 20),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (!isAllDay.value) ...[
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('時間'),
+                              const SizedBox(height: 4),
+                              InkWell(
+                                onTap: () async {
+                                  final result = await showDialog<TimeOfDay>(
+                                    context: context,
+                                    builder: (context) =>
+                                        CustomTimePickerDialog(
+                                      initialTime: selectedEndTime.value,
+                                    ),
+                                  );
+                                  if (result != null) {
+                                    selectedEndTime.value = result;
+                                    updateValidationResult();
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                    horizontal: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '${selectedEndTime.value.hour.toString().padLeft(2, '0')}:${((selectedEndTime.value.minute ~/ 15) * 15).toString().padLeft(2, '0')}',
+                                      ),
+                                      const Icon(Icons.access_time, size: 20),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (formValidationResult.value.hasInvalidTimeRange) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        border: Border.all(color: Colors.red),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.error_outline,
                             color: Colors.red,
                             size: 16,
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              '終了日時は開始日時より後に設定してください',
-                              style: TextStyle(color: Colors.red),
+                              isAllDay.value
+                                  ? '終了日は開始日以降に設定してください'
+                                  : '終了日時は開始日時より後に設定してください',
+                              style: const TextStyle(color: Colors.red),
                             ),
                           ),
                         ],
                       ),
+                    ),
                   ],
-                ),
+                ],
               ),
+            ),
             const SizedBox(height: 16),
             const Text('公開するリスト', style: TextStyle(fontSize: 16)),
             const SizedBox(height: 8),
