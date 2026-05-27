@@ -3,16 +3,18 @@ import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
 import 'package:lakiite/presentation/calendar/widgets/schedule_ownership_style.dart';
 
-class AllDayScheduleCard extends StatelessWidget {
-  const AllDayScheduleCard({
+class ScheduleListCard extends StatelessWidget {
+  const ScheduleListCard({
     required this.schedule,
     required this.currentUserId,
+    this.trailingText,
     this.margin = const EdgeInsets.symmetric(vertical: 3),
     super.key,
   });
 
   final Schedule schedule;
   final String? currentUserId;
+  final String? trailingText;
   final EdgeInsetsGeometry margin;
 
   @override
@@ -43,7 +45,7 @@ class AllDayScheduleCard extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              Icons.event_available,
+              schedule.isAllDay ? Icons.event_available : Icons.schedule,
               size: 16,
               color: ownershipStyle.textColor,
             ),
@@ -60,6 +62,19 @@ class AllDayScheduleCard extends StatelessWidget {
                 ),
               ),
             ),
+            if (trailingText != null) ...[
+              const SizedBox(width: 8),
+              Text(
+                trailingText!,
+                maxLines: 1,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: ownershipStyle.textColor,
+                ),
+              ),
+            ],
           ],
         ),
       ),

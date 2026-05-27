@@ -258,6 +258,7 @@ class DailyScheduleView extends HookConsumerWidget {
                     DailyAllDayScheduleList(
                       date: date,
                       schedules: allDaySchedules,
+                      allSchedules: dateSchedules,
                       currentUserId: currentUserId,
                     ),
                     Expanded(
@@ -266,6 +267,7 @@ class DailyScheduleView extends HookConsumerWidget {
                         child: DailyScheduleContent(
                           date: date,
                           schedules: timedSchedules,
+                          allSchedules: dateSchedules,
                         ),
                       ),
                     ),

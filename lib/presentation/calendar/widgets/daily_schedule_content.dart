@@ -5,20 +5,22 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/application/notification/notification_notifier.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/presentation/widgets/default_user_icon.dart';
-import 'package:lakiite/presentation/calendar/widgets/all_day_schedule_card.dart';
-import 'package:lakiite/presentation/calendar/widgets/daily_all_day_schedule_page.dart';
+import 'package:lakiite/presentation/calendar/widgets/daily_schedule_list_page.dart';
 import 'package:lakiite/presentation/calendar/widgets/schedule_ownership_style.dart';
+import 'package:lakiite/presentation/calendar/widgets/schedule_list_card.dart';
 
 class DailyAllDayScheduleList extends StatelessWidget {
   const DailyAllDayScheduleList({
     required this.date,
     required this.schedules,
+    required this.allSchedules,
     required this.currentUserId,
     super.key,
   });
 
   final DateTime date;
   final List<Schedule> schedules;
+  final List<Schedule> allSchedules;
   final String? currentUserId;
 
   @override
@@ -43,7 +45,7 @@ class DailyAllDayScheduleList extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           ...visibleSchedules.map(
-            (schedule) => AllDayScheduleCard(
+            (schedule) => ScheduleListCard(
               schedule: schedule,
               currentUserId: currentUserId,
             ),
@@ -52,16 +54,16 @@ class DailyAllDayScheduleList extends StatelessWidget {
             Align(
               alignment: Alignment.centerRight,
               child: Semantics(
-                label: '終日予定をすべて表示 +$remainingCount',
+                label: '予定をすべて表示 +$remainingCount',
                 button: true,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(4),
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => DailyAllDaySchedulePage(
+                        builder: (context) => DailyScheduleListPage(
                           date: date,
-                          schedules: sortedSchedules,
+                          schedules: allSchedules,
                           currentUserId: currentUserId,
                         ),
                       ),
@@ -87,11 +89,13 @@ class DailyScheduleContent extends HookConsumerWidget {
   const DailyScheduleContent({
     required this.date,
     required this.schedules,
+    required this.allSchedules,
     super.key,
   });
 
   final DateTime date;
   final List<Schedule> schedules;
+  final List<Schedule> allSchedules;
 
   double _calculateTimePosition(DateTime time) {
     final minutes = time.hour * 60 + time.minute;
@@ -140,6 +144,12 @@ class DailyScheduleContent extends HookConsumerWidget {
         b.startDateTime.isBefore(a.endDateTime);
   }
 
+  DateTime _earliestStartTime(List<Schedule> schedules) {
+    return schedules
+        .map((schedule) => schedule.startDateTime)
+        .reduce((a, b) => a.isBefore(b) ? a : b);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 日付情報をログ出力
@@ -150,7 +160,13 @@ class DailyScheduleContent extends HookConsumerWidget {
 
     final currentUserId = ref.watch(currentUserIdProvider);
     final sortedSchedules = List<Schedule>.from(schedules)
-      ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+      ..sort((a, b) {
+        final startComparison = a.startDateTime.compareTo(b.startDateTime);
+        if (startComparison != 0) {
+          return startComparison;
+        }
+        return a.createdAt.compareTo(b.createdAt);
+      });
 
     // 重なり合うスケジュールをグループ化
     final scheduleGroups = _groupOverlappingSchedules(sortedSchedules);
@@ -210,9 +226,15 @@ class DailyScheduleContent extends HookConsumerWidget {
                   ...scheduleGroups.map((group) {
                     final containerWidth = MediaQuery.of(context).size.width -
                         90; // 時間表示部分とパディングの余裕を持たせる
+                    final visibleCount = group.length > 2 ? 2 : group.length;
+                    final remainingCount = group.length - visibleCount;
+                    final overflowWidth = remainingCount > 0 ? 44.0 : 0.0;
+                    final availableWidth = containerWidth - overflowWidth;
+                    final columnWidth =
+                        visibleCount == 1 ? availableWidth : availableWidth / 2;
                     return Stack(
                       children: [
-                        ...List.generate(group.length, (index) {
+                        ...List.generate(visibleCount, (index) {
                           final schedule = group[index];
                           final startTime = schedule.startDateTime;
                           final endTime = schedule.endDateTime;
@@ -222,9 +244,9 @@ class DailyScheduleContent extends HookConsumerWidget {
                             currentUserId: currentUserId,
                           );
 
-                          final itemWidth = group.length == 1
-                              ? containerWidth
-                              : (containerWidth / group.length) - 4;
+                          final itemWidth = visibleCount == 1
+                              ? availableWidth
+                              : columnWidth - 4;
 
                           // デバッグログを追加
                           AppLogger.debug(
@@ -233,9 +255,7 @@ class DailyScheduleContent extends HookConsumerWidget {
 
                           return Positioned(
                             top: _calculateTimePosition(startTime),
-                            left: group.length == 1
-                                ? 0
-                                : (index * (containerWidth / group.length)),
+                            left: visibleCount == 1 ? 0 : index * columnWidth,
                             width: itemWidth,
                             height: _calculateHeight(startTime, endTime),
                             child: InkWell(
@@ -337,6 +357,44 @@ class DailyScheduleContent extends HookConsumerWidget {
                             ),
                           );
                         }),
+                        if (remainingCount > 0)
+                          Positioned(
+                            top: _calculateTimePosition(
+                              _earliestStartTime(group),
+                            ),
+                            right: 0,
+                            width: overflowWidth,
+                            height: 32,
+                            child: Semantics(
+                              label: '予定をすべて表示 +$remainingCount',
+                              button: true,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(4),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          DailyScheduleListPage(
+                                        date: date,
+                                        schedules: allSchedules,
+                                        currentUserId: currentUserId,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    '+$remainingCount',
+                                    style: TextStyle(
+                                      fontSize: 16.8,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     );
                   }),
