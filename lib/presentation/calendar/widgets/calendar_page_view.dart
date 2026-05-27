@@ -134,6 +134,9 @@ String getMonthKey(DateTime date) {
 // 何ヶ月先のデータまで先読みするか
 const int _prefetchMonthsRange = 2;
 
+// スケジュールデータとして先読みする前後月の範囲
+const int _schedulePrefetchMonthsRange = 1;
+
 // 事前にレンダリングする月の数（前後_preRenderMonthsRange月）
 const int _preRenderMonthsRange = 2;
 
@@ -176,6 +179,28 @@ class CalendarPageView extends HookConsumerWidget {
               ),
             ),
           );
+    if (currentUserId != null) {
+      for (int offset = -_schedulePrefetchMonthsRange;
+          offset <= _schedulePrefetchMonthsRange;
+          offset++) {
+        if (offset == 0) {
+          continue;
+        }
+
+        ref.watch(
+          calendarMonthSchedulesProvider(
+            (
+              userId: currentUserId,
+              displayMonth: DateTime(
+                visibleDateTime.year,
+                visibleDateTime.month + offset,
+                1,
+              ),
+            ),
+          ),
+        );
+      }
+    }
 
     // 最適化モードの取得
     ref.watch(calendarOptimizationProvider);
