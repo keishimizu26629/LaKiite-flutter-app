@@ -78,13 +78,7 @@ class ScheduleFormLogic {
 
   /// 日付選択値と時刻選択値を保存用の [DateTime] に組み合わせる。
   static DateTime combineDateAndTime(DateTime date, TimeOfDay time) {
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-      time.hour,
-      time.minute,
-    );
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 
   /// 終了日時が開始日時より前かどうかを返す。
@@ -127,27 +121,20 @@ class ScheduleFormLogic {
   }
 
   /// 保存に必要なテキスト項目が入力済みかどうかを返す。
-  static bool hasRequiredScheduleFields({
-    required String title,
-    required String location,
-  }) {
-    return title.trim().isNotEmpty && location.trim().isNotEmpty;
+  static bool hasRequiredScheduleFields({required String title}) {
+    return title.trim().isNotEmpty;
   }
 
   /// 予定フォーム全体の保存可否に必要な検証結果を返す。
   static ScheduleFormValidationResult validateScheduleForm({
     required String title,
-    required String location,
     required DateTime startDate,
     required TimeOfDay startTime,
     required DateTime endDate,
     required TimeOfDay endTime,
   }) {
     return ScheduleFormValidationResult(
-      hasRequiredFields: hasRequiredScheduleFields(
-        title: title,
-        location: location,
-      ),
+      hasRequiredFields: hasRequiredScheduleFields(title: title),
       hasInvalidTimeRange: hasInvalidTimeRange(
         startDate: startDate,
         startTime: startTime,
