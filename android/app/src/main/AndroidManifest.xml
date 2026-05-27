@@ -61,5 +61,14 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- image_cropper: https://pub.dev/packages/image_cropper -->
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/UCropTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
     </application>
 </manifest>
