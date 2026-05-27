@@ -408,7 +408,7 @@ class CalendarPageView extends HookConsumerWidget {
               },
               child: PageView.builder(
                 controller: pageController,
-                physics: const OptimizedScrollPhysics(),
+                physics: const PageScrollPhysics(),
                 // スクロール開始時に最適化モードを有効化
                 dragStartBehavior: DragStartBehavior.start,
                 itemBuilder: (context, index) {
@@ -1453,32 +1453,6 @@ class OptimizedDateCell extends StatelessWidget {
       ),
     );
   }
-}
-
-// スクロール最適化パフォーマンス向上
-class OptimizedScrollPhysics extends ScrollPhysics {
-  const OptimizedScrollPhysics({super.parent});
-
-  @override
-  OptimizedScrollPhysics applyTo(ScrollPhysics? ancestor) {
-    return OptimizedScrollPhysics(parent: buildParent(ancestor));
-  }
-
-  @override
-  SpringDescription get spring => const SpringDescription(
-        mass: 0.25, // さらに軽く
-        stiffness: 350.0, // 剛性を上げる
-        damping: 30.0, // 減衰をさらに強化
-      );
-
-  @override
-  double get maxFlingVelocity => 800.0; // 速度上限をさらに下げる
-
-  @override
-  double get minFlingVelocity => 70.0; // 最小速度を上げる
-
-  @override
-  double get dragStartDistanceMotionThreshold => 10.0; // ドラッグ開始しきい値を上げる
 }
 
 // スクロール中の軽量表示用ウィジェット
