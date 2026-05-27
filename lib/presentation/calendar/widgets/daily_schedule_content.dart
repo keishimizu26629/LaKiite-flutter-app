@@ -35,77 +35,75 @@ class DailyAllDayScheduleList extends StatelessWidget {
         color: Theme.of(context).scaffoldBackgroundColor,
         border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
       ),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 120),
-        child: Column(
-          children: [
-            ...visibleSchedules.map((schedule) {
-              final ownershipStyle = ScheduleOwnershipStyle.resolve(
-                context,
-                schedule: schedule,
-                currentUserId: currentUserId,
-              );
-              return InkWell(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          ScheduleDetailPage(schedule: schedule),
-                    ),
-                  );
-                },
-                child: Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.symmetric(vertical: 3),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ...visibleSchedules.map((schedule) {
+            final ownershipStyle = ScheduleOwnershipStyle.resolve(
+              context,
+              schedule: schedule,
+              currentUserId: currentUserId,
+            );
+            return InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        ScheduleDetailPage(schedule: schedule),
                   ),
-                  decoration: BoxDecoration(
-                    color: ownershipStyle.backgroundColor,
-                    border: Border.all(
-                      color: ownershipStyle.borderColor,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: ownershipStyle.backgroundColor,
+                  border: Border.all(
+                    color: ownershipStyle.borderColor,
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.event_available,
-                        size: 16,
-                        color: ownershipStyle.textColor,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          schedule.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: ownershipStyle.textColor,
-                          ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.event_available,
+                      size: 16,
+                      color: ownershipStyle.textColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        schedule.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: ownershipStyle.textColor,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-            if (remainingCount > 0)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 3),
-                  child: Text(
-                    '+$remainingCount',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                  ),
+                    ),
+                  ],
                 ),
               ),
-          ],
-        ),
+            );
+          }),
+          if (remainingCount > 0)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Text(
+                  '+$remainingCount',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

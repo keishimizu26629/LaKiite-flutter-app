@@ -48,6 +48,45 @@ void main() {
     final middleTop = tester.getTopLeft(find.text('次の予定')).dy;
     expect(earlyTop, lessThan(middleTop));
   });
+
+  testWidgets('終日予定が2件の場合は内容分の高さだけ確保する', (tester) async {
+    final baseDate = DateTime(2026, 5, 28);
+    final schedules = [
+      _schedule(
+        id: 'first',
+        title: '1件目',
+        createdAt: DateTime(2026, 5, 28, 8),
+        date: baseDate,
+      ),
+      _schedule(
+        id: 'second',
+        title: '2件目',
+        createdAt: DateTime(2026, 5, 28, 9),
+        date: baseDate,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DailyAllDayScheduleList(
+            schedules: schedules,
+            currentUserId: 'owner',
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('+1'), findsNothing);
+
+    final firstTop = tester.getTopLeft(find.text('1件目')).dy;
+    final secondTop = tester.getTopLeft(find.text('2件目')).dy;
+    final listBottom =
+        tester.getBottomLeft(find.byType(DailyAllDayScheduleList)).dy;
+
+    expect(secondTop - firstTop, greaterThan(0));
+    expect(listBottom - secondTop, lessThan(48));
+  });
 }
 
 Schedule _schedule({
