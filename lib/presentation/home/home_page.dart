@@ -237,7 +237,7 @@ class HomePage extends HookConsumerWidget {
                     child: Column(
                       children: [
                         Expanded(
-                          child: TabBarView(
+                          child: HomeTabBarView(
                             children: [
                               // カレンダー表示タブ
                               scheduleState.when(
@@ -489,6 +489,23 @@ class HomePage extends HookConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class HomeTabBarView extends StatelessWidget {
+  const HomeTabBarView({
+    required this.children,
+    super.key,
+  });
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return TabBarView(
+      physics: const NeverScrollableScrollPhysics(),
+      children: children,
     );
   }
 }

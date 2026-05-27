@@ -12,10 +12,7 @@ import 'package:lakiite/presentation/list/list_detail_page.dart';
 
 /// 15分単位の時間選択ダイアログ
 class CustomTimePickerDialog extends StatefulWidget {
-  const CustomTimePickerDialog({
-    super.key,
-    required this.initialTime,
-  });
+  const CustomTimePickerDialog({super.key, required this.initialTime});
   final TimeOfDay initialTime;
 
   @override
@@ -43,10 +40,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog> {
           children: [
             const Text(
               '時間を選択',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             Row(
@@ -84,7 +78,9 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog> {
                     items: [0, 15, 30, 45].map((minute) {
                       return DropdownMenuItem(
                         value: minute,
-                        child: Text('${minute.toString().padLeft(2, '0')}分'),
+                        child: Text(
+                          '${minute.toString().padLeft(2, '0')}分',
+                        ),
                       );
                     }).toList(),
                     onChanged: (value) {
@@ -128,11 +124,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog> {
 }
 
 class ScheduleFormPage extends HookConsumerWidget {
-  const ScheduleFormPage({
-    super.key,
-    this.schedule,
-    this.initialDate,
-  });
+  const ScheduleFormPage({super.key, this.schedule, this.initialDate});
   final Schedule? schedule;
   final DateTime? initialDate;
 
@@ -140,13 +132,16 @@ class ScheduleFormPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     AppLogger.debug('ScheduleFormPage: Building form page');
     AppLogger.debug(
-        'ScheduleFormPage: Initial date: ${initialDate?.toString() ?? "未指定"}');
+      'ScheduleFormPage: Initial date: ${initialDate?.toString() ?? "未指定"}',
+    );
 
     final titleController = useTextEditingController(text: schedule?.title);
-    final descriptionController =
-        useTextEditingController(text: schedule?.description);
-    final locationController =
-        useTextEditingController(text: schedule?.location);
+    final descriptionController = useTextEditingController(
+      text: schedule?.description,
+    );
+    final locationController = useTextEditingController(
+      text: schedule?.location,
+    );
 
     final now = DateTime.now();
     final initialStartDate = ScheduleFormLogic.initialStartDate(
@@ -157,8 +152,9 @@ class ScheduleFormPage extends HookConsumerWidget {
 
     final selectedStartDate = useState<DateTime>(initialStartDate);
 
-    final selectedStartTime =
-        useState<TimeOfDay>(ScheduleFormLogic.timeOf(initialStartDate));
+    final selectedStartTime = useState<TimeOfDay>(
+      ScheduleFormLogic.timeOf(initialStartDate),
+    );
 
     final initialEndDate = ScheduleFormLogic.initialEndDate(
       schedule: schedule,
@@ -172,9 +168,23 @@ class ScheduleFormPage extends HookConsumerWidget {
       ScheduleFormLogic.timeOf(initialEndDate),
     );
 
-    final hasTitleError = useState<bool>(false);
-    final hasLocationError = useState<bool>(false);
-    final hasTimeError = useState<bool>(false);
+    ScheduleFormValidationResult currentValidationResult() {
+      return ScheduleFormLogic.validateScheduleForm(
+        title: titleController.text,
+        startDate: selectedStartDate.value,
+        startTime: selectedStartTime.value,
+        endDate: selectedEndDate.value,
+        endTime: selectedEndTime.value,
+      );
+    }
+
+    final formValidationResult = useState<ScheduleFormValidationResult>(
+      currentValidationResult(),
+    );
+
+    void updateValidationResult() {
+      formValidationResult.value = currentValidationResult();
+    }
 
     final selectedLists = useState<List<UserList>>([]);
     final listsAsync = ref.watch(userListsStreamProvider);
@@ -201,57 +211,45 @@ class ScheduleFormPage extends HookConsumerWidget {
       return null;
     }, [listsAsync]);
 
-    // 時間の整合性をチェックする関数
-    void validateTime() {
-      hasTimeError.value = ScheduleFormLogic.hasInvalidTimeRange(
-        startDate: selectedStartDate.value,
-        startTime: selectedStartTime.value,
-        endDate: selectedEndDate.value,
-        endTime: selectedEndTime.value,
-      );
-    }
+    // 初期表示時と日時変更時にフォーム全体の検証結果を更新する。
+    useEffect(
+      () {
+        updateValidationResult();
+        return null;
+      },
+      [
+        selectedStartDate.value,
+        selectedStartTime.value,
+        selectedEndDate.value,
+        selectedEndTime.value,
+      ],
+    );
 
-    // 初期表示時と時間変更時にバリデーションを実行
-    useEffect(() {
-      validateTime();
-      return null;
-    }, [
-      selectedStartDate.value,
-      selectedStartTime.value,
-      selectedEndDate.value,
-      selectedEndTime.value
-    ]);
-
-    // バリデーション関数
-    void validateInputs() {
-      hasTitleError.value = titleController.text.trim().isEmpty;
-      hasLocationError.value = locationController.text.trim().isEmpty;
-    }
-
-    // テキストフィールドの変更を監視
+    // タイトル入力は保存可否だけに反映し、フォーカスや入力途中のエラー表示は行わない。
     useEffect(() {
       void listener() {
-        validateInputs();
+        updateValidationResult();
       }
 
       titleController.addListener(listener);
-      locationController.addListener(listener);
 
       return () {
         titleController.removeListener(listener);
-        locationController.removeListener(listener);
       };
-    }, [titleController, locationController]);
+    }, [titleController]);
 
     // スケジュールの保存処理
     Future<void> handleSave() async {
       AppLogger.debug('ScheduleFormPage: Save button pressed');
 
-      if (titleController.text.isEmpty) {
-        AppLogger.warning('ScheduleFormPage: Title is empty');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('タイトルを入力してください')),
-        );
+      final validationResult = currentValidationResult();
+      formValidationResult.value = validationResult;
+
+      if (!validationResult.hasRequiredFields) {
+        AppLogger.warning('ScheduleFormPage: Required fields are empty');
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('タイトルを入力してください')));
         return;
       }
 
@@ -265,11 +263,11 @@ class ScheduleFormPage extends HookConsumerWidget {
         selectedEndTime.value,
       );
 
-      if (endDateTime.isBefore(startDateTime)) {
+      if (validationResult.hasInvalidTimeRange) {
         AppLogger.warning('ScheduleFormPage: End date is before start date');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('終了日時は開始日時より後に設定してください')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('終了日時は開始日時より後に設定してください')));
         return;
       }
 
@@ -278,9 +276,9 @@ class ScheduleFormPage extends HookConsumerWidget {
 
       if (currentUser == null) {
         AppLogger.error('ScheduleFormPage: User is not authenticated');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('ユーザー認証が必要です')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('ユーザー認証が必要です')));
         return;
       }
 
@@ -340,17 +338,15 @@ class ScheduleFormPage extends HookConsumerWidget {
       } catch (e) {
         AppLogger.error('ScheduleFormPage: Error saving schedule: $e');
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('スケジュールの保存に失敗しました: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('スケジュールの保存に失敗しました: $e')));
         }
       }
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(schedule != null ? '予定編集' : '予定作成'),
-      ),
+      appBar: AppBar(title: Text(schedule != null ? '予定編集' : '予定作成')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -358,10 +354,9 @@ class ScheduleFormPage extends HookConsumerWidget {
           children: [
             TextField(
               controller: titleController,
-              decoration: InputDecoration(
-                labelText: 'タイトル',
-                border: const OutlineInputBorder(),
-                errorText: hasTitleError.value ? 'タイトルを入力してください' : null,
+              decoration: const InputDecoration(
+                labelText: 'タイトル（必須）',
+                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
@@ -376,18 +371,16 @@ class ScheduleFormPage extends HookConsumerWidget {
             const SizedBox(height: 16),
             TextField(
               controller: locationController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: '場所',
-                border: const OutlineInputBorder(),
-                errorText: hasLocationError.value
-                    ? '場所を入力してください。場所が未定の場合は「未定」と入力してください。'
-                    : null,
-                helperText: '場所が未定の場合は「未定」と入力してください。',
+                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
-            const Text('開始日時',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text(
+              '開始日時',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -403,8 +396,9 @@ class ScheduleFormPage extends HookConsumerWidget {
                             context: context,
                             initialDate: selectedStartDate.value,
                             firstDate: DateTime.now(),
-                            lastDate: DateTime.now()
-                                .add(const Duration(days: 365 * 2)),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 365 * 2),
+                            ),
                           );
                           if (picked != null) {
                             selectedStartDate.value = picked;
@@ -415,7 +409,9 @@ class ScheduleFormPage extends HookConsumerWidget {
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              vertical: 8, horizontal: 12),
+                            vertical: 8,
+                            horizontal: 12,
+                          ),
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey),
                             borderRadius: BorderRadius.circular(4),
@@ -451,12 +447,14 @@ class ScheduleFormPage extends HookConsumerWidget {
                           );
                           if (result != null) {
                             selectedStartTime.value = result;
-                            validateTime();
+                            updateValidationResult();
                           }
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              vertical: 8, horizontal: 12),
+                            vertical: 8,
+                            horizontal: 12,
+                          ),
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey),
                             borderRadius: BorderRadius.circular(4),
@@ -478,8 +476,10 @@ class ScheduleFormPage extends HookConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            const Text('終了日時',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text(
+              '終了日時',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -495,10 +495,9 @@ class ScheduleFormPage extends HookConsumerWidget {
                             context: context,
                             initialDate: selectedEndDate.value,
                             firstDate: selectedStartDate.value,
-                            lastDate: DateTime.now()
-                                .toUtc()
-                                .toLocal()
-                                .add(const Duration(days: 365 * 2)),
+                            lastDate: DateTime.now().toUtc().toLocal().add(
+                                  const Duration(days: 365 * 2),
+                                ),
                           );
                           if (picked != null) {
                             selectedEndDate.value = picked;
@@ -506,7 +505,9 @@ class ScheduleFormPage extends HookConsumerWidget {
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              vertical: 8, horizontal: 12),
+                            vertical: 8,
+                            horizontal: 12,
+                          ),
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey),
                             borderRadius: BorderRadius.circular(4),
@@ -542,12 +543,14 @@ class ScheduleFormPage extends HookConsumerWidget {
                           );
                           if (result != null) {
                             selectedEndTime.value = result;
-                            validateTime();
+                            updateValidationResult();
                           }
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              vertical: 8, horizontal: 12),
+                            vertical: 8,
+                            horizontal: 12,
+                          ),
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey),
                             borderRadius: BorderRadius.circular(4),
@@ -569,9 +572,7 @@ class ScheduleFormPage extends HookConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            if (hasTimeError.value ||
-                hasTitleError.value ||
-                hasLocationError.value)
+            if (formValidationResult.value.hasInvalidTimeRange)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 8),
                 padding: const EdgeInsets.all(8),
@@ -583,45 +584,14 @@ class ScheduleFormPage extends HookConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (hasTitleError.value)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline,
-                                color: Colors.red, size: 16),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'タイトルを入力してください',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (hasLocationError.value)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline,
-                                color: Colors.red, size: 16),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '場所を入力してください。場所が未定の場合は「未定」と入力してください。',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (hasTimeError.value)
+                    if (formValidationResult.value.hasInvalidTimeRange)
                       const Row(
                         children: [
-                          Icon(Icons.error_outline,
-                              color: Colors.red, size: 16),
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.red,
+                            size: 16,
+                          ),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -657,14 +627,16 @@ class ScheduleFormPage extends HookConsumerWidget {
                   children: lists.map((list) {
                     return Card(
                       margin: const EdgeInsets.symmetric(
-                          vertical: 4, horizontal: 8),
+                        vertical: 4,
+                        horizontal: 8,
+                      ),
                       child: InkWell(
                         onTap: () {
                           final newValue = !selectedLists.value.contains(list);
                           if (newValue) {
                             selectedLists.value = [
                               ...selectedLists.value,
-                              list
+                              list,
                             ];
                           } else {
                             selectedLists.value = selectedLists.value
@@ -674,7 +646,9 @@ class ScheduleFormPage extends HookConsumerWidget {
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                              vertical: 8, horizontal: 12),
+                            vertical: 8,
+                            horizontal: 12,
+                          ),
                           child: Row(
                             children: [
                               Checkbox(
@@ -683,7 +657,7 @@ class ScheduleFormPage extends HookConsumerWidget {
                                   if (value == true) {
                                     selectedLists.value = [
                                       ...selectedLists.value,
-                                      list
+                                      list,
                                     ];
                                   } else {
                                     selectedLists.value = selectedLists.value
@@ -709,15 +683,18 @@ class ScheduleFormPage extends HookConsumerWidget {
                                         Navigator.of(context).push(
                                           MaterialPageRoute(
                                             builder: (context) =>
-                                                ListDetailPage(list: list),
+                                                ListDetailPage(
+                                              list: list,
+                                            ),
                                           ),
                                         );
                                       },
                                       child: Container(
                                         padding: const EdgeInsets.all(4),
                                         decoration: BoxDecoration(
-                                          color: Colors.blue
-                                              .withValues(alpha: 0.1),
+                                          color: Colors.blue.withValues(
+                                            alpha: 0.1,
+                                          ),
                                           borderRadius:
                                               BorderRadius.circular(4),
                                         ),
@@ -727,8 +704,9 @@ class ScheduleFormPage extends HookConsumerWidget {
                                             Text(
                                               '詳細',
                                               style: TextStyle(
-                                                color: Theme.of(context)
-                                                    .primaryColor,
+                                                color: Theme.of(
+                                                  context,
+                                                ).primaryColor,
                                                 fontSize: 14,
                                               ),
                                             ),
@@ -736,8 +714,9 @@ class ScheduleFormPage extends HookConsumerWidget {
                                             Icon(
                                               Icons.info_outline,
                                               size: 16,
-                                              color: Theme.of(context)
-                                                  .primaryColor,
+                                              color: Theme.of(
+                                                context,
+                                              ).primaryColor,
                                             ),
                                           ],
                                         ),
@@ -761,18 +740,11 @@ class ScheduleFormPage extends HookConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: (hasTimeError.value ||
-                hasTitleError.value ||
-                hasLocationError.value)
-            ? null
-            : handleSave,
+        onPressed: formValidationResult.value.canSave ? handleSave : null,
         icon: const Icon(Icons.save),
         label: const Text('保存'),
-        backgroundColor: (hasTimeError.value ||
-                hasTitleError.value ||
-                hasLocationError.value)
-            ? Colors.grey
-            : null,
+        backgroundColor:
+            formValidationResult.value.canSave ? null : Colors.grey,
       ),
     );
   }
