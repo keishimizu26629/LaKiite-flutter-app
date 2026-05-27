@@ -13,9 +13,11 @@ import 'package:lakiite/domain/entity/notification.dart';
 import 'package:lakiite/domain/entity/schedule_comment.dart';
 import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/interfaces/i_friend_list_repository.dart';
+import 'package:lakiite/domain/interfaces/i_image_cropper_service.dart';
 import 'package:lakiite/domain/interfaces/i_image_processor_service.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
 import 'package:lakiite/domain/interfaces/i_storage_service.dart';
+import 'package:lakiite/infrastructure/image_picker_service.dart';
 import 'package:lakiite/infrastructure/firebase/push_notification_sender.dart';
 import 'package:lakiite/infrastructure/providers.dart';
 import 'package:lakiite/presentation/my_page/my_page_view_model.dart';
@@ -36,6 +38,8 @@ void main() {
     late _FakeScheduleInteractionRepository scheduleInteractionRepository;
     late _FakeStorageService storageService;
     late _FakeImageProcessorService imageProcessorService;
+    late _FakeImageCropperService imageCropperService;
+    late _FakeImagePickerService imagePickerService;
     late ProviderContainer container;
 
     setUp(() {
@@ -47,6 +51,8 @@ void main() {
       scheduleInteractionRepository = _FakeScheduleInteractionRepository();
       storageService = _FakeStorageService();
       imageProcessorService = _FakeImageProcessorService();
+      imageCropperService = _FakeImageCropperService();
+      imagePickerService = _FakeImagePickerService();
 
       container = ProviderContainer(
         overrides: [
@@ -76,6 +82,8 @@ void main() {
           storageServiceProvider.overrideWithValue(storageService),
           imageProcessorServiceProvider
               .overrideWithValue(imageProcessorService),
+          imageCropperServiceProvider.overrideWithValue(imageCropperService),
+          imagePickerServiceProvider.overrideWithValue(imagePickerService),
         ],
       );
     });
@@ -239,6 +247,67 @@ void main() {
       expect(updatedUser?.iconUrl, storageService.uploadedUrl);
       expect(storageService.uploadedPath, 'v1/users/icon/${user.id}');
     });
+
+    test('プロフィール画像を選択すると切り取り後の画像を選択状態に保存する', () async {
+      final user = BaseMock.createTestUser();
+      userRepository.addTestUser(user);
+      final pickedImageFile = File(
+        '${Directory.systemTemp.path}/lakiite-picked-profile-test.jpg',
+      );
+      final croppedImageFile = File(
+        '${Directory.systemTemp.path}/lakiite-cropped-profile-test.jpg',
+      );
+      await pickedImageFile.writeAsBytes([1, 2, 3]);
+      await croppedImageFile.writeAsBytes([4, 5, 6]);
+      imagePickerService.pickedPath = pickedImageFile.path;
+      imageCropperService.croppedFile = croppedImageFile;
+
+      final viewModel = container.read(myPageViewModelProvider.notifier);
+      await viewModel.loadUser(user.id);
+
+      await viewModel.pickImage();
+
+      expect(imageCropperService.sourceFile?.path, pickedImageFile.path);
+      expect(imageCropperService.aspectRatioX, 1);
+      expect(imageCropperService.aspectRatioY, 1);
+      expect(
+        imageProcessorService.compressedSourceFile?.path,
+        croppedImageFile.path,
+      );
+      expect(
+        container.read(selectedImageProvider)?.path,
+        croppedImageFile.path,
+      );
+    });
+
+    test('プロフィール画像の切り取りをキャンセルすると選択状態を変更しない', () async {
+      final user = BaseMock.createTestUser();
+      userRepository.addTestUser(user);
+      final pickedImageFile = File(
+        '${Directory.systemTemp.path}/lakiite-picked-profile-cancel-test.jpg',
+      );
+      final currentSelectedImageFile = File(
+        '${Directory.systemTemp.path}/lakiite-current-profile-test.jpg',
+      );
+      await pickedImageFile.writeAsBytes([1, 2, 3]);
+      await currentSelectedImageFile.writeAsBytes([7, 8, 9]);
+      imagePickerService.pickedPath = pickedImageFile.path;
+      imageCropperService.croppedFile = null;
+      container.read(selectedImageProvider.notifier).state =
+          currentSelectedImageFile;
+
+      final viewModel = container.read(myPageViewModelProvider.notifier);
+      await viewModel.loadUser(user.id);
+
+      await viewModel.pickImage();
+
+      expect(imageCropperService.sourceFile?.path, pickedImageFile.path);
+      expect(imageProcessorService.compressedSourceFile, isNull);
+      expect(
+        container.read(selectedImageProvider)?.path,
+        currentSelectedImageFile.path,
+      );
+    });
   });
 }
 
@@ -332,6 +401,8 @@ class _FakeStorageService implements IStorageService {
 }
 
 class _FakeImageProcessorService implements IImageProcessorService {
+  File? compressedSourceFile;
+
   @override
   Future<File> compressImage(
     File imageFile, {
@@ -339,6 +410,7 @@ class _FakeImageProcessorService implements IImageProcessorService {
     int minHeight = 300,
     int quality = 85,
   }) async {
+    compressedSourceFile = imageFile;
     return imageFile;
   }
 
@@ -352,5 +424,33 @@ class _FakeImageProcessorService implements IImageProcessorService {
     final directory = await createTempDirectory();
     final file = File('${directory.path}/image.$extension');
     return file.writeAsBytes(data);
+  }
+}
+
+class _FakeImageCropperService implements IImageCropperService {
+  File? croppedFile;
+  File? sourceFile;
+  double? aspectRatioX;
+  double? aspectRatioY;
+
+  @override
+  Future<File?> cropImage({
+    required File sourceFile,
+    double? aspectRatioX,
+    double? aspectRatioY,
+  }) async {
+    this.sourceFile = sourceFile;
+    this.aspectRatioX = aspectRatioX;
+    this.aspectRatioY = aspectRatioY;
+    return croppedFile;
+  }
+}
+
+class _FakeImagePickerService extends ImagePickerService {
+  String? pickedPath;
+
+  @override
+  Future<String?> pickImage(ImageSource imageSource) async {
+    return pickedPath;
   }
 }

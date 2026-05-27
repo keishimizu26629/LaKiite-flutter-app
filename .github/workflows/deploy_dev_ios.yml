@@ -2,6 +2,12 @@ name: "[Release] Dev iOS"
 
 on:
   workflow_dispatch:
+    inputs:
+      clean_ios_cache:
+        description: "Clean Pods, Podfile.lock, and Xcode DerivedData before building"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -22,6 +28,19 @@ jobs:
 
       - name: Setup CI
         uses: ./.github/actions/setup
+        with:
+          flutter-cache: "true"
+
+      - name: Restore CocoaPods cache
+        if: ${{ !inputs.clean_ios_cache }}
+        uses: actions/cache@v4
+        with:
+          path: |
+            ios/Pods
+            ~/Library/Caches/CocoaPods
+          key: ${{ runner.os }}-pods-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
 
       - name: Restore Firebase config files
         run: |
@@ -36,17 +55,19 @@ jobs:
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
 
-      - name: Clean iOS build cache and update dependencies
+      - name: Prepare iOS build cache
         run: |
           cd ios
-          # Clean all caches for fresh dependency resolution
-          rm -rf Pods
-          rm -rf Podfile.lock
-          rm -rf build
-          rm -rf ~/Library/Developer/Xcode/DerivedData/*
-          # Clean CocoaPods cache for latest Firebase/gRPC (commented out to speed up build)
-          # pod cache clean --all
-          echo "Cleaned all caches for iOS 15.0 and Firebase SDK 12.4.0 compatibility"
+          if [ "${{ inputs.clean_ios_cache }}" = "true" ]; then
+            rm -rf Pods
+            rm -rf Podfile.lock
+            rm -rf build
+            rm -rf ~/Library/Developer/Xcode/DerivedData/*
+            echo "Cleaned iOS dependency and build caches for fresh dependency resolution"
+          else
+            rm -rf build
+            echo "Keeping Pods and Podfile.lock so dependency caches can be reused"
+          fi
 
       - name: Debug certificates and provisioning profiles
         env:

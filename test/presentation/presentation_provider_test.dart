@@ -252,6 +252,16 @@ void main() {
       );
     });
 
+    test('presentation_provider は calendarMonthSchedulesProvider を再定義しない', () {
+      expect(
+        identical(
+          calendar_schedule.calendarMonthSchedulesProvider,
+          presentation.calendarMonthSchedulesProvider,
+        ),
+        isTrue,
+      );
+    });
+
     test('my_page は userSchedulesStreamProvider を再定義しない', () {
       expect(
         identical(
