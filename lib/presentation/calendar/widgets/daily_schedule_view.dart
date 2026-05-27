@@ -248,17 +248,17 @@ class DailyScheduleView extends HookConsumerWidget {
 
                 final allDaySchedules = dateSchedules
                     .where((schedule) => schedule.isAllDay)
-                    .toList()
-                  ..sort(
-                    (a, b) => a.startDateTime.compareTo(b.startDateTime),
-                  );
+                    .toList();
                 final timedSchedules = dateSchedules
                     .where((schedule) => !schedule.isAllDay)
                     .toList();
 
                 return Column(
                   children: [
-                    DailyAllDayScheduleList(schedules: allDaySchedules),
+                    DailyAllDayScheduleList(
+                      schedules: allDaySchedules,
+                      currentUserId: currentUserId,
+                    ),
                     Expanded(
                       child: SingleChildScrollView(
                         controller: scrollController,

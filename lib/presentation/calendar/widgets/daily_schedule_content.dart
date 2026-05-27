@@ -5,17 +5,28 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/application/notification/notification_notifier.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/presentation/widgets/default_user_icon.dart';
+import 'package:lakiite/presentation/calendar/widgets/schedule_ownership_style.dart';
 
 class DailyAllDayScheduleList extends StatelessWidget {
-  const DailyAllDayScheduleList({required this.schedules, super.key});
+  const DailyAllDayScheduleList({
+    required this.schedules,
+    required this.currentUserId,
+    super.key,
+  });
 
   final List<Schedule> schedules;
+  final String? currentUserId;
 
   @override
   Widget build(BuildContext context) {
     if (schedules.isEmpty) {
       return const SizedBox.shrink();
     }
+
+    final sortedSchedules = List<Schedule>.from(schedules)
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final visibleSchedules = sortedSchedules.take(2).toList();
+    final remainingCount = sortedSchedules.length - visibleSchedules.length;
 
     return Container(
       width: double.infinity,
@@ -25,10 +36,15 @@ class DailyAllDayScheduleList extends StatelessWidget {
         border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
       ),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 150),
-        child: SingleChildScrollView(
-          child: Column(
-            children: schedules.map((schedule) {
+        constraints: const BoxConstraints(maxHeight: 120),
+        child: Column(
+          children: [
+            ...visibleSchedules.map((schedule) {
+              final ownershipStyle = ScheduleOwnershipStyle.resolve(
+                context,
+                schedule: schedule,
+                currentUserId: currentUserId,
+              );
               return InkWell(
                 onTap: () {
                   Navigator.of(context).push(
@@ -46,45 +62,49 @@ class DailyAllDayScheduleList extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.08),
+                    color: ownershipStyle.backgroundColor,
                     border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).primaryColor.withValues(alpha: 0.55),
+                      color: ownershipStyle.borderColor,
                     ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.event_available, size: 16),
+                      Icon(
+                        Icons.event_available,
+                        size: 16,
+                        color: ownershipStyle.textColor,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           schedule.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
+                            color: ownershipStyle.textColor,
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '終日',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[700],
                         ),
                       ),
                     ],
                   ),
                 ),
               );
-            }).toList(),
-          ),
+            }),
+            if (remainingCount > 0)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Text(
+                    '+$remainingCount',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -224,11 +244,11 @@ class DailyScheduleContent extends HookConsumerWidget {
                           final schedule = group[index];
                           final startTime = schedule.startDateTime;
                           final endTime = schedule.endDateTime;
-                          final isOwner = schedule.ownerId == currentUserId;
-
-                          // ユーザーIDが未定義でない場合のみ判定を行う
-                          final isOwnerWithCheck = currentUserId != null &&
-                              schedule.ownerId == currentUserId;
+                          final ownershipStyle = ScheduleOwnershipStyle.resolve(
+                            context,
+                            schedule: schedule,
+                            currentUserId: currentUserId,
+                          );
 
                           final itemWidth = group.length == 1
                               ? containerWidth
@@ -236,7 +256,7 @@ class DailyScheduleContent extends HookConsumerWidget {
 
                           // デバッグログを追加
                           AppLogger.debug(
-                            'DailyScheduleContent - 予定: ${schedule.title}, オーナーID: ${schedule.ownerId}, currentUserId: $currentUserId, isOwner: $isOwner, isOwnerWithCheck: $isOwnerWithCheck',
+                            'DailyScheduleContent - 予定: ${schedule.title}, オーナーID: ${schedule.ownerId}, currentUserId: $currentUserId, isOwner=${ScheduleOwnershipStyle.isOwnedByCurrentUser(schedule, currentUserId)}',
                           );
 
                           return Positioned(
@@ -261,17 +281,9 @@ class DailyScheduleContent extends HookConsumerWidget {
                                   horizontal: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isOwnerWithCheck
-                                      ? Colors.grey.withValues(alpha: 0.1)
-                                      : Theme.of(
-                                          context,
-                                        ).primaryColor.withValues(alpha: 0.1),
+                                  color: ownershipStyle.backgroundColor,
                                   border: Border.all(
-                                    color: isOwnerWithCheck
-                                        ? Colors.grey.withValues(alpha: 0.8)
-                                        : Theme.of(context)
-                                            .primaryColor
-                                            .withValues(alpha: 0.8),
+                                    color: ownershipStyle.borderColor,
                                     width: 2,
                                   ),
                                   borderRadius: BorderRadius.circular(8),

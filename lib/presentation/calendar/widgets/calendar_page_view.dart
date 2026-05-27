@@ -6,6 +6,7 @@ import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/calendar/calendar_providers.dart';
 import 'package:lakiite/presentation/calendar/schedule_providers.dart';
 import 'package:lakiite/presentation/calendar/widgets/daily_schedule_view.dart';
+import 'package:lakiite/presentation/calendar/widgets/schedule_ownership_style.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
 import 'dart:convert';
@@ -1257,33 +1258,34 @@ class OptimizedDateCell extends StatelessWidget {
                     if (hasSchedules) ...[
                       const SizedBox(height: 1),
                       ...schedules.take(3).map((schedule) {
-                        final isOwner = schedule.ownerId == currentUserId;
+                        final isOwner =
+                            ScheduleOwnershipStyle.isOwnedByCurrentUser(
+                                schedule, currentUserId);
                         // デバッグログを追加
                         AppLogger.debug(
                             'OptimizedDateCell - 予定: ${schedule.title}, オーナーID: ${schedule.ownerId}, currentUserId: $currentUserId, isOwner: $isOwner');
 
-                        // ユーザーIDが未定義でない場合のみ判定を行う
-                        final isOwnerWithCheck = currentUserId != null &&
-                            schedule.ownerId == currentUserId;
+                        final ownershipStyle = ScheduleOwnershipStyle.resolve(
+                          context,
+                          schedule: schedule,
+                          currentUserId: currentUserId,
+                          backgroundAlpha: 0.15,
+                          borderAlpha: 0.3,
+                          primaryTextAlpha: 0.8,
+                          ownerBackgroundColor: Colors.grey.shade200,
+                          ownerBorderColor: Colors.grey.shade400,
+                        );
                         AppLogger.debug(
-                            'OptimizedDateCell - 判定結果: ${schedule.title}, 単純比較=$isOwner, チェック付き=$isOwnerWithCheck');
+                            'OptimizedDateCell - 判定結果: ${schedule.title}, isOwner=$isOwner');
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 0.5),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 2, vertical: 0.5),
                           decoration: BoxDecoration(
-                            color: isOwnerWithCheck
-                                ? Colors.grey.shade200
-                                : Theme.of(context)
-                                    .primaryColor
-                                    .withValues(alpha: 0.15),
+                            color: ownershipStyle.backgroundColor,
                             border: Border.all(
-                              color: isOwnerWithCheck
-                                  ? Colors.grey.shade400
-                                  : Theme.of(context)
-                                      .primaryColor
-                                      .withValues(alpha: 0.3),
+                              color: ownershipStyle.borderColor,
                               width: 0.5,
                             ),
                             borderRadius: BorderRadius.circular(2),
@@ -1292,11 +1294,7 @@ class OptimizedDateCell extends StatelessWidget {
                             schedule.title,
                             style: TextStyle(
                               fontSize: 8,
-                              color: isOwnerWithCheck
-                                  ? Colors.grey.shade700
-                                  : Theme.of(context)
-                                      .primaryColor
-                                      .withValues(alpha: 0.8),
+                              color: ownershipStyle.textColor,
                               fontWeight: FontWeight.w500,
                             ),
                             overflow: TextOverflow.ellipsis,
