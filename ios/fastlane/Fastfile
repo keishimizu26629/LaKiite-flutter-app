@@ -88,7 +88,8 @@ platform :ios do
   end
 
   private_lane :flutter_marketing_version do
-    version_line = File.readlines("../pubspec.yaml").find { |line| line.start_with?("version:") }
+    pubspec_path = File.expand_path("../../pubspec.yaml", __dir__)
+    version_line = File.readlines(pubspec_path).find { |line| line.start_with?("version:") }
     UI.user_error!("❌ pubspec.yaml version is missing") if version_line.nil?
 
     version_line.split[1].split("+").first
