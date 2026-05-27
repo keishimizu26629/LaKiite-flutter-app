@@ -76,10 +76,7 @@ void main() {
               width: 300,
               child: Card(
                 child: ListTile(
-                  title: Text(
-                    schedule.title,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  title: Text(schedule.title, overflow: TextOverflow.ellipsis),
                   subtitle: Text(
                     schedule.description,
                     overflow: TextOverflow.ellipsis,
@@ -143,9 +140,7 @@ void main() {
         await tester.pumpWidget(
           TestUtils.createTestApp(
             overrides: TestProviders.forScheduleCreation,
-            child: const Center(
-              child: Text('スケジュールがありません'),
-            ),
+            child: const Center(child: Text('スケジュールがありません')),
           ),
         );
 
@@ -156,9 +151,7 @@ void main() {
         await tester.pumpWidget(
           TestUtils.createTestApp(
             overrides: TestProviders.forScheduleCreation,
-            child: const Center(
-              child: CircularProgressIndicator(),
-            ),
+            child: const Center(child: CircularProgressIndicator()),
           ),
         );
 
@@ -167,7 +160,15 @@ void main() {
     });
 
     group('Schedule Form Widget Tests', () {
-      testWidgets('必須項目はフォーカスや入力途中でエラー表示せず保存ボタンを無効化する', (tester) async {
+      Finder titleField() {
+        return find.byWidgetPredicate(
+          (widget) =>
+              widget is TextField && widget.decoration?.labelText == 'タイトル（必須）',
+          description: 'TextField(labelText: タイトル（必須）)',
+        );
+      }
+
+      testWidgets('タイトル空欄では保存不可だがフォーカスだけではエラー表示しない', (tester) async {
         await tester.pumpWidget(
           TestUtils.createTestApp(
             overrides: TestProviders.forScheduleCreation,
@@ -178,35 +179,63 @@ void main() {
 
         expect(find.text('タイトルを入力してください'), findsNothing);
         expect(find.textContaining('場所を入力してください'), findsNothing);
+        expect(find.text('タイトル（必須）'), findsOneWidget);
 
-        await tester.tap(find.widgetWithText(TextField, 'タイトル'));
-        await tester.pump();
-
-        expect(find.text('タイトルを入力してください'), findsNothing);
-        expect(find.textContaining('場所を入力してください'), findsNothing);
-
-        await tester.enterText(
-          find.widgetWithText(TextField, 'タイトル'),
-          'テスト予定',
+        var saveButton = tester.widget<FloatingActionButton>(
+          find.byType(FloatingActionButton),
         );
-        await tester.pump();
-
-        expect(find.text('タイトルを入力してください'), findsNothing);
-        expect(find.textContaining('場所を入力してください'), findsNothing);
-
-        var saveButton = tester
-            .widget<FloatingActionButton>(find.byType(FloatingActionButton));
         expect(saveButton.onPressed, isNull);
 
-        await tester.enterText(
-          find.widgetWithText(TextField, '場所'),
-          '未定',
-        );
+        await tester.tap(titleField());
         await tester.pump();
 
-        saveButton = tester
-            .widget<FloatingActionButton>(find.byType(FloatingActionButton));
+        expect(find.text('タイトル（必須）'), findsOneWidget);
+        expect(find.text('タイトルを入力してください'), findsNothing);
+        expect(find.textContaining('場所を入力してください'), findsNothing);
+        saveButton = tester.widget<FloatingActionButton>(
+          find.byType(FloatingActionButton),
+        );
+        expect(saveButton.onPressed, isNull);
+      });
+
+      testWidgets('タイトル入力後は場所が未入力でも保存操作できる', (tester) async {
+        await tester.pumpWidget(
+          TestUtils.createTestApp(
+            overrides: TestProviders.forScheduleCreation,
+            child: const ScheduleFormPage(),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        await tester.enterText(titleField(), 'テスト予定');
+        await tester.pump();
+
+        final saveButton = tester.widget<FloatingActionButton>(
+          find.byType(FloatingActionButton),
+        );
         expect(saveButton.onPressed, isNotNull);
+        expect(find.text('未入力でも保存できます'), findsNothing);
+        expect(find.textContaining('場所を入力してください'), findsNothing);
+      });
+
+      testWidgets('タイトル入力後に空欄へ戻すと保存不可に戻る', (tester) async {
+        await tester.pumpWidget(
+          TestUtils.createTestApp(
+            overrides: TestProviders.forScheduleCreation,
+            child: const ScheduleFormPage(),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.enterText(titleField(), '一時タイトル');
+        await tester.pump();
+        await tester.enterText(titleField(), '');
+        await tester.pump();
+
+        final saveButton = tester.widget<FloatingActionButton>(
+          find.byType(FloatingActionButton),
+        );
+        expect(saveButton.onPressed, isNull);
+        expect(find.text('タイトルを入力してください'), findsNothing);
       });
 
       testWidgets('スケジュール作成フォームが正しく表示される', (tester) async {
@@ -223,13 +252,8 @@ void main() {
                     decoration: InputDecoration(labelText: '説明'),
                     maxLines: 3,
                   ),
-                  const TextField(
-                    decoration: InputDecoration(labelText: '場所'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {},
-                    child: const Text('保存'),
-                  ),
+                  const TextField(decoration: InputDecoration(labelText: '場所')),
+                  ElevatedButton(onPressed: () {}, child: const Text('保存')),
                 ],
               ),
             ),
@@ -269,10 +293,7 @@ void main() {
         );
 
         // タイトル入力
-        await tester.enterText(
-          find.byKey(const Key('title_field')),
-          'テストタイトル',
-        );
+        await tester.enterText(find.byKey(const Key('title_field')), 'テストタイトル');
 
         // 説明入力
         await tester.enterText(
@@ -303,9 +324,7 @@ void main() {
                         onPressed: () {
                           // バリデーション失敗のシミュレーション
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('タイトルを入力してください'),
-                            ),
+                            const SnackBar(content: Text('タイトルを入力してください')),
                           );
                         },
                         child: const Text('保存'),
@@ -343,9 +362,7 @@ void main() {
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.grey),
                     ),
-                    child: Center(
-                      child: Text('${index + 1}'),
-                    ),
+                    child: Center(child: Text('${index + 1}')),
                   );
                 },
               ),
