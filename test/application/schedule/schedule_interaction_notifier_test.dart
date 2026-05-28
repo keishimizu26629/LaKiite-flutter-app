@@ -265,11 +265,12 @@ class _FakeScheduleInteractionRepository
     implements IScheduleInteractionRepository {
   _FakeScheduleInteractionRepository()
       : _reactionListener = Completer<void>(),
+        _commentListener = Completer<void>(),
         _latestReactions = null,
-        _commentsController =
-            StreamController<List<ScheduleComment>>.broadcast() {
+        _latestComments = const <ScheduleComment>[] {
     _reactionsController = StreamController<List<ScheduleReaction>>.broadcast(
       onListen: () {
+        _reactionListenCount++;
         if (!_reactionListener.isCompleted) {
           _reactionListener.complete();
         }
@@ -278,17 +279,37 @@ class _FakeScheduleInteractionRepository
           _reactionsController.add(latest);
         }
       },
+      onCancel: () {
+        _reactionCancelCount++;
+      },
     );
-    _commentsController.add(const <ScheduleComment>[]);
+    _commentsController = StreamController<List<ScheduleComment>>.broadcast(
+      onListen: () {
+        _commentListenCount++;
+        if (!_commentListener.isCompleted) {
+          _commentListener.complete();
+        }
+        _commentsController.add(_latestComments);
+      },
+      onCancel: () {
+        _commentCancelCount++;
+      },
+    );
   }
 
   final Completer<void> _reactionListener;
+  final Completer<void> _commentListener;
   List<ScheduleReaction>? _latestReactions;
+  List<ScheduleComment> _latestComments;
 
   late final StreamController<List<ScheduleReaction>> _reactionsController;
-  final StreamController<List<ScheduleComment>> _commentsController;
+  late final StreamController<List<ScheduleComment>> _commentsController;
 
   Completer<String>? addReactionCompleter;
+  int _reactionListenCount = 0;
+  int _reactionCancelCount = 0;
+  int _commentListenCount = 0;
+  int _commentCancelCount = 0;
 
   void emitReactions(List<ScheduleReaction> reactions) {
     _latestReactions = reactions;
@@ -297,7 +318,28 @@ class _FakeScheduleInteractionRepository
     }
   }
 
+  void emitComments(List<ScheduleComment> comments) {
+    _latestComments = comments;
+    if (!_commentsController.isClosed) {
+      _commentsController.add(comments);
+    }
+  }
+
   Future<void> waitForReactionListener() => _reactionListener.future;
+
+  Future<void> waitForCommentListener() => _commentListener.future;
+
+  Future<void> waitForCommentListenerCount(int count) async {
+    while (_commentListenCount < count) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+  }
+
+  Future<void> waitForSubscriptionCancellation() async {
+    while (_reactionCancelCount == 0 || _commentCancelCount == 0) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+  }
 
   void dispose() {
     _reactionsController.close();
@@ -428,6 +470,12 @@ void main() {
             notification.notificationRepositoryProvider.overrideWithValue(
               _FakeNotificationRepository(),
             ),
+            notification.pushNotificationSenderProvider.overrideWithValue(
+              PushNotificationSender(
+                cloudFunctionUrl: 'https://example.test/push',
+                tokenResolver: (_) async => const [],
+              ),
+            ),
             notification.notificationNotifierProvider.overrideWith((ref) {
               return _FakeNotificationNotifier(ref);
             }),
@@ -438,7 +486,12 @@ void main() {
         final provider = scheduleInteractionNotifierProvider(schedule.id);
 
         // Ensure notifier is created and subscriptions are active.
-        container.read(provider);
+        final subscription = container.listen(
+          provider,
+          (_, __) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
         await repository.waitForReactionListener();
 
         final existing = ScheduleReaction(
@@ -485,6 +538,119 @@ void main() {
           finalState.reactions.map((r) => r.id),
           containsAll(['reaction-1', 'reaction-2', 'reaction-current-user']),
         );
+      },
+    );
+
+    test(
+      'session changes recreate schedule interaction subscriptions',
+      () async {
+        final user = UserModel(
+          publicProfile: PublicUserModel(
+            id: 'user-1',
+            displayName: 'User One',
+            searchId: UserId('USRTEST1'),
+            iconUrl: null,
+            shortBio: null,
+          ),
+          privateProfile: PrivateUserModel(
+            id: 'user-1',
+            name: 'User One',
+            friends: const [],
+            groups: const [],
+            lists: const [],
+            createdAt: DateTime(2024, 1, 1),
+          ),
+        );
+
+        final schedule = Schedule(
+          id: 'schedule-1',
+          title: 'Sample',
+          description: 'Desc',
+          startDateTime: DateTime(2024, 1, 1, 10),
+          endDateTime: DateTime(2024, 1, 1, 12),
+          ownerId: user.id,
+          ownerDisplayName: user.displayName,
+          sharedLists: const [],
+          visibleTo: const [],
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+        );
+
+        final sessionController = StreamController<String?>.broadcast();
+        addTearDown(sessionController.close);
+
+        final repository = _FakeScheduleInteractionRepository();
+        addTearDown(repository.dispose);
+
+        final container = ProviderContainer(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(user)),
+            ),
+            repositorySessionKeyProvider.overrideWith(
+              (ref) => sessionController.stream,
+            ),
+            scheduleInteractionRepositoryProvider.overrideWithValue(repository),
+            scheduleRepositoryProvider.overrideWithValue(
+              _FakeScheduleRepository(schedule),
+            ),
+            userRepositoryProvider.overrideWithValue(_FakeUserRepository(user)),
+            notification.notificationRepositoryProvider.overrideWithValue(
+              _FakeNotificationRepository(),
+            ),
+            notification.pushNotificationSenderProvider.overrideWithValue(
+              PushNotificationSender(
+                cloudFunctionUrl: 'https://example.test/push',
+                tokenResolver: (_) async => const [],
+              ),
+            ),
+            notification.notificationNotifierProvider.overrideWith((ref) {
+              return _FakeNotificationNotifier(ref);
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final provider = scheduleInteractionNotifierProvider(schedule.id);
+        final subscription = container.listen(
+          provider,
+          (_, __) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        await repository.waitForCommentListener();
+        final initialComment = ScheduleComment(
+          id: 'comment-1',
+          userId: user.id,
+          content: 'before session change',
+          createdAt: DateTime(2024, 1, 1),
+        );
+        repository.emitComments([initialComment]);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        expect(container.read(provider).comments.map((c) => c.id), [
+          'comment-1',
+        ]);
+
+        sessionController.add('user-2');
+
+        await repository.waitForSubscriptionCancellation();
+        await repository.waitForCommentListenerCount(2);
+
+        final latestComment = ScheduleComment(
+          id: 'comment-2',
+          userId: user.id,
+          content: 'after session change',
+          createdAt: DateTime(2024, 1, 1, 1),
+        );
+        repository.emitComments([initialComment, latestComment]);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        expect(container.read(provider).comments.map((c) => c.id), [
+          'comment-1',
+          'comment-2',
+        ]);
       },
     );
   });
