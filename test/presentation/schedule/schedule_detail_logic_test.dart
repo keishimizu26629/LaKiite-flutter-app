@@ -9,14 +9,8 @@ import 'package:lakiite/presentation/calendar/schedule_detail_logic.dart';
 void main() {
   group('ScheduleDetailLogic', () {
     test('コメントを作成日時の昇順へ並べる', () {
-      final newer = _comment(
-        id: 'newer',
-        createdAt: DateTime(2026, 5, 1, 12),
-      );
-      final older = _comment(
-        id: 'older',
-        createdAt: DateTime(2026, 5, 1, 10),
-      );
+      final newer = _comment(id: 'newer', createdAt: DateTime(2026, 5, 1, 12));
+      final older = _comment(id: 'older', createdAt: DateTime(2026, 5, 1, 10));
 
       expect(
         ScheduleDetailLogic.sortedComments([newer, older]).map((c) => c.id),
@@ -137,6 +131,19 @@ void main() {
       );
     });
 
+    test('終日予定は時刻を表示せず終日表記にする', () async {
+      await initializeDateFormatting('ja_JP');
+
+      expect(
+        ScheduleDetailLogic.formatDateTimeRange(
+          DateTime(2026, 5, 1),
+          DateTime(2026, 5, 1, 23, 59, 59, 999),
+          isAllDay: true,
+        ),
+        allOf(contains('終日（時間未定など）'), isNot(contains('00:00'))),
+      );
+    });
+
     test('コメント編集はtrim後に空でない場合だけ送信できる', () {
       expect(ScheduleDetailLogic.canSubmitComment('コメント'), isTrue);
       expect(ScheduleDetailLogic.canSubmitComment('  コメント  '), isTrue);
@@ -168,13 +175,9 @@ void main() {
     test('リアクション投稿者の取得結果から削除済みユーザーを除外する', () {
       final existingUser = _user(id: 'user-1', displayName: 'ユーザー1');
 
-      expect(
-        ScheduleDetailLogic.availableReactionUsers([
-          existingUser,
-          null,
-        ]),
-        [existingUser],
-      );
+      expect(ScheduleDetailLogic.availableReactionUsers([existingUser, null]), [
+        existingUser,
+      ]);
     });
 
     test('コメント投稿者名がない場合は退会済みユーザーとして表示する', () {
@@ -228,10 +231,7 @@ domain.Notification _notification({
   );
 }
 
-UserModel _user({
-  required String id,
-  required String displayName,
-}) {
+UserModel _user({required String id, required String displayName}) {
   return UserModel(
     publicProfile: PublicUserModel(
       id: id,

@@ -81,31 +81,34 @@ class ScheduleCard extends StatelessWidget {
                         top: hour * 60.0,
                         left: 0,
                         right: 0,
-                        child: Container(
-                          height: 1,
-                          color: Colors.grey[200],
-                        ),
+                        child: Container(height: 1, color: Colors.grey[200]),
                       ),
                     // スケジュールブロック
                     Positioned(
-                      top: schedule.startDateTime.hour * 60.0 +
-                          _calculateTimePosition(schedule.startDateTime),
+                      top: schedule.isAllDay
+                          ? 0
+                          : schedule.startDateTime.hour * 60.0 +
+                              _calculateTimePosition(
+                                schedule.startDateTime,
+                              ),
                       left: 0,
                       right: 0,
                       child: Container(
-                        height: _calculateHeight(
-                          schedule.startDateTime,
-                          schedule.endDateTime,
-                        ),
+                        height: schedule.isAllDay
+                            ? 72
+                            : _calculateHeight(
+                                schedule.startDateTime,
+                                schedule.endDateTime,
+                              ),
                         margin: const EdgeInsets.symmetric(horizontal: 4),
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .primaryColor
-                              .withValues(alpha: 0.1),
+                          color: Theme.of(
+                            context,
+                          ).primaryColor.withValues(alpha: 0.1),
                           border: Border.all(
-                            color: Theme.of(context)
-                                .primaryColor
-                                .withValues(alpha: 0.8),
+                            color: Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.8),
                             width: 2,
                           ),
                           borderRadius: BorderRadius.circular(8),
@@ -118,7 +121,9 @@ class ScheduleCard extends StatelessWidget {
                               Row(
                                 children: [
                                   Text(
-                                    '${_formatDateTime(schedule.startDateTime)} - ${_formatDateTime(schedule.endDateTime)}',
+                                    schedule.isAllDay
+                                        ? '終日（時間未定など）'
+                                        : '${_formatDateTime(schedule.startDateTime)} - ${_formatDateTime(schedule.endDateTime)}',
                                     style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500,

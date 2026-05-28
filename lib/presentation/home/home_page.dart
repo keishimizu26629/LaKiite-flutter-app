@@ -8,6 +8,7 @@ import 'package:lakiite/application/schedule/schedule_notifier.dart';
 import 'package:lakiite/presentation/calendar/calendar_providers.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
 import 'package:lakiite/presentation/calendar/widgets/calendar_page_view.dart';
+import 'package:lakiite/presentation/schedule/schedule_display_order.dart';
 import 'package:lakiite/presentation/widgets/banner_ad_widget.dart';
 import 'package:lakiite/presentation/widgets/notification_button.dart';
 import 'package:lakiite/presentation/widgets/schedule_tile.dart';
@@ -281,12 +282,12 @@ class HomePage extends HookConsumerWidget {
 
                                     // 自分の予定を非表示にするフィルタリング
                                     final filteredSchedules =
-                                        hideOwnSchedules.value
-                                            ? filteredByDate
-                                                .where((s) =>
-                                                    s.ownerId != state.user!.id)
-                                                .toList()
-                                            : filteredByDate;
+                                        ScheduleDisplayOrder.sortedTimeline(
+                                      hideOwnSchedules.value
+                                          ? filteredByDate.where((s) =>
+                                              s.ownerId != state.user!.id)
+                                          : filteredByDate,
+                                    );
 
                                     return Column(
                                       children: [

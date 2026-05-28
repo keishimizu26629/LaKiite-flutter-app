@@ -62,6 +62,25 @@ void main() {
       );
     });
 
+    test('終日予定は日付だけから保存用DateTimeへ正規化する', () {
+      expect(
+        ScheduleFormLogic.scheduleStartDateTime(
+          startDate: DateTime(2026, 8, 10),
+          startTime: const TimeOfDay(hour: 21, minute: 45),
+          isAllDay: true,
+        ),
+        DateTime(2026, 8, 10),
+      );
+      expect(
+        ScheduleFormLogic.scheduleEndDateTime(
+          endDate: DateTime(2026, 8, 10),
+          endTime: const TimeOfDay(hour: 8, minute: 15),
+          isAllDay: true,
+        ),
+        DateTime(2026, 8, 10, 23, 59, 59, 999),
+      );
+    });
+
     test('終了日時が開始日時より前の場合のみ不正な時間範囲になる', () {
       final startDate = DateTime(2026, 8, 10);
       final endDate = DateTime(2026, 8, 10);
@@ -83,6 +102,29 @@ void main() {
           endTime: const TimeOfDay(hour: 10, minute: 0),
         ),
         isFalse,
+      );
+    });
+
+    test('終日予定は時刻を無視して日付範囲だけを検証する', () {
+      expect(
+        ScheduleFormLogic.hasInvalidTimeRange(
+          startDate: DateTime(2026, 8, 10),
+          startTime: const TimeOfDay(hour: 23, minute: 0),
+          endDate: DateTime(2026, 8, 10),
+          endTime: const TimeOfDay(hour: 1, minute: 0),
+          isAllDay: true,
+        ),
+        isFalse,
+      );
+      expect(
+        ScheduleFormLogic.hasInvalidTimeRange(
+          startDate: DateTime(2026, 8, 10),
+          startTime: const TimeOfDay(hour: 0, minute: 0),
+          endDate: DateTime(2026, 8, 9),
+          endTime: const TimeOfDay(hour: 23, minute: 0),
+          isAllDay: true,
+        ),
+        isTrue,
       );
     });
 

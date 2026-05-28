@@ -129,27 +129,20 @@ class ScheduleTile extends ConsumerWidget {
                   if (isOwnSchedule) ...[
                     if (showEditButton)
                       IconButton(
-                        icon: Icon(
-                          Icons.edit,
-                          color: Colors.grey[600],
-                        ),
+                        icon: Icon(Icons.edit, color: Colors.grey[600]),
                         onPressed: onEditPressed ??
                             () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (context) => EditSchedulePage(
-                                    schedule: schedule,
-                                  ),
+                                  builder: (context) =>
+                                      EditSchedulePage(schedule: schedule),
                                 ),
                               );
                             },
                       ),
                     if (showDeleteButton)
                       IconButton(
-                        icon: Icon(
-                          Icons.delete,
-                          color: Colors.grey[600],
-                        ),
+                        icon: Icon(Icons.delete, color: Colors.grey[600]),
                         onPressed: onDeletePressed ??
                             () => _showDeleteConfirmDialog(context, ref),
                       ),
@@ -160,29 +153,22 @@ class ScheduleTile extends ConsumerWidget {
               if (schedule.description.isNotEmpty) ...[
                 Text(
                   schedule.description,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[800],
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey[800]),
                 ),
                 const SizedBox(height: 12),
               ],
               Row(
                 children: [
-                  Icon(
-                    Icons.access_time,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
+                  Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '${DateFormat('yyyy/MM/dd HH:mm').format(schedule.startDateTime)} - '
-                      '${DateFormat('yyyy/MM/dd HH:mm').format(schedule.endDateTime)}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      schedule.isAllDay
+                          ? '${DateFormat('yyyy/MM/dd').format(schedule.startDateTime)} - '
+                              '${DateFormat('yyyy/MM/dd').format(schedule.endDateTime)} 終日（時間未定など）'
+                          : '${DateFormat('yyyy/MM/dd HH:mm').format(schedule.startDateTime)} - '
+                              '${DateFormat('yyyy/MM/dd HH:mm').format(schedule.endDateTime)}',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ),
                 ],
@@ -191,19 +177,12 @@ class ScheduleTile extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
+                    Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         schedule.location!,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ),
                   ],
@@ -302,11 +281,7 @@ class ScheduleTile extends ConsumerWidget {
                   ),
                   const SizedBox(width: 16),
                   // コメントアイコン
-                  Icon(
-                    Icons.comment,
-                    size: 16,
-                    color: Colors.blue[400],
-                  ),
+                  Icon(Icons.comment, size: 16, color: Colors.blue[400]),
                   const SizedBox(width: 4),
                   // コメント数を表示
                   Text(
@@ -347,9 +322,9 @@ class ScheduleTile extends ConsumerWidget {
                   .deleteSchedule(schedule.id);
 
               // 削除完了メッセージ
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('予定を削除しました')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('予定を削除しました')));
             },
             child: const Text('削除', style: TextStyle(color: Colors.red)),
           ),
