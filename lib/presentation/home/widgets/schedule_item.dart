@@ -47,16 +47,12 @@ class ScheduleItem extends ConsumerWidget {
             ),
             if (schedule.ownerId == currentUser.id)
               IconButton(
-                icon: Icon(
-                  Icons.edit,
-                  color: Theme.of(context).primaryColor,
-                ),
+                icon: Icon(Icons.edit, color: Theme.of(context).primaryColor),
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => EditSchedulePage(
-                        schedule: schedule,
-                      ),
+                      builder: (context) =>
+                          EditSchedulePage(schedule: schedule),
                     ),
                   );
                 },
@@ -75,29 +71,22 @@ class ScheduleItem extends ConsumerWidget {
                 if (schedule.description.isNotEmpty) ...[
                   Text(
                     schedule.description,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[800],
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.grey[800]),
                   ),
                   const SizedBox(height: 12),
                 ],
                 Row(
                   children: [
-                    Icon(
-                      Icons.access_time,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
+                    Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '${DateFormat('yyyy/MM/dd HH:mm').format(schedule.startDateTime)} - '
-                        '${DateFormat('yyyy/MM/dd HH:mm').format(schedule.endDateTime)}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        schedule.isAllDay
+                            ? '${DateFormat('yyyy/MM/dd').format(schedule.startDateTime)} - '
+                                '${DateFormat('yyyy/MM/dd').format(schedule.endDateTime)} 終日（時間未定など）'
+                            : '${DateFormat('yyyy/MM/dd HH:mm').format(schedule.startDateTime)} - '
+                                '${DateFormat('yyyy/MM/dd HH:mm').format(schedule.endDateTime)}',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ),
                   ],
@@ -127,18 +116,11 @@ class ScheduleItem extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(
-                      Icons.person,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
+                    Icon(Icons.person, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
                     Text(
                       '作成者: ${schedule.ownerId == currentUser.id ? '自分' : ownerName}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -174,8 +156,10 @@ class ScheduleItem extends ConsumerWidget {
 
         // リアクション数の合計を計算
         final reactionCounts = interactionState.reactionCounts;
-        final totalReactions =
-            reactionCounts.values.fold(0, (sum, count) => sum + count);
+        final totalReactions = reactionCounts.values.fold(
+          0,
+          (sum, count) => sum + count,
+        );
 
         return Row(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -215,11 +199,7 @@ class ScheduleItem extends ConsumerWidget {
             ),
             const SizedBox(width: 16),
             // コメント表示部分
-            Icon(
-              Icons.comment,
-              size: 16,
-              color: Colors.blue[400],
-            ),
+            Icon(Icons.comment, size: 16, color: Colors.blue[400]),
             const SizedBox(width: 4),
             // コメント数表示
             Text(

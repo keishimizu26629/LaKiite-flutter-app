@@ -18,6 +18,7 @@ import '../../domain/interfaces/i_user_repository.dart';
 import '../../domain/value/user_id.dart';
 import '../../infrastructure/image_picker_service.dart' as picker;
 import '../../infrastructure/providers.dart';
+import '../schedule/schedule_display_order.dart';
 
 export '../calendar/schedule_providers.dart' show userSchedulesStreamProvider;
 
@@ -36,7 +37,8 @@ final timelineSchedulesProvider = StreamProvider<List<Schedule>>((ref) {
 
       return ref
           .watch(scheduleRepositoryProvider)
-          .watchUserSchedules(state.user!.id);
+          .watchUserSchedules(state.user!.id)
+          .map(ScheduleDisplayOrder.sortedTimeline);
     },
     loading: () => Stream.value([]),
     error: (_, __) => Stream.value([]),

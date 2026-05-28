@@ -57,9 +57,21 @@ class ScheduleDetailLogic {
   }
 
   /// 予定の開始・終了日時を画面表示用の文字列に整形する。
-  static String formatDateTimeRange(DateTime start, DateTime end) {
+  static String formatDateTimeRange(
+    DateTime start,
+    DateTime end, {
+    bool isAllDay = false,
+  }) {
     final dateFormat = DateFormat('yyyy年M月d日（E）', 'ja_JP');
     final timeFormat = DateFormat('HH:mm', 'ja_JP');
+
+    if (isAllDay) {
+      if (_isSameDay(start, end)) {
+        return '${dateFormat.format(start)} 終日（時間未定など）';
+      }
+
+      return '${dateFormat.format(start)} - ${dateFormat.format(end)} 終日（時間未定など）';
+    }
 
     if (_isSameDay(start, end)) {
       return '${dateFormat.format(start)} ${timeFormat.format(start)} - ${timeFormat.format(end)}';

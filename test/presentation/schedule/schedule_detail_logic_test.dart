@@ -131,6 +131,19 @@ void main() {
       );
     });
 
+    test('終日予定は時刻を表示せず終日表記にする', () async {
+      await initializeDateFormatting('ja_JP');
+
+      expect(
+        ScheduleDetailLogic.formatDateTimeRange(
+          DateTime(2026, 5, 1),
+          DateTime(2026, 5, 1, 23, 59, 59, 999),
+          isAllDay: true,
+        ),
+        allOf(contains('終日（時間未定など）'), isNot(contains('00:00'))),
+      );
+    });
+
     test('コメント編集はtrim後に空でない場合だけ送信できる', () {
       expect(ScheduleDetailLogic.canSubmitComment('コメント'), isTrue);
       expect(ScheduleDetailLogic.canSubmitComment('  コメント  '), isTrue);
