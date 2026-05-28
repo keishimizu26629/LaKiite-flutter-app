@@ -239,6 +239,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                   _formatDateTimeRange(
                                     currentSchedule.startDateTime,
                                     currentSchedule.endDateTime,
+                                    isAllDay: currentSchedule.isAllDay,
                                   ),
                                   style: const TextStyle(
                                     fontSize: 16,
@@ -355,10 +356,12 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                       Text(
                                         '${interactions.reactions.length}',
                                         style: TextStyle(
-                                          color: interactions
-                                                  .reactions.isNotEmpty
-                                              ? Colors.grey
-                                              : Theme.of(context).primaryColor,
+                                          color:
+                                              interactions.reactions.isNotEmpty
+                                                  ? Colors.grey
+                                                  : Theme.of(
+                                                      context,
+                                                    ).primaryColor,
                                           fontWeight: FontWeight.bold,
                                           decoration: TextDecoration.underline,
                                         ),
@@ -471,7 +474,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                             child: Row(
                                               children: [
                                                 const Text('🙋 '),
-                                                Text(ReactionType.going.label),
+                                                Text(
+                                                  ReactionType.going.label,
+                                                ),
                                                 const Spacer(),
                                                 if (userReaction?.type ==
                                                     ReactionType.going)
@@ -490,8 +495,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                             child: Row(
                                               children: [
                                                 const Text('🤔 '),
-                                                Text(ReactionType
-                                                    .thinking.label),
+                                                Text(
+                                                  ReactionType.thinking.label,
+                                                ),
                                                 const Spacer(),
                                                 if (userReaction?.type ==
                                                     ReactionType.thinking)
@@ -642,11 +648,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
       return;
     }
 
-    final usersFuture = Future.wait(
-      reactions.map(
-        (reaction) => ref.read(userRepositoryProvider).getUser(reaction.userId),
-      ),
-    ).then(ScheduleDetailLogic.availableReactionUsers);
+    final usersFuture = ref.read(userRepositoryProvider).getPublicProfiles(
+          reactions.map((reaction) => reaction.userId).toSet().toList(),
+        );
 
     showModalBottomSheet(
       context: context,
@@ -658,8 +662,16 @@ class ScheduleDetailPage extends HookConsumerWidget {
   }
 
   /// 日時の範囲をフォーマットするヘルパーメソッド
-  String _formatDateTimeRange(DateTime start, DateTime end) {
-    return ScheduleDetailLogic.formatDateTimeRange(start, end);
+  String _formatDateTimeRange(
+    DateTime start,
+    DateTime end, {
+    bool isAllDay = false,
+  }) {
+    return ScheduleDetailLogic.formatDateTimeRange(
+      start,
+      end,
+      isAllDay: isAllDay,
+    );
   }
 
   /// スケジュールに関連する通知を既読にします
@@ -800,16 +812,19 @@ class ScheduleDetailPage extends HookConsumerWidget {
     final currentUserId = ref.read(authNotifierProvider).value?.user?.id;
 
     // コメントを日時の昇順でソート
-    final sortedComments =
-        ScheduleDetailLogic.sortedComments(interactions.comments);
+    final sortedComments = ScheduleDetailLogic.sortedComments(
+      interactions.comments,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ...sortedComments.map((comment) {
           // 自分のコメントかどうかをチェック
-          final isMyComment =
-              ScheduleDetailLogic.isMyComment(currentUserId, comment);
+          final isMyComment = ScheduleDetailLogic.isMyComment(
+            currentUserId,
+            comment,
+          );
           final isTargetComment = ScheduleDetailLogic.isTargetComment(
             fromNotification: fromNotification,
             notificationType: notificationType,
@@ -864,7 +879,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                 children: [
                                   Text(
                                     ScheduleDetailLogic
-                                        .commentAuthorDisplayName(comment),
+                                        .commentAuthorDisplayName(
+                                      comment,
+                                    ),
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
@@ -979,7 +996,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
         content: 'このコメントを削除してもよろしいですか？',
         onDelete: () {
           ref
-              .read(scheduleInteractionNotifierProvider(schedule.id).notifier)
+              .read(
+                scheduleInteractionNotifierProvider(schedule.id).notifier,
+              )
               .deleteComment(comment.id);
 
           ScaffoldMessenger.of(
@@ -1005,7 +1024,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
       builder: (dialogContext) => CommentEditDialog(
         initialContent: comment.content,
         onSave: (content) {
-          developer.log('コメント編集を実行: commentId=${comment.id}, content=$content');
+          developer.log(
+            'コメント編集を実行: commentId=${comment.id}, content=$content',
+          );
           final scaffoldMessenger = ScaffoldMessenger.of(context);
           scaffoldMessenger.showSnackBar(
             const SnackBar(
@@ -1028,7 +1049,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
             }
 
             ref
-                .read(scheduleInteractionNotifierProvider(schedule.id).notifier)
+                .read(
+                  scheduleInteractionNotifierProvider(schedule.id).notifier,
+                )
                 .updateComment(comment.id, content)
                 .then((_) {
               developer.log('コメント更新成功: ${comment.id}');
