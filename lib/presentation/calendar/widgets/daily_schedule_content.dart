@@ -5,16 +5,97 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/application/notification/notification_notifier.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/presentation/widgets/default_user_icon.dart';
+import 'package:lakiite/presentation/calendar/widgets/daily_schedule_list_page.dart';
+import 'package:lakiite/presentation/calendar/widgets/schedule_ownership_style.dart';
+import 'package:lakiite/presentation/calendar/widgets/schedule_list_card.dart';
+import 'package:lakiite/presentation/schedule/schedule_display_order.dart';
 
-class DailyScheduleContent extends HookConsumerWidget {
-  const DailyScheduleContent({
+class DailyAllDayScheduleList extends StatelessWidget {
+  const DailyAllDayScheduleList({
     required this.date,
     required this.schedules,
+    required this.allSchedules,
+    required this.currentUserId,
     super.key,
   });
 
   final DateTime date;
   final List<Schedule> schedules;
+  final List<Schedule> allSchedules;
+  final String? currentUserId;
+
+  @override
+  Widget build(BuildContext context) {
+    if (schedules.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final sortedSchedules = ScheduleDisplayOrder.sortedWithinDay(schedules);
+    final visibleSchedules = sortedSchedules.take(2).toList();
+    final remainingCount = sortedSchedules.length - visibleSchedules.length;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ...visibleSchedules.map(
+            (schedule) => ScheduleListCard(
+              schedule: schedule,
+              currentUserId: currentUserId,
+            ),
+          ),
+          if (remainingCount > 0)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Semantics(
+                label: '予定をすべて表示 +$remainingCount',
+                button: true,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(4),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => DailyScheduleListPage(
+                          date: date,
+                          schedules: allSchedules,
+                          currentUserId: currentUserId,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Text(
+                      '+$remainingCount',
+                      style: TextStyle(fontSize: 16.8, color: Colors.grey[700]),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class DailyScheduleContent extends HookConsumerWidget {
+  const DailyScheduleContent({
+    required this.date,
+    required this.schedules,
+    required this.allSchedules,
+    super.key,
+  });
+
+  final DateTime date;
+  final List<Schedule> schedules;
+  final List<Schedule> allSchedules;
 
   double _calculateTimePosition(DateTime time) {
     final minutes = time.hour * 60 + time.minute;
@@ -63,16 +144,22 @@ class DailyScheduleContent extends HookConsumerWidget {
         b.startDateTime.isBefore(a.endDateTime);
   }
 
+  DateTime _earliestStartTime(List<Schedule> schedules) {
+    return schedules
+        .map((schedule) => schedule.startDateTime)
+        .reduce((a, b) => a.isBefore(b) ? a : b);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 日付情報をログ出力
     AppLogger.debug(
-        'DailyScheduleContent - 表示日付: ${date.year}年${date.month}月${date.day}日');
+      'DailyScheduleContent - 表示日付: ${date.year}年${date.month}月${date.day}日',
+    );
     AppLogger.debug('DailyScheduleContent - スケジュール数: ${schedules.length}');
 
     final currentUserId = ref.watch(currentUserIdProvider);
-    final sortedSchedules = List<Schedule>.from(schedules)
-      ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+    final sortedSchedules = ScheduleDisplayOrder.sortedWithinDay(schedules);
 
     // 重なり合うスケジュールをグループ化
     final scheduleGroups = _groupOverlappingSchedules(sortedSchedules);
@@ -94,10 +181,7 @@ class DailyScheduleContent extends HookConsumerWidget {
                       top: hour * 60.0,
                       child: Text(
                         '${hour.toString().padLeft(2, '0')}:00',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ),
                 ],
@@ -114,10 +198,7 @@ class DailyScheduleContent extends HookConsumerWidget {
                       top: hour * 60.0,
                       left: 0,
                       right: 0,
-                      child: Container(
-                        height: 1,
-                        color: Colors.grey[200],
-                      ),
+                      child: Container(height: 1, color: Colors.grey[200]),
                     ),
                   // 現在時刻の線
                   if (date.year == DateTime.now().toUtc().toLocal().year &&
@@ -125,7 +206,8 @@ class DailyScheduleContent extends HookConsumerWidget {
                       date.day == DateTime.now().toUtc().toLocal().day)
                     Positioned(
                       top: _calculateTimePosition(
-                          DateTime.now().toUtc().toLocal()),
+                        DateTime.now().toUtc().toLocal(),
+                      ),
                       left: 0,
                       right: 0,
                       child: Container(
@@ -137,57 +219,56 @@ class DailyScheduleContent extends HookConsumerWidget {
                   ...scheduleGroups.map((group) {
                     final containerWidth = MediaQuery.of(context).size.width -
                         90; // 時間表示部分とパディングの余裕を持たせる
+                    final visibleCount = group.length > 2 ? 2 : group.length;
+                    final remainingCount = group.length - visibleCount;
+                    final overflowWidth = remainingCount > 0 ? 44.0 : 0.0;
+                    final availableWidth = containerWidth - overflowWidth;
+                    final columnWidth =
+                        visibleCount == 1 ? availableWidth : availableWidth / 2;
                     return Stack(
                       children: [
-                        ...List.generate(group.length, (index) {
+                        ...List.generate(visibleCount, (index) {
                           final schedule = group[index];
                           final startTime = schedule.startDateTime;
                           final endTime = schedule.endDateTime;
-                          final isOwner = schedule.ownerId == currentUserId;
+                          final ownershipStyle = ScheduleOwnershipStyle.resolve(
+                            context,
+                            schedule: schedule,
+                            currentUserId: currentUserId,
+                          );
 
-                          // ユーザーIDが未定義でない場合のみ判定を行う
-                          final isOwnerWithCheck = currentUserId != null &&
-                              schedule.ownerId == currentUserId;
-
-                          final itemWidth = group.length == 1
-                              ? containerWidth
-                              : (containerWidth / group.length) - 4;
+                          final itemWidth = visibleCount == 1
+                              ? availableWidth
+                              : columnWidth - 4;
 
                           // デバッグログを追加
                           AppLogger.debug(
-                              'DailyScheduleContent - 予定: ${schedule.title}, オーナーID: ${schedule.ownerId}, currentUserId: $currentUserId, isOwner: $isOwner, isOwnerWithCheck: $isOwnerWithCheck');
+                            'DailyScheduleContent - 予定: ${schedule.title}, オーナーID: ${schedule.ownerId}, currentUserId: $currentUserId, isOwner=${ScheduleOwnershipStyle.isOwnedByCurrentUser(schedule, currentUserId)}',
+                          );
 
                           return Positioned(
                             top: _calculateTimePosition(startTime),
-                            left: group.length == 1
-                                ? 0
-                                : (index * (containerWidth / group.length)),
+                            left: visibleCount == 1 ? 0 : index * columnWidth,
                             width: itemWidth,
                             height: _calculateHeight(startTime, endTime),
                             child: InkWell(
                               onTap: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        ScheduleDetailPage(schedule: schedule),
+                                    builder: (context) => ScheduleDetailPage(
+                                      schedule: schedule,
+                                    ),
                                   ),
                                 );
                               },
                               child: Container(
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 2),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: isOwnerWithCheck
-                                      ? Colors.grey.withValues(alpha: 0.1)
-                                      : Theme.of(context)
-                                          .primaryColor
-                                          .withValues(alpha: 0.1),
+                                  color: ownershipStyle.backgroundColor,
                                   border: Border.all(
-                                    color: isOwnerWithCheck
-                                        ? Colors.grey.withValues(alpha: 0.8)
-                                        : Theme.of(context)
-                                            .primaryColor
-                                            .withValues(alpha: 0.8),
+                                    color: ownershipStyle.borderColor,
                                     width: 2,
                                   ),
                                   borderRadius: BorderRadius.circular(8),
@@ -216,7 +297,8 @@ class DailyScheduleContent extends HookConsumerWidget {
                                             CircleAvatar(
                                               radius: 8,
                                               backgroundImage: NetworkImage(
-                                                  schedule.ownerPhotoUrl!),
+                                                schedule.ownerPhotoUrl!,
+                                              ),
                                             )
                                           else
                                             const DefaultUserIcon(size: 16),
@@ -268,6 +350,44 @@ class DailyScheduleContent extends HookConsumerWidget {
                             ),
                           );
                         }),
+                        if (remainingCount > 0)
+                          Positioned(
+                            top: _calculateTimePosition(
+                              _earliestStartTime(group),
+                            ),
+                            right: 0,
+                            width: overflowWidth,
+                            height: 32,
+                            child: Semantics(
+                              label: '予定をすべて表示 +$remainingCount',
+                              button: true,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(4),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          DailyScheduleListPage(
+                                        date: date,
+                                        schedules: allSchedules,
+                                        currentUserId: currentUserId,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    '+$remainingCount',
+                                    style: TextStyle(
+                                      fontSize: 16.8,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     );
                   }),

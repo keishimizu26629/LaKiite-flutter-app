@@ -13,6 +13,7 @@ class ScheduleMapper {
       location: data['location'] as String?,
       startDateTime: _parseDateTime(data['startDateTime']),
       endDateTime: _parseDateTime(data['endDateTime']),
+      isAllDay: data['isAllDay'] as bool? ?? false,
       ownerId: data['ownerId'] as String,
       ownerDisplayName: data['ownerDisplayName'] as String,
       ownerPhotoUrl: data['ownerPhotoUrl'] as String?,
@@ -39,7 +40,9 @@ class ScheduleMapper {
           final RegExp datePattern = RegExp(r'(\d{4}-\d{2}-)(\d)([T])');
           if (datePattern.hasMatch(value)) {
             final correctedValue = value.replaceAllMapped(
-                datePattern, (match) => '${match[1]}0${match[2]}${match[3]}');
+              datePattern,
+              (match) => '${match[1]}0${match[2]}${match[3]}',
+            );
             return DateTime.parse(correctedValue);
           }
 
@@ -61,6 +64,7 @@ class ScheduleMapper {
       'location': schedule.location,
       'startDateTime': schedule.startDateTime.toIso8601String(),
       'endDateTime': schedule.endDateTime.toIso8601String(),
+      'isAllDay': schedule.isAllDay,
       'ownerId': schedule.ownerId,
       'ownerDisplayName': schedule.ownerDisplayName,
       'ownerPhotoUrl': schedule.ownerPhotoUrl,

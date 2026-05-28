@@ -26,6 +26,7 @@ mixin _$Schedule {
   String? get location => throw _privateConstructorUsedError;
   DateTime get startDateTime => throw _privateConstructorUsedError;
   DateTime get endDateTime => throw _privateConstructorUsedError;
+  bool get isAllDay => throw _privateConstructorUsedError;
   String get ownerId => throw _privateConstructorUsedError;
   String get ownerDisplayName => throw _privateConstructorUsedError;
   String? get ownerPhotoUrl => throw _privateConstructorUsedError;
@@ -36,8 +37,12 @@ mixin _$Schedule {
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
 
+  /// Serializes this Schedule to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of Schedule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $ScheduleCopyWith<Schedule> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -54,6 +59,7 @@ abstract class $ScheduleCopyWith<$Res> {
       String? location,
       DateTime startDateTime,
       DateTime endDateTime,
+      bool isAllDay,
       String ownerId,
       String ownerDisplayName,
       String? ownerPhotoUrl,
@@ -75,6 +81,8 @@ class _$ScheduleCopyWithImpl<$Res, $Val extends Schedule>
   // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of Schedule
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -84,6 +92,7 @@ class _$ScheduleCopyWithImpl<$Res, $Val extends Schedule>
     Object? location = freezed,
     Object? startDateTime = null,
     Object? endDateTime = null,
+    Object? isAllDay = null,
     Object? ownerId = null,
     Object? ownerDisplayName = null,
     Object? ownerPhotoUrl = freezed,
@@ -119,6 +128,10 @@ class _$ScheduleCopyWithImpl<$Res, $Val extends Schedule>
           ? _value.endDateTime
           : endDateTime // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      isAllDay: null == isAllDay
+          ? _value.isAllDay
+          : isAllDay // ignore: cast_nullable_to_non_nullable
+              as bool,
       ownerId: null == ownerId
           ? _value.ownerId
           : ownerId // ignore: cast_nullable_to_non_nullable
@@ -174,6 +187,7 @@ abstract class _$$ScheduleImplCopyWith<$Res>
       String? location,
       DateTime startDateTime,
       DateTime endDateTime,
+      bool isAllDay,
       String ownerId,
       String ownerDisplayName,
       String? ownerPhotoUrl,
@@ -193,6 +207,8 @@ class __$$ScheduleImplCopyWithImpl<$Res>
       _$ScheduleImpl _value, $Res Function(_$ScheduleImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of Schedule
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -202,6 +218,7 @@ class __$$ScheduleImplCopyWithImpl<$Res>
     Object? location = freezed,
     Object? startDateTime = null,
     Object? endDateTime = null,
+    Object? isAllDay = null,
     Object? ownerId = null,
     Object? ownerDisplayName = null,
     Object? ownerPhotoUrl = freezed,
@@ -237,6 +254,10 @@ class __$$ScheduleImplCopyWithImpl<$Res>
           ? _value.endDateTime
           : endDateTime // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      isAllDay: null == isAllDay
+          ? _value.isAllDay
+          : isAllDay // ignore: cast_nullable_to_non_nullable
+              as bool,
       ownerId: null == ownerId
           ? _value.ownerId
           : ownerId // ignore: cast_nullable_to_non_nullable
@@ -287,6 +308,7 @@ class _$ScheduleImpl implements _Schedule {
       this.location,
       required this.startDateTime,
       required this.endDateTime,
+      this.isAllDay = false,
       required this.ownerId,
       required this.ownerDisplayName,
       this.ownerPhotoUrl,
@@ -314,6 +336,9 @@ class _$ScheduleImpl implements _Schedule {
   final DateTime startDateTime;
   @override
   final DateTime endDateTime;
+  @override
+  @JsonKey()
+  final bool isAllDay;
   @override
   final String ownerId;
   @override
@@ -349,7 +374,7 @@ class _$ScheduleImpl implements _Schedule {
 
   @override
   String toString() {
-    return 'Schedule(id: $id, title: $title, description: $description, location: $location, startDateTime: $startDateTime, endDateTime: $endDateTime, ownerId: $ownerId, ownerDisplayName: $ownerDisplayName, ownerPhotoUrl: $ownerPhotoUrl, sharedLists: $sharedLists, visibleTo: $visibleTo, reactionCount: $reactionCount, commentCount: $commentCount, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Schedule(id: $id, title: $title, description: $description, location: $location, startDateTime: $startDateTime, endDateTime: $endDateTime, isAllDay: $isAllDay, ownerId: $ownerId, ownerDisplayName: $ownerDisplayName, ownerPhotoUrl: $ownerPhotoUrl, sharedLists: $sharedLists, visibleTo: $visibleTo, reactionCount: $reactionCount, commentCount: $commentCount, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -367,6 +392,8 @@ class _$ScheduleImpl implements _Schedule {
                 other.startDateTime == startDateTime) &&
             (identical(other.endDateTime, endDateTime) ||
                 other.endDateTime == endDateTime) &&
+            (identical(other.isAllDay, isAllDay) ||
+                other.isAllDay == isAllDay) &&
             (identical(other.ownerId, ownerId) || other.ownerId == ownerId) &&
             (identical(other.ownerDisplayName, ownerDisplayName) ||
                 other.ownerDisplayName == ownerDisplayName) &&
@@ -386,7 +413,7 @@ class _$ScheduleImpl implements _Schedule {
                 other.updatedAt == updatedAt));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType,
@@ -396,6 +423,7 @@ class _$ScheduleImpl implements _Schedule {
       location,
       startDateTime,
       endDateTime,
+      isAllDay,
       ownerId,
       ownerDisplayName,
       ownerPhotoUrl,
@@ -406,7 +434,9 @@ class _$ScheduleImpl implements _Schedule {
       createdAt,
       updatedAt);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of Schedule
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$ScheduleImplCopyWith<_$ScheduleImpl> get copyWith =>
@@ -428,6 +458,7 @@ abstract class _Schedule implements Schedule {
       final String? location,
       required final DateTime startDateTime,
       required final DateTime endDateTime,
+      final bool isAllDay,
       required final String ownerId,
       required final String ownerDisplayName,
       final String? ownerPhotoUrl,
@@ -454,6 +485,8 @@ abstract class _Schedule implements Schedule {
   @override
   DateTime get endDateTime;
   @override
+  bool get isAllDay;
+  @override
   String get ownerId;
   @override
   String get ownerDisplayName;
@@ -471,8 +504,11 @@ abstract class _Schedule implements Schedule {
   DateTime get createdAt;
   @override
   DateTime get updatedAt;
+
+  /// Create a copy of Schedule
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$ScheduleImplCopyWith<_$ScheduleImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
