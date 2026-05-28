@@ -1,0 +1,12 @@
+{
+  "name": "lakiite-firestore-migrations",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "audit:dynamic-list-sharing": "node src/auditDynamicListSharing.js --dry-run",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.6.0"
+  }
+}

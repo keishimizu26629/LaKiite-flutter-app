@@ -397,6 +397,9 @@ class _NotificationItem extends ConsumerWidget {
       );
     }
 
+    final canOpenDetail =
+        !state.isLoading && notification.type != domain.NotificationType.friend;
+
     return buildLoadingOverlay(
       Card(
         margin: const EdgeInsets.only(bottom: 12),
@@ -507,7 +510,7 @@ class _NotificationItem extends ConsumerWidget {
                       ),
                     ),
                   ),
-            onTap: state.isLoading ? null : handleNotificationTap,
+            onTap: canOpenDetail ? handleNotificationTap : null,
           ),
         ),
       ),

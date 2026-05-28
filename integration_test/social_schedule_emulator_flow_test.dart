@@ -69,20 +69,11 @@ void main() {
     final requestId = requestSnapshot.docs.single.id;
     await AcceptFriendRequestUseCase(
       notificationRepository: notificationRepository,
-      userRepository: userRepository,
     ).execute(requestId);
 
     final accepted = await notificationRepository.getNotification(requestId);
     expect(accepted?.status, domain.NotificationStatus.accepted);
     expect(accepted?.isRead, isTrue);
-
-    final receiverPrivate = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(receiver.id)
-        .collection('private')
-        .doc('profile')
-        .get();
-    expect(receiverPrivate.data()?['lists'], contains(sender.id));
 
     final start = DateTime.now().add(const Duration(days: 1));
     final schedule = await scheduleRepository.createSchedule(

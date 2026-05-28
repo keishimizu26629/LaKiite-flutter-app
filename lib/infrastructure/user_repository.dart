@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -317,26 +318,38 @@ class UserRepository implements IUserRepository {
       yield _userCache[id];
     }
 
-    yield* _firestore
-        .collection('users')
-        .doc(id)
-        .snapshots()
-        .asyncMap((publicDoc) async {
-      if (!publicDoc.exists) return null;
+    final publicRef = _firestore.collection('users').doc(id);
+    final privateRef = publicRef.collection('private').doc('profile');
 
-      final privateDoc = await _firestore
-          .collection('users')
-          .doc(id)
-          .collection('private')
-          .doc('profile')
-          .get();
+    late final StreamController<UserModel?> controller;
+    StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? publicSub;
+    StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? privateSub;
+    DocumentSnapshot<Map<String, dynamic>>? publicDoc;
+    DocumentSnapshot<Map<String, dynamic>>? privateDoc;
+    var hasPublicSnapshot = false;
+    var hasPrivateSnapshot = false;
 
-      if (!privateDoc.exists) return null;
+    void emitIfReady() {
+      if (controller.isClosed || !hasPublicSnapshot || !hasPrivateSnapshot) {
+        return;
+      }
 
-      final publicData = publicDoc.data()!;
-      publicData['id'] = publicDoc.id;
+      final currentPublicDoc = publicDoc;
+      final currentPrivateDoc = privateDoc;
+      if (currentPublicDoc == null ||
+          currentPrivateDoc == null ||
+          !currentPublicDoc.exists ||
+          !currentPrivateDoc.exists) {
+        controller.add(null);
+        return;
+      }
 
-      final privateData = privateDoc.data()!;
+      final publicData =
+          Map<String, dynamic>.from(currentPublicDoc.data() ?? {});
+      publicData['id'] = currentPublicDoc.id;
+
+      final privateData =
+          Map<String, dynamic>.from(currentPrivateDoc.data() ?? {});
       privateData['lists'] = privateData['lists'] ?? [];
 
       final userModel = UserModel(
@@ -344,11 +357,39 @@ class UserRepository implements IUserRepository {
         privateProfile: PrivateUserModel.fromJson(privateData),
       );
 
-      // キャッシュを更新
       _userCache[id] = userModel;
+      controller.add(userModel);
+    }
 
-      return userModel;
-    });
+    controller = StreamController<UserModel?>(
+      onListen: () {
+        publicSub = publicRef.snapshots().listen(
+          (snapshot) {
+            publicDoc = snapshot;
+            hasPublicSnapshot = true;
+            emitIfReady();
+          },
+          onError: controller.addError,
+        );
+        privateSub = privateRef.snapshots().listen(
+          (snapshot) {
+            privateDoc = snapshot;
+            hasPrivateSnapshot = true;
+            emitIfReady();
+          },
+          onError: controller.addError,
+        );
+      },
+      onCancel: () async {
+        await publicSub?.cancel();
+        await privateSub?.cancel();
+        if (!controller.isClosed) {
+          await controller.close();
+        }
+      },
+    );
+
+    yield* controller.stream;
   }
 
   @override

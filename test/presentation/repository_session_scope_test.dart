@@ -4,9 +4,15 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/app/di/providers.dart';
+import 'package:lakiite/application/notification/notification_notifier.dart'
+    as notification_app;
+import 'package:lakiite/domain/entity/notification.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
 import 'package:lakiite/domain/interfaces/i_user_repository.dart';
+import 'package:lakiite/infrastructure/firebase/push_notification_sender.dart';
+
+import '../mock/repository/mock_notification_repository.dart';
 
 class _FakeFirebaseUser implements firebase_auth.User {
   _FakeFirebaseUser(this._uid);
@@ -103,6 +109,7 @@ void main() {
   group('repository session scope', () {
     late ProviderContainer container;
     late _FakeFirebaseAuth firebaseAuth;
+    late MockNotificationRepository notificationRepository;
     late ProviderSubscription<IUserRepository> userRepositorySubscription;
     late ProviderSubscription<IScheduleRepository>
         scheduleRepositorySubscription;
@@ -111,6 +118,7 @@ void main() {
 
     setUp(() {
       firebaseAuth = _FakeFirebaseAuth();
+      notificationRepository = MockNotificationRepository();
 
       container = ProviderContainer(
         overrides: [
@@ -121,6 +129,14 @@ void main() {
           scheduleRepositoryFactoryProvider.overrideWithValue(
             () =>
                 _TrackingScheduleRepository(++scheduleRepositoryInstanceCount),
+          ),
+          notification_app.notificationRepositoryProvider
+              .overrideWithValue(notificationRepository),
+          notification_app.pushNotificationSenderProvider.overrideWithValue(
+            PushNotificationSender(
+              cloudFunctionUrl: 'https://example.test/push',
+              tokenResolver: (_) async => const [],
+            ),
           ),
         ],
       );
@@ -193,6 +209,37 @@ void main() {
         scheduleUserBRepository.instanceId,
         isNot(scheduleUserARepository.instanceId),
       );
+    });
+
+    test('フレンド申請承認では user repository を作り直さない', () async {
+      firebaseAuth.setCurrentUser(_FakeFirebaseUser('receiver-id'));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      notificationRepository.addTestNotification(
+        Notification(
+          id: 'friend-request-id',
+          type: NotificationType.friend,
+          sendUserId: 'sender-id',
+          receiveUserId: 'receiver-id',
+          sendUserDisplayName: '申請者',
+          receiveUserDisplayName: '受信者',
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+          status: NotificationStatus.pending,
+        ),
+      );
+
+      final before =
+          container.read(userRepositoryProvider) as _TrackingUserRepository;
+
+      await container
+          .read(notification_app.notificationNotifierProvider.notifier)
+          .acceptNotification('friend-request-id');
+
+      final after =
+          container.read(userRepositoryProvider) as _TrackingUserRepository;
+
+      expect(after.instanceId, before.instanceId);
     });
   });
 }

@@ -27,6 +27,7 @@ class Schedule with _$Schedule {
     String? location,
     required DateTime startDateTime,
     required DateTime endDateTime,
+    @Default(false) bool isAllDay,
     required String ownerId,
     required String ownerDisplayName,
     String? ownerPhotoUrl,
