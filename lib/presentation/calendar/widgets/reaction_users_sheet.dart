@@ -77,8 +77,8 @@ class ReactionUsersSheet extends StatelessWidget {
                         children: [
                           iconUrl != null
                               ? CircleAvatar(
-                                backgroundImage: NetworkImage(iconUrl),
-                              )
+                                  backgroundImage: NetworkImage(iconUrl),
+                                )
                               : const DefaultUserIcon(),
                           Positioned(
                             right: 0,

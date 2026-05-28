@@ -270,7 +270,6 @@ class _FakeScheduleInteractionRepository
         _latestComments = const <ScheduleComment>[] {
     _reactionsController = StreamController<List<ScheduleReaction>>.broadcast(
       onListen: () {
-        _reactionListenCount++;
         if (!_reactionListener.isCompleted) {
           _reactionListener.complete();
         }
@@ -306,7 +305,6 @@ class _FakeScheduleInteractionRepository
   late final StreamController<List<ScheduleComment>> _commentsController;
 
   Completer<String>? addReactionCompleter;
-  int _reactionListenCount = 0;
   int _reactionCancelCount = 0;
   int _commentListenCount = 0;
   int _commentCancelCount = 0;
