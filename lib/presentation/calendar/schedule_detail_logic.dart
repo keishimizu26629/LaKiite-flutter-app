@@ -108,8 +108,10 @@ class ScheduleDetailLogic {
   }
 
   /// リアクションユーザー取得結果から、削除済みなどで取得できないユーザーを除外する。
-  static List<UserModel> availableReactionUsers(List<UserModel?> users) {
-    return users.whereType<UserModel>().toList();
+  static List<PublicUserModel> availableReactionUsers(
+    List<PublicUserModel?> users,
+  ) {
+    return users.whereType<PublicUserModel>().toList();
   }
 
   /// コメント投稿者名を表示用に返す。
