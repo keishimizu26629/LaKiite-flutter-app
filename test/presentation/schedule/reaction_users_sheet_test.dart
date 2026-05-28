@@ -33,8 +33,8 @@ void main() {
           body: ReactionUsersSheet(
             reactions: reactions,
             usersFuture: Future.value([
-              _user(id: 'user-1', displayName: 'ユーザー1'),
-              _user(id: 'user-2', displayName: 'ユーザー2'),
+              _publicUser(id: 'user-1', displayName: 'ユーザー1'),
+              _publicUser(id: 'user-2', displayName: 'ユーザー2'),
             ]),
           ),
         ),
@@ -81,25 +81,12 @@ void main() {
   });
 }
 
-UserModel _user({
-  required String id,
-  required String displayName,
-}) {
-  return UserModel(
-    publicProfile: PublicUserModel(
-      id: id,
-      displayName: displayName,
-      searchId: UserId('USRTEST1'),
-      iconUrl: null,
-      shortBio: null,
-    ),
-    privateProfile: PrivateUserModel(
-      id: id,
-      name: displayName,
-      friends: const [],
-      groups: const [],
-      lists: const [],
-      createdAt: DateTime(2026, 5, 1),
-    ),
+PublicUserModel _publicUser({required String id, required String displayName}) {
+  return PublicUserModel(
+    id: id,
+    displayName: displayName,
+    searchId: UserId('USRTEST1'),
+    iconUrl: null,
+    shortBio: null,
   );
 }

@@ -231,22 +231,12 @@ domain.Notification _notification({
   );
 }
 
-UserModel _user({required String id, required String displayName}) {
-  return UserModel(
-    publicProfile: PublicUserModel(
-      id: id,
-      displayName: displayName,
-      searchId: UserId('USRTEST1'),
-      iconUrl: null,
-      shortBio: null,
-    ),
-    privateProfile: PrivateUserModel(
-      id: id,
-      name: displayName,
-      friends: const [],
-      groups: const [],
-      lists: const [],
-      createdAt: DateTime(2026, 5, 1),
-    ),
+PublicUserModel _user({required String id, required String displayName}) {
+  return PublicUserModel(
+    id: id,
+    displayName: displayName,
+    searchId: UserId('USRTEST1'),
+    iconUrl: null,
+    shortBio: null,
   );
 }

@@ -10,13 +10,18 @@ import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/application/notification/notification_notifier.dart';
 import '../../infrastructure/firebase/push_notification_sender.dart';
 
-final scheduleInteractionNotifierProvider = StateNotifierProvider.family<
-    ScheduleInteractionNotifier, ScheduleInteractionState, String>(
-  (ref, scheduleId) => ScheduleInteractionNotifier(
-    ref.watch(scheduleInteractionRepositoryProvider),
-    scheduleId,
-    ref,
-  ),
+final scheduleInteractionNotifierProvider = StateNotifierProvider.autoDispose
+    .family<ScheduleInteractionNotifier, ScheduleInteractionState, String>(
+  (ref, scheduleId) {
+    ref.watch(repositorySessionKeyProvider);
+
+    return ScheduleInteractionNotifier(
+      ref.watch(scheduleInteractionRepositoryProvider),
+      scheduleId,
+      ref,
+      pushNotificationSender: ref.watch(pushNotificationSenderProvider),
+    );
+  },
 );
 
 class ScheduleInteractionNotifier
