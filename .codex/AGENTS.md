@@ -2,6 +2,11 @@
 
 このメモは、LaKiite Flutter app で調査・実装・検証を始める前に確認するプロジェクト固有の運用情報です。Issue 固有の仕様ではなく、毎回の作業で使う基本手順だけを置きます。
 
+## ブランチ運用
+
+- このリポジトリの default ブランチは `dev`。
+- feature 実装時は、誤って `main` などを起点にせず、必ず `dev` を起点にする。
+
 ## 起動とデバッグ
 
 - VS Code/Cursor のデバッグは `.vscode/launch.json` を優先して確認する。
@@ -28,12 +33,34 @@ fvm flutter run --debug --flavor dev --dart-define-from-file=dart_define/dev_dar
 
 ```bash
 adb devices
+adb devices -l
+fvm flutter devices
+```
+
+- Galaxy 実機で確認する場合は、emulator と取り違えないよう device id を明示する。手元の Galaxy SCG19 は通常 `RFCW31S5JLJ` として見える。
+
+```bash
+fvm flutter run --flavor dev --dart-define-from-file=dart_define/dev_dart_define.json -d RFCW31S5JLJ
+```
+
+- Android の画面状態をCLIから確認する場合は、`uiautomator dump` を使う。全量は長くなるため、必要な文言だけに絞る。
+
+```bash
+adb -s RFCW31S5JLJ shell uiautomator dump /sdcard/window.xml >/dev/null
+adb -s RFCW31S5JLJ exec-out cat /sdcard/window.xml | tr '>' '\n' | rg '予定作成|タイトル|保存|エラー文言'
+```
+
+- 実機操作をCLIで補助する場合は、座標タップとテキスト入力を使う。座標は端末解像度や表示中画面で変わるため、直前に `uiautomator dump` の `bounds` を確認してから打つ。
+
+```bash
+adb -s RFCW31S5JLJ shell input tap <x> <y>
+adb -s RFCW31S5JLJ shell input text DebugSchedule
 ```
 
 - dev アプリを停止する場合は、dev package を対象にする。
 
 ```bash
-adb shell am force-stop com.inoworl.lakiite.dev
+adb -s RFCW31S5JLJ shell am force-stop com.inoworl.lakiite.dev
 ```
 
 - 実機ログは `flutter run` の出力、`adb logcat`、アプリ内の debug log を合わせて見る。
