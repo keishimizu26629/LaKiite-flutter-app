@@ -9,14 +9,8 @@ import 'package:lakiite/presentation/calendar/schedule_detail_logic.dart';
 void main() {
   group('ScheduleDetailLogic', () {
     test('コメントを作成日時の昇順へ並べる', () {
-      final newer = _comment(
-        id: 'newer',
-        createdAt: DateTime(2026, 5, 1, 12),
-      );
-      final older = _comment(
-        id: 'older',
-        createdAt: DateTime(2026, 5, 1, 10),
-      );
+      final newer = _comment(id: 'newer', createdAt: DateTime(2026, 5, 1, 12));
+      final older = _comment(id: 'older', createdAt: DateTime(2026, 5, 1, 10));
 
       expect(
         ScheduleDetailLogic.sortedComments([newer, older]).map((c) => c.id),
@@ -168,13 +162,9 @@ void main() {
     test('リアクション投稿者の取得結果から削除済みユーザーを除外する', () {
       final existingUser = _user(id: 'user-1', displayName: 'ユーザー1');
 
-      expect(
-        ScheduleDetailLogic.availableReactionUsers([
-          existingUser,
-          null,
-        ]),
-        [existingUser],
-      );
+      expect(ScheduleDetailLogic.availableReactionUsers([existingUser, null]), [
+        existingUser,
+      ]);
     });
 
     test('コメント投稿者名がない場合は退会済みユーザーとして表示する', () {
@@ -228,25 +218,12 @@ domain.Notification _notification({
   );
 }
 
-UserModel _user({
-  required String id,
-  required String displayName,
-}) {
-  return UserModel(
-    publicProfile: PublicUserModel(
-      id: id,
-      displayName: displayName,
-      searchId: UserId('USRTEST1'),
-      iconUrl: null,
-      shortBio: null,
-    ),
-    privateProfile: PrivateUserModel(
-      id: id,
-      name: displayName,
-      friends: const [],
-      groups: const [],
-      lists: const [],
-      createdAt: DateTime(2026, 5, 1),
-    ),
+PublicUserModel _user({required String id, required String displayName}) {
+  return PublicUserModel(
+    id: id,
+    displayName: displayName,
+    searchId: UserId('USRTEST1'),
+    iconUrl: null,
+    shortBio: null,
   );
 }

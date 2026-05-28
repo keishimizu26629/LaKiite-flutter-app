@@ -642,11 +642,9 @@ class ScheduleDetailPage extends HookConsumerWidget {
       return;
     }
 
-    final usersFuture = Future.wait(
-      reactions.map(
-        (reaction) => ref.read(userRepositoryProvider).getUser(reaction.userId),
-      ),
-    ).then(ScheduleDetailLogic.availableReactionUsers);
+    final usersFuture = ref.read(userRepositoryProvider).getPublicProfiles(
+          reactions.map((reaction) => reaction.userId).toSet().toList(),
+        );
 
     showModalBottomSheet(
       context: context,

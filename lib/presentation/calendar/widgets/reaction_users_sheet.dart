@@ -18,7 +18,7 @@ class ReactionUsersSheet extends StatelessWidget {
   });
 
   final List<Reaction> reactions;
-  final Future<List<UserModel>> usersFuture;
+  final Future<List<PublicUserModel>> usersFuture;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +41,7 @@ class ReactionUsersSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          FutureBuilder<List<UserModel>>(
+          FutureBuilder<List<PublicUserModel>>(
             future: usersFuture,
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
@@ -77,8 +77,8 @@ class ReactionUsersSheet extends StatelessWidget {
                         children: [
                           iconUrl != null
                               ? CircleAvatar(
-                                  backgroundImage: NetworkImage(iconUrl),
-                                )
+                                backgroundImage: NetworkImage(iconUrl),
+                              )
                               : const DefaultUserIcon(),
                           Positioned(
                             right: 0,

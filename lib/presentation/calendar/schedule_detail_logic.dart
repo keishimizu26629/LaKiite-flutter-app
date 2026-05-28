@@ -11,17 +11,12 @@ class ScheduleDetailLogic {
   const ScheduleDetailLogic._();
 
   /// コメントを作成日時の昇順で返す。
-  static List<ScheduleComment> sortedComments(
-    List<ScheduleComment> comments,
-  ) {
+  static List<ScheduleComment> sortedComments(List<ScheduleComment> comments) {
     return [...comments]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
   }
 
   /// コメントが現在ユーザー本人のものかどうかを返す。
-  static bool isMyComment(
-    String? currentUserId,
-    ScheduleComment comment,
-  ) {
+  static bool isMyComment(String? currentUserId, ScheduleComment comment) {
     return currentUserId != null && comment.userId == currentUserId;
   }
 
@@ -101,8 +96,10 @@ class ScheduleDetailLogic {
   }
 
   /// リアクションユーザー取得結果から、削除済みなどで取得できないユーザーを除外する。
-  static List<UserModel> availableReactionUsers(List<UserModel?> users) {
-    return users.whereType<UserModel>().toList();
+  static List<PublicUserModel> availableReactionUsers(
+    List<PublicUserModel?> users,
+  ) {
+    return users.whereType<PublicUserModel>().toList();
   }
 
   /// コメント投稿者名を表示用に返す。
