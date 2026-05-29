@@ -104,8 +104,6 @@ jobs:
             --build-name=$(grep 'version:' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1) \
             --build-number="${{ steps.calculate_build_number.outputs.buildNumber }}"
 
-      # Firebase App Distribution (Prod) は APK 配布にして、
-      # Google Play の公開状態に依存しないようにする。
       - name: flutter build apk
         env:
           ANDROID_UPLOAD_KEYSTORE_PATH: ${{ github.workspace }}/android/upload-keystore.jks
@@ -136,7 +134,6 @@ jobs:
           tracks: internal
           status: completed
 
-      # 事前に Firebase プロジェクトの Project Settings > Integrations から Google Play Console と連携しておく必要がある。
       - name: Deploy to Firebase App Distribution
         env:
           PROD_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64: ${{ secrets.PROD_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 }}
