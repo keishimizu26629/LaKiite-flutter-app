@@ -17,6 +17,9 @@ jobs:
       - name: Setup CI
         uses: ./.github/actions/setup
 
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
       - name: Setup Java
         uses: actions/setup-java@v5.2.0
         with:
@@ -101,6 +104,26 @@ jobs:
             --build-name=$(grep 'version:' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1) \
             --build-number="${{ steps.calculate_build_number.outputs.buildNumber }}"
 
+      # Firebase App Distribution (Prod) は APK 配布にして、
+      # Google Play の公開状態に依存しないようにする。
+      - name: flutter build apk
+        env:
+          ANDROID_UPLOAD_KEYSTORE_PATH: ${{ github.workspace }}/android/upload-keystore.jks
+          ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          flutter build apk --release \
+            --flavor prod \
+            --target-platform android-arm,android-arm64,android-x64 \
+            --dart-define-from-file="dart_define.json" \
+            -t "lib/main.dart" \
+            --build-name=$(grep 'version:' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1) \
+            --build-number="${{ steps.calculate_build_number.outputs.buildNumber }}"
+
+      - name: Get latest 10 commit messages
+        run: echo "LATEST_COMMIT_MESSAGES=$(git log -n 10 --pretty=format:'%s' | tr '\n' '; ')" >> $GITHUB_ENV
+
       - name: Decode Google Play Console API Service Account Key
         run: echo "${{ secrets.GOOGLE_PLAY_CONSOLE_API_SERVICE_ACCOUNT_KEY_JSON_BASE64 }}" | base64 --decode > /tmp/google_play_console_api_service_account_key.json
 
@@ -112,3 +135,16 @@ jobs:
           releaseFiles: build/app/outputs/bundle/prodRelease/app-prod-release.aab
           tracks: internal
           status: completed
+
+      # 事前に Firebase プロジェクトの Project Settings > Integrations から Google Play Console と連携しておく必要がある。
+      - name: Deploy to Firebase App Distribution
+        env:
+          PROD_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64: ${{ secrets.PROD_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 }}
+        run: |
+          echo $PROD_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 | base64 -d > /tmp/prod_firebase_service_account_key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/prod_firebase_service_account_key.json
+          firebase use --project ${{ secrets.PROD_FIREBASE_PROJECT_ID }}
+          firebase appdistribution:distribute ./build/app/outputs/flutter-apk/app-prod-release.apk \
+            --app ${{ secrets.PROD_FIREBASE_ANDROID_APP_ID }} \
+            --groups internal-testers  \
+            --release-notes "${LATEST_COMMIT_MESSAGES}"
