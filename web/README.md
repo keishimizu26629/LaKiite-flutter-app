@@ -1,12 +1,13 @@
 # LaKiite Web Assets
 
-このフォルダには、GitHub Pagesで公開するWeb用ファイルが含まれています。
+このフォルダには、Firebase HostingやGitHub Pagesで公開するWeb用ファイルが含まれています。
 
 ## 📄 ファイル一覧
 
 - `index.html` - メインランディングページ
 - `privacy-policy.html` - プライバシーポリシー
 - `terms-of-service.html` - 利用規約
+- `support.html` - サポートページ
 - `account-deletion.html` - アカウント削除ページ（一般向け）
 - `account-deletion-webview.html` - アカウント削除ページ（WebView用）
 
@@ -30,7 +31,17 @@
 - メインページ: `https://keishimizu26629.github.io/LaKiite-flutter-app/`
 - プライバシーポリシー: `https://keishimizu26629.github.io/LaKiite-flutter-app/privacy-policy.html`
 - 利用規約: `https://keishimizu26629.github.io/LaKiite-flutter-app/terms-of-service.html`
+- サポート: `https://keishimizu26629.github.io/LaKiite-flutter-app/support.html`
 - アカウント削除: `https://keishimizu26629.github.io/LaKiite-flutter-app/account-deletion.html`
+
+## 🌐 Firebase Hosting
+
+`firebase.json` では `web/` をHostingの公開ディレクトリに設定しています。
+
+想定URL：
+
+- Dev: `https://lakiite-flutter-app-dev.web.app/support.html`
+- Prod: `https://lakiite-flutter-app-prod.web.app/support.html`
 
 ### 🔧 設定変更が必要
 GitHub Repository Settings → Pages → Source を以下に変更してください：
