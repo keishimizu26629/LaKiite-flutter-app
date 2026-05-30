@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lakiite/presentation/widgets/schedule_tile.dart';
 import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
+import 'package:lakiite/presentation/schedule/schedule_display_order.dart';
 import '../../calendar/schedule_providers.dart';
 
 /// ユーザーの予定一覧を表示するウィジェット
@@ -56,15 +57,16 @@ class ScheduleList extends ConsumerWidget {
           );
         }
 
-        // 日付でソート
-        mySchedules.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+        final sortedSchedules = ScheduleDisplayOrder.sortedTimeline(
+          mySchedules,
+        );
 
         return ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: mySchedules.length,
+          itemCount: sortedSchedules.length,
           itemBuilder: (context, index) {
-            final schedule = mySchedules[index];
+            final schedule = sortedSchedules[index];
             return ScheduleTile(
               schedule: schedule,
               currentUserId: userId,

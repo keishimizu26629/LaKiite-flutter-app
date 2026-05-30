@@ -31,9 +31,7 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
     return listAsync.when(
       data: (list) {
         if (list == null) {
-          return const Scaffold(
-            body: Center(child: Text('リストが見つかりません')),
-          );
+          return const Scaffold(body: Center(child: Text('リストが見つかりません')));
         }
 
         return Scaffold(
@@ -75,7 +73,8 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                         if (mounted) {
                           scaffoldMessenger.showSnackBar(
                             SnackBar(
-                                content: Text('削除に失敗しました: ${e.toString()}')),
+                              content: Text('削除に失敗しました: ${e.toString()}'),
+                            ),
                           );
                         }
                       }
@@ -83,10 +82,7 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Text('リストを削除'),
-                  ),
+                  const PopupMenuItem(value: 'delete', child: Text('リストを削除')),
                 ],
               ),
             ],
@@ -104,10 +100,10 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                       // リストアイコン
                       CircleAvatar(
                         radius: 40,
-                        backgroundImage: widget.list.iconUrl != null
-                            ? NetworkImage(widget.list.iconUrl!)
+                        backgroundImage: list.iconUrl != null
+                            ? NetworkImage(list.iconUrl!)
                             : null,
-                        child: widget.list.iconUrl == null
+                        child: list.iconUrl == null
                             ? const Icon(Icons.list, size: 40)
                             : null,
                       ),
@@ -117,7 +113,7 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              widget.list.listName,
+                              list.listName,
                               style: theme.textTheme.headlineSmall,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -127,7 +123,7 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                        ListEditPage(list: widget.list),
+                                        ListEditPage(list: list),
                                   ),
                                 );
                               },
@@ -141,11 +137,11 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                   ),
                 ),
                 // リストの説明
-                if (widget.list.description != null)
+                if (list.description != null)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Text(
-                      widget.list.description!,
+                      list.description!,
                       style: theme.textTheme.bodyLarge,
                     ),
                   ),
@@ -155,19 +151,16 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Row(
                     children: [
-                      Text(
-                        'メンバー',
-                        style: theme.textTheme.titleLarge,
-                      ),
+                      Text('メンバー', style: theme.textTheme.titleLarge),
                       const SizedBox(width: 8),
-                      Text('${widget.list.memberIds.length}人'),
+                      Text('${list.memberIds.length}人'),
                       const Spacer(),
                       OutlinedButton.icon(
                         onPressed: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) =>
-                                  ListMemberInvitePage(list: widget.list),
+                                  ListMemberInvitePage(list: list),
                             ),
                           );
                         },
@@ -183,9 +176,9 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  itemCount: widget.list.memberIds.length,
+                  itemCount: list.memberIds.length,
                   itemBuilder: (context, index) {
-                    final memberId = widget.list.memberIds[index];
+                    final memberId = list.memberIds[index];
                     return FutureBuilder<PublicUserModel?>(
                       future: ref
                           .read(userRepositoryProvider)
@@ -253,12 +246,10 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
           ),
         );
       },
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, _) => Scaffold(
-        body: Center(child: Text('エラーが発生しました: $error')),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, _) =>
+          Scaffold(body: Center(child: Text('エラーが発生しました: $error'))),
     );
   }
 }

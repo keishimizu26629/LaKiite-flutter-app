@@ -64,11 +64,28 @@ class _FakeAuthRepository implements IAuthRepository {
 }
 
 class _TrackingScheduleRepository implements IScheduleRepository {
+  _TrackingScheduleRepository() {
+    _allController.onCancel = () {
+      watchUserSchedulesCancelCount++;
+    };
+    _monthController.onCancel = () {
+      watchUserSchedulesForMonthCancelCount++;
+    };
+    _scheduleController.onCancel = () {
+      watchScheduleCancelCount++;
+    };
+  }
+
   final _monthController = StreamController<List<Schedule>>.broadcast();
   final _allController = StreamController<List<Schedule>>.broadcast();
+  final _scheduleController = StreamController<Schedule?>.broadcast();
 
   int watchUserSchedulesCallCount = 0;
   int watchUserSchedulesForMonthCallCount = 0;
+  int watchScheduleCallCount = 0;
+  int watchUserSchedulesCancelCount = 0;
+  int watchUserSchedulesForMonthCancelCount = 0;
+  int watchScheduleCancelCount = 0;
   DateTime? lastDisplayMonth;
 
   @override
@@ -92,7 +109,10 @@ class _TrackingScheduleRepository implements IScheduleRepository {
       const Stream.empty();
 
   @override
-  Stream<Schedule?> watchSchedule(String scheduleId) => const Stream.empty();
+  Stream<Schedule?> watchSchedule(String scheduleId) {
+    watchScheduleCallCount++;
+    return _scheduleController.stream;
+  }
 
   @override
   Future<Schedule> createSchedule(Schedule schedule) =>
@@ -117,6 +137,7 @@ class _TrackingScheduleRepository implements IScheduleRepository {
   void dispose() {
     _monthController.close();
     _allController.close();
+    _scheduleController.close();
   }
 }
 
@@ -209,6 +230,87 @@ void main() {
       expect(scheduleRepository.watchUserSchedulesCallCount, 0);
 
       subscription.close();
+      authSubscription.close();
+    });
+
+    test('userSchedulesStreamProvider は購読終了時にrepository購読を破棄する', () async {
+      final authSubscription = _listenAuthenticatedAuthState(
+        container,
+        mockAuthRepository,
+        testUser,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      final provider = userSchedulesStreamProvider(testUser.id);
+      final subscription = container.listen(
+        provider,
+        (_, __) {},
+        fireImmediately: true,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(scheduleRepository.watchUserSchedulesCallCount, 1);
+
+      subscription.close();
+      await container.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(container.exists(provider), isFalse);
+      authSubscription.close();
+    });
+
+    test('calendarMonthSchedulesProvider は購読終了時にrepository購読を破棄する', () async {
+      final authSubscription = _listenAuthenticatedAuthState(
+        container,
+        mockAuthRepository,
+        testUser,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      final provider = calendarMonthSchedulesProvider((
+        userId: testUser.id,
+        displayMonth: DateTime(2026, 3, 20),
+      ));
+      final subscription = container.listen(
+        provider,
+        (_, __) {},
+        fireImmediately: true,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(scheduleRepository.watchUserSchedulesForMonthCallCount, 1);
+
+      subscription.close();
+      await container.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(container.exists(provider), isFalse);
+      authSubscription.close();
+    });
+
+    test('scheduleStreamProvider は予定詳細の単体購読をautoDisposeする', () async {
+      final authSubscription = _listenAuthenticatedAuthState(
+        container,
+        mockAuthRepository,
+        testUser,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      final provider = scheduleStreamProvider('schedule-1');
+      final subscription = container.listen(
+        provider,
+        (_, __) {},
+        fireImmediately: true,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(scheduleRepository.watchScheduleCallCount, 1);
+
+      subscription.close();
+      await container.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(container.exists(provider), isFalse);
       authSubscription.close();
     });
   });
