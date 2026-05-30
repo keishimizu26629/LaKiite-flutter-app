@@ -12,6 +12,7 @@ import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
 import 'package:lakiite/application/schedule/schedule_notifier.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_logic.dart';
+import 'package:lakiite/presentation/calendar/schedule_providers.dart';
 import 'package:lakiite/presentation/calendar/widgets/comment_edit_dialog.dart';
 import 'package:lakiite/presentation/calendar/widgets/delete_confirmation_dialog.dart';
 import 'package:lakiite/presentation/calendar/widgets/reaction_users_sheet.dart';
@@ -69,15 +70,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
     final targetCommentKey = useMemoized(GlobalKey.new);
     final didScrollToNotificationTarget = useRef(false);
 
-    // スケジュールのリアルタイム監視を行うStreamProviderを作成
-    final scheduleStreamProvider = StreamProvider<Schedule?>((ref) {
-      return ref
-          .read(scheduleNotifierProvider.notifier)
-          .watchSchedule(schedule.id);
-    });
-
     // 監視中のスケジュール情報
-    final watchedScheduleAsync = ref.watch(scheduleStreamProvider);
+    final watchedScheduleAsync = ref.watch(scheduleStreamProvider(schedule.id));
 
     // 現在表示すべきスケジュール情報を取得（最新のデータが取得できたらそれを使用、そうでなければ初期データ）
     final currentSchedule = watchedScheduleAsync.when(

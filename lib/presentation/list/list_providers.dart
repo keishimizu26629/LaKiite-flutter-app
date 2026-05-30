@@ -6,7 +6,7 @@ import 'package:lakiite/domain/entity/list.dart';
 
 /// Single list read model for list detail UIs.
 final listStreamProvider =
-    StreamProvider.family<UserList?, String>((ref, listId) {
+    StreamProvider.autoDispose.family<UserList?, String>((ref, listId) {
   final authState = ref.watch(authNotifierProvider);
 
   return authState.when(

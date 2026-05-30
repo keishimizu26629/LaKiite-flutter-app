@@ -5,6 +5,7 @@ import '../../application/auth/auth_state.dart';
 import '../../application/list/list_notifier.dart';
 import '../../domain/entity/list.dart';
 import '../friend/friend_providers.dart';
+import 'list_providers.dart';
 
 /// リストメンバー追加ページ
 class ListMemberInvitePage extends ConsumerStatefulWidget {
@@ -35,10 +36,15 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
         }
 
         final friendsAsync = ref.watch(userFriendsStreamProvider);
+        final listAsync = ref.watch(listStreamProvider(widget.list.id));
+        final currentList = listAsync.valueOrNull ?? widget.list;
+        final selectedFriendsToAdd = selectedFriends
+            .where((friendId) => !currentList.memberIds.contains(friendId))
+            .toSet();
 
         return Scaffold(
           appBar: AppBar(
-            title: Text('${widget.list.listName}にメンバーを追加'),
+            title: Text('${currentList.listName}にメンバーを追加'),
           ),
           body: friendsAsync.when(
             data: (friends) {
@@ -47,8 +53,9 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
                 itemBuilder: (context, index) {
                   final friend = friends[index];
                   final friendId = friend.id;
-                  final isSelected = selectedFriends.contains(friendId);
-                  final isInList = widget.list.memberIds.contains(friendId);
+                  final isInList = currentList.memberIds.contains(friendId);
+                  final isSelected =
+                      !isInList && selectedFriendsToAdd.contains(friendId);
 
                   return ListTile(
                     enabled: !isInList,
@@ -113,19 +120,19 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: ElevatedButton(
-                onPressed: selectedFriends.isEmpty
+                onPressed: selectedFriendsToAdd.isEmpty
                     ? null
                     : () async {
                         final scaffoldMessenger = ScaffoldMessenger.of(context);
                         final navigator = Navigator.of(context);
                         try {
                           // 選択された友達をリストに追加
-                          for (final friendId in selectedFriends) {
+                          for (final friendId in selectedFriendsToAdd) {
                             // リストにメンバーを追加
                             await ref
                                 .read(listNotifierProvider.notifier)
                                 .addMember(
-                                  widget.list.id,
+                                  currentList.id,
                                   friendId,
                                 );
                           }
@@ -140,7 +147,7 @@ class _ListMemberInvitePageState extends ConsumerState<ListMemberInvitePage> {
                           }
                         }
                       },
-                child: Text('選択したメンバー(${selectedFriends.length}名)を追加'),
+                child: Text('選択したメンバー(${selectedFriendsToAdd.length}名)を追加'),
               ),
             ),
           ),
