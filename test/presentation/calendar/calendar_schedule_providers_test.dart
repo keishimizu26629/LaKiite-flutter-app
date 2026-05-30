@@ -259,7 +259,7 @@ void main() {
       authSubscription.close();
     });
 
-    test('calendarMonthSchedulesProvider は購読終了時にrepository購読を破棄する', () async {
+    test('calendarMonthSchedulesProvider は購読終了直後も短時間キャッシュを保持する', () async {
       final authSubscription = _listenAuthenticatedAuthState(
         container,
         mockAuthRepository,
@@ -284,7 +284,19 @@ void main() {
       await container.pump();
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      expect(container.exists(provider), isFalse);
+      expect(container.exists(provider), isTrue);
+      expect(scheduleRepository.watchUserSchedulesForMonthCancelCount, 0);
+
+      final secondSubscription = container.listen(
+        provider,
+        (_, __) {},
+        fireImmediately: true,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(scheduleRepository.watchUserSchedulesForMonthCallCount, 1);
+
+      secondSubscription.close();
       authSubscription.close();
     });
 

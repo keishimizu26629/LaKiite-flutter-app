@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lakiite/app/di/providers.dart';
 import 'package:lakiite/application/auth/auth_notifier.dart';
 import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
+
+const calendarMonthScheduleCacheTtl = Duration(minutes: 5);
 
 /// Request parameters for calendar month schedule streams.
 typedef CalendarMonthSchedulesQuery = ({
@@ -39,6 +43,11 @@ final userSchedulesStreamProvider =
 final calendarMonthSchedulesProvider = StreamProvider.autoDispose
     .family<List<Schedule>, CalendarMonthSchedulesQuery>(
   (ref, query) {
+    final keepAliveLink = ref.keepAlive();
+    final cacheTimer =
+        Timer(calendarMonthScheduleCacheTtl, keepAliveLink.close);
+    ref.onDispose(cacheTimer.cancel);
+
     final authState = ref.watch(authNotifierProvider);
     final displayMonth = DateTime(
       query.displayMonth.year,
