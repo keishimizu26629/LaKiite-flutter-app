@@ -141,6 +141,15 @@ String getCalendarMonthScheduleCacheKey(String userId, DateTime date) {
   return '$userId:${getMonthKey(date)}';
 }
 
+List<DateTime> getCalendarSchedulePrefetchMonths(DateTime visibleMonth) {
+  final month = DateTime(visibleMonth.year, visibleMonth.month);
+  return [
+    DateTime(month.year, month.month - 1),
+    month,
+    DateTime(month.year, month.month + 1),
+  ];
+}
+
 Map<String, List<Schedule>> cacheCalendarMonthSchedules({
   required Map<String, List<Schedule>> currentCache,
   required String cacheKey,
@@ -186,9 +195,6 @@ void _cacheCalendarMonthSchedulesInProvider({
 // 何ヶ月先のデータまで先読みするか
 const int _prefetchMonthsRange = 2;
 
-// スケジュールデータとして先読みする前後月の範囲
-const int _schedulePrefetchMonthsRange = 2;
-
 // 事前にレンダリングする月の数（前後_preRenderMonthsRange月）
 const int _preRenderMonthsRange = 2;
 
@@ -221,16 +227,9 @@ class CalendarPageView extends HookConsumerWidget {
     final visibleMonth = _getMonthName(visibleDateTime.month);
     final visibleYear = visibleDateTime.year.toString();
     final currentUserId = ref.watch(currentUserIdProvider);
-    final visibleMonthSchedules = currentUserId == null
-        ? const AsyncValue<List<Schedule>>.data([])
-        : ref.watch(
-            calendarMonthSchedulesProvider(
-              (
-                userId: currentUserId,
-                displayMonth: visibleDateTime,
-              ),
-            ),
-          );
+    final scheduleMemoryCache =
+        ref.watch(calendarMonthScheduleMemoryCacheProvider);
+    var visibleMonthSchedules = const AsyncValue<List<Schedule>>.data([]);
     final visibleMonthScheduleCacheKey = currentUserId == null
         ? null
         : getCalendarMonthScheduleCacheKey(currentUserId, visibleDateTime);
@@ -244,30 +243,16 @@ class CalendarPageView extends HookConsumerWidget {
     final monthScheduleCacheInputs =
         <({String cacheKey, List<Schedule>? schedules})>[];
     if (currentUserId != null && visibleMonthScheduleCacheKey != null) {
-      monthScheduleCacheInputs.add((
-        cacheKey: visibleMonthScheduleCacheKey,
-        schedules: visibleMonthSchedules.valueOrNull,
-      ));
-    }
-    if (currentUserId != null) {
-      for (int offset = -_schedulePrefetchMonthsRange;
-          offset <= _schedulePrefetchMonthsRange;
-          offset++) {
-        if (offset == 0) {
-          continue;
+      for (final prefetchMonth
+          in getCalendarSchedulePrefetchMonths(visibleDateTime)) {
+        final prefetchSchedules = ref.watch(calendarMonthSchedulesProvider((
+          userId: currentUserId,
+          displayMonth: prefetchMonth,
+        )));
+        if (prefetchMonth.year == visibleDateTime.year &&
+            prefetchMonth.month == visibleDateTime.month) {
+          visibleMonthSchedules = prefetchSchedules;
         }
-
-        final prefetchMonth = DateTime(
-          visibleDateTime.year,
-          visibleDateTime.month + offset,
-          1,
-        );
-        final prefetchSchedules = ref.watch(
-          calendarMonthSchedulesProvider((
-            userId: currentUserId,
-            displayMonth: prefetchMonth,
-          )),
-        );
         monthScheduleCacheInputs.add(
           (
             cacheKey:
@@ -710,6 +695,16 @@ class CalendarPageView extends HookConsumerWidget {
 
                   final dateTime = _getVisibleDateTime(index);
                   final monthKey = getMonthKey(dateTime);
+                  final pageScheduleCacheKey = currentUserId == null
+                      ? null
+                      : getCalendarMonthScheduleCacheKey(
+                          currentUserId,
+                          dateTime,
+                        );
+                  final pageSchedules = currentUserId == null
+                      ? const <Schedule>[]
+                      : scheduleMemoryCache[pageScheduleCacheKey] ??
+                          const <Schedule>[];
 
                   // アクティブな範囲内のページにキープアライブを適用
                   final shouldCache = activeMonthIndices.contains(index);
@@ -722,12 +717,14 @@ class CalendarPageView extends HookConsumerWidget {
                                 'calendar_page_${dateTime.year}_${dateTime.month}'),
                             visiblePageDate: dateTime,
                             monthKey: monthKey,
+                            schedules: pageSchedules,
                           )
                         : CalendarPageFrame(
                             key: ValueKey(
                                 'calendar_page_${dateTime.year}_${dateTime.month}'),
                             visiblePageDate: dateTime,
                             monthKey: monthKey,
+                            schedules: pageSchedules,
                           ),
                   );
                 },
@@ -870,17 +867,20 @@ class CalendarPageFrame extends StatelessWidget {
   const CalendarPageFrame({
     required this.visiblePageDate,
     required this.monthKey,
+    this.schedules = const [],
     super.key,
   });
 
   final DateTime visiblePageDate;
   final String monthKey;
+  final List<Schedule> schedules;
 
   @override
   Widget build(BuildContext context) {
     return CalendarPageContent(
       visiblePageDate: visiblePageDate,
       monthKey: monthKey,
+      schedules: schedules,
     );
   }
 }
@@ -890,11 +890,13 @@ class KeepAliveCalendarPage extends StatefulWidget {
   const KeepAliveCalendarPage({
     required this.visiblePageDate,
     required this.monthKey,
+    this.schedules = const [],
     super.key,
   });
 
   final DateTime visiblePageDate;
   final String monthKey;
+  final List<Schedule> schedules;
 
   @override
   State<KeepAliveCalendarPage> createState() => _KeepAliveCalendarPageState();
@@ -912,6 +914,7 @@ class _KeepAliveCalendarPageState extends State<KeepAliveCalendarPage>
     return CalendarPageContent(
       visiblePageDate: widget.visiblePageDate,
       monthKey: widget.monthKey,
+      schedules: widget.schedules,
     );
   }
 }
@@ -921,11 +924,13 @@ class CalendarPageContent extends HookConsumerWidget {
   const CalendarPageContent({
     required this.visiblePageDate,
     required this.monthKey,
+    this.schedules = const [],
     super.key,
   });
 
   final DateTime visiblePageDate;
   final String monthKey;
+  final List<Schedule> schedules;
 
   List<DateTime> _getCurrentDates(DateTime dateTime) {
     final List<DateTime> result = [];
@@ -1034,63 +1039,10 @@ class CalendarPageContent extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // 最適化モードの取得
     final isOptimized = ref.watch(calendarOptimizationProvider);
-    final currentUserId = ref.watch(currentUserIdProvider);
-    final schedulesAsync = currentUserId == null
-        ? const AsyncValue<List<Schedule>>.data([])
-        : ref.watch(
-            calendarMonthSchedulesProvider(
-              (
-                userId: currentUserId,
-                displayMonth: visiblePageDate,
-              ),
-            ),
-          );
-    final scheduleCacheKey = currentUserId == null
-        ? null
-        : getCalendarMonthScheduleCacheKey(currentUserId, visiblePageDate);
-    final cachedSchedules = ref.watch(
-      calendarMonthScheduleMemoryCacheProvider.select(
-        (cache) => scheduleCacheKey == null ? null : cache[scheduleCacheKey],
-      ),
-    );
-    final latestSchedules = schedulesAsync.valueOrNull;
-
-    useEffect(() {
-      if (scheduleCacheKey == null || latestSchedules == null) {
-        return null;
-      }
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!context.mounted ||
-            !ref.exists(calendarMonthScheduleMemoryCacheProvider)) {
-          return;
-        }
-
-        final currentCache = ref.read(calendarMonthScheduleMemoryCacheProvider);
-        if (identical(currentCache[scheduleCacheKey], latestSchedules)) {
-          return;
-        }
-
-        final nextCache = cacheCalendarMonthSchedules(
-          currentCache: currentCache,
-          cacheKey: scheduleCacheKey,
-          schedules: latestSchedules,
-        );
-        if (identical(nextCache, currentCache)) {
-          return;
-        }
-
-        ref.read(calendarMonthScheduleMemoryCacheProvider.notifier).state =
-            nextCache;
-      });
-
-      return null;
-    }, [scheduleCacheKey, latestSchedules]);
 
     // メモ化して再計算を防止
     final currentDates =
         useMemoized(() => _getCurrentDates(visiblePageDate), [visiblePageDate]);
-    final schedules = latestSchedules ?? cachedSchedules ?? const <Schedule>[];
 
     // 日付ごとにスケジュールをフィルタリング（最適化）- 高速アルゴリズムを使用
     final dateSchedulesMap = useMemoized(() {

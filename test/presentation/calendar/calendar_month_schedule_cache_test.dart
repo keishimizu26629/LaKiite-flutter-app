@@ -1,9 +1,21 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/calendar/widgets/calendar_page_view.dart';
 
+import '../../mock/providers/test_providers.dart';
+import '../../utils/test_utils.dart';
+
 void main() {
   group('calendar month schedule cache', () {
+    setUp(() {
+      TestProviders.reset();
+    });
+
+    tearDown(() {
+      TestProviders.reset();
+    });
+
     test('先読み済みの月予定を月別キャッシュへ保存する', () {
       final schedules = [
         _schedule(
@@ -41,6 +53,37 @@ void main() {
       );
 
       expect(cache, same(currentCache));
+    });
+
+    test('取得対象は表示月と前後1ヶ月の3ヶ月だけにする', () {
+      final months = getCalendarSchedulePrefetchMonths(DateTime(2026, 5, 30));
+
+      expect(months, [
+        DateTime(2026, 4),
+        DateTime(2026, 5),
+        DateTime(2026, 6),
+      ]);
+    });
+
+    testWidgets('月ページ本体は予定Providerを購読しない', (tester) async {
+      final overrides = TestProviders.authenticated;
+      final scheduleRepository = TestProviders.mockScheduleRepository;
+
+      await tester.pumpWidget(
+        TestUtils.createTestApp(
+          overrides: overrides,
+          child: Scaffold(
+            body: CalendarPageContent(
+              visiblePageDate: DateTime(2026, 5),
+              monthKey: '2026-05',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+
+      expect(scheduleRepository.watchUserSchedulesForMonthCallCount, 0);
     });
   });
 }

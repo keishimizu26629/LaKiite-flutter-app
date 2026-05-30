@@ -7,6 +7,7 @@ class MockScheduleRepository extends BaseMock implements IScheduleRepository {
   bool _shouldFailSave = false;
   bool _shouldFailDelete = false;
   bool _shouldFailGet = false;
+  int watchUserSchedulesForMonthCallCount = 0;
 
   void setShouldFailSave(bool shouldFail) {
     _shouldFailSave = shouldFail;
@@ -117,6 +118,7 @@ class MockScheduleRepository extends BaseMock implements IScheduleRepository {
   @override
   Stream<List<Schedule>> watchUserSchedulesForMonth(
       String userId, DateTime displayMonth) {
+    watchUserSchedulesForMonthCallCount++;
     return Stream.periodic(const Duration(milliseconds: 100), (_) {
       return _schedules.where((s) {
         return s.ownerId == userId &&
@@ -143,5 +145,6 @@ class MockScheduleRepository extends BaseMock implements IScheduleRepository {
     _shouldFailSave = false;
     _shouldFailDelete = false;
     _shouldFailGet = false;
+    watchUserSchedulesForMonthCallCount = 0;
   }
 }
