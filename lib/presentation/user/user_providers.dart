@@ -9,7 +9,7 @@ import 'package:lakiite/domain/entity/user.dart';
 /// This provider stays in the user presentation feature so generic user reads
 /// are not mixed into broad app-level presentation exports.
 final userStreamProvider =
-    StreamProvider.family<UserModel?, String>((ref, userId) {
+    StreamProvider.autoDispose.family<UserModel?, String>((ref, userId) {
   final authState = ref.watch(authNotifierProvider);
 
   return authState.when(

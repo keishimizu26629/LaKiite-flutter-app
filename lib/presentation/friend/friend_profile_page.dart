@@ -6,6 +6,7 @@ import '../../application/auth/auth_notifier.dart';
 import '../../domain/entity/schedule.dart';
 import '../../domain/entity/user.dart';
 import '../calendar/schedule_providers.dart';
+import '../schedule/schedule_display_order.dart';
 import '../widgets/schedule_tile.dart';
 import '../../utils/logger.dart';
 
@@ -233,16 +234,17 @@ class FriendProfilePage extends ConsumerWidget {
                         );
                       }
 
-                      // 日付でソート
-                      userSchedules.sort(
-                          (a, b) => a.startDateTime.compareTo(b.startDateTime));
+                      final sortedSchedules =
+                          ScheduleDisplayOrder.sortedTimeline(
+                        userSchedules,
+                      );
 
                       return ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: userSchedules.length,
+                        itemCount: sortedSchedules.length,
                         itemBuilder: (context, index) {
-                          final schedule = userSchedules[index];
+                          final schedule = sortedSchedules[index];
                           return ScheduleTile(
                             schedule: schedule,
                             currentUserId: currentUserId ?? '',
