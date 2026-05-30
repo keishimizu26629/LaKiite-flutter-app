@@ -129,16 +129,65 @@ final holidaysProvider = FutureProvider<Map<String, String>>((ref) async {
 // 事前にキャッシュする祝日データを管理するプロバイダー
 final cachedHolidaysProvider = StateProvider<Map<String, String>>((ref) => {});
 
+final calendarMonthScheduleMemoryCacheProvider =
+    StateProvider<Map<String, List<Schedule>>>((ref) => {});
+
 // カレンダー表示用の月キーを生成
 String getMonthKey(DateTime date) {
   return '${date.year}-${date.month.toString().padLeft(2, '0')}';
+}
+
+String getCalendarMonthScheduleCacheKey(String userId, DateTime date) {
+  return '$userId:${getMonthKey(date)}';
+}
+
+Map<String, List<Schedule>> cacheCalendarMonthSchedules({
+  required Map<String, List<Schedule>> currentCache,
+  required String cacheKey,
+  required List<Schedule>? schedules,
+}) {
+  if (schedules == null) {
+    return currentCache;
+  }
+
+  if (identical(currentCache[cacheKey], schedules)) {
+    return currentCache;
+  }
+
+  return {
+    ...currentCache,
+    cacheKey: schedules,
+  };
+}
+
+void _cacheCalendarMonthSchedulesInProvider({
+  required WidgetRef ref,
+  required String cacheKey,
+  required List<Schedule>? schedules,
+}) {
+  if (schedules == null ||
+      !ref.exists(calendarMonthScheduleMemoryCacheProvider)) {
+    return;
+  }
+
+  final currentCache = ref.read(calendarMonthScheduleMemoryCacheProvider);
+  final nextCache = cacheCalendarMonthSchedules(
+    currentCache: currentCache,
+    cacheKey: cacheKey,
+    schedules: schedules,
+  );
+  if (identical(nextCache, currentCache)) {
+    return;
+  }
+
+  ref.read(calendarMonthScheduleMemoryCacheProvider.notifier).state = nextCache;
 }
 
 // 何ヶ月先のデータまで先読みするか
 const int _prefetchMonthsRange = 2;
 
 // スケジュールデータとして先読みする前後月の範囲
-const int _schedulePrefetchMonthsRange = 1;
+const int _schedulePrefetchMonthsRange = 2;
 
 // 事前にレンダリングする月の数（前後_preRenderMonthsRange月）
 const int _preRenderMonthsRange = 2;
@@ -182,6 +231,24 @@ class CalendarPageView extends HookConsumerWidget {
               ),
             ),
           );
+    final visibleMonthScheduleCacheKey = currentUserId == null
+        ? null
+        : getCalendarMonthScheduleCacheKey(currentUserId, visibleDateTime);
+    final visibleCachedSchedules = ref.watch(
+      calendarMonthScheduleMemoryCacheProvider.select(
+        (cache) => visibleMonthScheduleCacheKey == null
+            ? null
+            : cache[visibleMonthScheduleCacheKey],
+      ),
+    );
+    final monthScheduleCacheInputs =
+        <({String cacheKey, List<Schedule>? schedules})>[];
+    if (currentUserId != null && visibleMonthScheduleCacheKey != null) {
+      monthScheduleCacheInputs.add((
+        cacheKey: visibleMonthScheduleCacheKey,
+        schedules: visibleMonthSchedules.valueOrNull,
+      ));
+    }
     if (currentUserId != null) {
       for (int offset = -_schedulePrefetchMonthsRange;
           offset <= _schedulePrefetchMonthsRange;
@@ -190,16 +257,22 @@ class CalendarPageView extends HookConsumerWidget {
           continue;
         }
 
-        ref.watch(
-          calendarMonthSchedulesProvider(
-            (
-              userId: currentUserId,
-              displayMonth: DateTime(
-                visibleDateTime.year,
-                visibleDateTime.month + offset,
-                1,
-              ),
-            ),
+        final prefetchMonth = DateTime(
+          visibleDateTime.year,
+          visibleDateTime.month + offset,
+          1,
+        );
+        final prefetchSchedules = ref.watch(
+          calendarMonthSchedulesProvider((
+            userId: currentUserId,
+            displayMonth: prefetchMonth,
+          )),
+        );
+        monthScheduleCacheInputs.add(
+          (
+            cacheKey:
+                getCalendarMonthScheduleCacheKey(currentUserId, prefetchMonth),
+            schedules: prefetchSchedules.valueOrNull,
           ),
         );
       }
@@ -240,6 +313,32 @@ class CalendarPageView extends HookConsumerWidget {
         _cleanupTimer = null;
       };
     }, []);
+
+    useEffect(() {
+      if (monthScheduleCacheInputs.isEmpty) {
+        return null;
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!isMounted()) {
+          return;
+        }
+
+        for (final input in monthScheduleCacheInputs) {
+          _cacheCalendarMonthSchedulesInProvider(
+            ref: ref,
+            cacheKey: input.cacheKey,
+            schedules: input.schedules,
+          );
+        }
+      });
+
+      return null;
+    }, [
+      currentUserId,
+      visibleDateTime,
+      for (final input in monthScheduleCacheInputs) input.schedules,
+    ]);
 
     void updateMonthCacheWindow(int index) {
       if (ref.exists(holidaysProvider) && ref.exists(cachedHolidaysProvider)) {
@@ -478,8 +577,9 @@ class CalendarPageView extends HookConsumerWidget {
           // ローディングインジケーター（現在表示中の月のデータ読み込み状態を表示）
           Consumer(
             builder: (context, ref, child) {
-              final isLoading =
-                  currentUserId != null && visibleMonthSchedules.isLoading;
+              final isLoading = currentUserId != null &&
+                  visibleMonthSchedules.isLoading &&
+                  visibleCachedSchedules == null;
               return isLoading
                   ? const LinearProgressIndicator(
                       backgroundColor: Colors.transparent,
@@ -945,11 +1045,52 @@ class CalendarPageContent extends HookConsumerWidget {
               ),
             ),
           );
+    final scheduleCacheKey = currentUserId == null
+        ? null
+        : getCalendarMonthScheduleCacheKey(currentUserId, visiblePageDate);
+    final cachedSchedules = ref.watch(
+      calendarMonthScheduleMemoryCacheProvider.select(
+        (cache) => scheduleCacheKey == null ? null : cache[scheduleCacheKey],
+      ),
+    );
+    final latestSchedules = schedulesAsync.valueOrNull;
+
+    useEffect(() {
+      if (scheduleCacheKey == null || latestSchedules == null) {
+        return null;
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted ||
+            !ref.exists(calendarMonthScheduleMemoryCacheProvider)) {
+          return;
+        }
+
+        final currentCache = ref.read(calendarMonthScheduleMemoryCacheProvider);
+        if (identical(currentCache[scheduleCacheKey], latestSchedules)) {
+          return;
+        }
+
+        final nextCache = cacheCalendarMonthSchedules(
+          currentCache: currentCache,
+          cacheKey: scheduleCacheKey,
+          schedules: latestSchedules,
+        );
+        if (identical(nextCache, currentCache)) {
+          return;
+        }
+
+        ref.read(calendarMonthScheduleMemoryCacheProvider.notifier).state =
+            nextCache;
+      });
+
+      return null;
+    }, [scheduleCacheKey, latestSchedules]);
 
     // メモ化して再計算を防止
     final currentDates =
         useMemoized(() => _getCurrentDates(visiblePageDate), [visiblePageDate]);
-    final schedules = schedulesAsync.valueOrNull ?? const <Schedule>[];
+    final schedules = latestSchedules ?? cachedSchedules ?? const <Schedule>[];
 
     // 日付ごとにスケジュールをフィルタリング（最適化）- 高速アルゴリズムを使用
     final dateSchedulesMap = useMemoized(() {

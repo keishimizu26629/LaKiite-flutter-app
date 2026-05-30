@@ -352,6 +352,10 @@ class ScheduleRepository implements IScheduleRepository {
             .get(const GetOptions(source: Source.cache));
 
         if (cachedSnapshot.docs.isNotEmpty) {
+          final cachedBasicSchedules =
+              cachedSnapshot.docs.map(ScheduleMapper.fromFirestore).toList();
+          yield cachedBasicSchedules;
+
           // キャッシュからのデータを非同期でエンリッチして即時返却
           final cachedSchedules = await Future.wait(
             cachedSnapshot.docs.map((doc) async {
@@ -386,6 +390,10 @@ class ScheduleRepository implements IScheduleRepository {
 
       await for (final snapshot in stream) {
         try {
+          final basicSchedules =
+              snapshot.docs.map(ScheduleMapper.fromFirestore).toList();
+          yield basicSchedules;
+
           // バッチ処理でエンリッチメントを高速化
           final schedules = await _enrichSchedulesInBatches(snapshot.docs);
           yield schedules;
