@@ -106,6 +106,34 @@ void main() {
       expect(schedules, [aprilSchedule, maySchedule, juneSchedule]);
     });
 
+    test('Providerの値がある月はキャッシュ更新前でもProvider値を優先して渡す', () {
+      final cachedMaySchedule = _schedule(
+        id: 'cached-may',
+        title: '古い5月予定',
+        startDateTime: DateTime(2026, 5, 30, 9),
+        endDateTime: DateTime(2026, 5, 30, 10),
+      );
+      final liveMaySchedule = _schedule(
+        id: 'live-may',
+        title: '最新5月予定',
+        startDateTime: DateTime(2026, 5, 30, 9),
+        endDateTime: DateTime(2026, 5, 30, 10),
+      );
+
+      final schedules = getCalendarPageSchedules(
+        userId: 'user-1',
+        visibleMonth: DateTime(2026, 5),
+        scheduleMemoryCache: {
+          'user-1:2026-05': [cachedMaySchedule],
+        },
+        providerMonthSchedules: {
+          'user-1:2026-05': [liveMaySchedule],
+        },
+      );
+
+      expect(schedules, [liveMaySchedule]);
+    });
+
     testWidgets('月ページ本体は予定Providerを購読しない', (tester) async {
       final overrides = TestProviders.authenticated;
       final scheduleRepository = TestProviders.mockScheduleRepository;

@@ -154,11 +154,19 @@ List<Schedule> getCalendarPageSchedules({
   required String userId,
   required DateTime visibleMonth,
   required Map<String, List<Schedule>> scheduleMemoryCache,
+  Map<String, List<Schedule>> providerMonthSchedules = const {},
 }) {
-  return [
-    for (final month in getCalendarSchedulePrefetchMonths(visibleMonth))
-      ...?scheduleMemoryCache[getCalendarMonthScheduleCacheKey(userId, month)],
-  ];
+  final schedules = <Schedule>[];
+  for (final month in getCalendarSchedulePrefetchMonths(visibleMonth)) {
+    final cacheKey = getCalendarMonthScheduleCacheKey(userId, month);
+    final monthSchedules = providerMonthSchedules.containsKey(cacheKey)
+        ? providerMonthSchedules[cacheKey]
+        : scheduleMemoryCache[cacheKey];
+    if (monthSchedules != null) {
+      schedules.addAll(monthSchedules);
+    }
+  }
+  return schedules;
 }
 
 Map<String, List<Schedule>> cacheCalendarMonthSchedules({
@@ -253,6 +261,7 @@ class CalendarPageView extends HookConsumerWidget {
     );
     final monthScheduleCacheInputs =
         <({String cacheKey, List<Schedule>? schedules})>[];
+    final providerMonthSchedules = <String, List<Schedule>>{};
     if (currentUserId != null && visibleMonthScheduleCacheKey != null) {
       for (final prefetchMonth
           in getCalendarSchedulePrefetchMonths(visibleDateTime)) {
@@ -260,15 +269,20 @@ class CalendarPageView extends HookConsumerWidget {
           userId: currentUserId,
           displayMonth: prefetchMonth,
         )));
+        final prefetchCacheKey =
+            getCalendarMonthScheduleCacheKey(currentUserId, prefetchMonth);
+        final prefetchScheduleValues = prefetchSchedules.valueOrNull;
         if (prefetchMonth.year == visibleDateTime.year &&
             prefetchMonth.month == visibleDateTime.month) {
           visibleMonthSchedules = prefetchSchedules;
         }
+        if (prefetchSchedules.hasValue && prefetchScheduleValues != null) {
+          providerMonthSchedules[prefetchCacheKey] = prefetchScheduleValues;
+        }
         monthScheduleCacheInputs.add(
           (
-            cacheKey:
-                getCalendarMonthScheduleCacheKey(currentUserId, prefetchMonth),
-            schedules: prefetchSchedules.valueOrNull,
+            cacheKey: prefetchCacheKey,
+            schedules: prefetchScheduleValues,
           ),
         );
       }
@@ -713,6 +727,7 @@ class CalendarPageView extends HookConsumerWidget {
                           userId: currentUserId,
                           visibleMonth: dateTime,
                           scheduleMemoryCache: scheduleMemoryCache,
+                          providerMonthSchedules: providerMonthSchedules,
                         );
 
                   // アクティブな範囲内のページにキープアライブを適用
