@@ -61,6 +61,25 @@ void main() {
       expect(pageView.pageSnapping, isFalse);
     });
 
+    testWidgets('カレンダーは表示月の前後ページも事前に作成する', (tester) async {
+      await tester.pumpWidget(
+        TestUtils.createTestApp(
+          overrides: TestProviders.authenticated,
+          child: const Scaffold(
+            body: CalendarPageView(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final pageView = tester.widget<PageView>(find.byType(PageView));
+      expect(pageView.allowImplicitScrolling, isTrue);
+      expect(
+        find.byType(CalendarPageContent, skipOffstage: false),
+        findsAtLeastNWidgets(3),
+      );
+    });
+
     testWidgets('カレンダーは短めの低速スワイプでも前後の月へ移動する', (tester) async {
       await tester.pumpWidget(
         TestUtils.createTestApp(

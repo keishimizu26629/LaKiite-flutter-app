@@ -668,6 +668,7 @@ class CalendarPageView extends HookConsumerWidget {
                   pageTarget: () => pendingPageTarget.value,
                 ),
                 pageSnapping: false,
+                allowImplicitScrolling: true,
                 // スクロール開始時に最適化モードを有効化
                 dragStartBehavior: DragStartBehavior.start,
                 itemBuilder: (context, index) {
