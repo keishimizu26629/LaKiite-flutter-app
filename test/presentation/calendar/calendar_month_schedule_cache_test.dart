@@ -65,6 +65,47 @@ void main() {
       ]);
     });
 
+    test('月ページには表示月と前後1ヶ月のキャッシュを合成して渡す', () {
+      final aprilSchedule = _schedule(
+        id: 'april',
+        title: '4月予定',
+        startDateTime: DateTime(2026, 4, 30, 9),
+        endDateTime: DateTime(2026, 4, 30, 10),
+      );
+      final maySchedule = _schedule(
+        id: 'may',
+        title: '5月予定',
+        startDateTime: DateTime(2026, 5, 30, 9),
+        endDateTime: DateTime(2026, 5, 30, 10),
+      );
+      final juneSchedule = _schedule(
+        id: 'june',
+        title: '6月予定',
+        startDateTime: DateTime(2026, 6, 1, 9),
+        endDateTime: DateTime(2026, 6, 1, 10),
+      );
+
+      final schedules = getCalendarPageSchedules(
+        userId: 'user-1',
+        visibleMonth: DateTime(2026, 5),
+        scheduleMemoryCache: {
+          'user-1:2026-04': [aprilSchedule],
+          'user-1:2026-05': [maySchedule],
+          'user-1:2026-06': [juneSchedule],
+          'user-1:2026-07': [
+            _schedule(
+              id: 'july',
+              title: '7月予定',
+              startDateTime: DateTime(2026, 7, 1, 9),
+              endDateTime: DateTime(2026, 7, 1, 10),
+            ),
+          ],
+        },
+      );
+
+      expect(schedules, [aprilSchedule, maySchedule, juneSchedule]);
+    });
+
     testWidgets('月ページ本体は予定Providerを購読しない', (tester) async {
       final overrides = TestProviders.authenticated;
       final scheduleRepository = TestProviders.mockScheduleRepository;

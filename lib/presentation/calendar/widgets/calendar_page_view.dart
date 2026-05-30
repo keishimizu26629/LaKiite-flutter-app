@@ -150,6 +150,17 @@ List<DateTime> getCalendarSchedulePrefetchMonths(DateTime visibleMonth) {
   ];
 }
 
+List<Schedule> getCalendarPageSchedules({
+  required String userId,
+  required DateTime visibleMonth,
+  required Map<String, List<Schedule>> scheduleMemoryCache,
+}) {
+  return [
+    for (final month in getCalendarSchedulePrefetchMonths(visibleMonth))
+      ...?scheduleMemoryCache[getCalendarMonthScheduleCacheKey(userId, month)],
+  ];
+}
+
 Map<String, List<Schedule>> cacheCalendarMonthSchedules({
   required Map<String, List<Schedule>> currentCache,
   required String cacheKey,
@@ -695,16 +706,13 @@ class CalendarPageView extends HookConsumerWidget {
 
                   final dateTime = _getVisibleDateTime(index);
                   final monthKey = getMonthKey(dateTime);
-                  final pageScheduleCacheKey = currentUserId == null
-                      ? null
-                      : getCalendarMonthScheduleCacheKey(
-                          currentUserId,
-                          dateTime,
-                        );
                   final pageSchedules = currentUserId == null
                       ? const <Schedule>[]
-                      : scheduleMemoryCache[pageScheduleCacheKey] ??
-                          const <Schedule>[];
+                      : getCalendarPageSchedules(
+                          userId: currentUserId,
+                          visibleMonth: dateTime,
+                          scheduleMemoryCache: scheduleMemoryCache,
+                        );
 
                   // アクティブな範囲内のページにキープアライブを適用
                   final shouldCache = activeMonthIndices.contains(index);
