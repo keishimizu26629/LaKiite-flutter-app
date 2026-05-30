@@ -27,8 +27,8 @@ import 'package:lakiite/presentation/presentation_provider.dart'
     as presentation;
 import 'package:lakiite/presentation/presentation_provider.dart';
 
-import '../../mock/repositories/mock_auth_repository.dart';
-import '../../mock/repositories/mock_user_repository.dart';
+import '../mock/repository/mock_auth_repository.dart';
+import '../mock/repository/mock_user_repository.dart';
 
 class _TrackingScheduleRepository implements IScheduleRepository {
   _TrackingScheduleRepository() {
@@ -176,7 +176,7 @@ void main() {
         displayName: 'テストユーザー',
       );
 
-      mockAuthRepository.setUser(testUser);
+      mockAuthRepository.setCurrentUser(testUser);
       mockUserRepository.addTestUser(testUser);
 
       container = ProviderContainer(
@@ -214,7 +214,9 @@ void main() {
     });
 
     test('userSchedulesStreamProvider はログアウト時に空配列へ切り替わる', () async {
-      await container.read(authNotifierProvider.future);
+      final authFuture = container.read(authNotifierProvider.future);
+      mockAuthRepository.setCurrentUser(testUser);
+      await authFuture;
 
       final subscription = container.listen(
         userSchedulesStreamProvider(testUser.id),
@@ -262,6 +264,16 @@ void main() {
       );
     });
 
+    test('presentation_provider は scheduleStreamProvider を再定義しない', () {
+      expect(
+        identical(
+          calendar_schedule.scheduleStreamProvider,
+          presentation.scheduleStreamProvider,
+        ),
+        isTrue,
+      );
+    });
+
     test('my_page は userSchedulesStreamProvider を再定義しない', () {
       expect(
         identical(
@@ -283,7 +295,9 @@ void main() {
     });
 
     test('timelineSchedulesProvider はログアウト時に空配列へ切り替わる', () async {
-      await container.read(authNotifierProvider.future);
+      final authFuture = container.read(authNotifierProvider.future);
+      mockAuthRepository.setCurrentUser(testUser);
+      await authFuture;
 
       final subscription = container.listen(
         timelineSchedulesProvider,
@@ -349,7 +363,9 @@ void main() {
     });
 
     test('userListsStreamProvider はログアウト時に空配列へ切り替わる', () async {
-      await container.read(authNotifierProvider.future);
+      final authFuture = container.read(authNotifierProvider.future);
+      mockAuthRepository.setCurrentUser(testUser);
+      await authFuture;
 
       final subscription = container.listen(
         userListsStreamProvider,
@@ -372,7 +388,9 @@ void main() {
     });
 
     test('listStreamProvider はログアウト時に null へ切り替わる', () async {
-      await container.read(authNotifierProvider.future);
+      final authFuture = container.read(authNotifierProvider.future);
+      mockAuthRepository.setCurrentUser(testUser);
+      await authFuture;
 
       final subscription = container.listen(
         listStreamProvider('test-list-id'),

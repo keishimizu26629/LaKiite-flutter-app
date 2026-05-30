@@ -15,7 +15,7 @@ typedef CalendarMonthSchedulesQuery = ({
 /// This provider is presentation read state. Schedule mutations and monthly
 /// loading remain owned by the application schedule notifier.
 final userSchedulesStreamProvider =
-    StreamProvider.family<List<Schedule>, String>((ref, userId) {
+    StreamProvider.autoDispose.family<List<Schedule>, String>((ref, userId) {
   final authState = ref.watch(authNotifierProvider);
 
   return authState.when(
@@ -36,8 +36,8 @@ final userSchedulesStreamProvider =
 /// Calendar rendering reads schedules directly from the repository so it does
 /// not replace or cancel the timeline/global subscription owned by
 /// `scheduleNotifierProvider`.
-final calendarMonthSchedulesProvider =
-    StreamProvider.family<List<Schedule>, CalendarMonthSchedulesQuery>(
+final calendarMonthSchedulesProvider = StreamProvider.autoDispose
+    .family<List<Schedule>, CalendarMonthSchedulesQuery>(
   (ref, query) {
     final authState = ref.watch(authNotifierProvider);
     final displayMonth = DateTime(
@@ -62,3 +62,21 @@ final calendarMonthSchedulesProvider =
     );
   },
 );
+
+/// Single schedule read model for detail presentation UIs.
+final scheduleStreamProvider =
+    StreamProvider.autoDispose.family<Schedule?, String>((ref, scheduleId) {
+  final authState = ref.watch(authNotifierProvider);
+
+  return authState.when(
+    data: (state) {
+      if (state.status != AuthStatus.authenticated || state.user == null) {
+        return Stream.value(null);
+      }
+
+      return ref.watch(scheduleRepositoryProvider).watchSchedule(scheduleId);
+    },
+    loading: () => Stream.value(null),
+    error: (_, __) => Stream.value(null),
+  );
+});

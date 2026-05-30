@@ -5,6 +5,7 @@ import 'package:lakiite/application/notification/notification_notifier.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/calendar/calendar_providers.dart';
 import 'package:lakiite/presentation/calendar/schedule_providers.dart';
+import 'package:lakiite/presentation/calendar/widgets/daily_schedule_list_page.dart';
 import 'package:lakiite/presentation/calendar/widgets/daily_schedule_view.dart';
 import 'package:lakiite/presentation/calendar/widgets/schedule_ownership_style.dart';
 import 'package:lakiite/presentation/schedule/schedule_display_order.dart';
@@ -1198,7 +1199,10 @@ class OptimizedDateCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 事前レンダリング最適化のためのフラグ
-    final hasSchedules = schedules.isNotEmpty;
+    final sortedSchedules = ScheduleDisplayOrder.sortedWithinDay(schedules);
+    final visibleSchedules = sortedSchedules.take(2).toList();
+    final remainingCount = sortedSchedules.length - visibleSchedules.length;
+    final hasSchedules = sortedSchedules.isNotEmpty;
     final cellColor = isToday
         ? Colors.blue.shade50
         : !isCurrentMonth
@@ -1264,7 +1268,7 @@ class OptimizedDateCell extends StatelessWidget {
                     ),
                     if (hasSchedules) ...[
                       const SizedBox(height: 1),
-                      ...schedules.take(3).map((schedule) {
+                      ...visibleSchedules.map((schedule) {
                         final isOwner =
                             ScheduleOwnershipStyle.isOwnedByCurrentUser(
                                 schedule, currentUserId);
@@ -1308,15 +1312,36 @@ class OptimizedDateCell extends StatelessWidget {
                           ),
                         );
                       }),
-                      if (schedules.length > 3)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 0.5),
-                          child: Text(
-                            '+${schedules.length - 3}',
-                            style: TextStyle(
-                              fontSize: 8,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
+                      if (remainingCount > 0)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Semantics(
+                            label: '予定をすべて表示 +$remainingCount',
+                            button: true,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(4),
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => DailyScheduleListPage(
+                                      date: date,
+                                      schedules: sortedSchedules,
+                                      currentUserId: currentUserId,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 0.5),
+                                child: Text(
+                                  '+$remainingCount',
+                                  style: TextStyle(
+                                    fontSize: 11.2,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
