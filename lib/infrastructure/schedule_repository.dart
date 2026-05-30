@@ -246,8 +246,8 @@ class ScheduleRepository implements IScheduleRepository {
       AppLogger.debug('SharedLists: ${schedule.sharedLists}');
       AppLogger.debug('VisibleTo: ${schedule.visibleTo}');
 
-      // スケジュールをそのままFirestoreに更新
-      final data = schedule.toJson();
+      // 作成時と同じFirestore保存形式に揃えて更新する
+      final data = ScheduleMapper.toFirestore(schedule);
       AppLogger.debug('Prepared update data:');
       AppLogger.debug(data.toString());
 

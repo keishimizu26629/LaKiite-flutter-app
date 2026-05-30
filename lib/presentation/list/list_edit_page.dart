@@ -6,6 +6,7 @@ import '../../app/di/providers.dart';
 import '../../application/list/list_notifier.dart';
 import '../../domain/entity/list.dart';
 import '../../domain/entity/user.dart';
+import 'list_providers.dart';
 
 class ListEditPage extends ConsumerStatefulWidget {
   const ListEditPage({super.key, required this.list});
@@ -44,7 +45,7 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
     }
   }
 
-  Future<void> _saveChanges() async {
+  Future<void> _saveChanges(UserList currentList) async {
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('リスト名を入力してください')),
@@ -55,26 +56,26 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
     setState(() => _isLoading = true);
 
     try {
-      final String? newIconUrl = widget.list.iconUrl;
+      final String? newIconUrl = currentList.iconUrl;
       if (_selectedImage != null) {
         // 画像のアップロード処理を実装
         // newIconUrl = await uploadImage(_selectedImage!);
       }
 
       // メンバーリストの更新
-      final updatedMemberIds = widget.list.memberIds
+      final updatedMemberIds = currentList.memberIds
           .where((id) => !_excludedMemberIds.contains(id))
           .toList();
 
       // 更新されたリストオブジェクトを作成
       final updatedList = UserList(
-        id: widget.list.id,
+        id: currentList.id,
         listName: _nameController.text.trim(),
-        ownerId: widget.list.ownerId,
+        ownerId: currentList.ownerId,
         memberIds: updatedMemberIds,
-        createdAt: widget.list.createdAt,
+        createdAt: currentList.createdAt,
         iconUrl: newIconUrl,
-        description: widget.list.description,
+        description: currentList.description,
       );
 
       // リストの更新
@@ -99,6 +100,8 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final listAsync = ref.watch(listStreamProvider(widget.list.id));
+    final currentList = listAsync.valueOrNull ?? widget.list;
 
     return Scaffold(
       appBar: AppBar(
@@ -116,7 +119,7 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: FilledButton(
-                onPressed: _saveChanges,
+                onPressed: () => _saveChanges(currentList),
                 child: const Text('保存'),
               ),
             ),
@@ -136,11 +139,11 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
                       radius: 50,
                       backgroundImage: _selectedImage != null
                           ? FileImage(_selectedImage!)
-                          : (widget.list.iconUrl != null
-                              ? NetworkImage(widget.list.iconUrl!)
+                          : (currentList.iconUrl != null
+                              ? NetworkImage(currentList.iconUrl!)
                               : null) as ImageProvider?,
                       child:
-                          _selectedImage == null && widget.list.iconUrl == null
+                          _selectedImage == null && currentList.iconUrl == null
                               ? const Icon(Icons.list, size: 50)
                               : null,
                     ),
@@ -185,9 +188,9 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
                   ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: widget.list.memberIds.length,
+                    itemCount: currentList.memberIds.length,
                     itemBuilder: (context, index) {
-                      final memberId = widget.list.memberIds[index];
+                      final memberId = currentList.memberIds[index];
                       return FutureBuilder<PublicUserModel?>(
                         future: ref
                             .read(userRepositoryProvider)
