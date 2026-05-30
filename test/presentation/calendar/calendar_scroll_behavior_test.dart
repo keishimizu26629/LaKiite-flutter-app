@@ -61,7 +61,7 @@ void main() {
       expect(pageView.pageSnapping, isFalse);
     });
 
-    testWidgets('カレンダーは表示月の前後ページも事前に作成する', (tester) async {
+    testWidgets('カレンダーは表示月と前後月の3ページだけを固定作成する', (tester) async {
       await tester.pumpWidget(
         TestUtils.createTestApp(
           overrides: TestProviders.authenticated,
@@ -73,10 +73,14 @@ void main() {
       await tester.pump();
 
       final pageView = tester.widget<PageView>(find.byType(PageView));
+      final pageController = pageView.controller as PageController;
+
+      expect(pageController.initialPage, 1);
       expect(pageView.allowImplicitScrolling, isTrue);
+      expect(pageView.childrenDelegate, isA<SliverChildListDelegate>());
       expect(
         find.byType(CalendarPageContent, skipOffstage: false),
-        findsAtLeastNWidgets(3),
+        findsNWidgets(3),
       );
     });
 

@@ -46,14 +46,11 @@ const Duration _calendarSettledFetchDelay = Duration(milliseconds: 500);
 
 // PageControllerをキャッシュするプロバイダー
 final calendarPageControllerProvider = Provider<PageController>((ref) {
-  // 現在のインデックスを取得
-  final currentIndex = ref.watch(calendarCurrentIndexProvider);
-
-  // PageControllerを作成（ページ切り替えアニメーション速度を最適化）
+  // PageViewは前月/当月/翌月の3ページだけを持ち、中央ページを基準にする。
   final controller = PageController(
-    initialPage: currentIndex,
+    initialPage: _calendarCenterPage,
     viewportFraction: 1.0,
-    keepPage: true,
+    keepPage: false,
   );
 
   // PageControllerが破棄されるときの処理
@@ -66,6 +63,8 @@ final calendarPageControllerProvider = Provider<PageController>((ref) {
 
 // 画面幅に対してこの割合だけ横に動いたら、低速ドラッグでも月送りとして扱う
 const double _calendarPageTurnThreshold = 0.07;
+const int _calendarCenterPage = 1;
+const List<int> _calendarWindowPageOffsets = [-1, 0, 1];
 
 /// カレンダーの横スワイプ向けに、短い低速ドラッグでも前後月へスナップする物理挙動。
 class CalendarPageScrollPhysics extends PageScrollPhysics {
@@ -212,10 +211,10 @@ void _cacheCalendarMonthSchedulesInProvider({
 }
 
 // 何ヶ月先のデータまで先読みするか
-const int _prefetchMonthsRange = 2;
+const int _prefetchMonthsRange = 1;
 
 // 事前にレンダリングする月の数（前後_preRenderMonthsRange月）
-const int _preRenderMonthsRange = 2;
+const int _preRenderMonthsRange = 1;
 
 // 表示されていない月のページをクリアする間隔
 const int _cleanupIntervalMillis = 60000; // 1分
@@ -239,7 +238,6 @@ class CalendarPageView extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndexValue = ref.watch(calendarCurrentIndexProvider);
     final activeMonthIndices = ref.watch(activeMonthIndicesProvider);
-    final renderedMonths = ref.watch(renderedMonthsProvider);
     bool isMounted() => context.mounted;
 
     final visibleDateTime = _getVisibleDateTime(currentIndexValue);
@@ -398,6 +396,35 @@ class CalendarPageView extends HookConsumerWidget {
       _scheduleCleanup(ref, index, isMounted);
     }
 
+    int absoluteIndexForWindowPage(int page) {
+      if (page < 0) {
+        return currentIndexValue - 1;
+      }
+      if (page > 2) {
+        return currentIndexValue + 1;
+      }
+      return currentIndexValue + page - _calendarCenterPage;
+    }
+
+    void resetPageControllerToCenter() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!isMounted()) {
+          return;
+        }
+        if (!pageController.hasClients) {
+          return;
+        }
+        try {
+          final currentPage = pageController.page?.round();
+          if (currentPage != _calendarCenterPage) {
+            pageController.jumpToPage(_calendarCenterPage);
+          }
+        } catch (e) {
+          AppLogger.error('中央ページ復帰エラー: $e');
+        }
+      });
+    }
+
     void commitPageChange(
       int index, {
       required bool updateCacheWindow,
@@ -412,15 +439,7 @@ class CalendarPageView extends HookConsumerWidget {
             ref.read(calendarCurrentIndexProvider.notifier).update(safeIndex);
           }
 
-          Future.delayed(const Duration(milliseconds: 50), () {
-            if (pageController.hasClients) {
-              try {
-                pageController.jumpToPage(safeIndex);
-              } catch (e) {
-                AppLogger.error('ページジャンプエラー: $e');
-              }
-            }
-          });
+          resetPageControllerToCenter();
 
           return;
         }
@@ -459,8 +478,8 @@ class CalendarPageView extends HookConsumerWidget {
             final currentPage = pageController.page?.round() ?? -1;
 
             // ページが期待値と異なる場合は修正
-            if (currentPage != currentIndexValue && currentPage != -1) {
-              pageController.jumpToPage(currentIndexValue);
+            if (currentPage != _calendarCenterPage && currentPage != -1) {
+              pageController.jumpToPage(_calendarCenterPage);
             }
 
             // 初期表示時に前後の月をレンダリング済みとしてマーク
@@ -611,7 +630,7 @@ class CalendarPageView extends HookConsumerWidget {
                   dragDistance.value = 0;
                   dragStartIndex.value = notification.dragDetails == null
                       ? null
-                      : pageController.page?.round() ?? currentIndexValue;
+                      : pageController.page?.round() ?? _calendarCenterPage;
 
                   // スクロール中は最適化モードを有効にして軽量レンダリング
                   if (ref.exists(calendarOptimizationProvider)) {
@@ -631,9 +650,7 @@ class CalendarPageView extends HookConsumerWidget {
                   if (dragDistance.value.abs() >= dragThreshold) {
                     final targetPage = dragStartIndex.value! +
                         (dragDistance.value < 0 ? 1 : -1);
-                    if (targetPage >= 800 && targetPage <= 1600) {
-                      pendingPageTarget.value = targetPage;
-                    }
+                    pendingPageTarget.value = targetPage.clamp(0, 2).toInt();
                   }
                 }
                 // スクロール終了時
@@ -649,10 +666,14 @@ class CalendarPageView extends HookConsumerWidget {
                   pendingPageChangedIndex.value = null;
 
                   if (settledIndex != null) {
+                    final nextIndex = absoluteIndexForWindowPage(settledIndex);
                     commitPageChange(
-                      settledIndex,
+                      nextIndex,
                       updateCacheWindow: false,
                     );
+                    if (settledIndex != _calendarCenterPage) {
+                      resetPageControllerToCenter();
+                    }
                   }
 
                   // タイマーをキャンセルして再設定
@@ -676,7 +697,7 @@ class CalendarPageView extends HookConsumerWidget {
                 }
                 return false;
               },
-              child: PageView.builder(
+              child: PageView(
                 controller: pageController,
                 physics: CalendarPageScrollPhysics(
                   pageTarget: () => pendingPageTarget.value,
@@ -685,73 +706,17 @@ class CalendarPageView extends HookConsumerWidget {
                 allowImplicitScrolling: true,
                 // スクロール開始時に最適化モードを有効化
                 dragStartBehavior: DragStartBehavior.start,
-                itemBuilder: (context, index) {
-                  // インデックスが事前レンダリング範囲外で未レンダリングの場合は空のプレースホルダーを表示
-                  final isPreRendered =
-                      (index >= currentIndexValue - _preRenderMonthsRange &&
-                          index <= currentIndexValue + _preRenderMonthsRange);
-                  final isAlreadyRendered = renderedMonths.contains(index);
-
-                  if (!isPreRendered && !isAlreadyRendered) {
-                    // 事前レンダリング範囲外で未レンダリングの場合は時間差でレンダリングをスケジュール
-                    Future.delayed(const Duration(milliseconds: 100), () {
-                      if (!isMounted()) {
-                        return;
-                      }
-                      if (_isSliding) {
-                        return;
-                      }
-                      if (ref.exists(renderedMonthsProvider)) {
-                        final current = ref.read(renderedMonthsProvider);
-                        if (!current.contains(index)) {
-                          ref.read(renderedMonthsProvider.notifier).state = {
-                            ...current,
-                            index
-                          };
-                        }
-                      }
-                    });
-
-                    // 軽量なプレースホルダーを表示
-                    return CalendarPlaceholder(
-                      key: ValueKey('calendar_placeholder_$index'),
-                      index: index,
-                    );
-                  }
-
-                  final dateTime = _getVisibleDateTime(index);
-                  final monthKey = getMonthKey(dateTime);
-                  final pageSchedules = currentUserId == null
-                      ? const <Schedule>[]
-                      : getCalendarPageSchedules(
-                          userId: currentUserId,
-                          visibleMonth: dateTime,
-                          scheduleMemoryCache: scheduleMemoryCache,
-                          providerMonthSchedules: providerMonthSchedules,
-                        );
-
-                  // アクティブな範囲内のページにキープアライブを適用
-                  final shouldCache = activeMonthIndices.contains(index);
-
-                  // キーを追加して再構築を防止
-                  return RepaintBoundary(
-                    child: shouldCache
-                        ? KeepAliveCalendarPage(
-                            key: ValueKey(
-                                'calendar_page_${dateTime.year}_${dateTime.month}'),
-                            visiblePageDate: dateTime,
-                            monthKey: monthKey,
-                            schedules: pageSchedules,
-                          )
-                        : CalendarPageFrame(
-                            key: ValueKey(
-                                'calendar_page_${dateTime.year}_${dateTime.month}'),
-                            visiblePageDate: dateTime,
-                            monthKey: monthKey,
-                            schedules: pageSchedules,
-                          ),
-                  );
-                },
+                children: [
+                  for (final pageOffset in _calendarWindowPageOffsets)
+                    _buildCalendarWindowPage(
+                      userId: currentUserId,
+                      centerIndex: currentIndexValue,
+                      pageIndex: currentIndexValue + pageOffset,
+                      scheduleMemoryCache: scheduleMemoryCache,
+                      providerMonthSchedules: providerMonthSchedules,
+                      activeMonthIndices: activeMonthIndices,
+                    ),
+                ],
                 onPageChanged: (index) {
                   if (_isSliding) {
                     pendingPageChangedIndex.value = index;
@@ -759,18 +724,60 @@ class CalendarPageView extends HookConsumerWidget {
                   }
 
                   // ビルド中に状態を変更しないよう、非同期処理で実行
-                  Future.microtask(
-                    () => commitPageChange(
-                      index,
+                  Future.microtask(() {
+                    final nextIndex = absoluteIndexForWindowPage(index);
+                    commitPageChange(
+                      nextIndex,
                       updateCacheWindow: true,
-                    ),
-                  );
+                    );
+                    if (index != _calendarCenterPage) {
+                      resetPageControllerToCenter();
+                    }
+                  });
                 },
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCalendarWindowPage({
+    required String? userId,
+    required int centerIndex,
+    required int pageIndex,
+    required Map<String, List<Schedule>> scheduleMemoryCache,
+    required Map<String, List<Schedule>> providerMonthSchedules,
+    required Set<int> activeMonthIndices,
+  }) {
+    final dateTime = _getVisibleDateTime(pageIndex);
+    final monthKey = getMonthKey(dateTime);
+    final pageSchedules = userId == null
+        ? const <Schedule>[]
+        : getCalendarPageSchedules(
+            userId: userId,
+            visibleMonth: dateTime,
+            scheduleMemoryCache: scheduleMemoryCache,
+            providerMonthSchedules: providerMonthSchedules,
+          );
+    final shouldCache = activeMonthIndices.contains(pageIndex) ||
+        (pageIndex - centerIndex).abs() <= _preRenderMonthsRange;
+
+    return RepaintBoundary(
+      child: shouldCache
+          ? KeepAliveCalendarPage(
+              key: ValueKey('calendar_page_${dateTime.year}_${dateTime.month}'),
+              visiblePageDate: dateTime,
+              monthKey: monthKey,
+              schedules: pageSchedules,
+            )
+          : CalendarPageFrame(
+              key: ValueKey('calendar_page_${dateTime.year}_${dateTime.month}'),
+              visiblePageDate: dateTime,
+              monthKey: monthKey,
+              schedules: pageSchedules,
+            ),
     );
   }
 
