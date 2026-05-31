@@ -82,6 +82,47 @@ jobs:
         run: |
           echo "${{ secrets.PROD_DART_DEFINE_JSON_BASE64 }}" | base64 -d > dart_define.json
 
+      - name: Validate prod runtime config
+        run: |
+          set -euo pipefail
+
+          flavor="$(jq -r '.FLAVOR // empty' dart_define.json)"
+          app_name="$(jq -r '.APP_NAME // empty' dart_define.json)"
+          test_mode="$(jq -r 'has("TEST_MODE")' dart_define.json)"
+          emulator_mode="$(jq -r 'has("USE_FIREBASE_EMULATOR")' dart_define.json)"
+
+          if [ "$flavor" != "production" ]; then
+            echo "::error ::PROD_DART_DEFINE_JSON_BASE64 must set FLAVOR=production."
+            exit 1
+          fi
+
+          if [ "$app_name" != "LaKiite" ]; then
+            echo "::error ::PROD_DART_DEFINE_JSON_BASE64 must set APP_NAME=LaKiite."
+            exit 1
+          fi
+
+          if [ "$test_mode" != "false" ]; then
+            echo "::error ::PROD_DART_DEFINE_JSON_BASE64 must not include TEST_MODE."
+            exit 1
+          fi
+
+          if [ "$emulator_mode" != "false" ]; then
+            echo "::error ::PROD_DART_DEFINE_JSON_BASE64 must not include USE_FIREBASE_EMULATOR."
+            exit 1
+          fi
+
+          if ! grep -q "com.inoworl.lakiite" lib/firebase_options.dart; then
+            echo "::error ::PROD_FIREBASE_OPTIONS_DART_BASE64 must include the prod Android/iOS app id."
+            exit 1
+          fi
+
+          if ! grep -q "lakiite-flutter-app-prod" lib/firebase_options.dart; then
+            echo "::error ::PROD_FIREBASE_OPTIONS_DART_BASE64 must include the prod Firebase project id."
+            exit 1
+          fi
+
+          echo "Prod runtime config validation passed."
+
       - name: Calculate Build Number
         id: calculate_build_number
         run: |
