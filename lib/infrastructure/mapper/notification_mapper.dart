@@ -10,6 +10,9 @@ class NotificationMapper {
     required String id,
     required Map<String, dynamic> data,
   }) {
+    final createdAt = _timestampToDate(data['createdAt']) ?? DateTime.now();
+    final updatedAt = _timestampToDate(data['updatedAt']) ?? createdAt;
+
     return Notification(
       id: id,
       type: NotificationType.values.firstWhere(
@@ -24,14 +27,18 @@ class NotificationMapper {
             status.name ==
             (data['status'] as String? ?? NotificationStatus.pending.name),
       ),
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      createdAt: createdAt,
+      updatedAt: updatedAt,
       rejectionCount: data['rejectionCount'] as int? ?? 0,
       isRead: data['isRead'] as bool? ?? false,
       groupId: data['groupId'] as String?,
       relatedItemId: data['relatedItemId'] as String?,
       interactionId: data['interactionId'] as String?,
     );
+  }
+
+  static DateTime? _timestampToDate(Object? value) {
+    return value is Timestamp ? value.toDate() : null;
   }
 
   /// [Notification] を Firestore 保存用の Map に変換する。
