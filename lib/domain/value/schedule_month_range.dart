@@ -1,7 +1,9 @@
+import 'package:lakiite/domain/entity/schedule.dart';
+
 /// Firestore schedule queries for a displayed calendar month.
 ///
-/// The calendar renders leading and trailing days around the visible month, so
-/// the query intentionally covers the previous month through the next month.
+/// The calendar renders a fixed 6-week grid, including leading and trailing
+/// days around the visible month.
 class ScheduleMonthRange {
   const ScheduleMonthRange({
     required this.startInclusive,
@@ -10,16 +12,22 @@ class ScheduleMonthRange {
 
   /// Builds the calendar query window for [displayMonth].
   factory ScheduleMonthRange.forDisplayMonth(DateTime displayMonth) {
+    final firstDayOfMonth = DateTime(displayMonth.year, displayMonth.month, 1);
+    final leadingDays = firstDayOfMonth.weekday % DateTime.daysPerWeek;
+    final startInclusive = firstDayOfMonth.subtract(
+      Duration(days: leadingDays),
+    );
+
     return ScheduleMonthRange(
-      startInclusive: DateTime(displayMonth.year, displayMonth.month - 1, 1),
-      endExclusive: DateTime(displayMonth.year, displayMonth.month + 2, 1),
+      startInclusive: startInclusive,
+      endExclusive: startInclusive.add(const Duration(days: 42)),
     );
   }
 
-  /// First day of the previous month at midnight.
+  /// First day rendered in the 42-day calendar grid at midnight.
   final DateTime startInclusive;
 
-  /// First day of the month after next at midnight.
+  /// Day after the last rendered day in the 42-day calendar grid at midnight.
   final DateTime endExclusive;
 
   /// Firestore-compatible lower bound ISO string.
@@ -27,6 +35,14 @@ class ScheduleMonthRange {
 
   /// Firestore-compatible upper bound ISO string.
   String get endExclusiveIso => _toFirestoreIso(endExclusive);
+
+  bool overlaps(Schedule schedule) {
+    final scheduleStart = schedule.startDateTime;
+    final scheduleEnd = schedule.endDateTime;
+
+    return scheduleStart.isBefore(endExclusive) &&
+        !scheduleEnd.isBefore(startInclusive);
+  }
 
   static String _toFirestoreIso(DateTime dateTime) {
     final year = dateTime.year.toString().padLeft(4, '0');
