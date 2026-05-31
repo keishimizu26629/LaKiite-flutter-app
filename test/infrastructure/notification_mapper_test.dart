@@ -34,6 +34,25 @@ void main() {
       expect(notification.interactionId, 'reaction-1');
     });
 
+    test('serverTimestamp未確定のupdatedAtはcreatedAtで補完する', () {
+      final createdAt = DateTime(2026);
+
+      final notification = NotificationMapper.fromFirestore(
+        id: 'notification-1',
+        data: {
+          'type': 'friend',
+          'sendUserId': 'sender-1',
+          'receiveUserId': 'receiver-1',
+          'status': 'accepted',
+          'createdAt': Timestamp.fromDate(createdAt),
+          'updatedAt': null,
+          'isRead': true,
+        },
+      );
+
+      expect(notification.updatedAt, createdAt);
+    });
+
     test('NotificationをFirestore保存用dataへ変換する', () {
       final notification = Notification.createGroupInvitation(
         fromUserId: 'sender-1',

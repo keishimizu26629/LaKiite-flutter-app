@@ -162,6 +162,9 @@ class MyApp extends ConsumerWidget {
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (Platform.isAndroid) {
+        PushNotificationService.instance.requestAndroidNotificationPermission();
+      }
       NotificationNavigationService.instance.flushPendingNavigation();
     });
 
