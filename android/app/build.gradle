@@ -112,7 +112,7 @@ android {
             dimension "environment"
             applicationId "com.inoworl.lakiite"
             manifestPlaceholders = [
-                    appName: "lakiite",
+                    appName: "LaKiite",
                     adMobApplicationId: "ca-app-pub-6315199114988889~9761758494"
             ]
         }
