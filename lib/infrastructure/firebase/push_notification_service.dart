@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../firebase_options.dart';
+import 'android_notification_permission_requester.dart';
 import '../user_fcm_token_service.dart';
 import '../notification_navigation_service.dart';
 import '../../utils/logger.dart';
@@ -15,6 +16,7 @@ class PushNotificationService {
   final FirebaseMessaging _messaging;
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  bool _hasRequestedAndroidNotificationPermission = false;
 
   static PushNotificationService? _instance;
 
@@ -36,8 +38,10 @@ class PushNotificationService {
         await _setupAndroidEnvironment();
       }
 
-      final settings = await _requestNotificationPermission();
-      _logPermissionDetails(settings);
+      if (!Platform.isAndroid) {
+        final settings = await _requestNotificationPermission();
+        _logPermissionDetails(settings);
+      }
 
       _configureBackgroundHandlers();
       await _configureForegroundNotifications();
@@ -218,6 +222,36 @@ class PushNotificationService {
   bool _shouldSkipInitialization() {
     const bool kIsTest = bool.fromEnvironment('TEST_MODE', defaultValue: false);
     return kIsTest;
+  }
+
+  Future<void> requestAndroidNotificationPermission() async {
+    if (!Platform.isAndroid || _hasRequestedAndroidNotificationPermission) {
+      return;
+    }
+
+    _hasRequestedAndroidNotificationPermission = true;
+
+    try {
+      AppLogger.info('🔔 Android通知権限をリクエスト開始...');
+      final androidImplementation = _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+
+      if (androidImplementation == null) {
+        AppLogger.warning('Android通知権限リクエストをスキップ: Android実装が取得できません');
+        return;
+      }
+
+      final requester = AndroidNotificationPermissionRequester(
+        requestPermission: androidImplementation.requestNotificationsPermission,
+      );
+      final granted = await requester.request();
+
+      AppLogger.info('🔔 Android通知権限リクエスト結果: granted=$granted');
+    } catch (e, stack) {
+      AppLogger.error('Android通知権限リクエストエラー: $e');
+      AppLogger.error('スタックトレース: $stack');
+    }
   }
 
   Future<void> _setupAndroidEnvironment() async {
