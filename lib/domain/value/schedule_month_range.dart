@@ -1,3 +1,5 @@
+import 'package:lakiite/domain/entity/schedule.dart';
+
 /// Firestore schedule queries for a displayed calendar month.
 ///
 /// The calendar renders leading and trailing days around the visible month, so
@@ -27,6 +29,14 @@ class ScheduleMonthRange {
 
   /// Firestore-compatible upper bound ISO string.
   String get endExclusiveIso => _toFirestoreIso(endExclusive);
+
+  bool overlaps(Schedule schedule) {
+    final scheduleStart = schedule.startDateTime;
+    final scheduleEnd = schedule.endDateTime;
+
+    return scheduleStart.isBefore(endExclusive) &&
+        !scheduleEnd.isBefore(startInclusive);
+  }
 
   static String _toFirestoreIso(DateTime dateTime) {
     final year = dateTime.year.toString().padLeft(4, '0');
