@@ -4,35 +4,45 @@ import 'package:lakiite/domain/value/schedule_month_range.dart';
 
 void main() {
   group('ScheduleMonthRange', () {
-    test('表示月の前月月初から翌々月月初直前までを取得範囲にする', () {
-      final range = ScheduleMonthRange.forDisplayMonth(DateTime(2026, 3, 20));
+    test('表示月の42日カレンダーグリッドだけを取得範囲にする', () {
+      final range = ScheduleMonthRange.forDisplayMonth(DateTime(2026, 4, 20));
 
-      expect(range.startInclusive, DateTime(2026, 2, 1));
-      expect(range.endExclusive, DateTime(2026, 5, 1));
+      expect(range.startInclusive, DateTime(2026, 3, 29));
+      expect(range.endExclusive, DateTime(2026, 5, 10));
     });
 
-    test('Firestore のISO文字列として月範囲境界を表現する', () {
+    test('Firestore のISO文字列として42日グリッド境界を表現する', () {
       final range = ScheduleMonthRange.forDisplayMonth(DateTime(2026, 1, 31));
 
-      expect(range.startInclusiveIso, '2025-12-01T00:00:00.000');
-      expect(range.endExclusiveIso, '2026-03-01T00:00:00.000');
+      expect(range.startInclusiveIso, '2025-12-28T00:00:00.000');
+      expect(range.endExclusiveIso, '2026-02-08T00:00:00.000');
     });
 
     test('取得開始日より前に始まり表示範囲内で終わる予定も対象にする', () {
-      final range = ScheduleMonthRange.forDisplayMonth(DateTime(2026, 3, 20));
+      final range = ScheduleMonthRange.forDisplayMonth(DateTime(2026, 4, 20));
       final schedule = _schedule(
-        startDateTime: DateTime(2026, 1, 20),
-        endDateTime: DateTime(2026, 2, 3),
+        startDateTime: DateTime(2026, 3, 20),
+        endDateTime: DateTime(2026, 3, 29),
       );
 
       expect(range.overlaps(schedule), isTrue);
     });
 
-    test('表示範囲終了日に始まる予定は対象外にする', () {
-      final range = ScheduleMonthRange.forDisplayMonth(DateTime(2026, 3, 20));
+    test('42日グリッドより前に終わる予定は対象外にする', () {
+      final range = ScheduleMonthRange.forDisplayMonth(DateTime(2026, 4, 20));
       final schedule = _schedule(
-        startDateTime: DateTime(2026, 5, 1),
-        endDateTime: DateTime(2026, 5, 1, 1),
+        startDateTime: DateTime(2026, 3, 20),
+        endDateTime: DateTime(2026, 3, 28, 23, 59),
+      );
+
+      expect(range.overlaps(schedule), isFalse);
+    });
+
+    test('表示範囲終了日に始まる予定は対象外にする', () {
+      final range = ScheduleMonthRange.forDisplayMonth(DateTime(2026, 4, 20));
+      final schedule = _schedule(
+        startDateTime: DateTime(2026, 5, 10),
+        endDateTime: DateTime(2026, 5, 10, 1),
       );
 
       expect(range.overlaps(schedule), isFalse);
