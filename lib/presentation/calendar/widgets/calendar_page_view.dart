@@ -41,7 +41,9 @@ bool _isCalendarFirstBuild = true;
 // スライド中かどうかを管理するフラグ
 bool _isSliding = false;
 Timer? _slidingTimer;
+Timer? _scheduleUiRestoreTimer;
 Timer? _cleanupTimer;
+const Duration _calendarScheduleUiRestoreDelay = Duration(milliseconds: 200);
 const Duration _calendarSettledFetchDelay = Duration(milliseconds: 500);
 
 // PageControllerをキャッシュするプロバイダー
@@ -236,6 +238,8 @@ class CalendarPageView extends HookConsumerWidget {
       return () {
         _slidingTimer?.cancel();
         _slidingTimer = null;
+        _scheduleUiRestoreTimer?.cancel();
+        _scheduleUiRestoreTimer = null;
         _cleanupTimer?.cancel();
         _cleanupTimer = null;
       };
@@ -495,6 +499,8 @@ class CalendarPageView extends HookConsumerWidget {
                 if (notification is ScrollStartNotification) {
                   _slidingTimer?.cancel();
                   _slidingTimer = null;
+                  _scheduleUiRestoreTimer?.cancel();
+                  _scheduleUiRestoreTimer = null;
                   _isSliding = true;
                   scrollStarted.value = true;
                   pendingPageTarget.value = null;
@@ -546,6 +552,20 @@ class CalendarPageView extends HookConsumerWidget {
                   }
 
                   // タイマーをキャンセルして再設定
+                  _scheduleUiRestoreTimer?.cancel();
+                  _scheduleUiRestoreTimer =
+                      Timer(_calendarScheduleUiRestoreDelay, () {
+                    if (!isMounted()) {
+                      return;
+                    }
+                    _isSliding = false;
+
+                    if (ref.exists(calendarOptimizationProvider)) {
+                      ref.read(calendarOptimizationProvider.notifier).state =
+                          false;
+                    }
+                  });
+
                   _slidingTimer?.cancel();
                   _slidingTimer = Timer(_calendarSettledFetchDelay, () {
                     if (!isMounted()) {
@@ -553,7 +573,6 @@ class CalendarPageView extends HookConsumerWidget {
                     }
                     _isSliding = false;
 
-                    // スライド完了後に最適化モードを無効化
                     if (ref.exists(calendarOptimizationProvider)) {
                       ref.read(calendarOptimizationProvider.notifier).state =
                           false;
