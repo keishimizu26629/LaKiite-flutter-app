@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="LaKiite">
+  <rect width="64" height="64" rx="16" fill="#ffa600"/>
+  <path d="M21 14h10v28h17v8H21V14Z" fill="#fff8ed"/>
+  <circle cx="45" cy="20" r="3" fill="#fff8ed"/>
+  <circle cx="51" cy="27" r="2.5" fill="#fff8ed"/>
+  <circle cx="50" cy="37" r="2.5" fill="#fff8ed"/>
+</svg>
