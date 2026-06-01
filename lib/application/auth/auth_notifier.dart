@@ -214,6 +214,9 @@ class AuthNotifier extends _$AuthNotifier {
   /// - 認証状態を未認証に更新
   /// - 全てのキャッシュをクリア
   Future<void> signOut() async {
+    final signingOutUserId =
+        state.asData?.value.user?.id ?? FirebaseAuth.instance.currentUser?.uid;
+
     // ローディング状態に設定
     state = const AsyncLoading();
 
@@ -222,14 +225,10 @@ class AuthNotifier extends _$AuthNotifier {
       try {
         AppLogger.debug('サインアウト処理を開始します');
 
-        // 1. 先に認証をサインアウトして、Router と認証状態を安定させる
-        await _authRepository.signOut();
-        AppLogger.debug('認証サインアウトが完了しました');
-
-        // 2. FCMトークンを削除
+        // 1. 認証状態が残っているうちに現在端末のFCMトークンをユーザーから外す
         try {
           if (_fcmTokenService != null) {
-            await _fcmTokenService!.removeFcmToken();
+            await _fcmTokenService!.removeFcmToken(userId: signingOutUserId);
             AppLogger.debug('FCMトークンを削除しました');
           } else {
             AppLogger.debug('FCMトークンサービスが初期化されていないため、FCMトークン削除をスキップします');
@@ -237,6 +236,10 @@ class AuthNotifier extends _$AuthNotifier {
         } catch (e) {
           AppLogger.warning('FCMトークン削除エラー（無視して続行）: $e');
         }
+
+        // 2. 認証をサインアウトして、Router と認証状態を安定させる
+        await _authRepository.signOut();
+        AppLogger.debug('認証サインアウトが完了しました');
 
         // 3. WebView 関連の強制クリーンアップ
         try {
