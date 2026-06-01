@@ -16,20 +16,30 @@ class SignupPage extends ConsumerStatefulWidget {
 class _SignupPageState extends ConsumerState<SignupPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
   final _displayNameController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _nameController.dispose();
+    _displayNameController.dispose();
     super.dispose();
   }
 
   Future<void> _handleSignup() async {
     if (_isLoading) return;
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      _showSignupError('パスワードが一致しません');
+      return;
+    }
 
     AppLogger.debugOnly('SignupPage._handleSignup開始');
     setState(() {
@@ -75,6 +85,32 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     context.pop();
   }
 
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required String labelText,
+    required bool obscureText,
+    required VoidCallback onToggleVisibility,
+    required TextInputAction textInputAction,
+  }) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: labelText,
+        border: const OutlineInputBorder(),
+        suffixIcon: IconButton(
+          tooltip: obscureText ? '$labelTextを表示' : '$labelTextを非表示',
+          icon: Icon(
+            obscureText ? Icons.visibility : Icons.visibility_off,
+          ),
+          onPressed: onToggleVisibility,
+        ),
+      ),
+      obscureText: obscureText,
+      autofillHints: const [AutofillHints.newPassword],
+      textInputAction: textInputAction,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,13 +152,27 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
-              TextField(
+              _buildPasswordField(
                 controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'パスワード',
-                  border: OutlineInputBorder(),
-                ),
-                obscureText: true,
+                labelText: 'パスワード',
+                obscureText: _obscurePassword,
+                onToggleVisibility: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: 16),
+              _buildPasswordField(
+                controller: _confirmPasswordController,
+                labelText: 'パスワード再確認',
+                obscureText: _obscureConfirmPassword,
+                onToggleVisibility: () {
+                  setState(() {
+                    _obscureConfirmPassword = !_obscureConfirmPassword;
+                  });
+                },
                 textInputAction: TextInputAction.done,
               ),
               const SizedBox(height: 32),
