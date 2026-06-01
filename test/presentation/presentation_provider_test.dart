@@ -225,11 +225,13 @@ void main() {
       );
 
       await mockAuthRepository.signOut();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      final state = container.read(userSchedulesStreamProvider(testUser.id));
-      expect(state.hasValue, isTrue);
-      expect(state.value, isEmpty);
+      final schedules = await _waitForProviderValue<List<Schedule>>(
+        container,
+        userSchedulesStreamProvider(testUser.id),
+        (value) => value.isEmpty,
+      );
+      expect(schedules, isEmpty);
 
       subscription.close();
     });
@@ -306,11 +308,13 @@ void main() {
       );
 
       await mockAuthRepository.signOut();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      final state = container.read(timelineSchedulesProvider);
-      expect(state.hasValue, isTrue);
-      expect(state.value, isEmpty);
+      final schedules = await _waitForProviderValue<List<Schedule>>(
+        container,
+        timelineSchedulesProvider,
+        (value) => value.isEmpty,
+      );
+      expect(schedules, isEmpty);
 
       subscription.close();
     });
@@ -377,11 +381,13 @@ void main() {
       expect(listRepository.listsListenCount, 1);
 
       await mockAuthRepository.signOut();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      final state = container.read(userListsStreamProvider);
-      expect(state.hasValue, isTrue);
-      expect(state.value, isEmpty);
+      final lists = await _waitForProviderValue<List<UserList>>(
+        container,
+        userListsStreamProvider,
+        (value) => value.isEmpty,
+      );
+      expect(lists, isEmpty);
       expect(listRepository.listsCancelCount, 1);
 
       subscription.close();
@@ -402,14 +408,57 @@ void main() {
       expect(listRepository.listListenCount, 1);
 
       await mockAuthRepository.signOut();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      final state = container.read(listStreamProvider('test-list-id'));
-      expect(state.hasValue, isTrue);
-      expect(state.value, isNull);
+      final list = await _waitForProviderValue<UserList?>(
+        container,
+        listStreamProvider('test-list-id'),
+        (value) => value == null,
+      );
+      expect(list, isNull);
       expect(listRepository.listCancelCount, 1);
 
       subscription.close();
     });
   });
+}
+
+Future<T> _waitForProviderValue<T>(
+  ProviderContainer container,
+  ProviderListenable<AsyncValue<T>> provider,
+  bool Function(T value) matches,
+) async {
+  final current = container.read(provider);
+  if (current.hasValue) {
+    final value = current.requireValue;
+    if (matches(value)) {
+      return value;
+    }
+  }
+
+  final completer = Completer<T>();
+  late final ProviderSubscription<AsyncValue<T>> subscription;
+  subscription = container.listen<AsyncValue<T>>(
+    provider,
+    (_, next) {
+      if (!next.hasValue || completer.isCompleted) {
+        return;
+      }
+
+      final value = next.requireValue;
+      if (matches(value)) {
+        completer.complete(value);
+      }
+    },
+  );
+
+  try {
+    return await completer.future.timeout(const Duration(seconds: 2));
+  } on TimeoutException {
+    fail(
+      'Timed out waiting for provider to emit the expected value. '
+      'Current state: ${container.read(provider)}',
+    );
+  } finally {
+    subscription.close();
+  }
 }
