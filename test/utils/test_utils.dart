@@ -129,6 +129,7 @@ class TestUtils {
     String displayName = 'テストニックネーム',
     String email = 'test@example.com',
     String password = 'password123',
+    String? confirmPassword,
   }) async {
     // 名前入力（実際のラベルに合わせて修正）
     final nameField = _findTextFieldByLabel('名前(フルネーム)');
@@ -166,6 +167,21 @@ class TestUtils {
       final passwordFieldByKey = find.byKey(const Key('password_field'));
       if (passwordFieldByKey.evaluate().isNotEmpty) {
         await tester.enterText(passwordFieldByKey, password);
+      }
+    }
+
+    // パスワード再確認入力
+    final confirmPasswordField = _findTextFieldByLabel('パスワード再確認');
+    if (confirmPasswordField.evaluate().isNotEmpty) {
+      await tester.enterText(confirmPasswordField, confirmPassword ?? password);
+    } else {
+      final confirmPasswordFieldByKey =
+          find.byKey(const Key('confirm_password_field'));
+      if (confirmPasswordFieldByKey.evaluate().isNotEmpty) {
+        await tester.enterText(
+          confirmPasswordFieldByKey,
+          confirmPassword ?? password,
+        );
       }
     }
 
