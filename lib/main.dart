@@ -162,7 +162,15 @@ class MyApp extends ConsumerWidget {
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (Platform.isAndroid) {
+      const skipPushNotificationRuntime = bool.fromEnvironment(
+            'TEST_MODE',
+            defaultValue: false,
+          ) ||
+          bool.fromEnvironment('FLUTTER_TEST', defaultValue: false) ||
+          bool.fromEnvironment('USE_FIREBASE_EMULATOR', defaultValue: false);
+      if (!skipPushNotificationRuntime &&
+          Platform.isAndroid &&
+          Firebase.apps.isNotEmpty) {
         PushNotificationService.instance.requestAndroidNotificationPermission();
       }
       NotificationNavigationService.instance.flushPendingNavigation();
