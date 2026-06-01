@@ -12,6 +12,8 @@ void main() {
           'aBcD1234',
           '12345678',
           'abcdefgh',
+          'abcdefghi',
+          'abcdefghijklmnop',
         ];
 
         // Act & Assert
@@ -58,6 +60,8 @@ void main() {
           'abcdefgh',
           'ABCDEFGH',
           'a1b2c3d4',
+          'abcdefghi',
+          'abcdefghijklmnop',
         ];
 
         // Act & Assert
@@ -72,7 +76,7 @@ void main() {
         const invalidFormats = [
           '', // 空文字
           'abc123', // 6文字（短い）
-          'abcd12345', // 9文字（長い）
+          'abcdefghijklmnopq', // 17文字（長い）
           'abcd123@', // 特殊文字
           'abcd 123', // スペース
           'あいうえ1234', // 日本語
@@ -95,7 +99,7 @@ void main() {
         const invalidFormats = [
           '', // 空文字
           'abc123', // 短すぎる
-          'abcd12345', // 長すぎる
+          'abcdefghijklmnopq', // 長すぎる
           'abcd123@', // 特殊文字
           'abcd 123', // スペース
         ];
@@ -154,18 +158,32 @@ void main() {
         }
       });
 
-      test('9文字以上は無効', () {
+      test('9文字以上16文字以下は有効', () {
         // Arrange
-        const boundaryInvalidCases = [
+        const boundaryValidCases = [
           'abcdefghi', // 9文字
           'abcdefghij', // 10文字
           'abcdefghijklmnop', // 16文字
         ];
 
         // Act & Assert
+        for (final testCase in boundaryValidCases) {
+          expect(() => UserId(testCase), returnsNormally);
+          expect(testCase.length, inInclusiveRange(9, 16));
+        }
+      });
+
+      test('17文字以上は無効', () {
+        // Arrange
+        const boundaryInvalidCases = [
+          'abcdefghijklmnopq', // 17文字
+          'abcdefghijklmnopqr', // 18文字
+        ];
+
+        // Act & Assert
         for (final testCase in boundaryInvalidCases) {
           expect(() => UserId(testCase), throwsArgumentError);
-          expect(testCase.length, greaterThan(8));
+          expect(testCase.length, greaterThan(16));
         }
       });
     });
