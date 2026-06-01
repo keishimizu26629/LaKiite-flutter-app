@@ -168,6 +168,16 @@ class PushNotificationService {
     }
   }
 
+  Future<void> deleteCurrentToken() async {
+    try {
+      await _messaging.deleteToken();
+      AppLogger.debug('現在端末のFCMトークンを削除しました');
+    } catch (e, stack) {
+      AppLogger.error('現在端末のFCMトークン削除エラー: $e');
+      AppLogger.error('スタックトレース: $stack');
+    }
+  }
+
   Future<String?> forceUpdateFCMToken() async {
     try {
       AppLogger.debug('FCMトークンの強制更新を開始');

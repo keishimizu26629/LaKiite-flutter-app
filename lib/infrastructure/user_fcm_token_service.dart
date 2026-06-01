@@ -53,35 +53,40 @@ class UserFcmTokenService {
   }
 
   /// ユーザーのFCMトークンを削除する（ログアウト時など）
-  Future<void> removeFcmToken() async {
+  Future<void> removeFcmToken({String? userId}) async {
     try {
       final user = _auth.currentUser;
-      if (user == null) {
+      final targetUserId = userId ?? user?.uid;
+      if (targetUserId == null) {
         AppLogger.warning('FCMトークン削除: ユーザーがログインしていません');
+        await _pushNotificationService.deleteCurrentToken();
         return;
       }
 
-      AppLogger.debug('FCMトークン削除: ユーザーID=${user.uid}');
+      AppLogger.debug('FCMトークン削除: ユーザーID=$targetUserId');
 
       try {
         // Firestoreのユーザードキュメントを取得して存在確認
-        final docRef = _firestore.collection('users').doc(user.uid);
+        final docRef = _firestore.collection('users').doc(targetUserId);
         final docSnapshot = await docRef.get();
 
         if (!docSnapshot.exists) {
           AppLogger.warning('FCMトークン削除: ユーザードキュメントが存在しません');
+          await _pushNotificationService.deleteCurrentToken();
           return;
         }
 
         final token = await _pushNotificationService.refreshToken();
         if (token == null) {
           AppLogger.warning('FCMトークン削除: 現在端末のトークンが取得できませんでした');
+          await _pushNotificationService.deleteCurrentToken();
           return;
         }
 
         await docRef.update({
           _tokensField: FieldValue.arrayRemove([token]),
         });
+        await _pushNotificationService.deleteCurrentToken();
 
         AppLogger.debug('FCMトークン削除: 完了');
       } catch (e) {
@@ -98,6 +103,7 @@ class UserFcmTokenService {
         } else {
           AppLogger.error('FCMトークン削除エラー: $e');
         }
+        await _pushNotificationService.deleteCurrentToken();
         // エラーはログに記録するだけで例外は投げない（ログアウト処理を続行させるため）
       }
     } catch (e, stack) {
