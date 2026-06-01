@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../application/auth/auth_notifier.dart';
 import '../../utils/auth_error_message.dart';
 import '../../utils/logger.dart';
+import '../widgets/password_text_field.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
   const SignupPage({super.key});
@@ -85,32 +86,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     context.pop();
   }
 
-  Widget _buildPasswordField({
-    required TextEditingController controller,
-    required String labelText,
-    required bool obscureText,
-    required VoidCallback onToggleVisibility,
-    required TextInputAction textInputAction,
-  }) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: labelText,
-        border: const OutlineInputBorder(),
-        suffixIcon: IconButton(
-          tooltip: obscureText ? '$labelTextを表示' : '$labelTextを非表示',
-          icon: Icon(
-            obscureText ? Icons.visibility : Icons.visibility_off,
-          ),
-          onPressed: onToggleVisibility,
-        ),
-      ),
-      obscureText: obscureText,
-      autofillHints: const [AutofillHints.newPassword],
-      textInputAction: textInputAction,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -152,7 +127,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
-              _buildPasswordField(
+              PasswordTextField(
                 controller: _passwordController,
                 labelText: 'パスワード',
                 obscureText: _obscurePassword,
@@ -162,9 +137,10 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   });
                 },
                 textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.newPassword],
               ),
               const SizedBox(height: 16),
-              _buildPasswordField(
+              PasswordTextField(
                 controller: _confirmPasswordController,
                 labelText: 'パスワード再確認',
                 obscureText: _obscureConfirmPassword,
@@ -174,6 +150,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   });
                 },
                 textInputAction: TextInputAction.done,
+                autofillHints: const [AutofillHints.newPassword],
               ),
               const SizedBox(height: 32),
               ElevatedButton(
