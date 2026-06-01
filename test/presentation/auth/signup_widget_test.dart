@@ -29,6 +29,7 @@ void main() {
       expect(find.text('表示名(ニックネーム)'), findsOneWidget);
       expect(find.text('メールアドレス'), findsOneWidget);
       expect(find.text('パスワード'), findsOneWidget);
+      expect(find.text('パスワード再確認'), findsOneWidget);
       expect(find.byType(ElevatedButton), findsAtLeastNWidgets(1)); // 新規登録ボタン
       // Googleログインはファーストリリースでは除外
       // expect(find.text('Googleで登録'), findsOneWidget);
@@ -62,7 +63,29 @@ void main() {
       final passwordField = find.widgetWithText(TextField, 'パスワード');
       await tester.enterText(passwordField, 'password123');
 
+      // パスワード再確認入力
+      final confirmPasswordField = find.widgetWithText(TextField, 'パスワード再確認');
+      await tester.enterText(confirmPasswordField, 'password123');
+
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('パスワード再確認フィールドが入力できる', (tester) async {
+      await tester.pumpWidget(
+        TestUtils.createTestApp(
+          overrides: TestProviders.forSignupForm,
+          child: const SignupPage(),
+        ),
+      );
+
+      final confirmPasswordField = find.widgetWithText(TextField, 'パスワード再確認');
+      expect(confirmPasswordField, findsOneWidget);
+
+      await tester.enterText(confirmPasswordField, 'password123');
+      expect(
+        tester.widget<TextField>(confirmPasswordField).controller?.text,
+        'password123',
+      );
     });
 
     testWidgets('パスワードフィールドが隠されている', (tester) async {
@@ -82,6 +105,60 @@ void main() {
 
       // obscureText が true であることを確認
       expect(textField.obscureText, isTrue);
+    });
+
+    testWidgets('パスワード表示ボタンで入力内容を表示できる', (tester) async {
+      await tester.pumpWidget(
+        TestUtils.createTestApp(
+          overrides: TestProviders.forSignupForm,
+          child: const SignupPage(),
+        ),
+      );
+
+      final passwordField = find.widgetWithText(TextField, 'パスワード');
+      expect(tester.widget<TextField>(passwordField).obscureText, isTrue);
+
+      await tester.tap(find.byTooltip('パスワードを表示'));
+      await tester.pump();
+
+      expect(tester.widget<TextField>(passwordField).obscureText, isFalse);
+      expect(find.byTooltip('パスワードを非表示'), findsOneWidget);
+    });
+
+    testWidgets('パスワード不一致の場合はエラーを表示する', (tester) async {
+      await tester.pumpWidget(
+        TestUtils.createTestApp(
+          overrides: TestProviders.forSignupForm,
+          child: const SignupPage(),
+        ),
+      );
+
+      await tester.enterText(
+        find.widgetWithText(TextField, '名前(フルネーム)'),
+        'テストユーザー',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'メールアドレス'),
+        'test@example.com',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'パスワード'),
+        'password123',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'パスワード再確認'),
+        'password456',
+      );
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ElevatedButton),
+          matching: find.text('新規登録'),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('パスワードが一致しません'), findsOneWidget);
     });
 
     testWidgets('新規登録処理が正常に動作する（修正版）', (tester) async {
@@ -125,6 +202,10 @@ void main() {
         find.widgetWithText(TextField, 'パスワード'),
         'password123',
       );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'パスワード再確認'),
+        'password123',
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(
@@ -161,6 +242,10 @@ void main() {
       // パスワード入力
       final passwordField = find.widgetWithText(TextField, 'パスワード');
       await tester.enterText(passwordField, 'password123');
+
+      // パスワード再確認入力
+      final confirmPasswordField = find.widgetWithText(TextField, 'パスワード再確認');
+      await tester.enterText(confirmPasswordField, 'password123');
 
       await tester.pumpAndSettle();
 
@@ -230,6 +315,7 @@ void main() {
       expect(find.text('表示名(ニックネーム)'), findsOneWidget);
       expect(find.text('メールアドレス'), findsOneWidget);
       expect(find.text('パスワード'), findsOneWidget);
+      expect(find.text('パスワード再確認'), findsOneWidget);
 
       // ボタンが存在することを確認
       expect(
