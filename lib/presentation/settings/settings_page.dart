@@ -69,13 +69,13 @@ class SettingsPage extends ConsumerWidget {
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text('プライバシーポリシー'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.go('/settings/privacy-policy'),
+            onTap: () => context.push('/settings/privacy-policy'),
           ),
           ListTile(
             leading: const Icon(Icons.description_outlined),
             title: const Text('利用規約'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.go('/settings/terms-of-service'),
+            onTap: () => context.push('/settings/terms-of-service'),
           ),
           const Divider(),
           ListTile(
