@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
+  static const fontFamily = 'NotoSansJP';
+  static const fontFamilyFallback = <String>[
+    'Noto Sans JP',
+    'Hiragino Sans',
+    'Yu Gothic',
+    'Meiryo',
+    'sans-serif',
+  ];
+
   // メインカラー
   static const primaryColor = Color(0xFFffa600);
   static const secondaryColor = Color(0xFFa96900);
@@ -36,6 +45,8 @@ class AppTheme {
           },
         ),
         primaryColor: primaryColor,
+        fontFamily: fontFamily,
+        fontFamilyFallback: fontFamilyFallback,
         colorScheme: const ColorScheme.light(
           primary: primaryColor,
           secondary: secondaryColor,
@@ -50,6 +61,8 @@ class AppTheme {
           iconTheme: IconThemeData(color: surfaceColor),
           titleTextStyle: TextStyle(
             color: surfaceColor,
+            fontFamily: fontFamily,
+            fontFamilyFallback: fontFamilyFallback,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
