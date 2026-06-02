@@ -6,11 +6,15 @@ class UserId {
     return UserId._(value);
   }
   UserId._(this.value);
+
+  static const minLength = 8;
+  static const maxLength = 16;
+
   final String value;
 
   static bool isValidFormat(String value) {
-    // 8文字の英数字のみを許可
-    return RegExp(r'^[a-zA-Z0-9]{8}$').hasMatch(value);
+    // 8文字以上16文字以内の英数字のみを許可
+    return RegExp(r'^[a-zA-Z0-9]{8,16}$').hasMatch(value);
   }
 
   @override
