@@ -179,6 +179,7 @@ class MyApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'LaKiite',
       theme: AppTheme.theme,
+      locale: const Locale('ja', 'JP'),
       routerConfig: router,
       // 環境名をデバッグモードで表示
       debugShowCheckedModeBanner: AppConfig.instance.isDevelopment,
