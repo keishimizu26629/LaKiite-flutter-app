@@ -43,6 +43,41 @@ void main() {
     expect(repository.saved?.notifyHour, 7);
     expect(repository.saved?.enabled, isTrue);
   });
+
+  testWidgets('設定が未作成の場合はオフ表示でオンにすると作成される', (tester) async {
+    final repository = _FakeScheduleDigestSettingsRepository(
+      ScheduleDigestSettings.missingDocumentFallback('user-1'),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          scheduleDigestSettingsRepositoryProvider.overrideWithValue(
+            repository,
+          ),
+          scheduleDigestSettingsProvider.overrideWith(
+            (ref) => Stream.value(repository.current),
+          ),
+        ],
+        child: const MaterialApp(home: ScheduleDigestSettingsPage()),
+      ),
+    );
+
+    await tester.pump();
+
+    expect(find.text('通知する'), findsOneWidget);
+    expect(find.text('8時'), findsOneWidget);
+    expect(repository.saved, isNull);
+
+    final notificationSwitch = tester.widget<Switch>(find.byType(Switch));
+    expect(notificationSwitch.value, isFalse);
+
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+
+    expect(repository.saved?.enabled, isTrue);
+    expect(repository.saved?.notifyHour, 8);
+  });
 }
 
 class _FakeScheduleDigestSettingsRepository

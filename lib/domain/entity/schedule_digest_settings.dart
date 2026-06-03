@@ -24,6 +24,14 @@ class ScheduleDigestSettings {
     );
   }
 
+  factory ScheduleDigestSettings.missingDocumentFallback(String userId) {
+    return ScheduleDigestSettings(
+      userId: userId,
+      enabled: false,
+      notifyHour: 8,
+    );
+  }
+
   factory ScheduleDigestSettings.fromFirestore({
     required String userId,
     required Map<String, dynamic>? data,

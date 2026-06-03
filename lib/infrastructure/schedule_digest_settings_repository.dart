@@ -25,6 +25,10 @@ class ScheduleDigestSettingsRepository
         .doc(userId)
         .snapshots()
         .map((snapshot) {
+      if (!snapshot.exists) {
+        return ScheduleDigestSettings.missingDocumentFallback(userId);
+      }
+
       return ScheduleDigestSettings.fromFirestore(
         userId: userId,
         data: snapshot.data(),
