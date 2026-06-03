@@ -30,40 +30,90 @@ class ScheduleDigestSettingsPage extends ConsumerWidget {
   }
 }
 
-class _ScheduleDigestSettingsContent extends ConsumerWidget {
+class _ScheduleDigestSettingsContent extends ConsumerStatefulWidget {
   const _ScheduleDigestSettingsContent({required this.settings});
 
   final ScheduleDigestSettings settings;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final repository = ref.watch(scheduleDigestSettingsRepositoryProvider);
+  ConsumerState<_ScheduleDigestSettingsContent> createState() =>
+      _ScheduleDigestSettingsContentState();
+}
 
-    Future<void> save(ScheduleDigestSettings nextSettings) async {
-      try {
-        await repository.saveCurrentUserSettings(nextSettings);
-      } catch (error) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('通知設定の保存に失敗しました: $error')),
-        );
+class _ScheduleDigestSettingsContentState
+    extends ConsumerState<_ScheduleDigestSettingsContent> {
+  late ScheduleDigestSettings _draftSettings;
+  var _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _draftSettings = widget.settings;
+  }
+
+  @override
+  void didUpdateWidget(_ScheduleDigestSettingsContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.settings.userId != widget.settings.userId ||
+        oldWidget.settings.enabled != widget.settings.enabled ||
+        oldWidget.settings.notifyHour != widget.settings.notifyHour ||
+        oldWidget.settings.lastSentDate != widget.settings.lastSentDate) {
+      _draftSettings = widget.settings;
+    }
+  }
+
+  Future<void> _save() async {
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final repository = ref.read(scheduleDigestSettingsRepositoryProvider);
+      await repository.saveCurrentUserSettings(_draftSettings);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('通知設定を保存しました')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('通知設定の保存に失敗しました: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
       }
     }
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return ListView(
       children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            '今日あなたに共有されている予定がある場合に、指定した時刻に通知を受け取れます。',
+          ),
+        ),
         SwitchListTile(
           secondary: const Icon(Icons.notifications_outlined),
           title: const Text('通知する'),
-          value: settings.enabled,
-          onChanged: (enabled) => save(settings.copyWith(enabled: enabled)),
+          value: _draftSettings.enabled,
+          onChanged: (enabled) {
+            setState(() {
+              _draftSettings = _draftSettings.copyWith(enabled: enabled);
+            });
+          },
         ),
         const Divider(),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: DropdownButtonFormField<int>(
             key: const Key('schedule-digest-notify-hour-dropdown'),
-            initialValue: settings.notifyHour,
+            initialValue: _draftSettings.notifyHour,
             decoration: const InputDecoration(
               icon: Icon(Icons.schedule),
               labelText: '通知時刻',
@@ -77,12 +127,24 @@ class _ScheduleDigestSettingsContent extends ConsumerWidget {
                   child: Text('$hour時'),
                 ),
             ],
-            onChanged: settings.enabled
+            onChanged: _draftSettings.enabled
                 ? (value) {
                     if (value == null) return;
-                    save(settings.copyWith(notifyHour: value));
+                    setState(() {
+                      _draftSettings = _draftSettings.copyWith(
+                        notifyHour: value,
+                      );
+                    });
                   }
                 : null,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          child: FilledButton(
+            key: const Key('schedule-digest-save-button'),
+            onPressed: _isSaving ? null : _save,
+            child: Text(_isSaving ? '保存中...' : '保存'),
           ),
         ),
       ],

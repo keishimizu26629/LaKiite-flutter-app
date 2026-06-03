@@ -13,6 +13,15 @@ void main() {
       expect(settings.lastSentDate, isNull);
     });
 
+    test('missing document fallback defaults to disabled at 8', () {
+      final settings = ScheduleDigestSettings.missingDocumentFallback('user-1');
+
+      expect(settings.userId, 'user-1');
+      expect(settings.enabled, isFalse);
+      expect(settings.notifyHour, 8);
+      expect(settings.lastSentDate, isNull);
+    });
+
     test('serializes notifyHour and enabled fields for Firestore', () {
       final settings = ScheduleDigestSettings(
         userId: 'user-1',
