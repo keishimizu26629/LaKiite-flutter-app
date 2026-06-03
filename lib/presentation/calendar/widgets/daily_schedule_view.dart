@@ -9,6 +9,7 @@ import 'package:lakiite/application/notification/notification_notifier.dart';
 import 'package:lakiite/application/schedule/schedule_notifier.dart';
 import 'package:lakiite/application/auth/auth_state.dart';
 import 'package:lakiite/presentation/calendar/calendar_providers.dart';
+import 'package:lakiite/presentation/list/display_list_providers.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
 
@@ -86,6 +87,8 @@ class DailyScheduleView extends HookConsumerWidget {
     // スケジュールの状態を監視
     final scheduleState = ref.watch(scheduleNotifierProvider);
     final currentUserId = ref.watch(currentUserIdProvider);
+    final displayLists =
+        ref.watch(userDisplayListsStreamProvider).valueOrNull ?? const [];
 
     // 初期化時にスケジュールの監視を開始
     useEffect(() {
@@ -260,6 +263,7 @@ class DailyScheduleView extends HookConsumerWidget {
                       schedules: allDaySchedules,
                       allSchedules: dateSchedules,
                       currentUserId: currentUserId,
+                      displayLists: displayLists,
                     ),
                     Expanded(
                       child: SingleChildScrollView(

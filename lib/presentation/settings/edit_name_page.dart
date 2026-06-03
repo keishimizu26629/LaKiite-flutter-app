@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/entity/user.dart';
 import '../my_page/my_page_view_model.dart';
 
 class EditNamePage extends ConsumerStatefulWidget {
@@ -34,6 +35,34 @@ class _EditNamePageState extends ConsumerState<EditNamePage> {
     super.dispose();
   }
 
+  Future<void> _saveName(AsyncValue<UserModel?> userState) async {
+    if (!userState.hasValue || userState.value == null) return;
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    try {
+      final user = userState.value!;
+      final navigator = Navigator.of(context);
+      await ref.read(myPageViewModelProvider.notifier).updateProfile(
+            name: _nameController.text,
+            displayName: _displayNameController.text,
+            searchIdStr: user.searchId.toString(),
+            shortBio: user.publicProfile.shortBio,
+          );
+      if (mounted) {
+        navigator.pop();
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(content: Text('名前を更新しました')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('エラー: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final userState = ref.watch(myPageViewModelProvider);
@@ -43,37 +72,23 @@ class _EditNamePageState extends ConsumerState<EditNamePage> {
         title: const Text('名前の設定'),
         actions: [
           TextButton(
-            onPressed: () async {
-              if (!userState.hasValue || userState.value == null) return;
-
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              try {
-                final user = userState.value!;
-                final navigator = Navigator.of(context);
-                await ref.read(myPageViewModelProvider.notifier).updateProfile(
-                      name: _nameController.text,
-                      displayName: _displayNameController.text,
-                      searchIdStr: user.searchId.toString(),
-                      shortBio: user.publicProfile.shortBio,
-                    );
-                if (mounted) {
-                  navigator.pop();
-                  scaffoldMessenger.showSnackBar(
-                    const SnackBar(content: Text('名前を更新しました')),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  scaffoldMessenger.showSnackBar(
-                    SnackBar(content: Text('エラー: ${e.toString()}')),
-                  );
-                }
-              }
-            },
+            onPressed: () => _saveName(userState),
             child: const Text('保存'),
           ),
         ],
       ),
+      bottomNavigationBar: userState.hasValue && userState.value != null
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: FilledButton(
+                  key: const Key('edit-name-bottom-save-button'),
+                  onPressed: () => _saveName(userState),
+                  child: const Text('保存'),
+                ),
+              ),
+            )
+          : null,
       body: userState.when(
         data: (user) {
           if (user == null) {

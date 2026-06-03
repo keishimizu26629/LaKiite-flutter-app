@@ -5,6 +5,9 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:lakiite/config/admob_config.dart';
 import 'package:lakiite/config/app_config.dart';
 import 'package:lakiite/main.dart';
+import 'package:lakiite/presentation/bottom_navigation/bottom_navigation.dart';
+import 'package:lakiite/presentation/list/display_list_providers.dart';
+import 'package:lakiite/presentation/list/list_providers.dart';
 
 import '../../../mock/providers/test_providers.dart';
 import '../../utils/test_utils.dart';
@@ -143,6 +146,45 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('認証済みボトムナビはリストを独立タブとして表示する', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ...TestProviders.authenticated,
+          userListsStreamProvider.overrideWith((ref) => Stream.value([])),
+          userDisplayListsStreamProvider.overrideWith(
+            (ref) => Stream.value([]),
+          ),
+        ],
+        child: const MaterialApp(home: BottomNavigationPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final bottomNavigationBar = tester.widget<BottomNavigationBar>(
+      find.byType(BottomNavigationBar),
+    );
+    expect(
+      bottomNavigationBar.items.map((item) => item.label),
+      ['ホーム', 'フレンド', 'リスト', 'マイページ'],
+    );
+
+    await tester.tap(find.text('リスト'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('リスト'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('公開用'), findsOneWidget);
+    expect(find.text('表示用'), findsOneWidget);
   });
 }
 

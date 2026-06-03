@@ -110,6 +110,11 @@ class ScheduleInteractionNotifier
       if (schedule == null) {
         throw Exception('Schedule not found');
       }
+      if (userId == schedule.ownerId) {
+        AppLogger.debug('Skipping reaction - user is the schedule owner');
+        state = state.copyWith(isLoading: false);
+        return;
+      }
 
       final userDoc = await _ref.read(userRepositoryProvider).getUser(userId);
       if (!mounted) {

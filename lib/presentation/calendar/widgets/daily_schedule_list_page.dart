@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lakiite/domain/entity/display_list.dart';
 import 'package:intl/intl.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/calendar/widgets/schedule_list_card.dart';
@@ -9,12 +10,14 @@ class DailyScheduleListPage extends StatelessWidget {
     required this.date,
     required this.schedules,
     required this.currentUserId,
+    this.displayLists = const [],
     super.key,
   });
 
   final DateTime date;
   final List<Schedule> schedules;
   final String? currentUserId;
+  final Iterable<DisplayList> displayLists;
 
   String _formatDate(DateTime date) {
     final weekDays = ['日', '月', '火', '水', '木', '金', '土'];
@@ -46,6 +49,7 @@ class DailyScheduleListPage extends StatelessWidget {
             (schedule) => ScheduleListCard(
               schedule: schedule,
               currentUserId: currentUserId,
+              displayLists: displayLists,
               trailingText:
                   schedule.isAllDay ? null : _formatTimeRange(schedule),
             ),
