@@ -393,6 +393,10 @@ class ScheduleDetailPage extends HookConsumerWidget {
                                   if (authState.user == null) {
                                     return Container(); // 未ログイン時は表示しない
                                   }
+                                  if (currentSchedule.ownerId ==
+                                      authState.user!.id) {
+                                    return const SizedBox.shrink();
+                                  }
 
                                   // 現在のユーザーのリアクションを取得
                                   final userReaction = interactions

@@ -7,6 +7,7 @@ import '../../domain/entity/schedule.dart';
 import '../../domain/entity/user.dart';
 import '../calendar/schedule_providers.dart';
 import '../schedule/schedule_display_order.dart';
+import '../widgets/expandable_user_avatar.dart';
 import '../widgets/schedule_tile.dart';
 import '../../utils/logger.dart';
 
@@ -74,18 +75,9 @@ class FriendProfilePage extends ConsumerWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CircleAvatar(
-                            radius: 40,
-                            backgroundColor: Theme.of(context)
-                                .primaryColor
-                                .withValues(alpha: 0.1),
-                            backgroundImage: user.iconUrl != null
-                                ? NetworkImage(user.iconUrl!)
-                                : null,
-                            child: user.iconUrl == null
-                                ? const Icon(Icons.person,
-                                    size: 40, color: Colors.grey)
-                                : null,
+                          ExpandableUserAvatar(
+                            imageUrl: user.iconUrl,
+                            size: 80,
                           ),
                           const SizedBox(width: 16),
                           Expanded(

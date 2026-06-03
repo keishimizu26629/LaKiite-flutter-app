@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lakiite/app/di/providers.dart';
 import 'package:lakiite/application/auth/auth_notifier.dart';
+import 'package:lakiite/application/force_update/force_update_providers.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/notification.dart';
 import '../repository/mock_auth_repository.dart';
@@ -26,6 +27,7 @@ class TestProviders {
           mockNotificationRepository,
         ),
         userRepositoryProvider.overrideWithValue(mockUserRepository),
+        forceUpdateFeatureEnabledProvider.overrideWithValue(false),
       ];
 
   /// 認証済み状態のモックプロバイダー
