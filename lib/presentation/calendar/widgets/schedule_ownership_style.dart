@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lakiite/domain/entity/display_list.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
+import 'package:lakiite/domain/service/display_list_membership.dart';
+import 'package:lakiite/presentation/list/display_list_palette.dart';
 
 class ScheduleOwnershipStyle {
   const ScheduleOwnershipStyle({
@@ -12,6 +15,7 @@ class ScheduleOwnershipStyle {
     BuildContext context, {
     required Schedule schedule,
     required String? currentUserId,
+    Iterable<DisplayList> displayLists = const [],
     double backgroundAlpha = 0.1,
     double borderAlpha = 0.8,
     double primaryTextAlpha = 0.85,
@@ -29,7 +33,13 @@ class ScheduleOwnershipStyle {
       );
     }
 
-    final primaryColor = Theme.of(context).primaryColor;
+    final displayList = DisplayListMembership.findListForUser(
+      displayLists: displayLists,
+      userId: schedule.ownerId,
+    );
+    final primaryColor = displayList == null
+        ? Theme.of(context).primaryColor
+        : DisplayListPalette.colorForKey(displayList.colorKey);
     return ScheduleOwnershipStyle(
       backgroundColor: primaryColor.withValues(alpha: backgroundAlpha),
       borderColor: primaryColor.withValues(alpha: borderAlpha),

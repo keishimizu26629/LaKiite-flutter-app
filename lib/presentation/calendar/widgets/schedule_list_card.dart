@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lakiite/domain/entity/display_list.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
 import 'package:lakiite/presentation/calendar/widgets/schedule_ownership_style.dart';
@@ -7,6 +8,7 @@ class ScheduleListCard extends StatelessWidget {
   const ScheduleListCard({
     required this.schedule,
     required this.currentUserId,
+    this.displayLists = const [],
     this.trailingText,
     this.margin = const EdgeInsets.symmetric(vertical: 3),
     super.key,
@@ -14,6 +16,7 @@ class ScheduleListCard extends StatelessWidget {
 
   final Schedule schedule;
   final String? currentUserId;
+  final Iterable<DisplayList> displayLists;
   final String? trailingText;
   final EdgeInsetsGeometry margin;
 
@@ -23,6 +26,7 @@ class ScheduleListCard extends StatelessWidget {
       context,
       schedule: schedule,
       currentUserId: currentUserId,
+      displayLists: displayLists,
     );
 
     return InkWell(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../home/home_page.dart';
 import '../friend/friend_list_page.dart';
+import '../list/list_page.dart';
 import '../my_page/my_page.dart';
 import '../widgets/auth_dependent_builder.dart';
 import '../../infrastructure/notification_navigation_service.dart';
@@ -42,6 +43,7 @@ class _AuthenticatedBottomNavigationShellState
   final List<Widget> _pages = [
     const HomePage(key: PageStorageKey('home_page')),
     const FriendListPage(key: PageStorageKey('friend_list_page')),
+    const ListPage(key: PageStorageKey('list_page')),
     const MyPage(key: PageStorageKey('my_page')),
   ];
 
@@ -101,6 +103,11 @@ class _AuthenticatedBottomNavigationShellState
               icon: Icon(Icons.groups_3_outlined),
               activeIcon: Icon(Icons.groups_3),
               label: 'フレンド',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.format_list_bulleted_outlined),
+              activeIcon: Icon(Icons.format_list_bulleted),
+              label: 'リスト',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
