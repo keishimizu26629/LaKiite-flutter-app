@@ -30,6 +30,11 @@ void main() {
 
     expect(find.text('朝の共有予定通知'), findsOneWidget);
     expect(find.text('通知する'), findsOneWidget);
+    expect(
+      find.text('今日あなたに共有されている予定がある場合に、指定した時刻に通知を受け取れます。'),
+      findsOneWidget,
+    );
+    expect(find.text('保存'), findsOneWidget);
 
     expect(find.text('8時'), findsOneWidget);
 
@@ -40,11 +45,16 @@ void main() {
     await tester.tap(find.text('7時').last);
     await tester.pumpAndSettle();
 
+    expect(repository.saved, isNull);
+
+    await tester.tap(find.byKey(const Key('schedule-digest-save-button')));
+    await tester.pumpAndSettle();
+
     expect(repository.saved?.notifyHour, 7);
     expect(repository.saved?.enabled, isTrue);
   });
 
-  testWidgets('設定が未作成の場合はオフ表示でオンにすると作成される', (tester) async {
+  testWidgets('設定が未作成の場合はオフ表示でオンにして保存すると作成される', (tester) async {
     final repository = _FakeScheduleDigestSettingsRepository(
       ScheduleDigestSettings.missingDocumentFallback('user-1'),
     );
@@ -73,6 +83,11 @@ void main() {
     expect(notificationSwitch.value, isFalse);
 
     await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+
+    expect(repository.saved, isNull);
+
+    await tester.tap(find.byKey(const Key('schedule-digest-save-button')));
     await tester.pumpAndSettle();
 
     expect(repository.saved?.enabled, isTrue);
