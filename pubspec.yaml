@@ -110,6 +110,11 @@ flutter:
     - assets/data/
     - assets/
 
+  fonts:
+    - family: NotoSansJP
+      fonts:
+        - asset: assets/fonts/NotoSansJP-VariableFont_wght.ttf
+
 # JSON Serializable設定
 json_serializable:
   explicit_to_json: true
