@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../domain/entity/user.dart';
-import '../../widgets/default_user_icon.dart';
+import '../../widgets/expandable_user_avatar.dart';
 import 'search_id_display.dart';
 
 /// ユーザープロフィールカードを表示するウィジェット
@@ -62,34 +62,11 @@ class ProfileCard extends StatelessWidget {
   }
 
   /// ユーザーアバターを構築
-  /// nullチェックを行い、適切なフォールバックを提供
+  /// 画像URLがある場合はタップで拡大表示する。
   Widget _buildUserAvatar(BuildContext context) {
-    // iconUrlがnullまたは空文字列の場合はデフォルトアイコンを使用
-    if (user.iconUrl == null || user.iconUrl!.isEmpty) {
-      return const DefaultUserIcon(size: 80);
-    }
-
-    // NetworkImageでエラーが発生した場合のフォールバックも含める
-    return CircleAvatar(
-      radius: 40,
-      backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(40),
-        child: Image.network(
-          user.iconUrl!,
-          width: 80,
-          height: 80,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return const DefaultUserIcon(size: 80);
-          },
-          errorBuilder: (context, error, stackTrace) {
-            // ネットワークエラーや画像読み込みエラーの場合
-            return const DefaultUserIcon(size: 80);
-          },
-        ),
-      ),
+    return ExpandableUserAvatar(
+      imageUrl: user.iconUrl,
+      size: 80,
     );
   }
 }
