@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lakiite/domain/entity/display_list.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -8,6 +9,7 @@ import 'package:lakiite/presentation/widgets/default_user_icon.dart';
 import 'package:lakiite/presentation/calendar/widgets/daily_schedule_list_page.dart';
 import 'package:lakiite/presentation/calendar/widgets/schedule_ownership_style.dart';
 import 'package:lakiite/presentation/calendar/widgets/schedule_list_card.dart';
+import 'package:lakiite/presentation/list/display_list_providers.dart';
 import 'package:lakiite/presentation/schedule/schedule_display_order.dart';
 
 class DailyAllDayScheduleList extends StatelessWidget {
@@ -16,6 +18,7 @@ class DailyAllDayScheduleList extends StatelessWidget {
     required this.schedules,
     required this.allSchedules,
     required this.currentUserId,
+    this.displayLists = const [],
     super.key,
   });
 
@@ -23,6 +26,7 @@ class DailyAllDayScheduleList extends StatelessWidget {
   final List<Schedule> schedules;
   final List<Schedule> allSchedules;
   final String? currentUserId;
+  final Iterable<DisplayList> displayLists;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +52,7 @@ class DailyAllDayScheduleList extends StatelessWidget {
             (schedule) => ScheduleListCard(
               schedule: schedule,
               currentUserId: currentUserId,
+              displayLists: displayLists,
             ),
           ),
           if (remainingCount > 0)
@@ -65,6 +70,7 @@ class DailyAllDayScheduleList extends StatelessWidget {
                           date: date,
                           schedules: allSchedules,
                           currentUserId: currentUserId,
+                          displayLists: displayLists,
                         ),
                       ),
                     );
@@ -159,6 +165,9 @@ class DailyScheduleContent extends HookConsumerWidget {
     AppLogger.debug('DailyScheduleContent - スケジュール数: ${schedules.length}');
 
     final currentUserId = ref.watch(currentUserIdProvider);
+    final displayLists =
+        ref.watch(userDisplayListsStreamProvider).valueOrNull ??
+            const <DisplayList>[];
     final sortedSchedules = ScheduleDisplayOrder.sortedWithinDay(schedules);
 
     // 重なり合うスケジュールをグループ化
@@ -235,6 +244,7 @@ class DailyScheduleContent extends HookConsumerWidget {
                             context,
                             schedule: schedule,
                             currentUserId: currentUserId,
+                            displayLists: displayLists,
                           );
 
                           final itemWidth = visibleCount == 1
@@ -371,6 +381,7 @@ class DailyScheduleContent extends HookConsumerWidget {
                                         date: date,
                                         schedules: allSchedules,
                                         currentUserId: currentUserId,
+                                        displayLists: displayLists,
                                       ),
                                     ),
                                   );
