@@ -7,12 +7,6 @@ class DisplayListPalette {
 
   static const entries = [
     DisplayListPaletteEntry(key: 'red', label: 'レッド', color: Colors.red),
-    DisplayListPaletteEntry(
-      key: 'orange',
-      label: 'オレンジ',
-      color: Colors.orange,
-    ),
-    DisplayListPaletteEntry(key: 'amber', label: 'アンバー', color: Colors.amber),
     DisplayListPaletteEntry(key: 'green', label: 'グリーン', color: Colors.green),
     DisplayListPaletteEntry(key: 'teal', label: 'ティール', color: Colors.teal),
     DisplayListPaletteEntry(key: 'cyan', label: 'シアン', color: Colors.cyan),
