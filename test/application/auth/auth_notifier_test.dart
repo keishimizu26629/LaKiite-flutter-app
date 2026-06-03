@@ -101,6 +101,53 @@ void main() {
       }
     });
 
+    test('ログアウト時に画像キャッシュをクリアする', () async {
+      var didClearImageCache = false;
+      final testUser = MockAuthRepository.createTestUser(
+        name: 'テストユーザー',
+        displayName: 'テスト表示名',
+      );
+      mockAuthRepository.setCurrentUser(testUser);
+
+      final isolatedContainer = createTestProviderContainer(
+        overrides: [
+          notifier.authRepositoryProvider.overrideWithValue(mockAuthRepository),
+          notifier.authStateStreamProvider.overrideWith((ref) {
+            return Stream.value(AuthState.authenticated(testUser));
+          }),
+          notifier.authImageCacheClearerProvider.overrideWithValue(() {
+            didClearImageCache = true;
+          }),
+        ],
+      );
+
+      final subscription = isolatedContainer.listen(
+        notifier.authNotifierProvider,
+        (_, __) {},
+        fireImmediately: true,
+      );
+
+      try {
+        for (var i = 0; i < 10; i++) {
+          if (isolatedContainer.read(notifier.authNotifierProvider).hasValue) {
+            break;
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        expect(isolatedContainer.read(notifier.authNotifierProvider).hasValue,
+            isTrue);
+
+        await isolatedContainer
+            .read(notifier.authNotifierProvider.notifier)
+            .signOut();
+
+        expect(didClearImageCache, isTrue);
+      } finally {
+        subscription.close();
+        isolatedContainer.dispose();
+      }
+    });
+
     test('再認証が必要な場合のエラーハンドリング', () async {
       // 準備: ユーザーがログイン済みだが、削除時に再認証が必要な状態
       final testUser = MockAuthRepository.createTestUser(
