@@ -4,6 +4,7 @@ import 'package:lakiite/application/auth/auth_notifier.dart';
 import 'package:lakiite/application/force_update/force_update_providers.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/notification.dart';
+import 'package:lakiite/infrastructure/how_to_use_prompt_preferences.dart';
 import '../repository/mock_auth_repository.dart';
 import '../repository/mock_schedule_repository.dart';
 import '../repository/mock_list_repository.dart';
@@ -28,6 +29,9 @@ class TestProviders {
         ),
         userRepositoryProvider.overrideWithValue(mockUserRepository),
         forceUpdateFeatureEnabledProvider.overrideWithValue(false),
+        howToUsePromptPreferencesProvider.overrideWithValue(
+          const _SeenHowToUsePromptPreferences(),
+        ),
       ];
 
   /// 認証済み状態のモックプロバイダー
@@ -179,4 +183,14 @@ class TestProviders {
     _mockNotificationRepository = null;
     _mockUserRepository = null;
   }
+}
+
+class _SeenHowToUsePromptPreferences extends HowToUsePromptPreferences {
+  const _SeenHowToUsePromptPreferences();
+
+  @override
+  Future<bool> shouldShowPrompt() async => false;
+
+  @override
+  Future<void> markPromptSeen() async {}
 }
