@@ -5,11 +5,7 @@ import 'package:photo_view/photo_view.dart';
 import 'default_user_icon.dart';
 
 class ExpandableUserAvatar extends StatefulWidget {
-  const ExpandableUserAvatar({
-    super.key,
-    this.imageUrl,
-    this.size = 80,
-  });
+  const ExpandableUserAvatar({super.key, this.imageUrl, this.size = 80});
 
   final String? imageUrl;
   final double size;
@@ -19,9 +15,6 @@ class ExpandableUserAvatar extends StatefulWidget {
 }
 
 class _ExpandableUserAvatarState extends State<ExpandableUserAvatar> {
-  static var _heroTagSeed = 0;
-  late final String _heroTag = 'expandable-user-avatar-${_heroTagSeed++}';
-
   @override
   Widget build(BuildContext context) {
     final normalizedImageUrl = widget.imageUrl?.trim();
@@ -32,12 +25,9 @@ class _ExpandableUserAvatarState extends State<ExpandableUserAvatar> {
       return DefaultUserIcon(size: widget.size);
     }
 
-    final avatar = Hero(
-      tag: _heroTag,
-      child: _AvatarImage(
-        imageUrl: normalizedImageUrl,
-        size: widget.size,
-      ),
+    final avatar = _AvatarImage(
+      imageUrl: normalizedImageUrl,
+      size: widget.size,
     );
 
     return Semantics(
@@ -46,40 +36,28 @@ class _ExpandableUserAvatarState extends State<ExpandableUserAvatar> {
       child: InkWell(
         key: const Key('expandable-user-avatar-button'),
         customBorder: const CircleBorder(),
-        onTap: () => _showExpandedAvatar(
-          context,
-          imageUrl: normalizedImageUrl,
-          heroTag: _heroTag,
-        ),
+        onTap: () => _showExpandedAvatar(context, imageUrl: normalizedImageUrl),
         child: avatar,
       ),
     );
   }
 
-  void _showExpandedAvatar(
-    BuildContext context, {
-    required String imageUrl,
-    required String heroTag,
-  }) {
+  void _showExpandedAvatar(BuildContext context, {required String imageUrl}) {
     Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (context) => _ExpandedUserAvatarPage(
-          imageUrl: imageUrl,
-          heroTag: heroTag,
-        ),
+      PageRouteBuilder<void>(
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            _ExpandedUserAvatarPage(imageUrl: imageUrl),
       ),
     );
   }
 }
 
 class _ExpandedUserAvatarPage extends StatelessWidget {
-  const _ExpandedUserAvatarPage({
-    required this.imageUrl,
-    required this.heroTag,
-  });
+  const _ExpandedUserAvatarPage({required this.imageUrl});
 
   final String imageUrl;
-  final String heroTag;
 
   @override
   Widget build(BuildContext context) {
@@ -99,12 +77,9 @@ class _ExpandedUserAvatarPage extends StatelessWidget {
         key: const Key('expanded-user-avatar-image'),
         imageProvider: NetworkImage(imageUrl),
         minScale: PhotoViewComputedScale.contained,
-        heroAttributes: PhotoViewHeroAttributes(tag: heroTag),
         backgroundDecoration: const BoxDecoration(color: Colors.black),
         errorBuilder: (context, error, stackTrace) {
-          return const Center(
-            child: DefaultUserIcon(size: 160),
-          );
+          return const Center(child: DefaultUserIcon(size: 160));
         },
       ),
     );
@@ -112,10 +87,7 @@ class _ExpandedUserAvatarPage extends StatelessWidget {
 }
 
 class _AvatarImage extends StatelessWidget {
-  const _AvatarImage({
-    required this.imageUrl,
-    required this.size,
-  });
+  const _AvatarImage({required this.imageUrl, required this.size});
 
   final String imageUrl;
   final double size;

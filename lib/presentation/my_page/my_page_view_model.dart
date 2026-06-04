@@ -118,9 +118,9 @@ class MyPageViewModel extends StateNotifier<AsyncValue<UserModel?>> {
         AppLogger.debug('画像圧縮を開始します');
         final compressedImageFile = await _imageProcessorService.compressImage(
           croppedImageFile,
-          minWidth: 300,
-          minHeight: 300,
-          quality: 85,
+          minWidth: 1024,
+          minHeight: 1024,
+          quality: 90,
         );
         AppLogger.debug('圧縮後の画像パス: ${compressedImageFile.path}');
         AppLogger.debug(
