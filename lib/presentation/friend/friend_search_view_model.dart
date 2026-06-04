@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/di/providers.dart';
 import '../../domain/entity/notification.dart' as domain;
+import '../../domain/interfaces/i_notification_repository.dart';
 import '../../domain/interfaces/i_user_repository.dart';
-import '../../infrastructure/notification_repository.dart';
 import '../../application/auth/auth_notifier.dart' as auth;
 import '../../utils/logger.dart';
 
@@ -14,6 +14,7 @@ class SearchUserModel {
     required this.iconUrl,
     this.shortBio,
     this.hasPendingRequest = false,
+    this.isFriend = false,
   });
   final String id;
   final String displayName;
@@ -21,19 +22,21 @@ class SearchUserModel {
   final String iconUrl;
   final String? shortBio;
   final bool hasPendingRequest;
+  final bool isFriend;
 }
 
 final friendSearchViewModelProvider =
     StateNotifierProvider<FriendSearchViewModel, AsyncValue<SearchUserModel?>>(
         (ref) {
   final userRepository = ref.watch(userRepositoryProvider);
-  final notificationRepository = NotificationRepository();
+  final notificationRepository = ref.watch(notificationRepositoryProvider);
   final currentUser = ref.watch(auth.authNotifierProvider).value?.user;
   return FriendSearchViewModel(
     userRepository,
     notificationRepository,
     currentUser?.id ?? '',
     currentUser?.publicProfile.displayName ?? '',
+    currentUser?.friends ?? const [],
   );
 });
 
@@ -44,13 +47,15 @@ class FriendSearchViewModel
     this._notificationRepository,
     this._currentUserId,
     this._currentUserDisplayName,
+    this._currentUserFriendIds,
   ) : super(const AsyncValue.data(null));
   String? _message;
   String? get message => _message;
   final IUserRepository _userRepository;
-  final NotificationRepository _notificationRepository;
+  final INotificationRepository _notificationRepository;
   final String _currentUserId;
   final String _currentUserDisplayName;
+  final List<String> _currentUserFriendIds;
 
   Future<void> searchUser(String searchId) async {
     try {
@@ -101,6 +106,7 @@ class FriendSearchViewModel
         iconUrl: user.iconUrl ?? '',
         shortBio: user.shortBio,
         hasPendingRequest: hasPending,
+        isFriend: _currentUserFriendIds.contains(user.id),
       );
 
       state = AsyncValue.data(searchUser);
