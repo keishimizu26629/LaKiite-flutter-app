@@ -626,10 +626,13 @@ class PushNotificationService {
         case 'comment':
           _handleComment(data);
           break;
+        case 'schedule_digest':
+          _handleScheduleDigest(data);
+          break;
         default:
           AppLogger.warning('⚠️ 未知の通知タイプ: $notificationType');
           AppLogger.info(
-              '💡 サポートされている通知タイプ: friend_request, group_invitation, reaction, comment');
+              '💡 サポートされている通知タイプ: friend_request, group_invitation, reaction, comment, schedule_digest');
       }
     } catch (e) {
       AppLogger.error('メッセージ処理エラー: $e');
@@ -641,6 +644,12 @@ class PushNotificationService {
     AppLogger.info('👥 送信元ユーザーID: ${data['fromUserId']}');
     AppLogger.info('👥 送信元ユーザー名: ${data['fromUserName']}');
     AppLogger.info('👥 データ詳細: $data');
+  }
+
+  void _handleScheduleDigest(Map<String, dynamic> data) {
+    AppLogger.info('📅 朝の共有予定通知を処理中');
+    AppLogger.info('📅 日付: ${data['date']}');
+    AppLogger.info('📅 予定件数: ${data['scheduleCount']}');
   }
 
   void _handleGroupInvitation(Map<String, dynamic> data) {

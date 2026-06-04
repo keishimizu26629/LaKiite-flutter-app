@@ -1,0 +1,153 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../domain/entity/schedule_digest_settings.dart';
+import 'schedule_digest_settings_providers.dart';
+
+class ScheduleDigestSettingsPage extends ConsumerWidget {
+  const ScheduleDigestSettingsPage({super.key});
+
+  static const String path = 'schedule-digest';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settingsAsync = ref.watch(scheduleDigestSettingsProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('朝の共有予定通知'),
+      ),
+      body: settingsAsync.when(
+        data: (settings) => _ScheduleDigestSettingsContent(
+          settings: settings,
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Text('通知設定の取得に失敗しました: $error'),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScheduleDigestSettingsContent extends ConsumerStatefulWidget {
+  const _ScheduleDigestSettingsContent({required this.settings});
+
+  final ScheduleDigestSettings settings;
+
+  @override
+  ConsumerState<_ScheduleDigestSettingsContent> createState() =>
+      _ScheduleDigestSettingsContentState();
+}
+
+class _ScheduleDigestSettingsContentState
+    extends ConsumerState<_ScheduleDigestSettingsContent> {
+  late ScheduleDigestSettings _draftSettings;
+  var _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _draftSettings = widget.settings;
+  }
+
+  @override
+  void didUpdateWidget(_ScheduleDigestSettingsContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.settings.userId != widget.settings.userId ||
+        oldWidget.settings.enabled != widget.settings.enabled ||
+        oldWidget.settings.notifyHour != widget.settings.notifyHour ||
+        oldWidget.settings.lastSentDate != widget.settings.lastSentDate) {
+      _draftSettings = widget.settings;
+    }
+  }
+
+  Future<void> _save() async {
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final repository = ref.read(scheduleDigestSettingsRepositoryProvider);
+      await repository.saveCurrentUserSettings(_draftSettings);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('通知設定を保存しました')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('通知設定の保存に失敗しました: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            '今日あなたに共有されている予定がある場合に、指定した時刻に通知を受け取れます。',
+          ),
+        ),
+        SwitchListTile(
+          secondary: const Icon(Icons.notifications_outlined),
+          title: const Text('通知する'),
+          value: _draftSettings.enabled,
+          onChanged: (enabled) {
+            setState(() {
+              _draftSettings = _draftSettings.copyWith(enabled: enabled);
+            });
+          },
+        ),
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: DropdownButtonFormField<int>(
+            key: const Key('schedule-digest-notify-hour-dropdown'),
+            initialValue: _draftSettings.notifyHour,
+            decoration: const InputDecoration(
+              icon: Icon(Icons.schedule),
+              labelText: '通知時刻',
+              helperText: '0時から9時まで選択できます',
+              border: OutlineInputBorder(),
+            ),
+            items: [
+              for (var hour = 0; hour <= 9; hour++)
+                DropdownMenuItem<int>(
+                  value: hour,
+                  child: Text('$hour時'),
+                ),
+            ],
+            onChanged: _draftSettings.enabled
+                ? (value) {
+                    if (value == null) return;
+                    setState(() {
+                      _draftSettings = _draftSettings.copyWith(
+                        notifyHour: value,
+                      );
+                    });
+                  }
+                : null,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          child: FilledButton(
+            key: const Key('schedule-digest-save-button'),
+            onPressed: _isSaving ? null : _save,
+            child: Text(_isSaving ? '保存中...' : '保存'),
+          ),
+        ),
+      ],
+    );
+  }
+}
