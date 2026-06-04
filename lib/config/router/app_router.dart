@@ -9,6 +9,7 @@ import '../../presentation/settings/edit_email_page.dart';
 import '../../presentation/settings/edit_name_page.dart';
 import '../../presentation/settings/edit_search_id_page.dart';
 import '../../presentation/settings/legal_info_page.dart';
+import '../../presentation/settings/schedule_digest_settings_page.dart';
 import '../../presentation/settings/settings_page.dart';
 import '../../presentation/settings/account_deletion_webview_page.dart';
 import '../../presentation/signup/signup.dart';
@@ -108,6 +109,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: EditSearchIdPage.path,
             builder: (context, state) => const EditSearchIdPage(),
+          ),
+          GoRoute(
+            path: ScheduleDigestSettingsPage.path,
+            builder: (context, state) => const ScheduleDigestSettingsPage(),
+          ),
+          GoRoute(
+            path: 'how-to-use',
+            builder: (context, state) => const LegalInfoPage(
+              title: '使い方',
+              urlPath: 'how-to-use',
+            ),
           ),
           GoRoute(
             path: 'privacy-policy',

@@ -274,6 +274,9 @@ void main() {
         imageProcessorService.compressedSourceFile?.path,
         croppedImageFile.path,
       );
+      expect(imageProcessorService.minWidth, 1024);
+      expect(imageProcessorService.minHeight, 1024);
+      expect(imageProcessorService.quality, 90);
       expect(
         container.read(selectedImageProvider)?.path,
         croppedImageFile.path,
@@ -402,6 +405,9 @@ class _FakeStorageService implements IStorageService {
 
 class _FakeImageProcessorService implements IImageProcessorService {
   File? compressedSourceFile;
+  int? minWidth;
+  int? minHeight;
+  int? quality;
 
   @override
   Future<File> compressImage(
@@ -411,6 +417,9 @@ class _FakeImageProcessorService implements IImageProcessorService {
     int quality = 85,
   }) async {
     compressedSourceFile = imageFile;
+    this.minWidth = minWidth;
+    this.minHeight = minHeight;
+    this.quality = quality;
     return imageFile;
   }
 

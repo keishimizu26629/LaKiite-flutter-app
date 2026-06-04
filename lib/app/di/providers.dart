@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lakiite/domain/interfaces/i_friend_list_repository.dart';
+import 'package:lakiite/domain/interfaces/i_display_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_notification_repository.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
@@ -12,6 +13,7 @@ import 'package:lakiite/domain/service/list_manager.dart';
 import 'package:lakiite/domain/service/schedule_manager.dart';
 import 'package:lakiite/domain/service/user_manager.dart';
 import 'package:lakiite/infrastructure/friend_list_repository.dart';
+import 'package:lakiite/infrastructure/display_list_repository.dart';
 import 'package:lakiite/infrastructure/list_repository.dart';
 import 'package:lakiite/infrastructure/notification_repository.dart';
 import 'package:lakiite/infrastructure/repository/reaction_repository_impl.dart';
@@ -58,6 +60,11 @@ final userRepositoryProvider = Provider<IUserRepository>((ref) {
 /// リストリポジトリプロバイダー。
 final listRepositoryProvider = Provider<IListRepository>((ref) {
   return ListRepository();
+});
+
+/// 表示用リストリポジトリプロバイダー。
+final displayListRepositoryProvider = Provider<IDisplayListRepository>((ref) {
+  return DisplayListRepository();
 });
 
 /// スケジュールリポジトリプロバイダー。

@@ -8,6 +8,7 @@ import 'package:lakiite/application/schedule/schedule_notifier.dart';
 import 'package:lakiite/presentation/calendar/calendar_providers.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
 import 'package:lakiite/presentation/calendar/widgets/calendar_page_view.dart';
+import 'package:lakiite/presentation/list/display_list_providers.dart';
 import 'package:lakiite/presentation/schedule/schedule_display_order.dart';
 import 'package:lakiite/presentation/widgets/banner_ad_widget.dart';
 import 'package:lakiite/presentation/widgets/notification_button.dart';
@@ -267,6 +268,11 @@ class HomePage extends HookConsumerWidget {
                               scheduleState.when(
                                 data: (scheduleState) => scheduleState.maybeMap(
                                   loaded: (loaded) {
+                                    final displayLists = ref
+                                            .watch(
+                                                userDisplayListsStreamProvider)
+                                            .valueOrNull ??
+                                        const [];
                                     // 本日以降のスケジュールをフィルタリング
                                     final today =
                                         DateTime.now().toUtc().toLocal();
@@ -396,6 +402,7 @@ class HomePage extends HookConsumerWidget {
                                                           state.user!.id,
                                                   isTimelineView: true,
                                                   showDivider: false,
+                                                  displayLists: displayLists,
                                                 );
                                               },
                                             ),
