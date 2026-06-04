@@ -7,7 +7,9 @@ import '../../domain/entity/schedule.dart';
 import '../../domain/entity/user.dart';
 import '../calendar/schedule_providers.dart';
 import '../schedule/schedule_display_order.dart';
+import '../widgets/expandable_user_avatar.dart';
 import '../widgets/schedule_tile.dart';
+import 'friend_providers.dart';
 import '../../utils/logger.dart';
 
 class FriendProfilePage extends ConsumerWidget {
@@ -22,6 +24,11 @@ class FriendProfilePage extends ConsumerWidget {
     // 自分自身のユーザーIDを取得
     final currentUserAsync = ref.watch(authNotifierProvider);
     final currentUserId = currentUserAsync.value?.user?.id;
+    final friendsAsync = ref.watch(userFriendsStreamProvider);
+    final isFriend = friendsAsync.valueOrNull?.any((friend) {
+          return friend.id == userId;
+        }) ??
+        false;
 
     // 自分自身が閲覧可能な予定を取得（マイページと同じ方法）
     final schedulesAsync = currentUserId != null
@@ -34,6 +41,20 @@ class FriendProfilePage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('プロフィール'),
+        actions: [
+          if (currentUserId != null && isFriend)
+            IconButton(
+              tooltip: 'フレンドを削除',
+              icon: const Icon(Icons.delete_outline),
+              color: Colors.white,
+              onPressed: () => _confirmAndRemoveFriend(
+                context: context,
+                ref: ref,
+                userId: currentUserId,
+                friendId: userId,
+              ),
+            ),
+        ],
       ),
       body: FutureBuilder<PublicUserModel?>(
         future: ref.read(userRepositoryProvider).getFriendPublicProfile(userId),
@@ -74,18 +95,9 @@ class FriendProfilePage extends ConsumerWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CircleAvatar(
-                            radius: 40,
-                            backgroundColor: Theme.of(context)
-                                .primaryColor
-                                .withValues(alpha: 0.1),
-                            backgroundImage: user.iconUrl != null
-                                ? NetworkImage(user.iconUrl!)
-                                : null,
-                            child: user.iconUrl == null
-                                ? const Icon(Icons.person,
-                                    size: 40, color: Colors.grey)
-                                : null,
+                          ExpandableUserAvatar(
+                            imageUrl: user.iconUrl,
+                            size: 80,
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -271,6 +283,56 @@ class FriendProfilePage extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  Future<void> _confirmAndRemoveFriend({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String userId,
+    required String friendId,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('フレンドから削除しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('削除', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+
+    try {
+      await ref.read(userRepositoryProvider).removeFriend(userId, friendId);
+      ref.invalidate(userFriendsStreamProvider);
+      ref.invalidate(userFriendsProvider);
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('フレンドから削除しました')),
+      );
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('フレンドの削除に失敗しました: $e')));
+    }
   }
 }
 

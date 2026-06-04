@@ -5,6 +5,7 @@ import '../signup/signup.dart';
 import '../../application/auth/auth_notifier.dart';
 import '../../utils/auth_error_message.dart';
 import '../../utils/logger.dart';
+import '../widgets/password_text_field.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -18,6 +19,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -90,13 +92,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 16),
-              TextField(
+              PasswordTextField(
                 controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'パスワード',
-                  border: OutlineInputBorder(),
-                ),
-                obscureText: true,
+                labelText: 'パスワード',
+                obscureText: _obscurePassword,
+                onToggleVisibility: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+                textInputAction: TextInputAction.done,
               ),
               const SizedBox(height: 32),
               ElevatedButton(

@@ -61,7 +61,9 @@ class MockScheduleRepository implements IScheduleRepository {
 
   @override
   Stream<List<Schedule>> watchUserSchedulesForMonth(
-      String userId, DateTime displayMonth) {
+    String userId,
+    DateTime displayMonth,
+  ) {
     return Stream.value([]);
   }
 
@@ -184,6 +186,11 @@ class MockUserRepository implements IUserRepository {
   }
 
   @override
+  Future<void> removeFriend(String userId, String friendId) async {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<List<PublicUserModel>> getPublicProfiles(List<String> userIds) async {
     throw UnimplementedError();
   }
@@ -225,7 +232,10 @@ class MockScheduleInteractionRepository
 
   @override
   Future<String> addReaction(
-      String scheduleId, String userId, ReactionType type) async {
+    String scheduleId,
+    String userId,
+    ReactionType type,
+  ) async {
     throw UnimplementedError();
   }
 
@@ -246,7 +256,10 @@ class MockScheduleInteractionRepository
 
   @override
   Future<String> addComment(
-      String scheduleId, String userId, String content) async {
+    String scheduleId,
+    String userId,
+    String content,
+  ) async {
     throw UnimplementedError();
   }
 
@@ -257,7 +270,10 @@ class MockScheduleInteractionRepository
 
   @override
   Future<void> updateComment(
-      String scheduleId, String commentId, String content) async {
+    String scheduleId,
+    String commentId,
+    String content,
+  ) async {
     throw UnimplementedError();
   }
 
@@ -316,8 +332,9 @@ void main() {
 
         mockUserRepo.setUser('owner1', user);
         mockFriendListRepo.setMemberIds('list1', ['user1', 'user2']);
-        mockScheduleRepo
-            .setScheduleToReturn(schedule.copyWith(id: 'new-schedule-id'));
+        mockScheduleRepo.setScheduleToReturn(
+          schedule.copyWith(id: 'new-schedule-id'),
+        );
 
         // Act
         final result = await scheduleManager.createSchedule(schedule);
@@ -432,8 +449,10 @@ void main() {
 
         mockUserRepo.setUser('owner1', user);
         mockFriendListRepo.setMemberIds('list1', ['user1', 'user2']);
-        mockFriendListRepo
-            .setMemberIds('list2', ['user2', 'user3']); // user2が重複
+        mockFriendListRepo.setMemberIds('list2', [
+          'user2',
+          'user3',
+        ]); // user2が重複
 
         final schedule = Schedule(
           id: '',
@@ -483,8 +502,9 @@ void main() {
         );
 
         // Act
-        final result =
-            await scheduleManager.enrichScheduleWithInteractions(schedule);
+        final result = await scheduleManager.enrichScheduleWithInteractions(
+          schedule,
+        );
 
         // Assert
         expect(result.reactionCount, 5);
@@ -512,8 +532,9 @@ void main() {
         );
 
         // Act
-        final result =
-            await scheduleManager.enrichScheduleWithInteractions(schedule);
+        final result = await scheduleManager.enrichScheduleWithInteractions(
+          schedule,
+        );
 
         // Assert - エラーでも例外を投げず、カウントが設定される
         expect(result.reactionCount, 0);

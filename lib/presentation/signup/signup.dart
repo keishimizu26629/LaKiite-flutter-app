@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../application/auth/auth_notifier.dart';
 import '../../utils/auth_error_message.dart';
 import '../../utils/logger.dart';
+import '../widgets/password_text_field.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
   const SignupPage({super.key});
@@ -16,20 +17,30 @@ class SignupPage extends ConsumerStatefulWidget {
 class _SignupPageState extends ConsumerState<SignupPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
   final _displayNameController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _nameController.dispose();
+    _displayNameController.dispose();
     super.dispose();
   }
 
   Future<void> _handleSignup() async {
     if (_isLoading) return;
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      _showSignupError('パスワードが一致しません');
+      return;
+    }
 
     AppLogger.debugOnly('SignupPage._handleSignup開始');
     setState(() {
@@ -116,14 +127,30 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
-              TextField(
+              PasswordTextField(
                 controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'パスワード',
-                  border: OutlineInputBorder(),
-                ),
-                obscureText: true,
+                labelText: 'パスワード',
+                obscureText: _obscurePassword,
+                onToggleVisibility: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.newPassword],
+              ),
+              const SizedBox(height: 16),
+              PasswordTextField(
+                controller: _confirmPasswordController,
+                labelText: 'パスワード再確認',
+                obscureText: _obscureConfirmPassword,
+                onToggleVisibility: () {
+                  setState(() {
+                    _obscureConfirmPassword = !_obscureConfirmPassword;
+                  });
+                },
                 textInputAction: TextInputAction.done,
+                autofillHints: const [AutofillHints.newPassword],
               ),
               const SizedBox(height: 32),
               ElevatedButton(

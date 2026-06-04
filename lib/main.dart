@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'application/force_update/force_update_providers.dart';
 import 'config/app_config.dart';
 import 'config/admob_config.dart';
 import 'config/firebase_emulator_config.dart';
@@ -11,6 +12,7 @@ import 'config/router/app_router.dart';
 import 'infrastructure/admob_service.dart';
 import 'infrastructure/firebase/push_notification_service.dart';
 import 'infrastructure/notification_navigation_service.dart';
+import 'presentation/force_update/force_update_gate.dart';
 import 'presentation/notification/notification_list_page.dart';
 import 'presentation/theme/app_theme.dart';
 import 'application/app_lifecycle/app_lifecycle_notifier.dart';
@@ -120,8 +122,14 @@ Future<void> startApp([
     }
   }
 
+  final effectiveOverrides = [
+    if (skipFirebaseInit)
+      forceUpdateFeatureEnabledProvider.overrideWithValue(false),
+    ...overrides,
+  ];
+
   // アプリケーションの起動
-  runApp(ProviderScope(overrides: overrides, child: const MyApp()));
+  runApp(ProviderScope(overrides: effectiveOverrides, child: const MyApp()));
 }
 
 /// iOS でのプラットフォームビューリセット処理
@@ -162,7 +170,15 @@ class MyApp extends ConsumerWidget {
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (Platform.isAndroid) {
+      const skipPushNotificationRuntime = bool.fromEnvironment(
+            'TEST_MODE',
+            defaultValue: false,
+          ) ||
+          bool.fromEnvironment('FLUTTER_TEST', defaultValue: false) ||
+          bool.fromEnvironment('USE_FIREBASE_EMULATOR', defaultValue: false);
+      if (!skipPushNotificationRuntime &&
+          Platform.isAndroid &&
+          Firebase.apps.isNotEmpty) {
         PushNotificationService.instance.requestAndroidNotificationPermission();
       }
       NotificationNavigationService.instance.flushPendingNavigation();
@@ -171,7 +187,11 @@ class MyApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'LaKiite',
       theme: AppTheme.theme,
+      locale: const Locale('ja', 'JP'),
       routerConfig: router,
+      builder: (context, child) => ForceUpdateGate(
+        child: child ?? const SizedBox.shrink(),
+      ),
       // 環境名をデバッグモードで表示
       debugShowCheckedModeBanner: AppConfig.instance.isDevelopment,
     );

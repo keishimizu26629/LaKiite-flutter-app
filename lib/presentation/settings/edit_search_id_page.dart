@@ -47,7 +47,7 @@ class _EditSearchIdPageState extends ConsumerState<EditSearchIdPage> {
       UserId(value); // 形式チェック
     } catch (e) {
       setState(() {
-        _errorText = '検索IDは8文字の半角英数字で入力してください';
+        _errorText = '検索IDは8文字以上16文字以内の半角英数字で入力してください';
       });
       return;
     }
@@ -154,10 +154,11 @@ class _EditSearchIdPageState extends ConsumerState<EditSearchIdPage> {
                 const SizedBox(height: 8),
                 TextField(
                   controller: _searchIdController,
+                  maxLength: UserId.maxLength,
                   decoration: InputDecoration(
                     border: const OutlineInputBorder(),
                     hintText: '例：user1234',
-                    helperText: '8文字の半角英数字',
+                    helperText: '8文字以上16文字以内の半角英数字',
                     errorText: _errorText,
                     suffixIcon: _isChecking
                         ? const SizedBox(
