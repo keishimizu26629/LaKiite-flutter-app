@@ -73,8 +73,7 @@ class _FakeScheduleRepository implements IScheduleRepository {
   Stream<List<Schedule>> watchUserSchedulesForMonth(
     String userId,
     DateTime displayMonth,
-  ) =>
-      Stream<List<Schedule>>.error(UnimplementedError());
+  ) => Stream<List<Schedule>>.error(UnimplementedError());
 }
 
 class _FakeUserRepository implements IUserRepository {
@@ -121,6 +120,10 @@ class _FakeUserRepository implements IUserRepository {
       Future.error(UnimplementedError());
 
   @override
+  Future<void> removeFriend(String userId, String friendId) =>
+      Future.error(UnimplementedError());
+
+  @override
   Future<void> updateUser(UserModel user) => Future.error(UnimplementedError());
 
   @override
@@ -153,56 +156,48 @@ class _FakeNotificationRepository implements INotificationRepository {
   @override
   Future<void> updateNotification(
     domain_notification.Notification notification,
-  ) =>
-      Future.error(UnimplementedError());
+  ) => Future.error(UnimplementedError());
 
   @override
   Future<domain_notification.Notification?> getNotification(
     String notificationId,
-  ) =>
-      Future.error(UnimplementedError());
+  ) => Future.error(UnimplementedError());
 
   @override
   Stream<List<domain_notification.Notification>> watchReceivedNotifications(
     String userId,
-  ) =>
-      const Stream.empty();
+  ) => const Stream.empty();
 
   @override
   Stream<List<domain_notification.Notification>>
-      watchReceivedNotificationsByType(
+  watchReceivedNotificationsByType(
     String userId,
     domain_notification.NotificationType type,
-  ) =>
-          const Stream.empty();
+  ) => const Stream.empty();
 
   @override
   Stream<List<domain_notification.Notification>> watchSentNotifications(
     String userId,
-  ) =>
-      const Stream.empty();
+  ) => const Stream.empty();
 
   @override
   Stream<List<domain_notification.Notification>> watchSentNotificationsByType(
     String userId,
     domain_notification.NotificationType type,
-  ) =>
-      const Stream.empty();
+  ) => const Stream.empty();
 
   @override
   Future<bool> hasPendingFriendRequest(
     String fromUserId,
     String toUserId,
-  ) async =>
-      false;
+  ) async => false;
 
   @override
   Future<bool> hasPendingGroupInvitation(
     String fromUserId,
     String toUserId,
     String groupId,
-  ) async =>
-      false;
+  ) async => false;
 
   @override
   Future<void> acceptNotification(String notificationId) =>
@@ -227,20 +222,19 @@ class _FakeNotificationRepository implements INotificationRepository {
   Stream<int> watchUnreadCountByType(
     String userId,
     domain_notification.NotificationType type,
-  ) =>
-      const Stream.empty();
+  ) => const Stream.empty();
 }
 
 class _FakeNotificationNotifier extends notification.NotificationNotifier {
   _FakeNotificationNotifier(Ref ref)
-      : super(
-          _FakeNotificationRepository(),
-          PushNotificationSender(
-            cloudFunctionUrl: 'https://example.test/push',
-            tokenResolver: (_) async => const [],
-          ),
-          ref,
-        );
+    : super(
+        _FakeNotificationRepository(),
+        PushNotificationSender(
+          cloudFunctionUrl: 'https://example.test/push',
+          tokenResolver: (_) async => const [],
+        ),
+        ref,
+      );
 
   @override
   Future<void> createReactionNotification({
@@ -264,10 +258,10 @@ class _FakeNotificationNotifier extends notification.NotificationNotifier {
 class _FakeScheduleInteractionRepository
     implements IScheduleInteractionRepository {
   _FakeScheduleInteractionRepository()
-      : _reactionListener = Completer<void>(),
-        _commentListener = Completer<void>(),
-        _latestReactions = null,
-        _latestComments = const <ScheduleComment>[] {
+    : _reactionListener = Completer<void>(),
+      _commentListener = Completer<void>(),
+      _latestReactions = null,
+      _latestComments = const <ScheduleComment>[] {
     _reactionsController = StreamController<List<ScheduleReaction>>.broadcast(
       onListen: () {
         if (!_reactionListener.isCompleted) {
@@ -387,8 +381,7 @@ class _FakeScheduleInteractionRepository
     String scheduleId,
     String commentId,
     String content,
-  ) =>
-      Future.error(UnimplementedError());
+  ) => Future.error(UnimplementedError());
 
   @override
   Future<int> getReactionCount(String scheduleId) async {

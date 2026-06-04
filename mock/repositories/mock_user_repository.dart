@@ -183,6 +183,12 @@ class MockUserRepository implements IUserRepository {
   }
 
   @override
+  Future<void> removeFriend(String userId, String friendId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    // テスト用の実装
+  }
+
+  @override
   Future<List<PublicUserModel>> getPublicProfiles(List<String> userIds) async {
     await Future.delayed(const Duration(milliseconds: 200));
     return userIds
