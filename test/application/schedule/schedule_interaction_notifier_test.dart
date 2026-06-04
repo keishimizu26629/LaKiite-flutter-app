@@ -299,6 +299,7 @@ class _FakeScheduleInteractionRepository
   late final StreamController<List<ScheduleComment>> _commentsController;
 
   Completer<String>? addReactionCompleter;
+  int addReactionCallCount = 0;
   int _reactionCancelCount = 0;
   int _commentListenCount = 0;
   int _commentCancelCount = 0;
@@ -344,8 +345,12 @@ class _FakeScheduleInteractionRepository
     String userId,
     ReactionType type,
   ) {
-    addReactionCompleter ??= Completer<String>();
-    return addReactionCompleter!.future;
+    addReactionCallCount++;
+    final completer = addReactionCompleter;
+    if (completer != null) {
+      return completer.future;
+    }
+    return Future.value('reaction-$addReactionCallCount');
   }
 
   @override
@@ -429,8 +434,8 @@ void main() {
           description: 'Desc',
           startDateTime: DateTime(2024, 1, 1, 10),
           endDateTime: DateTime(2024, 1, 1, 12),
-          ownerId: user.id,
-          ownerDisplayName: user.displayName,
+          ownerId: 'owner-1',
+          ownerDisplayName: 'Owner',
           sharedLists: const [],
           visibleTo: const [],
           createdAt: DateTime(2024, 1, 1),
@@ -529,6 +534,99 @@ void main() {
           finalState.reactions.map((r) => r.id),
           containsAll(['reaction-1', 'reaction-2', 'reaction-current-user']),
         );
+      },
+    );
+
+    test(
+      'toggleReaction should ignore reactions from the schedule owner',
+      () async {
+        final user = UserModel(
+          publicProfile: PublicUserModel(
+            id: 'user-1',
+            displayName: 'User One',
+            searchId: UserId('USRTEST1'),
+            iconUrl: null,
+            shortBio: null,
+          ),
+          privateProfile: PrivateUserModel(
+            id: 'user-1',
+            name: 'User One',
+            friends: const [],
+            groups: const [],
+            lists: const [],
+            createdAt: DateTime(2024, 1, 1),
+          ),
+        );
+
+        final schedule = Schedule(
+          id: 'schedule-1',
+          title: 'Sample',
+          description: 'Desc',
+          startDateTime: DateTime(2024, 1, 1, 10),
+          endDateTime: DateTime(2024, 1, 1, 12),
+          ownerId: user.id,
+          ownerDisplayName: user.displayName,
+          sharedLists: const [],
+          visibleTo: const [],
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+        );
+
+        final repository = _FakeScheduleInteractionRepository();
+        addTearDown(repository.dispose);
+
+        final container = ProviderContainer(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(user)),
+            ),
+            scheduleInteractionRepositoryProvider.overrideWithValue(repository),
+            scheduleInteractionNotifierProvider.overrideWith((ref, scheduleId) {
+              return ScheduleInteractionNotifier(
+                ref.watch(scheduleInteractionRepositoryProvider),
+                scheduleId,
+                ref,
+                enablePushNotifications: false,
+              );
+            }),
+            scheduleRepositoryProvider.overrideWithValue(
+              _FakeScheduleRepository(schedule),
+            ),
+            userRepositoryProvider.overrideWithValue(_FakeUserRepository(user)),
+            notification.notificationRepositoryProvider.overrideWithValue(
+              _FakeNotificationRepository(),
+            ),
+            notification.pushNotificationSenderProvider.overrideWithValue(
+              PushNotificationSender(
+                cloudFunctionUrl: 'https://example.test/push',
+                tokenResolver: (_) async => const [],
+              ),
+            ),
+            notification.notificationNotifierProvider.overrideWith((ref) {
+              return _FakeNotificationNotifier(ref);
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final provider = scheduleInteractionNotifierProvider(schedule.id);
+        final subscription = container.listen(
+          provider,
+          (_, __) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        await repository.waitForReactionListener();
+
+        await container
+            .read(provider.notifier)
+            .toggleReaction(user.id, ReactionType.going);
+
+        final finalState = container.read(provider);
+
+        expect(repository.addReactionCallCount, 0);
+        expect(finalState.isLoading, isFalse);
+        expect(finalState.reactions, isEmpty);
       },
     );
 

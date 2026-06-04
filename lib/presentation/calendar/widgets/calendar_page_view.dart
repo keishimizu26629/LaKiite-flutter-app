@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:lakiite/application/notification/notification_notifier.dart';
+import 'package:lakiite/domain/entity/display_list.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/calendar/calendar_providers.dart';
 import 'package:lakiite/presentation/calendar/schedule_providers.dart';
 import 'package:lakiite/presentation/calendar/widgets/daily_schedule_list_page.dart';
 import 'package:lakiite/presentation/calendar/widgets/daily_schedule_view.dart';
 import 'package:lakiite/presentation/calendar/widgets/schedule_ownership_style.dart';
+import 'package:lakiite/presentation/list/display_list_providers.dart';
 import 'package:lakiite/presentation/schedule/schedule_display_order.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
 import 'package:lakiite/presentation/calendar/create_schedule_page.dart';
@@ -975,6 +977,14 @@ class CalendarPageContent extends HookConsumerWidget {
       return _generateOptimizedScheduleMap(
           currentDates, schedules, visiblePageDate, isOptimized);
     }, [currentDates, schedules, visiblePageDate, isOptimized]);
+    final stableDateSchedulesMap = useRef(dateSchedulesMap);
+    final hasStableSchedules =
+        stableDateSchedulesMap.value.values.any((items) => items.isNotEmpty);
+    if (!isOptimized || !hasStableSchedules) {
+      stableDateSchedulesMap.value = dateSchedulesMap;
+    }
+    final displayDateSchedulesMap =
+        isOptimized ? stableDateSchedulesMap.value : dateSchedulesMap;
 
     // 日付別セルを事前に計算してパフォーマンスを向上（最適化モードではシンプルなセル）
     final dateCells = useMemoized(
@@ -987,18 +997,18 @@ class CalendarPageContent extends HookConsumerWidget {
                 return OptimizedDatesRow(
                   rowIndex: rowIndex,
                   dates: rowDates,
-                  dateSchedulesMap: dateSchedulesMap,
+                  dateSchedulesMap: displayDateSchedulesMap,
                   visibleMonth: visiblePageDate,
                 );
               }
 
               return DatesRow(
                 dates: rowDates,
-                dateSchedulesMap: dateSchedulesMap,
+                dateSchedulesMap: displayDateSchedulesMap,
                 visibleMonth: visiblePageDate,
               );
             }),
-        [currentDates, dateSchedulesMap, visiblePageDate, isOptimized]);
+        [currentDates, displayDateSchedulesMap, visiblePageDate, isOptimized]);
 
     // パフォーマンス最適化のためのコンテナ
     return RepaintBoundary(
@@ -1103,6 +1113,9 @@ class DateCell extends ConsumerWidget {
     final isSaturday = date.weekday == DateTime.saturday;
     final isCurrentMonth = date.month == visibleMonth.month;
     final currentUserId = ref.watch(currentUserIdProvider);
+    final displayLists =
+        ref.watch(userDisplayListsStreamProvider).valueOrNull ??
+            const <DisplayList>[];
 
     // 祝日のチェック（コンテキストからProviderScopeを取得）
     final dateString =
@@ -1141,6 +1154,7 @@ class DateCell extends ConsumerWidget {
             isHoliday: isHolidayFromAsync,
             holidayName: holidays[dateString] ?? '',
             currentUserId: currentUserId,
+            displayLists: displayLists,
           );
         },
         loading: () => OptimizedDateCell(
@@ -1153,6 +1167,7 @@ class DateCell extends ConsumerWidget {
           isHoliday: false,
           holidayName: '',
           currentUserId: currentUserId,
+          displayLists: displayLists,
         ),
         error: (_, __) => OptimizedDateCell(
           date: date,
@@ -1164,6 +1179,7 @@ class DateCell extends ConsumerWidget {
           isHoliday: false,
           holidayName: '',
           currentUserId: currentUserId,
+          displayLists: displayLists,
         ),
       );
     }
@@ -1179,6 +1195,7 @@ class DateCell extends ConsumerWidget {
       isHoliday: isHoliday,
       holidayName: cachedHolidays[dateString] ?? '',
       currentUserId: currentUserId,
+      displayLists: displayLists,
     );
   }
 
@@ -1202,6 +1219,7 @@ class OptimizedDateCell extends StatelessWidget {
     required this.isHoliday,
     required this.holidayName,
     required this.currentUserId,
+    this.displayLists = const [],
     super.key,
   });
 
@@ -1214,6 +1232,7 @@ class OptimizedDateCell extends StatelessWidget {
   final bool isHoliday;
   final String holidayName;
   final String? currentUserId;
+  final Iterable<DisplayList> displayLists;
 
   @override
   Widget build(BuildContext context) {
@@ -1299,6 +1318,7 @@ class OptimizedDateCell extends StatelessWidget {
                           context,
                           schedule: schedule,
                           currentUserId: currentUserId,
+                          displayLists: displayLists,
                           backgroundAlpha: 0.15,
                           borderAlpha: 0.3,
                           primaryTextAlpha: 0.8,
@@ -1346,6 +1366,7 @@ class OptimizedDateCell extends StatelessWidget {
                                       date: date,
                                       schedules: sortedSchedules,
                                       currentUserId: currentUserId,
+                                      displayLists: displayLists,
                                     ),
                                   ),
                                 );

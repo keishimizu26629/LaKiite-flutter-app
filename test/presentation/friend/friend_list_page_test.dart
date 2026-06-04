@@ -165,5 +165,46 @@ void main() {
       expect(find.text('友達一郎'), findsOneWidget);
       expect(find.byTooltip('フレンドを削除'), findsNothing);
     });
+
+    testWidgets('フレンド画面はリストタブを表示しない', (tester) async {
+      final currentUser = UserModel.create(
+        id: 'current-user-id',
+        name: '現在ユーザー',
+        displayName: '現在ユーザー',
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(currentUser)),
+            ),
+            userFriendsStreamProvider.overrideWith(
+              (ref) => Stream.value(const []),
+            ),
+            notification.sentNotificationsByTypeProvider.overrideWith(
+              (ref, type) => Stream.value(const <domain.Notification>[]),
+            ),
+            notification.unreadNotificationCountProvider.overrideWith(
+              (ref) => Stream.value(0),
+            ),
+            notification.unreadNotificationCountByTypeProvider.overrideWith(
+              (ref, type) => Stream.value(0),
+            ),
+          ],
+          child: const MaterialApp(home: FriendListPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('フレンド'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('リスト'), findsNothing);
+    });
   });
 }

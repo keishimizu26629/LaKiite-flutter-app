@@ -13,15 +13,20 @@ class EditEmailPage extends ConsumerStatefulWidget {
 class _EditEmailPageState extends ConsumerState<EditEmailPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  String? _errorText;
+  String? _emailErrorText;
+  String? _passwordErrorText;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      _emailController.text = user.email ?? '';
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        _emailController.text = user.email ?? '';
+      }
+    } catch (_) {
+      // Firebase未初期化のテスト環境では空欄のまま表示する。
     }
   }
 
@@ -38,7 +43,8 @@ class _EditEmailPageState extends ConsumerState<EditEmailPage> {
 
     if (newEmail.isEmpty) {
       setState(() {
-        _errorText = 'メールアドレスを入力してください';
+        _emailErrorText = 'メールアドレスを入力してください';
+        _passwordErrorText = null;
       });
       return;
     }
@@ -46,21 +52,24 @@ class _EditEmailPageState extends ConsumerState<EditEmailPage> {
     if (!RegExp(r'^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[\w-]{2,}$')
         .hasMatch(newEmail)) {
       setState(() {
-        _errorText = '有効なメールアドレスを入力してください';
+        _emailErrorText = '有効なメールアドレスを入力してください';
+        _passwordErrorText = null;
       });
       return;
     }
 
     if (password.isEmpty) {
       setState(() {
-        _errorText = '現在のパスワードを入力してください';
+        _emailErrorText = null;
+        _passwordErrorText = '現在のパスワードを入力してください';
       });
       return;
     }
 
     setState(() {
       _isLoading = true;
-      _errorText = null;
+      _emailErrorText = null;
+      _passwordErrorText = null;
     });
 
     try {
@@ -93,17 +102,32 @@ class _EditEmailPageState extends ConsumerState<EditEmailPage> {
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _errorText = switch (e.code) {
-          'wrong-password' => 'パスワードが間違っています',
-          'email-already-in-use' => 'このメールアドレスは既に使用されています',
-          'invalid-email' => '無効なメールアドレスです',
-          'requires-recent-login' => '再認証が必要です',
-          _ => 'エラーが発生しました: ${e.message}',
-        };
+        switch (e.code) {
+          case 'email-already-in-use':
+            _emailErrorText = 'このメールアドレスは既に使用されています';
+            _passwordErrorText = null;
+            break;
+          case 'invalid-email':
+            _emailErrorText = '無効なメールアドレスです';
+            _passwordErrorText = null;
+            break;
+          case 'wrong-password':
+            _emailErrorText = null;
+            _passwordErrorText = 'パスワードが間違っています';
+            break;
+          case 'requires-recent-login':
+            _emailErrorText = null;
+            _passwordErrorText = '再認証が必要です';
+            break;
+          default:
+            _emailErrorText = null;
+            _passwordErrorText = 'エラーが発生しました: ${e.message}';
+        }
       });
     } catch (e) {
       setState(() {
-        _errorText = 'エラーが発生しました: $e';
+        _emailErrorText = null;
+        _passwordErrorText = 'エラーが発生しました: $e';
       });
     } finally {
       setState(() {
@@ -124,6 +148,16 @@ class _EditEmailPageState extends ConsumerState<EditEmailPage> {
           ),
         ],
       ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: FilledButton(
+            key: const Key('edit-email-bottom-save-button'),
+            onPressed: _isLoading ? null : _updateEmail,
+            child: const Text('保存'),
+          ),
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -138,10 +172,12 @@ class _EditEmailPageState extends ConsumerState<EditEmailPage> {
             ),
             const SizedBox(height: 8),
             TextField(
+              key: const Key('edit-email-email-field'),
               controller: _emailController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
                 hintText: '例：example@example.com',
+                errorText: _emailErrorText,
               ),
               keyboardType: TextInputType.emailAddress,
               enabled: !_isLoading,
@@ -156,10 +192,11 @@ class _EditEmailPageState extends ConsumerState<EditEmailPage> {
             ),
             const SizedBox(height: 8),
             TextField(
+              key: const Key('edit-email-password-field'),
               controller: _passwordController,
               decoration: InputDecoration(
                 border: const OutlineInputBorder(),
-                errorText: _errorText,
+                errorText: _passwordErrorText,
               ),
               obscureText: true,
               enabled: !_isLoading,

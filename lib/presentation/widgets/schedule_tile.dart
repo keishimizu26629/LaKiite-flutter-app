@@ -3,10 +3,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lakiite/app/di/providers.dart';
 import 'package:lakiite/application/schedule/schedule_notifier.dart';
+import 'package:lakiite/domain/entity/display_list.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
 import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
+import 'package:lakiite/presentation/calendar/widgets/schedule_ownership_style.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
 import 'package:lakiite/presentation/widgets/reaction_icon_widget.dart';
 
@@ -44,6 +46,7 @@ class ScheduleTile extends ConsumerWidget {
     this.onDeletePressed,
     this.onReactionTap,
     this.margin,
+    this.displayLists = const [],
   });
 
   /// 表示する予定のデータ
@@ -79,29 +82,36 @@ class ScheduleTile extends ConsumerWidget {
   /// カードのマージン
   final EdgeInsetsGeometry? margin;
 
+  /// 予定作成者の色分けに使う表示用リスト
+  final Iterable<DisplayList> displayLists;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isOwnSchedule = schedule.ownerId == currentUserId;
+    final ownershipStyle = ScheduleOwnershipStyle.resolve(
+      context,
+      schedule: schedule,
+      currentUserId: currentUserId,
+      displayLists: displayLists,
+      backgroundAlpha: isTimelineView ? 0.08 : 0.1,
+      borderAlpha: isTimelineView ? 0.7 : 0.8,
+      primaryTextAlpha: 0.85,
+      ownerBackgroundColor: Colors.grey[100],
+      ownerBorderColor: Colors.grey[400],
+    );
 
     return Card(
       margin: margin ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       elevation: isTimelineView && !isOwnSchedule ? 0 : 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: isTimelineView && !isOwnSchedule
-            ? BorderSide.none
-            : BorderSide(
-                color: isTimelineView
-                    ? (isOwnSchedule
-                        ? Colors.grey[400]!
-                        : Theme.of(context).primaryColor.withAlpha(77))
-                    : Colors.grey[300]!,
-                width: 1,
-              ),
+        side: BorderSide(
+          color:
+              isTimelineView ? ownershipStyle.borderColor : Colors.grey[300]!,
+          width: 1,
+        ),
       ),
-      color: isTimelineView
-          ? (isOwnSchedule ? Colors.grey[100] : Colors.white)
-          : Colors.grey[50],
+      color: isTimelineView ? ownershipStyle.backgroundColor : Colors.grey[50],
       child: InkWell(
         onTap: () {
           Navigator.of(context).push(
