@@ -9,8 +9,8 @@ import '../utils/logger.dart';
 
 class UserRepository implements IUserRepository {
   UserRepository()
-    : _firestore = FirebaseFirestore.instance,
-      _storage = FirebaseStorage.instance;
+      : _firestore = FirebaseFirestore.instance,
+        _storage = FirebaseStorage.instance;
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
 
@@ -313,16 +313,16 @@ class UserRepository implements IUserRepository {
         .doc('profile')
         .snapshots()
         .map((doc) {
-          if (!doc.exists) return null;
-          final data = doc.data()!;
-          data['lists'] = data['lists'] ?? [];
-          final privateModel = PrivateUserModel.fromJson(data);
+      if (!doc.exists) return null;
+      final data = doc.data()!;
+      data['lists'] = data['lists'] ?? [];
+      final privateModel = PrivateUserModel.fromJson(data);
 
-          // キャッシュを更新
-          _privateProfileCache[id] = privateModel;
+      // キャッシュを更新
+      _privateProfileCache[id] = privateModel;
 
-          return privateModel;
-        });
+      return privateModel;
+    });
   }
 
   @override
