@@ -47,7 +47,8 @@ class UserRepository implements IUserRepository {
       final userDoc = await _firestore.collection('users').doc(id).get();
       if (!userDoc.exists) {
         AppLogger.warningOnly(
-            'UserRepository.getUser: public docなし userId=$id');
+          'UserRepository.getUser: public docなし userId=$id',
+        );
         return null;
       }
 
@@ -59,7 +60,8 @@ class UserRepository implements IUserRepository {
           .get();
       if (!privateDoc.exists) {
         AppLogger.warningOnly(
-            'UserRepository.getUser: private docなし userId=$id');
+          'UserRepository.getUser: private docなし userId=$id',
+        );
         return null;
       }
 
@@ -76,7 +78,10 @@ class UserRepository implements IUserRepository {
       );
     } catch (e, stackTrace) {
       AppLogger.errorOnly(
-          'UserRepository.getUser失敗: userId=$id', e, stackTrace);
+        'UserRepository.getUser失敗: userId=$id',
+        e,
+        stackTrace,
+      );
       rethrow;
     }
   }
@@ -99,7 +104,8 @@ class UserRepository implements IUserRepository {
       final isUnique = await isUserIdUnique(user.searchId);
       if (!isUnique) {
         AppLogger.warningOnly(
-            'UserRepository.createUser失敗: searchId重複 searchId=${user.searchId}');
+          'UserRepository.createUser失敗: searchId重複 searchId=${user.searchId}',
+        );
         throw Exception('このsearchIdは既に使用されています');
       }
 
@@ -124,7 +130,10 @@ class UserRepository implements IUserRepository {
       AppLogger.debugOnly('UserRepository.createUser完了: userId=${user.id}');
     } catch (e, stackTrace) {
       AppLogger.errorOnly(
-          'UserRepository.createUser失敗: userId=${user.id}', e, stackTrace);
+        'UserRepository.createUser失敗: userId=${user.id}',
+        e,
+        stackTrace,
+      );
       rethrow;
     }
   }
@@ -142,12 +151,17 @@ class UserRepository implements IUserRepository {
 
         // 非公開情報を更新
         transaction.update(
-            privateRef, _toFirestorePrivate(user.privateProfile));
+          privateRef,
+          _toFirestorePrivate(user.privateProfile),
+        );
       });
       AppLogger.debugOnly('UserRepository.updateUser完了: userId=${user.id}');
     } catch (e, stackTrace) {
       AppLogger.errorOnly(
-          'UserRepository.updateUser失敗: userId=${user.id}', e, stackTrace);
+        'UserRepository.updateUser失敗: userId=${user.id}',
+        e,
+        stackTrace,
+      );
       rethrow;
     }
   }
@@ -344,12 +358,14 @@ class UserRepository implements IUserRepository {
         return;
       }
 
-      final publicData =
-          Map<String, dynamic>.from(currentPublicDoc.data() ?? {});
+      final publicData = Map<String, dynamic>.from(
+        currentPublicDoc.data() ?? {},
+      );
       publicData['id'] = currentPublicDoc.id;
 
-      final privateData =
-          Map<String, dynamic>.from(currentPrivateDoc.data() ?? {});
+      final privateData = Map<String, dynamic>.from(
+        currentPrivateDoc.data() ?? {},
+      );
       privateData['lists'] = privateData['lists'] ?? [];
 
       final userModel = UserModel(
@@ -363,22 +379,16 @@ class UserRepository implements IUserRepository {
 
     controller = StreamController<UserModel?>(
       onListen: () {
-        publicSub = publicRef.snapshots().listen(
-          (snapshot) {
-            publicDoc = snapshot;
-            hasPublicSnapshot = true;
-            emitIfReady();
-          },
-          onError: controller.addError,
-        );
-        privateSub = privateRef.snapshots().listen(
-          (snapshot) {
-            privateDoc = snapshot;
-            hasPrivateSnapshot = true;
-            emitIfReady();
-          },
-          onError: controller.addError,
-        );
+        publicSub = publicRef.snapshots().listen((snapshot) {
+          publicDoc = snapshot;
+          hasPublicSnapshot = true;
+          emitIfReady();
+        }, onError: controller.addError);
+        privateSub = privateRef.snapshots().listen((snapshot) {
+          privateDoc = snapshot;
+          hasPrivateSnapshot = true;
+          emitIfReady();
+        }, onError: controller.addError);
       },
       onCancel: () async {
         await publicSub?.cancel();
@@ -418,16 +428,30 @@ class UserRepository implements IUserRepository {
     });
   }
 
+  @override
+  Future<void> removeFriend(String userId, String friendId) async {
+    final privateRef = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('private')
+        .doc('profile');
+
+    await privateRef.update({
+      'friends': FieldValue.arrayRemove([friendId]),
+    });
+  }
+
   // 複数のユーザーの公開情報を一度に取得
   @override
   Future<List<PublicUserModel>> getPublicProfiles(List<String> userIds) async {
-    final futures = userIds
-        .map((id) => _firestore.collection('users').doc(id).get().then((doc) {
-              if (!doc.exists) return null;
-              final data = doc.data()!;
-              data['id'] = doc.id;
-              return PublicUserModel.fromJson(data);
-            }));
+    final futures = userIds.map(
+      (id) => _firestore.collection('users').doc(id).get().then((doc) {
+        if (!doc.exists) return null;
+        final data = doc.data()!;
+        data['id'] = doc.id;
+        return PublicUserModel.fromJson(data);
+      }),
+    );
 
     final results = await Future.wait(futures);
     return results
