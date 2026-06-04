@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../home/home_page.dart';
 import '../friend/friend_list_page.dart';
 import '../list/list_page.dart';
 import '../my_page/my_page.dart';
 import '../widgets/auth_dependent_builder.dart';
+import '../../infrastructure/how_to_use_prompt_preferences.dart';
 import '../../infrastructure/notification_navigation_service.dart';
 
 class BottomNavigationPage extends ConsumerStatefulWidget {
@@ -28,16 +30,16 @@ class _BottomNavigationPageState extends ConsumerState<BottomNavigationPage> {
   }
 }
 
-class _AuthenticatedBottomNavigationShell extends StatefulWidget {
+class _AuthenticatedBottomNavigationShell extends ConsumerStatefulWidget {
   const _AuthenticatedBottomNavigationShell();
 
   @override
-  State<_AuthenticatedBottomNavigationShell> createState() =>
+  ConsumerState<_AuthenticatedBottomNavigationShell> createState() =>
       _AuthenticatedBottomNavigationShellState();
 }
 
 class _AuthenticatedBottomNavigationShellState
-    extends State<_AuthenticatedBottomNavigationShell> {
+    extends ConsumerState<_AuthenticatedBottomNavigationShell> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
@@ -59,7 +61,42 @@ class _AuthenticatedBottomNavigationShellState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       NotificationNavigationService.instance.markNavigationReady();
+      _showHowToUsePromptIfNeeded();
     });
+  }
+
+  Future<void> _showHowToUsePromptIfNeeded() async {
+    final preferences = ref.read(howToUsePromptPreferencesProvider);
+    final shouldShowPrompt = await preferences.shouldShowPrompt();
+
+    if (!shouldShowPrompt || !mounted) {
+      return;
+    }
+
+    final openGuide = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('LaKiiteの使い方'),
+        content: const Text('はじめに、予定の共有やフレンド追加の流れを確認しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('閉じる'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('使い方を見る'),
+          ),
+        ],
+      ),
+    );
+
+    await preferences.markPromptSeen();
+
+    if (openGuide == true && mounted) {
+      context.push('/settings/how-to-use');
+    }
   }
 
   @override

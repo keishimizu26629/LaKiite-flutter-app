@@ -115,6 +115,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ScheduleDigestSettingsPage(),
           ),
           GoRoute(
+            path: 'how-to-use',
+            builder: (context, state) => const LegalInfoPage(
+              title: '使い方',
+              urlPath: 'how-to-use',
+            ),
+          ),
+          GoRoute(
             path: 'privacy-policy',
             builder: (context, state) => const LegalInfoPage(
               title: 'プライバシーポリシー',
