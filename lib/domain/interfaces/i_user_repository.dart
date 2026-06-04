@@ -115,6 +115,12 @@ abstract class IUserRepository {
   /// [memberId] 削除するメンバーのID
   Future<void> removeFromList(String userId, String memberId);
 
+  /// ユーザーの友達一覧から指定した友達を削除する
+  ///
+  /// [userId] 友達を削除するユーザーのID
+  /// [friendId] 削除する友達のID
+  Future<void> removeFriend(String userId, String friendId);
+
   /// 複数のユーザーの公開情報を一度に取得する
   ///
   /// [userIds] 取得するユーザーのIDリスト

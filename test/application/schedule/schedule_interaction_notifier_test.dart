@@ -121,6 +121,10 @@ class _FakeUserRepository implements IUserRepository {
       Future.error(UnimplementedError());
 
   @override
+  Future<void> removeFriend(String userId, String friendId) =>
+      Future.error(UnimplementedError());
+
+  @override
   Future<void> updateUser(UserModel user) => Future.error(UnimplementedError());
 
   @override
