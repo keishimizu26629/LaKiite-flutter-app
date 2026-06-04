@@ -20,7 +20,8 @@ class MockUser implements firebase_auth.User {
 
   @override
   Future<firebase_auth.UserCredential> reauthenticateWithCredential(
-      firebase_auth.AuthCredential credential) async {
+    firebase_auth.AuthCredential credential,
+  ) async {
     // モック実装 - 正常に完了したと仮定
     return MockUserCredential(this);
   }
@@ -185,8 +186,14 @@ class MockUserRepository implements IUserRepository {
   }
 
   @override
+  Future<void> removeFriend(String userId, String friendId) async {
+    throw UnimplementedError('テストでは使用しません');
+  }
+
+  @override
   Future<List<domain.PublicUserModel>> getPublicProfiles(
-      List<String> userIds) async {
+    List<String> userIds,
+  ) async {
     throw UnimplementedError('テストでは使用しません');
   }
 
@@ -219,15 +226,17 @@ void main() {
 
       await expectLater(
         authRepository.signIn('test@example.com', 'wrong-password'),
-        throwsA(isA<Exception>().having(
-          (e) => e.toString(),
-          'message',
-          allOf(
-            contains('パスワードが間違っています'),
-            isNot(contains('Firebase')),
-            isNot(contains('auth credential')),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            allOf(
+              contains('パスワードが間違っています'),
+              isNot(contains('Firebase')),
+              isNot(contains('auth credential')),
+            ),
           ),
-        )),
+        ),
       );
       expect(mockFirebaseAuth.didSignOut, isTrue);
     });
@@ -242,15 +251,17 @@ void main() {
 
       await expectLater(
         authRepository.signIn('invalid-email', 'password123'),
-        throwsA(isA<Exception>().having(
-          (e) => e.toString(),
-          'message',
-          allOf(
-            contains('メールアドレスの形式が正しくありません'),
-            isNot(contains('Firebase')),
-            isNot(contains('badly formatted')),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            allOf(
+              contains('メールアドレスの形式が正しくありません'),
+              isNot(contains('Firebase')),
+              isNot(contains('badly formatted')),
+            ),
           ),
-        )),
+        ),
       );
       expect(mockFirebaseAuth.didSignOut, isTrue);
     });
@@ -277,15 +288,17 @@ void main() {
 
       await expectLater(
         authRepository.signUp('test@example.com', 'password123', 'テストユーザー'),
-        throwsA(isA<Exception>().having(
-          (e) => e.toString(),
-          'message',
-          allOf(
-            contains('このメールアドレスは既に使用されています'),
-            isNot(contains('Firebase')),
-            isNot(contains('already in use')),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            allOf(
+              contains('このメールアドレスは既に使用されています'),
+              isNot(contains('Firebase')),
+              isNot(contains('already in use')),
+            ),
           ),
-        )),
+        ),
       );
     });
   });
@@ -320,11 +333,13 @@ void main() {
       // 実行 & 検証: 適切な例外が投げられることを確認
       expect(
         () => authRepository.deleteAccount(),
-        throwsA(isA<Exception>().having(
-          (e) => e.toString(),
-          'message',
-          contains('ユーザーがログインしていません'),
-        )),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('ユーザーがログインしていません'),
+          ),
+        ),
       );
     });
 
@@ -336,11 +351,13 @@ void main() {
       // 実行 & 検証: 適切な例外が投げられることを確認
       expect(
         () => authRepository.deleteAccount(),
-        throwsA(isA<Exception>().having(
-          (e) => e.toString(),
-          'message',
-          contains('セキュリティのため再認証が必要です'),
-        )),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('セキュリティのため再認証が必要です'),
+          ),
+        ),
       );
     });
 
@@ -350,8 +367,9 @@ void main() {
       mockFirebaseAuth.setCurrentUser(mockUser);
 
       // 実行: 再認証
-      final result =
-          await authRepository.reauthenticateWithPassword('password123');
+      final result = await authRepository.reauthenticateWithPassword(
+        'password123',
+      );
 
       // 検証
       expect(result, isTrue);
@@ -364,11 +382,13 @@ void main() {
       // 実行 & 検証: 適切な例外が投げられることを確認
       expect(
         () => authRepository.reauthenticateWithPassword('password123'),
-        throwsA(isA<Exception>().having(
-          (e) => e.toString(),
-          'message',
-          contains('ユーザーがログインしていません'),
-        )),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('ユーザーがログインしていません'),
+          ),
+        ),
       );
     });
 
@@ -378,8 +398,9 @@ void main() {
       mockFirebaseAuth.setCurrentUser(mockUser);
 
       // 実行: 再認証付きアカウント削除
-      final result =
-          await authRepository.deleteAccountWithReauth('password123');
+      final result = await authRepository.deleteAccountWithReauth(
+        'password123',
+      );
 
       // 検証
       expect(result, isTrue);
@@ -392,11 +413,13 @@ void main() {
       // 実行 & 検証: 適切な例外が投げられることを確認
       expect(
         () => authRepository.deleteAccountWithReauth('password123'),
-        throwsA(isA<Exception>().having(
-          (e) => e.toString(),
-          'message',
-          contains('ユーザーがログインしていません'),
-        )),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('ユーザーがログインしていません'),
+          ),
+        ),
       );
     });
   });
@@ -419,7 +442,8 @@ class MockUserWithReauthError implements firebase_auth.User {
 
   @override
   Future<firebase_auth.UserCredential> reauthenticateWithCredential(
-      firebase_auth.AuthCredential credential) async {
+    firebase_auth.AuthCredential credential,
+  ) async {
     throw firebase_auth.FirebaseAuthException(
       code: 'requires-recent-login',
       message: 'セキュリティのため再認証が必要です。',

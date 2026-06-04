@@ -262,8 +262,37 @@ class MockUserRepository extends BaseMock implements IUserRepository {
     );
 
     _users[userId] = updatedUser;
-    _friendConnections.removeWhere((conn) =>
-        conn == '${userId}_$memberId' || conn == '${memberId}_$userId');
+    _friendConnections.removeWhere(
+      (conn) => conn == '${userId}_$memberId' || conn == '${memberId}_$userId',
+    );
+  }
+
+  @override
+  Future<void> removeFriend(String userId, String friendId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    final user = _users[userId];
+    if (user == null) {
+      throw Exception('ユーザーが見つかりません');
+    }
+
+    final updatedUser = UserModel(
+      publicProfile: user.publicProfile,
+      privateProfile: PrivateUserModel(
+        id: user.id,
+        name: user.name,
+        friends: user.friends.where((id) => id != friendId).toList(),
+        groups: user.groups,
+        lists: user.privateProfile.lists,
+        createdAt: user.createdAt,
+        fcmToken: user.fcmToken,
+      ),
+    );
+
+    _users[userId] = updatedUser;
+    _friendConnections.removeWhere(
+      (conn) => conn == '${userId}_$friendId' || conn == '${friendId}_$userId',
+    );
   }
 
   @override
