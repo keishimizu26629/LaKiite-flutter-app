@@ -42,9 +42,7 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
     _friendTabFAB = FloatingActionButton(
       onPressed: () {
         Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const FriendSearchPage(),
-          ),
+          MaterialPageRoute(builder: (context) => const FriendSearchPage()),
         );
       },
       child: const Icon(Icons.person_add),
@@ -52,11 +50,9 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
 
     _listTabFAB = FloatingActionButton(
       onPressed: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const CreateListPage(),
-          ),
-        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (context) => const CreateListPage()));
       },
       child: const Icon(Icons.post_add_outlined),
     );
@@ -236,18 +232,11 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.list_alt,
-                  size: 64,
-                  color: Colors.grey,
-                ),
+                Icon(Icons.list_alt, size: 64, color: Colors.grey),
                 SizedBox(height: 16),
                 Text(
                   'リストがありません',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(color: Colors.grey, fontSize: 16),
                 ),
               ],
             ),
@@ -293,10 +282,7 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
                 ),
                 subtitle: Text(
                   '$otherMemberCount人のメンバー',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
                 onTap: () {
                   Navigator.of(context).push(
@@ -310,12 +296,8 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
           },
         );
       },
-      loading: () => const Center(
-        child: CircularProgressIndicator(),
-      ),
-      error: (error, stack) => Center(
-        child: Text('エラーが発生しました: $error'),
-      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('エラーが発生しました: $error')),
     );
   }
 
@@ -335,9 +317,7 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
       data: (state) {
         if (state.status != AuthStatus.authenticated || state.user == null) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 
@@ -345,15 +325,10 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
           appBar: AppBar(
             title: const Text(
               'フレンド',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             centerTitle: true,
-            actions: const [
-              NotificationButton(),
-            ],
+            actions: const [NotificationButton()],
           ),
           floatingActionButton: Padding(
             key: const ValueKey('friend_list_fab'),
@@ -384,9 +359,7 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontSize: 16,
-                  ),
+                  unselectedLabelStyle: const TextStyle(fontSize: 16),
                   tabs: const [
                     Tab(text: 'フレンド'),
                     Tab(text: 'リスト'),
@@ -399,17 +372,11 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
                   children: [
                     IndexedStack(
                       index: _tabController.index == 0 ? 0 : 1,
-                      children: [
-                        _buildFriendTabContent(),
-                        Container(),
-                      ],
+                      children: [_buildFriendTabContent(), Container()],
                     ),
                     IndexedStack(
                       index: _tabController.index == 1 ? 0 : 1,
-                      children: [
-                        _buildListTabContent(),
-                        Container(),
-                      ],
+                      children: [_buildListTabContent(), Container()],
                     ),
                   ],
                 ),
@@ -422,16 +389,10 @@ class _FriendListPageState extends ConsumerState<FriendListPage>
           ),
         );
       },
-      loading: () => const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      ),
-      error: (error, stack) => Scaffold(
-        body: Center(
-          child: Text('エラーが発生しました: $error'),
-        ),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, stack) =>
+          Scaffold(body: Center(child: Text('エラーが発生しました: $error'))),
     );
   }
 }
