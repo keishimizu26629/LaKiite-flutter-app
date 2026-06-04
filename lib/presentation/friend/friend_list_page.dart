@@ -32,9 +32,7 @@ class _FriendListPageState extends ConsumerState<FriendListPage> {
       heroTag: 'friend_search_fab',
       onPressed: () {
         Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const FriendSearchPage(),
-          ),
+          MaterialPageRoute(builder: (context) => const FriendSearchPage()),
         );
       },
       child: const Icon(Icons.person_add),
@@ -197,9 +195,7 @@ class _FriendListPageState extends ConsumerState<FriendListPage> {
       data: (state) {
         if (state.status != AuthStatus.authenticated || state.user == null) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 
@@ -207,15 +203,10 @@ class _FriendListPageState extends ConsumerState<FriendListPage> {
           appBar: AppBar(
             title: const Text(
               'フレンド',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             centerTitle: true,
-            actions: const [
-              NotificationButton(),
-            ],
+            actions: const [NotificationButton()],
           ),
           floatingActionButton: Padding(
             key: const ValueKey('friend_list_fab'),
@@ -234,16 +225,10 @@ class _FriendListPageState extends ConsumerState<FriendListPage> {
           ),
         );
       },
-      loading: () => const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      ),
-      error: (error, stack) => Scaffold(
-        body: Center(
-          child: Text('エラーが発生しました: $error'),
-        ),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, stack) =>
+          Scaffold(body: Center(child: Text('エラーが発生しました: $error'))),
     );
   }
 }
