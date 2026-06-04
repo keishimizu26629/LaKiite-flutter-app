@@ -40,7 +40,7 @@
 		<!-- 現在のプロジェクトではHTTPS通信のみ使用のため例外設定は不要 -->
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>プロフィール画像を撮影・設定するためにカメラを使用します。この機能は任意で、拒否してもアプリの基本機能は利用できます。</string>
+	<string>プロフィール画像の撮影と、友達検索用QRコードの読み取りのためにカメラを使用します。この機能は任意で、拒否してもアプリの基本機能は利用できます。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>プロフィール画像を設定するために写真ライブラリにアクセスします。この機能は任意で、拒否してもアプリの基本機能は利用できます。</string>
 	<key>SKAdNetworkItems</key>

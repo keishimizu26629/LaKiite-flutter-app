@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gap/gap.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+
+import '../../application/auth/auth_notifier.dart' as auth;
 import '../widgets/notification_badge.dart';
 import '../notification/notification_list_page.dart';
+import 'friend_search_qr_scanner_page.dart';
 import 'friend_search_view_model.dart';
 
 class FriendSearchPage extends ConsumerStatefulWidget {
@@ -21,10 +26,86 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     super.dispose();
   }
 
+  void _searchById(
+    String searchId,
+    FriendSearchViewModel viewModel, {
+    bool updateInput = true,
+  }) {
+    final trimmedSearchId = searchId.trim();
+    if (trimmedSearchId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('検索IDを入力してください')),
+      );
+      return;
+    }
+
+    if (updateInput) {
+      searchController.text = trimmedSearchId;
+    }
+    viewModel.searchUser(trimmedSearchId);
+  }
+
+  Future<void> _showSearchIdQr(String searchId) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        final screenSize = MediaQuery.sizeOf(context);
+        final qrSize = [
+          280.0,
+          screenSize.width - 96.0,
+          screenSize.height - 192.0,
+        ].reduce((value, element) => value < element ? value : element);
+
+        return AlertDialog(
+          content: SizedBox.square(
+            dimension: qrSize,
+            child: QrImageView(
+              data: searchId,
+              version: QrVersions.auto,
+              backgroundColor: Colors.white,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('閉じる'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDisabledRequestButton(String label) {
+    return ElevatedButton(
+      onPressed: null,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.grey,
+      ),
+      child: Text(label),
+    );
+  }
+
+  Future<void> _openQrScanner(FriendSearchViewModel viewModel) async {
+    final scannedSearchId = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (context) => const FriendSearchQrScannerPage(),
+      ),
+    );
+
+    if (!mounted || scannedSearchId == null) {
+      return;
+    }
+
+    _searchById(scannedSearchId, viewModel, updateInput: false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final viewModel = ref.watch(friendSearchViewModelProvider.notifier);
     final state = ref.watch(friendSearchViewModelProvider);
+    final currentUser = ref.watch(auth.authNotifierProvider).value?.user;
+    final currentSearchId = currentUser?.searchId.toString();
 
     return Scaffold(
       appBar: AppBar(
@@ -48,20 +129,42 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // 検索フィールド
             TextField(
               controller: searchController,
               decoration: InputDecoration(
-                labelText: 'ユーザーIDを入力',
+                labelText: '検索IDを入力',
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.search),
                   onPressed: () {
-                    viewModel.searchUser(searchController.text);
+                    _searchById(searchController.text, viewModel);
                   },
                 ),
               ),
+              onSubmitted: (value) => _searchById(value, viewModel),
             ),
-            const SizedBox(height: 20),
+            const Gap(12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: currentSearchId == null
+                        ? null
+                        : () => _showSearchIdQr(currentSearchId),
+                    icon: const Icon(Icons.qr_code),
+                    label: const Text('自分のQR'),
+                  ),
+                ),
+                const Gap(12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openQrScanner(viewModel),
+                    icon: const Icon(Icons.qr_code_scanner),
+                    label: const Text('QRを読み取る'),
+                  ),
+                ),
+              ],
+            ),
+            const Gap(20),
             if (state.isLoading)
               const Center(child: CircularProgressIndicator()),
 
@@ -109,7 +212,7 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
                                       ? const Icon(Icons.person, size: 40)
                                       : null,
                                 ),
-                                const SizedBox(height: 16),
+                                const Gap(16),
                                 Text(
                                   state.value!.displayName,
                                   style: const TextStyle(
@@ -117,7 +220,7 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                const Gap(8),
                                 if (state.value!.shortBio != null &&
                                     state.value!.shortBio!.isNotEmpty)
                                   Text(
@@ -129,15 +232,11 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                const SizedBox(height: 24),
-                                if (state.value!.hasPendingRequest)
-                                  ElevatedButton(
-                                    onPressed: null, // 無効化
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.grey,
-                                    ),
-                                    child: const Text('申請済み'),
-                                  )
+                                const Gap(24),
+                                if (state.value!.isFriend)
+                                  _buildDisabledRequestButton('追加済み')
+                                else if (state.value!.hasPendingRequest)
+                                  _buildDisabledRequestButton('申請済み')
                                 else
                                   Row(
                                     mainAxisAlignment:
@@ -191,7 +290,7 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
                     );
                   });
                 }
-                return const SizedBox();
+                return const Offstage();
               },
             ),
           ],
