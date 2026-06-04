@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../../config/app_config.dart';
 import '../../utils/logger.dart';
 
-/// 法的情報（プライバシーポリシーや利用規約）を表示するページ
+/// Firebase Hosting上の静的HTMLをWebViewで表示するページ
 class LegalInfoPage extends StatefulWidget {
   const LegalInfoPage({
     super.key,
@@ -118,8 +119,7 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
       // マウント状態を確認してからURLをロード
       if (mounted && !_isDisposed) {
         _controller.loadRequest(
-          Uri.parse(
-              'https://keishimizu26629.github.io/LaKiite-flutter-app/${widget.urlPath}.html'),
+          Uri.parse('${_hostingBaseUrl()}/${widget.urlPath}.html'),
         );
       }
     } catch (e) {
@@ -133,6 +133,18 @@ class _LegalInfoPageState extends State<LegalInfoPage> {
         });
       }
     }
+  }
+
+  String _hostingBaseUrl() {
+    try {
+      if (AppConfig.instance.isProduction) {
+        return 'https://lakiite-flutter-app-prod.web.app';
+      }
+    } catch (_) {
+      return 'https://lakiite-flutter-app-dev.web.app';
+    }
+
+    return 'https://lakiite-flutter-app-dev.web.app';
   }
 
   @override

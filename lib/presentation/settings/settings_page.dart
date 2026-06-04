@@ -76,6 +76,12 @@ class SettingsPage extends ConsumerWidget {
           */
 
           ListTile(
+            leading: const Icon(Icons.help_outline),
+            title: const Text('使い方'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/how-to-use'),
+          ),
+          ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text('プライバシーポリシー'),
             trailing: const Icon(Icons.chevron_right),
