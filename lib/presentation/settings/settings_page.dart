@@ -6,6 +6,7 @@ import 'edit_name_page.dart';
 import 'edit_email_page.dart';
 import 'edit_search_id_page.dart';
 import 'account_deletion_webview_page.dart';
+import 'schedule_digest_settings_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -43,6 +44,15 @@ class SettingsPage extends ConsumerWidget {
               context.push('/settings/${EditSearchIdPage.path}');
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.notifications_outlined),
+            title: const Text('朝の共有予定通知'),
+            subtitle: const Text('今日共有されている予定を朝に通知'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              context.push('/settings/${ScheduleDigestSettingsPage.path}');
+            },
+          ),
           const Divider(),
 
           // デバッグ機能（デバッグモードまたは開発環境でのみ表示）
@@ -65,6 +75,12 @@ class SettingsPage extends ConsumerWidget {
           const Divider(),
           */
 
+          ListTile(
+            leading: const Icon(Icons.help_outline),
+            title: const Text('使い方'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/how-to-use'),
+          ),
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text('プライバシーポリシー'),
