@@ -131,6 +131,12 @@ void main() {
       findsOneWidget,
     );
 
+    await tester.scrollUntilVisible(
+      find.widgetWithText(ListTile, 'ログアウト'),
+      200,
+    );
+    await tester.pump();
+
     await tester.tap(find.widgetWithText(ListTile, 'ログアウト'));
     await tester.pump(const Duration(milliseconds: 300));
 

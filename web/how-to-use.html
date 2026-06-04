@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaKiiteの使い方</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --accent: #f59e0b;
+            --accent-strong: #d97706;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --line: #e5e7eb;
+            --surface: #ffffff;
+            --surface-soft: #f9fafb;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--surface);
+            color: var(--text);
+            font-family: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'YuGothic', 'Meiryo', sans-serif;
+            line-height: 1.75;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        .page {
+            width: min(100%, 780px);
+            margin: 0 auto;
+            padding: 20px 16px 32px;
+        }
+
+        header {
+            padding: 8px 0 18px;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 1.65rem;
+            line-height: 1.35;
+            letter-spacing: 0;
+        }
+
+        .lead {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.98rem;
+        }
+
+        .tabs {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            margin: 0 -16px 22px;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.96);
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            scrollbar-width: none;
+        }
+
+        .tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab {
+            flex: 0 0 auto;
+            min-height: 40px;
+            padding: 8px 12px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: var(--surface);
+            color: var(--text);
+            font: inherit;
+            font-size: 0.92rem;
+            white-space: nowrap;
+        }
+
+        .tab[aria-selected="true"] {
+            border-color: var(--accent);
+            background: #fffbeb;
+            color: #92400e;
+            font-weight: 700;
+        }
+
+        .tab:focus-visible {
+            outline: 3px solid rgba(245, 158, 11, 0.35);
+            outline-offset: 2px;
+        }
+
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        h2 {
+            margin: 0 0 10px;
+            font-size: 1.35rem;
+            line-height: 1.4;
+            letter-spacing: 0;
+        }
+
+        .summary {
+            margin: 0 0 22px;
+            color: var(--muted);
+        }
+
+        h3 {
+            margin: 24px 0 8px;
+            font-size: 1.05rem;
+            line-height: 1.5;
+        }
+
+        p {
+            margin: 10px 0;
+        }
+
+        ol,
+        ul {
+            margin: 10px 0 0;
+            padding-left: 22px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        .tip {
+            margin-top: 24px;
+            padding: 14px 16px;
+            border: 1px solid #fde68a;
+            border-radius: 8px;
+            background: #fffbeb;
+            color: #78350f;
+            font-size: 0.95rem;
+        }
+
+        @media (min-width: 640px) {
+            .page {
+                padding: 32px 24px 48px;
+            }
+
+            header {
+                padding-bottom: 24px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .tabs {
+                margin-right: -24px;
+                margin-left: -24px;
+                padding-right: 24px;
+                padding-left: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header>
+            <h1>LaKiiteの使い方</h1>
+            <p class="lead">フレンドやリストに予定を共有し、相手の反応を確認するまでの基本操作をまとめています。</p>
+        </header>
+
+        <nav class="tabs" aria-label="使い方カテゴリ">
+            <button class="tab" type="button" role="tab" aria-selected="true" aria-controls="friends" id="tab-friends">フレンド追加</button>
+            <button class="tab" type="button" role="tab" aria-selected="false" aria-controls="lists" id="tab-lists">リストの使い方</button>
+            <button class="tab" type="button" role="tab" aria-selected="false" aria-controls="create" id="tab-create">予定作成</button>
+            <button class="tab" type="button" role="tab" aria-selected="false" aria-controls="check" id="tab-check">予定の確認</button>
+            <button class="tab" type="button" role="tab" aria-selected="false" aria-controls="notifications" id="tab-notifications">通知設定</button>
+        </nav>
+
+        <main>
+            <section class="panel active" id="friends" role="tabpanel" aria-labelledby="tab-friends">
+                <h2>フレンド追加</h2>
+                <p class="summary">予定を共有するには、まず相手とフレンドになる必要があります。検索IDを使って相手を探し、申請を送ります。</p>
+
+                <h3>追加の流れ</h3>
+                <ol>
+                    <li>「フレンド」タブを開きます。</li>
+                    <li>相手の検索IDを入力してユーザーを検索します。</li>
+                    <li>表示された相手を確認し、フレンド申請を送ります。</li>
+                    <li>相手が承認すると、予定の共有先として選べるようになります。</li>
+                </ol>
+
+                <h3>検索IDについて</h3>
+                <p>検索IDは、相手を探すためのIDです。名前が同じユーザーがいても、検索IDを使うことで目的の相手を見つけやすくなります。</p>
+
+                <p class="tip">相手が見つからない場合は、検索IDの入力間違いや、相手が設定しているIDをもう一度確認してください。</p>
+            </section>
+
+            <section class="panel" id="lists" role="tabpanel" aria-labelledby="tab-lists">
+                <h2>リストの使い方</h2>
+                <p class="summary">リストは、複数のフレンドへまとめて予定を共有したいときに使います。家族、仕事、友人グループなどの単位で作ると便利です。</p>
+
+                <h3>リストでできること</h3>
+                <ul>
+                    <li>よく共有する相手をひとつのグループにまとめられます。</li>
+                    <li>予定作成時にリストを選ぶだけで、複数人へ一度に共有できます。</li>
+                    <li>リストのメンバーを変更すると、次に共有する予定から新しいメンバー構成を使えます。</li>
+                </ul>
+
+                <h3>使いどころ</h3>
+                <p>毎回同じ相手に予定を共有する場合は、個別にフレンドを選ぶよりもリストを使う方が手間を減らせます。</p>
+
+                <p class="tip">「家族」「チーム」「週末メンバー」のように、あとから見ても分かりやすい名前にしておくと管理しやすくなります。</p>
+            </section>
+
+            <section class="panel" id="create" role="tabpanel" aria-labelledby="tab-create">
+                <h2>予定作成</h2>
+                <p class="summary">予定にはタイトル、日時、メモ、共有先を設定できます。共有先を選ばない場合は、自分だけの予定として保存されます。</p>
+
+                <h3>作成の流れ</h3>
+                <ol>
+                    <li>予定作成画面を開きます。</li>
+                    <li>予定のタイトルを入力します。</li>
+                    <li>開始日時と終了日時を設定します。</li>
+                    <li>必要に応じてメモを入力します。</li>
+                    <li>共有したいフレンドまたはリストを選びます。</li>
+                    <li>内容を確認して保存します。</li>
+                </ol>
+
+                <h3>共有先の考え方</h3>
+                <p>個別の相手にだけ伝えたい予定はフレンドを選び、複数人へまとめて伝えたい予定はリストを選びます。</p>
+
+                <p class="tip">まだ共有先を決めていない予定は、共有先を選ばずに保存しておき、あとから編集で追加できます。</p>
+            </section>
+
+            <section class="panel" id="check" role="tabpanel" aria-labelledby="tab-check">
+                <h2>予定の確認</h2>
+                <p class="summary">作成した予定や共有された予定は、ホームやカレンダーから確認できます。共有予定では、相手のリアクションやコメントも確認できます。</p>
+
+                <h3>予定を見る</h3>
+                <ul>
+                    <li>今日の予定はホームで確認できます。</li>
+                    <li>日付をまたいで確認したい場合は、カレンダーから目的の日を開きます。</li>
+                    <li>予定を開くと、日時やメモなどの詳細を確認できます。</li>
+                </ul>
+
+                <h3>リアクション・コメント</h3>
+                <p>共有された予定には、相手がリアクションやコメントを追加できます。参加できるか、確認したか、補足したいことがあるかをやり取りするために使います。</p>
+
+                <p class="tip">予定の内容を変更した場合は、共有相手にも更新後の内容が表示されます。重要な変更をしたときは、コメントでも補足しておくと伝わりやすくなります。</p>
+            </section>
+
+            <section class="panel" id="notifications" role="tabpanel" aria-labelledby="tab-notifications">
+                <h2>通知設定</h2>
+                <p class="summary">通知を使うと、共有されている予定に気づきやすくなります。朝の共有予定通知では、その日に共有されている予定を指定した時刻に受け取れます。</p>
+
+                <h3>設定できること</h3>
+                <ul>
+                    <li>朝の共有予定通知をオン・オフできます。</li>
+                    <li>通知を受け取る時刻を変更できます。</li>
+                    <li>共有予定がある日だけ通知を受け取れます。</li>
+                </ul>
+
+                <h3>変更方法</h3>
+                <ol>
+                    <li>設定画面を開きます。</li>
+                    <li>「朝の共有予定通知」を選びます。</li>
+                    <li>通知のオン・オフや時刻を変更します。</li>
+                    <li>保存して設定を反映します。</li>
+                </ol>
+
+                <p class="tip">端末側で通知が許可されていない場合、アプリ内で通知をオンにしていても通知が届かないことがあります。</p>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const tabs = Array.from(document.querySelectorAll('.tab'));
+        const panels = Array.from(document.querySelectorAll('.panel'));
+
+        function activateTab(tab) {
+            tabs.forEach((item) => {
+                item.setAttribute('aria-selected', item === tab ? 'true' : 'false');
+            });
+
+            panels.forEach((panel) => {
+                panel.classList.toggle('active', panel.id === tab.getAttribute('aria-controls'));
+            });
+        }
+
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', () => activateTab(tab));
+        });
+    </script>
+</body>
+</html>
