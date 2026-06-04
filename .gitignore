@@ -99,3 +99,9 @@ ios/Runner/Assets.xcassets/AppIcon*.appiconset/
 assets/icon/dev_icon.png
 
 .playwright-mcp/
+
+# Auto-copied files (added by hatcher)
+.ai/
+.hatcher-auto-copy.json
+lib/firebase_options.dart
+ios/Runner/GoogleService-Info.plist
