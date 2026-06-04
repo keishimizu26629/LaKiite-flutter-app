@@ -7,6 +7,7 @@
 - `index.html` - メインランディングページ
 - `privacy-policy.html` - プライバシーポリシー
 - `terms-of-service.html` - 利用規約
+- `how-to-use.html` - アプリの使い方
 - `support.html` - サポートページ
 - `account-deletion.html` - アカウント削除ページ（一般向け）
 - `account-deletion-webview.html` - アカウント削除ページ（WebView用）
@@ -31,6 +32,7 @@
 - メインページ: `https://keishimizu26629.github.io/LaKiite-flutter-app/`
 - プライバシーポリシー: `https://keishimizu26629.github.io/LaKiite-flutter-app/privacy-policy.html`
 - 利用規約: `https://keishimizu26629.github.io/LaKiite-flutter-app/terms-of-service.html`
+- 使い方: `https://keishimizu26629.github.io/LaKiite-flutter-app/how-to-use.html`
 - サポート: `https://keishimizu26629.github.io/LaKiite-flutter-app/support.html`
 - アカウント削除: `https://keishimizu26629.github.io/LaKiite-flutter-app/account-deletion.html`
 
@@ -42,6 +44,8 @@
 
 - Dev: `https://lakiite-flutter-app-dev.web.app/support.html`
 - Prod: `https://lakiite-flutter-app-prod.web.app/support.html`
+- 使い方 Dev: `https://lakiite-flutter-app-dev.web.app/how-to-use.html`
+- 使い方 Prod: `https://lakiite-flutter-app-prod.web.app/how-to-use.html`
 
 ### 🔧 設定変更が必要
 GitHub Repository Settings → Pages → Source を以下に変更してください：
@@ -57,6 +61,7 @@ App Store Connect や Google Play Console でのアプリ申請時に上記URL�
 - **データセーフティー** → **アカウント削除**: `https://keishimizu26629.github.io/LaKiite-flutter-app/account-deletion.html`
 
 ### アプリ内WebView での使用
+- **使い方**: `https://lakiite-flutter-app-dev.web.app/how-to-use.html` / `https://lakiite-flutter-app-prod.web.app/how-to-use.html`
 - **WebView削除機能**: `https://keishimizu26629.github.io/LaKiite-flutter-app/account-deletion-webview.html`
 - JavaScript連携でアプリ内削除処理と連動
 

@@ -6,6 +6,19 @@ class ListRepository implements IListRepository {
   ListRepository() : _firestore = FirebaseFirestore.instance;
   final FirebaseFirestore _firestore;
 
+  static DateTime parseCreatedAt(Object? value, {DateTime? fallback}) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+    if (value is DateTime) {
+      return value;
+    }
+    if (value is String) {
+      return DateTime.tryParse(value) ?? fallback ?? DateTime.now();
+    }
+    return fallback ?? DateTime.now();
+  }
+
   Map<String, dynamic> _toFirestore(UserList list) {
     final data = list.toJson();
     if (data['createdAt'] != null) {
@@ -16,11 +29,10 @@ class ListRepository implements IListRepository {
 
   UserList _fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    final timestamp = data['createdAt'] as Timestamp?;
     final modifiedData = Map<String, dynamic>.from(data);
     modifiedData['id'] = doc.id;
-    modifiedData['createdAt'] = timestamp?.toDate().toIso8601String() ??
-        DateTime.now().toIso8601String();
+    modifiedData['createdAt'] =
+        parseCreatedAt(data['createdAt']).toIso8601String();
     return UserList.fromJson(modifiedData);
   }
 

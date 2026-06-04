@@ -167,6 +167,24 @@ void main() {
       expect(textField.obscureText, isTrue);
     });
 
+    testWidgets('パスワード表示ボタンで入力内容を表示できる', (tester) async {
+      await tester.pumpWidget(
+        TestUtils.createTestApp(
+          overrides: TestProviders.forLoginForm,
+          child: const LoginPage(),
+        ),
+      );
+
+      final passwordField = find.widgetWithText(TextField, 'パスワード');
+      expect(tester.widget<TextField>(passwordField).obscureText, isTrue);
+
+      await tester.tap(find.byTooltip('パスワードを表示'));
+      await tester.pump();
+
+      expect(tester.widget<TextField>(passwordField).obscureText, isFalse);
+      expect(find.byTooltip('パスワードを非表示'), findsOneWidget);
+    });
+
     testWidgets('フォームバリデーションが動作する', (tester) async {
       await tester.pumpWidget(
         TestUtils.createTestApp(
