@@ -7,6 +7,7 @@ import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/calendar/schedule_form_logic.dart';
 import 'package:lakiite/presentation/list/list_providers.dart';
+import 'package:lakiite/presentation/list/user_list_icon.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/presentation/list/list_detail_page.dart';
 
@@ -759,6 +760,11 @@ class ScheduleFormPage extends HookConsumerWidget {
                                 },
                               ),
                               const SizedBox(width: 8),
+                              UserListIcon(
+                                key: Key('schedule_form_list_icon_${list.id}'),
+                                iconUrl: list.iconUrl,
+                              ),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Row(
                                   children: [
