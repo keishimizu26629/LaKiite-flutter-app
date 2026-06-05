@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/presentation/calendar/schedule_form_page.dart';
+import 'package:lakiite/presentation/list/list_providers.dart';
 import '../../mock/providers/test_providers.dart';
 import '../../mock/base_mock.dart';
 import '../../utils/test_utils.dart';
@@ -168,6 +172,10 @@ void main() {
         );
       }
 
+      Finder saveActionButton() {
+        return find.byKey(const Key('schedule_form_save_action'));
+      }
+
       testWidgets('タイトル空欄では保存不可だがフォーカスだけではエラー表示しない', (tester) async {
         await tester.pumpWidget(
           TestUtils.createTestApp(
@@ -181,9 +189,7 @@ void main() {
         expect(find.textContaining('場所を入力してください'), findsNothing);
         expect(find.text('タイトル（必須）'), findsOneWidget);
 
-        var saveButton = tester.widget<FloatingActionButton>(
-          find.byType(FloatingActionButton),
-        );
+        var saveButton = tester.widget<TextButton>(saveActionButton());
         expect(saveButton.onPressed, isNull);
 
         await tester.tap(titleField());
@@ -192,9 +198,7 @@ void main() {
         expect(find.text('タイトル（必須）'), findsOneWidget);
         expect(find.text('タイトルを入力してください'), findsNothing);
         expect(find.textContaining('場所を入力してください'), findsNothing);
-        saveButton = tester.widget<FloatingActionButton>(
-          find.byType(FloatingActionButton),
-        );
+        saveButton = tester.widget<TextButton>(saveActionButton());
         expect(saveButton.onPressed, isNull);
       });
 
@@ -210,9 +214,7 @@ void main() {
         await tester.enterText(titleField(), 'テスト予定');
         await tester.pump();
 
-        final saveButton = tester.widget<FloatingActionButton>(
-          find.byType(FloatingActionButton),
-        );
+        final saveButton = tester.widget<TextButton>(saveActionButton());
         expect(saveButton.onPressed, isNotNull);
         expect(find.text('未入力でも保存できます'), findsNothing);
         expect(find.textContaining('場所を入力してください'), findsNothing);
@@ -231,11 +233,53 @@ void main() {
         await tester.enterText(titleField(), '');
         await tester.pump();
 
-        final saveButton = tester.widget<FloatingActionButton>(
-          find.byType(FloatingActionButton),
-        );
+        final saveButton = tester.widget<TextButton>(saveActionButton());
         expect(saveButton.onPressed, isNull);
         expect(find.text('タイトルを入力してください'), findsNothing);
+      });
+
+      testWidgets('保存操作はAppBarに表示しフォーム上のFABを使わない', (tester) async {
+        await tester.pumpWidget(
+          TestUtils.createTestApp(
+            overrides: TestProviders.forScheduleCreation,
+            child: const ScheduleFormPage(),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        expect(find.text('公開するリスト'), findsOneWidget);
+        expect(
+          find.descendant(of: find.byType(AppBar), matching: find.text('保存')),
+          findsOneWidget,
+        );
+        expect(saveActionButton(), findsOneWidget);
+        expect(find.byType(FloatingActionButton), findsNothing);
+      });
+
+      testWidgets('公開するリストにはリストアイコンを表示する', (tester) async {
+        final list = UserList(
+          id: 'icon-list',
+          listName: 'アイコン付きリスト',
+          ownerId: BaseMock.testUserId,
+          memberIds: const [],
+          createdAt: DateTime(2026, 6, 6),
+        );
+        final overrides = [
+          ...TestProviders.forScheduleCreation,
+          userListsStreamProvider.overrideWith((ref) => Stream.value([list])),
+        ];
+
+        await tester.pumpWidget(
+          TestUtils.createTestApp(
+            overrides: overrides,
+            child: const ScheduleFormPage(),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('アイコン付きリスト'), findsOneWidget);
+        expect(find.byKey(const Key('schedule_form_list_icon_icon-list')),
+            findsOneWidget);
       });
 
       testWidgets('スケジュール作成フォームが正しく表示される', (tester) async {

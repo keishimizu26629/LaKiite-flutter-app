@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lakiite/app/di/providers.dart';
 import 'package:lakiite/domain/entity/display_list.dart';
 import 'package:lakiite/presentation/list/display_list_palette.dart';
+import 'package:lakiite/presentation/list/list_edit_save_action.dart';
 
 class DisplayListEditPage extends ConsumerStatefulWidget {
   const DisplayListEditPage({super.key, required this.displayList});
@@ -71,12 +72,9 @@ class _DisplayListEditPageState extends ConsumerState<DisplayListEditPage> {
       appBar: AppBar(
         title: const Text('表示用リストを編集'),
         actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: FilledButton(
-              onPressed: _isSaving ? null : _save,
-              child: const Text('保存'),
-            ),
+          ListEditSaveAction(
+            isSaving: _isSaving,
+            onSave: _save,
           ),
         ],
       ),

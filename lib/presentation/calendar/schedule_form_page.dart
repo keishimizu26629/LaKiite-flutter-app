@@ -7,6 +7,7 @@ import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/presentation/calendar/schedule_form_logic.dart';
 import 'package:lakiite/presentation/list/list_providers.dart';
+import 'package:lakiite/presentation/list/user_list_icon.dart';
 import 'package:lakiite/utils/logger.dart';
 import 'package:lakiite/presentation/list/list_detail_page.dart';
 
@@ -358,8 +359,27 @@ class ScheduleFormPage extends HookConsumerWidget {
       }
     }
 
+    final appBarForegroundColor =
+        Theme.of(context).appBarTheme.foregroundColor ??
+            Theme.of(context).colorScheme.onSurface;
+
     return Scaffold(
-      appBar: AppBar(title: Text(schedule != null ? '予定編集' : '予定作成')),
+      appBar: AppBar(
+        title: Text(schedule != null ? '予定編集' : '予定作成'),
+        actions: [
+          TextButton.icon(
+            key: const Key('schedule_form_save_action'),
+            onPressed: formValidationResult.value.canSave ? handleSave : null,
+            style: TextButton.styleFrom(
+              foregroundColor: appBarForegroundColor,
+              disabledForegroundColor:
+                  appBarForegroundColor.withValues(alpha: 0.45),
+            ),
+            icon: const Icon(Icons.save),
+            label: const Text('保存'),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -740,6 +760,11 @@ class ScheduleFormPage extends HookConsumerWidget {
                                 },
                               ),
                               const SizedBox(width: 8),
+                              UserListIcon(
+                                key: Key('schedule_form_list_icon_${list.id}'),
+                                iconUrl: list.iconUrl,
+                              ),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Row(
                                   children: [
@@ -811,13 +836,6 @@ class ScheduleFormPage extends HookConsumerWidget {
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: formValidationResult.value.canSave ? handleSave : null,
-        icon: const Icon(Icons.save),
-        label: const Text('保存'),
-        backgroundColor:
-            formValidationResult.value.canSave ? null : Colors.grey,
       ),
     );
   }
