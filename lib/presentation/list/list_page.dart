@@ -9,6 +9,7 @@ import 'display_list_palette.dart';
 import 'display_list_providers.dart';
 import 'list_detail_page.dart';
 import 'list_providers.dart';
+import 'list_summary_tile.dart';
 import '../widgets/banner_ad_widget.dart';
 
 /// プライベートリスト一覧を表示するウィジェット
@@ -163,10 +164,14 @@ class _PublicListsView extends StatelessWidget {
           itemCount: lists.length,
           itemBuilder: (context, index) {
             final list = lists[index];
-            return ListTile(
-              leading: const Icon(Icons.list),
-              title: Text(list.listName),
-              subtitle: Text('${list.memberIds.length}人のメンバー'),
+            final color = Theme.of(context).primaryColor;
+            return ListSummaryTile(
+              leading: CircleAvatar(
+                backgroundColor: color.withValues(alpha: 0.18),
+                child: Icon(Icons.list, color: color),
+              ),
+              title: list.listName,
+              memberCount: list.memberIds.length,
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -203,13 +208,13 @@ class _DisplayListsView extends StatelessWidget {
           itemBuilder: (context, index) {
             final displayList = displayLists[index];
             final color = DisplayListPalette.colorForKey(displayList.colorKey);
-            return ListTile(
+            return ListSummaryTile(
               leading: CircleAvatar(
                 backgroundColor: color.withValues(alpha: 0.18),
                 child: Icon(Icons.palette, color: color),
               ),
-              title: Text(displayList.name),
-              subtitle: Text('${displayList.memberIds.length}人のメンバー'),
+              title: displayList.name,
+              memberCount: displayList.memberIds.length,
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(

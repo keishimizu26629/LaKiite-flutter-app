@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../application/list/list_notifier.dart';
 import '../../domain/entity/list.dart';
-import '../user/user_providers.dart';
+import 'list_edit_save_action.dart';
+import 'list_member_profile_tile.dart';
 import 'list_providers.dart';
 
 class ListEditPage extends ConsumerStatefulWidget {
@@ -106,22 +107,10 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
       appBar: AppBar(
         title: const Text('リストを編集'),
         actions: [
-          if (_isLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: FilledButton(
-                onPressed: () => _saveChanges(currentList),
-                child: const Text('保存'),
-              ),
-            ),
+          ListEditSaveAction(
+            isSaving: _isLoading,
+            onSave: () => _saveChanges(currentList),
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -190,7 +179,7 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
                     itemCount: currentList.memberIds.length,
                     itemBuilder: (context, index) {
                       final memberId = currentList.memberIds[index];
-                      return _EditableListMemberTile(
+                      return EditableListMemberProfileTile(
                         memberId: memberId,
                         isExcluded: _excludedMemberIds.contains(memberId),
                         onChanged: (isExcluded) {
@@ -209,78 +198,6 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EditableListMemberTile extends ConsumerWidget {
-  const _EditableListMemberTile({
-    required this.memberId,
-    required this.isExcluded,
-    required this.onChanged,
-  });
-
-  final String memberId;
-  final bool isExcluded;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final memberAsync = ref.watch(publicUserProvider(memberId));
-
-    return memberAsync.when(
-      data: (member) {
-        if (member == null) {
-          return const SizedBox.shrink();
-        }
-
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          color: isExcluded ? Colors.grey.shade200 : null,
-          child: InkWell(
-            onTap: () => onChanged(!isExcluded),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundImage: member.iconUrl != null
-                    ? NetworkImage(member.iconUrl!)
-                    : null,
-                child: member.iconUrl == null ? const Icon(Icons.person) : null,
-              ),
-              title: Text(
-                member.displayName,
-                style: isExcluded ? const TextStyle(color: Colors.grey) : null,
-              ),
-              subtitle: member.shortBio != null && member.shortBio!.isNotEmpty
-                  ? Text(
-                      member.shortBio!,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    )
-                  : null,
-              trailing: Checkbox(
-                value: isExcluded,
-                onChanged: (value) => onChanged(value ?? false),
-              ),
-            ),
-          ),
-        );
-      },
-      loading: () => const Card(
-        child: ListTile(
-          leading: CircularProgressIndicator(),
-          title: Text('読み込み中...'),
-        ),
-      ),
-      error: (error, _) => Card(
-        child: ListTile(
-          leading: const Icon(Icons.error),
-          title: Text('エラーが発生しました: $error'),
         ),
       ),
     );
