@@ -809,6 +809,10 @@ class ScheduleFormPage extends HookConsumerWidget {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stack) => Center(child: Text('エラー: $error')),
             ),
+            const SizedBox(
+              key: Key('schedule_form_bottom_spacer'),
+              height: 96,
+            ),
           ],
         ),
       ),

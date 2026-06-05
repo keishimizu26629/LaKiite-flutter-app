@@ -238,6 +238,26 @@ void main() {
         expect(find.text('タイトルを入力してください'), findsNothing);
       });
 
+      testWidgets('公開するリスト下には保存ボタンに隠れない余白を確保する', (tester) async {
+        await tester.pumpWidget(
+          TestUtils.createTestApp(
+            overrides: TestProviders.forScheduleCreation,
+            child: const ScheduleFormPage(),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        final spacerFinder =
+            find.byKey(const Key('schedule_form_bottom_spacer'));
+
+        expect(find.text('公開するリスト'), findsOneWidget);
+        expect(spacerFinder, findsOneWidget);
+        expect(
+          tester.getSize(spacerFinder).height,
+          greaterThanOrEqualTo(72),
+        );
+      });
+
       testWidgets('スケジュール作成フォームが正しく表示される', (tester) async {
         await tester.pumpWidget(
           TestUtils.createTestApp(

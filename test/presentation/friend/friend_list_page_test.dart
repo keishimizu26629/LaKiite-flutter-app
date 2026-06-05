@@ -11,6 +11,7 @@ import 'package:lakiite/domain/entity/notification.dart' as domain;
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/presentation/friend/friend_list_page.dart';
 import 'package:lakiite/presentation/friend/friend_providers.dart';
+import 'package:lakiite/presentation/user/user_providers.dart' as user;
 
 class _StubAuthNotifier extends auth.AuthNotifier {
   _StubAuthNotifier(this._state);
@@ -69,6 +70,71 @@ void main() {
       expect(find.text('申請中'), findsOneWidget);
       expect(find.text('申請先ユーザー'), findsOneWidget);
       expect(find.text('承認待ち'), findsOneWidget);
+    });
+
+    testWidgets('申請中の相手にアイコンURLがある場合はユーザーアイコンを表示する', (tester) async {
+      const pendingIconUrl = 'https://example.com/pending-user.png';
+      final currentUser = UserModel.create(
+        id: 'current-user-id',
+        name: '現在ユーザー',
+        displayName: '現在ユーザー',
+      );
+      final pendingUserBase = UserModel.create(
+        id: 'pending-friend-id',
+        name: '申請先ユーザー',
+        displayName: '申請先ユーザー',
+      );
+      final pendingUser = pendingUserBase.copyWith(
+        publicProfile:
+            pendingUserBase.publicProfile.copyWith(iconUrl: pendingIconUrl),
+      );
+      final pendingRequest = domain.Notification.createFriendRequest(
+        fromUserId: currentUser.id,
+        toUserId: pendingUser.id,
+        fromUserDisplayName: currentUser.displayName,
+        toUserDisplayName: pendingUser.displayName,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(currentUser)),
+            ),
+            userFriendsStreamProvider.overrideWith(
+              (ref) => Stream.value([]),
+            ),
+            notification.sentNotificationsByTypeProvider.overrideWith(
+              (ref, type) => Stream.value([pendingRequest]),
+            ),
+            user.userStreamProvider.overrideWith(
+              (ref, userId) => Stream.value(
+                userId == pendingUser.id ? pendingUser : null,
+              ),
+            ),
+            notification.unreadNotificationCountProvider.overrideWith(
+              (ref) => Stream.value(0),
+            ),
+            notification.unreadNotificationCountByTypeProvider.overrideWith(
+              (ref, type) => Stream.value(0),
+            ),
+          ],
+          child: const MaterialApp(home: FriendListPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('申請先ユーザー'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is CircleAvatar &&
+              widget.backgroundImage is NetworkImage &&
+              (widget.backgroundImage! as NetworkImage).url == pendingIconUrl,
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isA<NetworkImageLoadException>());
     });
 
     testWidgets('拒否済みの送信済み友達申請は申請中セクションに表示しない', (tester) async {
