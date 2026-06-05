@@ -10,6 +10,7 @@ import 'display_list_providers.dart';
 import 'list_detail_page.dart';
 import 'list_providers.dart';
 import 'list_summary_tile.dart';
+import 'user_list_icon.dart';
 import '../widgets/banner_ad_widget.dart';
 
 /// プライベートリスト一覧を表示するウィジェット
@@ -164,12 +165,8 @@ class _PublicListsView extends StatelessWidget {
           itemCount: lists.length,
           itemBuilder: (context, index) {
             final list = lists[index];
-            final color = Theme.of(context).primaryColor;
             return ListSummaryTile(
-              leading: CircleAvatar(
-                backgroundColor: color.withValues(alpha: 0.18),
-                child: Icon(Icons.list, color: color),
-              ),
+              leading: UserListIcon(iconUrl: list.iconUrl),
               title: list.listName,
               memberCount: list.memberIds.length,
               onTap: () {

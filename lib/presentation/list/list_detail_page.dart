@@ -7,6 +7,7 @@ import 'list_edit_page.dart';
 import 'list_detail_scaffold.dart';
 import 'list_member_profile_tile.dart';
 import 'list_providers.dart';
+import 'user_list_icon.dart';
 
 /// プライベートリストの詳細画面を表示するウィジェット
 ///
@@ -36,13 +37,7 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
         return ListDetailScaffold(
           appBarTitle: 'リストの詳細',
           title: list.listName,
-          leading: CircleAvatar(
-            radius: 40,
-            backgroundImage:
-                list.iconUrl != null ? NetworkImage(list.iconUrl!) : null,
-            child:
-                list.iconUrl == null ? const Icon(Icons.list, size: 40) : null,
-          ),
+          leading: UserListIcon(iconUrl: list.iconUrl, radius: 40),
           description: list.description,
           memberCount: list.memberIds.length,
           onEdit: () {

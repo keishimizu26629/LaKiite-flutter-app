@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/presentation/calendar/schedule_form_page.dart';
+import 'package:lakiite/presentation/list/list_providers.dart';
 import '../../mock/providers/test_providers.dart';
 import '../../mock/base_mock.dart';
 import '../../utils/test_utils.dart';
@@ -250,6 +254,32 @@ void main() {
         );
         expect(saveActionButton(), findsOneWidget);
         expect(find.byType(FloatingActionButton), findsNothing);
+      });
+
+      testWidgets('公開するリストにはリストアイコンを表示する', (tester) async {
+        final list = UserList(
+          id: 'icon-list',
+          listName: 'アイコン付きリスト',
+          ownerId: BaseMock.testUserId,
+          memberIds: const [],
+          createdAt: DateTime(2026, 6, 6),
+        );
+        final overrides = [
+          ...TestProviders.forScheduleCreation,
+          userListsStreamProvider.overrideWith((ref) => Stream.value([list])),
+        ];
+
+        await tester.pumpWidget(
+          TestUtils.createTestApp(
+            overrides: overrides,
+            child: const ScheduleFormPage(),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('アイコン付きリスト'), findsOneWidget);
+        expect(find.byKey(const Key('schedule_form_list_icon_icon-list')),
+            findsOneWidget);
       });
 
       testWidgets('スケジュール作成フォームが正しく表示される', (tester) async {
