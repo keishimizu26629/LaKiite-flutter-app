@@ -358,8 +358,27 @@ class ScheduleFormPage extends HookConsumerWidget {
       }
     }
 
+    final appBarForegroundColor =
+        Theme.of(context).appBarTheme.foregroundColor ??
+            Theme.of(context).colorScheme.onSurface;
+
     return Scaffold(
-      appBar: AppBar(title: Text(schedule != null ? '予定編集' : '予定作成')),
+      appBar: AppBar(
+        title: Text(schedule != null ? '予定編集' : '予定作成'),
+        actions: [
+          TextButton.icon(
+            key: const Key('schedule_form_save_action'),
+            onPressed: formValidationResult.value.canSave ? handleSave : null,
+            style: TextButton.styleFrom(
+              foregroundColor: appBarForegroundColor,
+              disabledForegroundColor:
+                  appBarForegroundColor.withValues(alpha: 0.45),
+            ),
+            icon: const Icon(Icons.save),
+            label: const Text('保存'),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -809,19 +828,8 @@ class ScheduleFormPage extends HookConsumerWidget {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stack) => Center(child: Text('エラー: $error')),
             ),
-            const SizedBox(
-              key: Key('schedule_form_bottom_spacer'),
-              height: 96,
-            ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: formValidationResult.value.canSave ? handleSave : null,
-        icon: const Icon(Icons.save),
-        label: const Text('保存'),
-        backgroundColor:
-            formValidationResult.value.canSave ? null : Colors.grey,
       ),
     );
   }
