@@ -168,6 +168,10 @@ void main() {
         );
       }
 
+      Finder saveActionButton() {
+        return find.byKey(const Key('schedule_form_save_action'));
+      }
+
       testWidgets('タイトル空欄では保存不可だがフォーカスだけではエラー表示しない', (tester) async {
         await tester.pumpWidget(
           TestUtils.createTestApp(
@@ -181,9 +185,7 @@ void main() {
         expect(find.textContaining('場所を入力してください'), findsNothing);
         expect(find.text('タイトル（必須）'), findsOneWidget);
 
-        var saveButton = tester.widget<FloatingActionButton>(
-          find.byType(FloatingActionButton),
-        );
+        var saveButton = tester.widget<TextButton>(saveActionButton());
         expect(saveButton.onPressed, isNull);
 
         await tester.tap(titleField());
@@ -192,9 +194,7 @@ void main() {
         expect(find.text('タイトル（必須）'), findsOneWidget);
         expect(find.text('タイトルを入力してください'), findsNothing);
         expect(find.textContaining('場所を入力してください'), findsNothing);
-        saveButton = tester.widget<FloatingActionButton>(
-          find.byType(FloatingActionButton),
-        );
+        saveButton = tester.widget<TextButton>(saveActionButton());
         expect(saveButton.onPressed, isNull);
       });
 
@@ -210,9 +210,7 @@ void main() {
         await tester.enterText(titleField(), 'テスト予定');
         await tester.pump();
 
-        final saveButton = tester.widget<FloatingActionButton>(
-          find.byType(FloatingActionButton),
-        );
+        final saveButton = tester.widget<TextButton>(saveActionButton());
         expect(saveButton.onPressed, isNotNull);
         expect(find.text('未入力でも保存できます'), findsNothing);
         expect(find.textContaining('場所を入力してください'), findsNothing);
@@ -231,14 +229,12 @@ void main() {
         await tester.enterText(titleField(), '');
         await tester.pump();
 
-        final saveButton = tester.widget<FloatingActionButton>(
-          find.byType(FloatingActionButton),
-        );
+        final saveButton = tester.widget<TextButton>(saveActionButton());
         expect(saveButton.onPressed, isNull);
         expect(find.text('タイトルを入力してください'), findsNothing);
       });
 
-      testWidgets('公開するリスト下には保存ボタンに隠れない余白を確保する', (tester) async {
+      testWidgets('保存操作はAppBarに表示しフォーム上のFABを使わない', (tester) async {
         await tester.pumpWidget(
           TestUtils.createTestApp(
             overrides: TestProviders.forScheduleCreation,
@@ -247,15 +243,13 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 200));
 
-        final spacerFinder =
-            find.byKey(const Key('schedule_form_bottom_spacer'));
-
         expect(find.text('公開するリスト'), findsOneWidget);
-        expect(spacerFinder, findsOneWidget);
         expect(
-          tester.getSize(spacerFinder).height,
-          greaterThanOrEqualTo(72),
+          find.descendant(of: find.byType(AppBar), matching: find.text('保存')),
+          findsOneWidget,
         );
+        expect(saveActionButton(), findsOneWidget);
+        expect(find.byType(FloatingActionButton), findsNothing);
       });
 
       testWidgets('スケジュール作成フォームが正しく表示される', (tester) async {
