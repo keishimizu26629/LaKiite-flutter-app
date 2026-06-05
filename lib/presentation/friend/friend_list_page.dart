@@ -217,8 +217,8 @@ class _PendingFriendRequestTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pendingUserAsync =
-        ref.watch(userStreamProvider(request.receiveUserId));
-    final pendingUser = pendingUserAsync.valueOrNull?.publicProfile;
+        ref.watch(publicUserProvider(request.receiveUserId));
+    final pendingUser = pendingUserAsync.valueOrNull;
     final displayName = pendingUser?.displayName ??
         request.receiveUserDisplayName ??
         request.receiveUserId;
