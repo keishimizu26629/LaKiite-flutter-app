@@ -10,6 +10,7 @@ import '../friend/friend_search_page.dart';
 import '../friend/friend_profile_page.dart';
 import '../widgets/notification_button.dart';
 import '../widgets/banner_ad_widget.dart';
+import '../user/user_providers.dart';
 import '../widgets/default_user_icon.dart';
 
 /// フレンドリストを表示するページ。
@@ -142,34 +143,9 @@ class _FriendListPageState extends ConsumerState<FriendListPage> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
-                ...pendingRequests.map((request) {
-                  final displayName =
-                      request.receiveUserDisplayName ?? request.receiveUserId;
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 4),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 4,
-                      ),
-                      leading: const CircleAvatar(
-                        radius: 24,
-                        child: Icon(Icons.hourglass_empty),
-                      ),
-                      title: Text(
-                        displayName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      subtitle: Text(
-                        '承認待ち',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                      ),
-                    ),
-                  );
-                }),
+                ...pendingRequests.map(
+                  (request) => _PendingFriendRequestTile(request: request),
+                ),
               ],
             ],
           ),
@@ -229,6 +205,50 @@ class _FriendListPageState extends ConsumerState<FriendListPage> {
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, stack) =>
           Scaffold(body: Center(child: Text('エラーが発生しました: $error'))),
+    );
+  }
+}
+
+class _PendingFriendRequestTile extends ConsumerWidget {
+  const _PendingFriendRequestTile({required this.request});
+
+  final domain.Notification request;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pendingUserAsync =
+        ref.watch(userStreamProvider(request.receiveUserId));
+    final pendingUser = pendingUserAsync.valueOrNull?.publicProfile;
+    final displayName = pendingUser?.displayName ??
+        request.receiveUserDisplayName ??
+        request.receiveUserId;
+    final iconUrl = pendingUser?.iconUrl;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 4),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 4,
+        ),
+        leading: iconUrl != null && iconUrl.isNotEmpty
+            ? CircleAvatar(
+                radius: 24,
+                backgroundImage: NetworkImage(iconUrl),
+              )
+            : const DefaultUserIcon(size: 48),
+        title: Text(
+          displayName,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        subtitle: Text(
+          '承認待ち',
+          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+        ),
+      ),
     );
   }
 }
