@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lakiite/app/di/providers.dart';
 import 'package:lakiite/domain/entity/display_list.dart';
-import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/presentation/list/display_list_edit_page.dart';
 import 'package:lakiite/presentation/list/display_list_member_invite_page.dart';
 import 'package:lakiite/presentation/list/display_list_palette.dart';
 import 'package:lakiite/presentation/list/display_list_providers.dart';
+import 'package:lakiite/presentation/user/user_providers.dart';
 
 class DisplayListDetailPage extends ConsumerWidget {
   const DisplayListDetailPage({super.key, required this.displayList});
@@ -150,56 +150,73 @@ class DisplayListDetailPage extends ConsumerWidget {
               itemCount: currentDisplayList.memberIds.length,
               itemBuilder: (context, index) {
                 final memberId = currentDisplayList.memberIds[index];
-                return FutureBuilder<PublicUserModel?>(
-                  future: ref
-                      .read(userRepositoryProvider)
-                      .getFriendPublicProfile(memberId),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Card(
-                        margin: EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          leading: CircularProgressIndicator(),
-                          title: Text('読み込み中...'),
-                        ),
-                      );
-                    }
-                    final member = snapshot.data;
-                    if (member == null) {
-                      return const SizedBox.shrink();
-                    }
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: member.iconUrl != null
-                              ? NetworkImage(member.iconUrl!)
-                              : null,
-                          child: member.iconUrl == null
-                              ? const Icon(Icons.person)
-                              : null,
-                        ),
-                        title: Text(member.displayName),
-                        trailing: IconButton(
-                          tooltip: 'メンバーから削除',
-                          icon: const Icon(Icons.remove_circle_outline),
-                          onPressed: () async {
-                            await ref
-                                .read(displayListRepositoryProvider)
-                                .removeMember(
-                                  ownerId: currentDisplayList.ownerId,
-                                  displayListId: currentDisplayList.id,
-                                  userId: memberId,
-                                );
-                          },
-                        ),
-                      ),
-                    );
-                  },
+                return _DisplayListMemberTile(
+                  memberId: memberId,
+                  displayList: currentDisplayList,
                 );
               },
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DisplayListMemberTile extends ConsumerWidget {
+  const _DisplayListMemberTile({
+    required this.memberId,
+    required this.displayList,
+  });
+
+  final String memberId;
+  final DisplayList displayList;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final memberAsync = ref.watch(publicUserProvider(memberId));
+
+    return memberAsync.when(
+      data: (member) {
+        if (member == null) {
+          return const SizedBox.shrink();
+        }
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundImage:
+                  member.iconUrl != null ? NetworkImage(member.iconUrl!) : null,
+              child: member.iconUrl == null ? const Icon(Icons.person) : null,
+            ),
+            title: Text(member.displayName),
+            trailing: IconButton(
+              tooltip: 'メンバーから削除',
+              icon: const Icon(Icons.remove_circle_outline),
+              onPressed: () async {
+                await ref.read(displayListRepositoryProvider).removeMember(
+                      ownerId: displayList.ownerId,
+                      displayListId: displayList.id,
+                      userId: memberId,
+                    );
+              },
+            ),
+          ),
+        );
+      },
+      loading: () => const Card(
+        margin: EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          leading: CircularProgressIndicator(),
+          title: Text('読み込み中...'),
+        ),
+      ),
+      error: (error, _) => Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          leading: const Icon(Icons.error),
+          title: Text('エラーが発生しました: $error'),
         ),
       ),
     );
