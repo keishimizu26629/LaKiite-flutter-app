@@ -46,7 +46,7 @@ class UserManager implements IUserManager {
     }
 
     final profiles = await _userRepository.getPublicProfiles(user.friends);
-    return profiles;
+    return _sortByDisplayName(profiles);
   }
 
   @override
@@ -57,7 +57,21 @@ class UserManager implements IUserManager {
       }
 
       final profiles = await _userRepository.getPublicProfiles(user.friends);
-      return profiles;
+      return _sortByDisplayName(profiles);
     });
+  }
+
+  List<PublicUserModel> _sortByDisplayName(List<PublicUserModel> profiles) {
+    final sortedProfiles = [...profiles];
+    sortedProfiles.sort((a, b) {
+      final nameComparison =
+          a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase());
+      if (nameComparison != 0) {
+        return nameComparison;
+      }
+
+      return a.id.compareTo(b.id);
+    });
+    return sortedProfiles;
   }
 }

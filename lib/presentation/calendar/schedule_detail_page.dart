@@ -18,6 +18,7 @@ import 'package:lakiite/presentation/calendar/widgets/delete_confirmation_dialog
 import 'package:lakiite/presentation/calendar/widgets/reaction_users_sheet.dart';
 import 'package:lakiite/presentation/theme/app_theme.dart';
 import 'package:lakiite/presentation/calendar/edit_schedule_page.dart';
+import 'package:lakiite/presentation/calendar/schedule_shared_lists_page.dart';
 import 'package:lakiite/presentation/widgets/default_user_icon.dart';
 import 'package:lakiite/domain/entity/notification.dart' as domain;
 import 'package:lakiite/application/notification/notification_notifier.dart';
@@ -60,7 +61,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(authNotifierProvider);
+    final authStateAsync = ref.watch(authNotifierProvider);
     final interactions = ref.watch(
       scheduleInteractionNotifierProvider(schedule.id),
     );
@@ -79,6 +80,8 @@ class ScheduleDetailPage extends HookConsumerWidget {
       loading: () => schedule,
       error: (_, __) => schedule,
     );
+    final currentUserId = authStateAsync.value?.user?.id;
+    final isOwnSchedule = currentSchedule.ownerId == currentUserId;
 
     // コメント入力用のテキストコントローラー
     final commentController = useTextEditingController();
@@ -169,8 +172,7 @@ class ScheduleDetailPage extends HookConsumerWidget {
       appBar: AppBar(
         title: const Text('予定の詳細'),
         actions: [
-          if (currentSchedule.ownerId ==
-              ref.watch(authNotifierProvider).value?.user?.id) ...[
+          if (currentSchedule.ownerId == authStateAsync.value?.user?.id) ...[
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: IconButton(
@@ -291,6 +293,24 @@ class ScheduleDetailPage extends HookConsumerWidget {
                               ),
                             ],
                           ),
+                          if (isOwnSchedule) ...[
+                            const SizedBox(height: 12),
+                            OutlinedButton.icon(
+                              key: const Key('schedule_shared_lists_button'),
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ScheduleSharedListsPage(
+                                      schedule: currentSchedule,
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.groups),
+                              label: const Text('公開先リスト'),
+                            ),
+                          ],
                           const SizedBox(height: 16),
                           // インタラクション情報（リアクション数・コメント数）
                           Container(

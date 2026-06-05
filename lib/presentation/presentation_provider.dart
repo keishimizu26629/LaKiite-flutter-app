@@ -19,4 +19,4 @@ export 'package:lakiite/presentation/friend/friend_providers.dart'
 export 'package:lakiite/presentation/list/list_providers.dart'
     show listStreamProvider, userListsStreamProvider;
 export 'package:lakiite/presentation/user/user_providers.dart'
-    show userStreamProvider;
+    show publicUserProvider, userStreamProvider;

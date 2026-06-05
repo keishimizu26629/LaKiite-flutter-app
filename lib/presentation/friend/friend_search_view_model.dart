@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/di/providers.dart';
 import '../../domain/entity/notification.dart' as domain;
+import '../../domain/entity/user.dart' as domain_user;
 import '../../domain/interfaces/i_notification_repository.dart';
 import '../../domain/interfaces/i_user_repository.dart';
 import '../../application/auth/auth_notifier.dart' as auth;
@@ -30,13 +31,11 @@ final friendSearchViewModelProvider =
         (ref) {
   final userRepository = ref.watch(userRepositoryProvider);
   final notificationRepository = ref.watch(notificationRepositoryProvider);
-  final currentUser = ref.watch(auth.authNotifierProvider).value?.user;
+  final currentUserId = ref.watch(auth.authNotifierProvider).value?.user?.id;
   return FriendSearchViewModel(
     userRepository,
     notificationRepository,
-    currentUser?.id ?? '',
-    currentUser?.publicProfile.displayName ?? '',
-    currentUser?.friends ?? const [],
+    currentUserId ?? '',
   );
 });
 
@@ -46,16 +45,12 @@ class FriendSearchViewModel
     this._userRepository,
     this._notificationRepository,
     this._currentUserId,
-    this._currentUserDisplayName,
-    this._currentUserFriendIds,
   ) : super(const AsyncValue.data(null));
   String? _message;
   String? get message => _message;
   final IUserRepository _userRepository;
   final INotificationRepository _notificationRepository;
   final String _currentUserId;
-  final String _currentUserDisplayName;
-  final List<String> _currentUserFriendIds;
 
   Future<void> searchUser(String searchId) async {
     try {
@@ -75,6 +70,8 @@ class FriendSearchViewModel
       if (user.id == _currentUserId) {
         throw Exception('自分自身は友達に追加できません');
       }
+
+      final currentUser = await _getCurrentUser();
 
       // 友達申請の状態を確認(送信済みまたは受信済み)
       bool hasPending = false;
@@ -106,7 +103,7 @@ class FriendSearchViewModel
         iconUrl: user.iconUrl ?? '',
         shortBio: user.shortBio,
         hasPendingRequest: hasPending,
-        isFriend: _currentUserFriendIds.contains(user.id),
+        isFriend: currentUser.friends.contains(user.id),
       );
 
       state = AsyncValue.data(searchUser);
@@ -125,12 +122,14 @@ class FriendSearchViewModel
         throw Exception('ユーザー情報が見つかりません');
       }
 
+      final currentUser = await _getCurrentUser();
+
       AppLogger.info('👥 友達申請を送信開始: $_currentUserId → $toUserId');
 
       final notification = domain.Notification.createFriendRequest(
         fromUserId: _currentUserId,
         toUserId: toUserId,
-        fromUserDisplayName: _currentUserDisplayName,
+        fromUserDisplayName: currentUser.publicProfile.displayName,
         toUserDisplayName: state.value!.displayName,
       );
 
@@ -146,6 +145,14 @@ class FriendSearchViewModel
       AppLogger.error('❌ 友達申請送信エラー: $e');
       state = AsyncValue.error(e, StackTrace.current);
     }
+  }
+
+  Future<domain_user.UserModel> _getCurrentUser() async {
+    final currentUser = await _userRepository.getUser(_currentUserId);
+    if (currentUser == null) {
+      throw Exception('ログインユーザー情報が見つかりません');
+    }
+    return currentUser;
   }
 
   // 状態をリセットするメソッド
