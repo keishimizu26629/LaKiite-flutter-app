@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../app/di/providers.dart';
 import '../../application/list/list_notifier.dart';
 import '../../domain/entity/list.dart';
-import '../../domain/entity/user.dart';
+import '../user/user_providers.dart';
 import 'list_member_invite_page.dart';
 import 'list_edit_page.dart';
 import 'list_providers.dart';
@@ -179,65 +178,7 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
                   itemCount: list.memberIds.length,
                   itemBuilder: (context, index) {
                     final memberId = list.memberIds[index];
-                    return FutureBuilder<PublicUserModel?>(
-                      future: ref
-                          .read(userRepositoryProvider)
-                          .getFriendPublicProfile(memberId),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Card(
-                            margin: EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              leading: CircularProgressIndicator(),
-                              title: Text('読み込み中...'),
-                            ),
-                          );
-                        }
-
-                        if (snapshot.hasError) {
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              leading: const Icon(Icons.error),
-                              title: Text('エラーが発生しました: ${snapshot.error}'),
-                            ),
-                          );
-                        }
-
-                        final member = snapshot.data;
-                        if (member == null) {
-                          return const SizedBox.shrink();
-                        }
-
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage: member.iconUrl != null
-                                  ? NetworkImage(member.iconUrl!)
-                                  : null,
-                              child: member.iconUrl == null
-                                  ? const Icon(Icons.person)
-                                  : null,
-                            ),
-                            title: Text(member.displayName),
-                            subtitle: member.shortBio != null &&
-                                    member.shortBio!.isNotEmpty
-                                ? Text(
-                                    member.shortBio!,
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 14,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  )
-                                : null,
-                          ),
-                        );
-                      },
-                    );
+                    return _ListMemberTile(memberId: memberId);
                   },
                 ),
                 const SizedBox(height: 16),
@@ -250,6 +191,62 @@ class _ListDetailPageState extends ConsumerState<ListDetailPage> {
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) =>
           Scaffold(body: Center(child: Text('エラーが発生しました: $error'))),
+    );
+  }
+}
+
+class _ListMemberTile extends ConsumerWidget {
+  const _ListMemberTile({required this.memberId});
+
+  final String memberId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final memberAsync = ref.watch(publicUserProvider(memberId));
+
+    return memberAsync.when(
+      data: (member) {
+        if (member == null) {
+          return const SizedBox.shrink();
+        }
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundImage:
+                  member.iconUrl != null ? NetworkImage(member.iconUrl!) : null,
+              child: member.iconUrl == null ? const Icon(Icons.person) : null,
+            ),
+            title: Text(member.displayName),
+            subtitle: member.shortBio != null && member.shortBio!.isNotEmpty
+                ? Text(
+                    member.shortBio!,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                : null,
+          ),
+        );
+      },
+      loading: () => const Card(
+        margin: EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          leading: CircularProgressIndicator(),
+          title: Text('読み込み中...'),
+        ),
+      ),
+      error: (error, _) => Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          leading: const Icon(Icons.error),
+          title: Text('エラーが発生しました: $error'),
+        ),
+      ),
     );
   }
 }
