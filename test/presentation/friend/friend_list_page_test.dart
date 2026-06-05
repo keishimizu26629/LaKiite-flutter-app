@@ -107,9 +107,9 @@ void main() {
             notification.sentNotificationsByTypeProvider.overrideWith(
               (ref, type) => Stream.value([pendingRequest]),
             ),
-            user.userStreamProvider.overrideWith(
-              (ref, userId) => Stream.value(
-                userId == pendingUser.id ? pendingUser : null,
+            user.publicUserProvider.overrideWith(
+              (ref, userId) => Future.value(
+                userId == pendingUser.id ? pendingUser.publicProfile : null,
               ),
             ),
             notification.unreadNotificationCountProvider.overrideWith(
