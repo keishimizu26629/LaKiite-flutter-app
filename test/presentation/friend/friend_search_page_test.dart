@@ -98,7 +98,9 @@ void main() {
         ),
         [friend.id],
       );
-      final userRepository = MockUserRepository()..addTestUser(friend);
+      final userRepository = MockUserRepository()
+        ..addTestUser(currentUser)
+        ..addTestUser(friend);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -130,6 +132,53 @@ void main() {
         find.widgetWithText(ElevatedButton, '追加済み'),
       );
       expect(button.onPressed, isNull);
+    });
+
+    testWidgets('検索時はログイン時点ではなく最新の友達状態で追加済みを判定する', (tester) async {
+      final friend = UserModel.create(
+        id: 'friend-user-id',
+        name: 'フレンドユーザー',
+        displayName: 'フレンドユーザー',
+      );
+      final staleAuthUser = userWithFriends(
+        UserModel.create(
+          id: 'current-user-id',
+          name: '現在ユーザー',
+          displayName: '現在ユーザー',
+        ),
+        [friend.id],
+      );
+      final latestCurrentUser = userWithFriends(staleAuthUser, const []);
+      final userRepository = MockUserRepository()
+        ..addTestUser(latestCurrentUser)
+        ..addTestUser(friend);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(staleAuthUser)),
+            ),
+            userRepositoryProvider.overrideWithValue(userRepository),
+            notificationRepositoryProvider.overrideWithValue(
+              MockNotificationRepository(),
+            ),
+            notification.unreadNotificationCountByTypeProvider.overrideWith(
+              (ref, domain.NotificationType type) => Stream.value(0),
+            ),
+          ],
+          child: const MaterialApp(home: FriendSearchPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+          find.byType(TextField), friend.searchId.toString());
+      await tester.tap(find.byIcon(Icons.search));
+      await tester.pumpAndSettle();
+
+      expect(find.text('申請する'), findsOneWidget);
+      expect(find.text('追加済み'), findsNothing);
     });
   });
 }

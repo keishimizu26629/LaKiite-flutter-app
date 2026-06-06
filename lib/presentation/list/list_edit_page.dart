@@ -2,10 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../app/di/providers.dart';
 import '../../application/list/list_notifier.dart';
 import '../../domain/entity/list.dart';
-import '../../domain/entity/user.dart';
+import 'list_edit_save_action.dart';
+import 'list_member_profile_tile.dart';
 import 'list_providers.dart';
 
 class ListEditPage extends ConsumerStatefulWidget {
@@ -107,22 +107,10 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
       appBar: AppBar(
         title: const Text('リストを編集'),
         actions: [
-          if (_isLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: FilledButton(
-                onPressed: () => _saveChanges(currentList),
-                child: const Text('保存'),
-              ),
-            ),
+          ListEditSaveAction(
+            isSaving: _isLoading,
+            onSave: () => _saveChanges(currentList),
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -191,97 +179,17 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
                     itemCount: currentList.memberIds.length,
                     itemBuilder: (context, index) {
                       final memberId = currentList.memberIds[index];
-                      return FutureBuilder<PublicUserModel?>(
-                        future: ref
-                            .read(userRepositoryProvider)
-                            .getFriendPublicProfile(memberId),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Card(
-                              child: ListTile(
-                                leading: CircularProgressIndicator(),
-                                title: Text('読み込み中...'),
-                              ),
-                            );
-                          }
-
-                          if (snapshot.hasError) {
-                            return Card(
-                              child: ListTile(
-                                leading: const Icon(Icons.error),
-                                title: Text('エラーが発生しました: ${snapshot.error}'),
-                              ),
-                            );
-                          }
-
-                          final member = snapshot.data;
-                          if (member == null) {
-                            return const SizedBox.shrink();
-                          }
-
-                          final isExcluded =
-                              _excludedMemberIds.contains(memberId);
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            color: isExcluded ? Colors.grey.shade200 : null,
-                            child: InkWell(
-                              onTap: () {
-                                setState(() {
-                                  if (isExcluded) {
-                                    _excludedMemberIds.remove(memberId);
-                                  } else {
-                                    _excludedMemberIds.add(memberId);
-                                  }
-                                });
-                              },
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundImage: member.iconUrl != null
-                                      ? NetworkImage(member.iconUrl!)
-                                      : null,
-                                  child: member.iconUrl == null
-                                      ? const Icon(Icons.person)
-                                      : null,
-                                ),
-                                title: Text(
-                                  member.displayName,
-                                  style: isExcluded
-                                      ? const TextStyle(color: Colors.grey)
-                                      : null,
-                                ),
-                                subtitle: member.shortBio != null &&
-                                        member.shortBio!.isNotEmpty
-                                    ? Text(
-                                        member.shortBio!,
-                                        style: isExcluded
-                                            ? TextStyle(
-                                                color: Colors.grey[600],
-                                                fontSize: 14,
-                                              )
-                                            : TextStyle(
-                                                color: Colors.grey[600],
-                                                fontSize: 14,
-                                              ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      )
-                                    : null,
-                                trailing: Checkbox(
-                                  value: isExcluded,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      if (value == true) {
-                                        _excludedMemberIds.add(memberId);
-                                      } else {
-                                        _excludedMemberIds.remove(memberId);
-                                      }
-                                    });
-                                  },
-                                ),
-                              ),
-                            ),
-                          );
+                      return EditableListMemberProfileTile(
+                        memberId: memberId,
+                        isExcluded: _excludedMemberIds.contains(memberId),
+                        onChanged: (isExcluded) {
+                          setState(() {
+                            if (isExcluded) {
+                              _excludedMemberIds.add(memberId);
+                            } else {
+                              _excludedMemberIds.remove(memberId);
+                            }
+                          });
                         },
                       );
                     },
