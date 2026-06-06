@@ -12,18 +12,18 @@ import '../../infrastructure/firebase/push_notification_sender.dart';
 
 final scheduleInteractionNotifierProvider = StateNotifierProvider.autoDispose
     .family<ScheduleInteractionNotifier, ScheduleInteractionState, String>((
-      ref,
-      scheduleId,
-    ) {
-      ref.watch(repositorySessionKeyProvider);
+  ref,
+  scheduleId,
+) {
+  ref.watch(repositorySessionKeyProvider);
 
-      return ScheduleInteractionNotifier(
-        ref.watch(scheduleInteractionRepositoryProvider),
-        scheduleId,
-        ref,
-        pushNotificationSender: ref.watch(pushNotificationSenderProvider),
-      );
-    });
+  return ScheduleInteractionNotifier(
+    ref.watch(scheduleInteractionRepositoryProvider),
+    scheduleId,
+    ref,
+    pushNotificationSender: ref.watch(pushNotificationSenderProvider),
+  );
+});
 
 class ScheduleInteractionNotifier
     extends StateNotifier<ScheduleInteractionState> {
@@ -33,8 +33,8 @@ class ScheduleInteractionNotifier
     this._ref, {
     PushNotificationSender? pushNotificationSender,
     bool enablePushNotifications = true,
-  }) : _enablePushNotifications = enablePushNotifications,
-       super(const ScheduleInteractionState()) {
+  })  : _enablePushNotifications = enablePushNotifications,
+        super(const ScheduleInteractionState()) {
     if (_enablePushNotifications) {
       _pushNotificationSender =
           pushNotificationSender ?? PushNotificationSender();
@@ -61,31 +61,27 @@ class ScheduleInteractionNotifier
         throw Exception('User not authenticated');
       }
 
-      _reactionsSubscription = _repository
-          .watchReactions(_scheduleId)
-          .listen(
-            (reactions) {
-              if (!mounted) return;
-              state = state.copyWith(reactions: reactions);
-            },
-            onError: (error) {
-              if (!mounted) return;
-              state = state.copyWith(error: error.toString());
-            },
-          );
+      _reactionsSubscription = _repository.watchReactions(_scheduleId).listen(
+        (reactions) {
+          if (!mounted) return;
+          state = state.copyWith(reactions: reactions);
+        },
+        onError: (error) {
+          if (!mounted) return;
+          state = state.copyWith(error: error.toString());
+        },
+      );
 
-      _commentsSubscription = _repository
-          .watchComments(_scheduleId)
-          .listen(
-            (comments) {
-              if (!mounted) return;
-              state = state.copyWith(comments: comments);
-            },
-            onError: (error) {
-              if (!mounted) return;
-              state = state.copyWith(error: error.toString());
-            },
-          );
+      _commentsSubscription = _repository.watchComments(_scheduleId).listen(
+        (comments) {
+          if (!mounted) return;
+          state = state.copyWith(comments: comments);
+        },
+        onError: (error) {
+          if (!mounted) return;
+          state = state.copyWith(error: error.toString());
+        },
+      );
     } catch (e) {
       AppLogger.error('Error initializing subscriptions: $e');
       if (mounted) {
@@ -106,9 +102,8 @@ class ScheduleInteractionNotifier
 
       state = state.copyWith(isLoading: true, error: null);
 
-      final scheduleStream = _ref
-          .read(scheduleRepositoryProvider)
-          .watchSchedule(_scheduleId);
+      final scheduleStream =
+          _ref.read(scheduleRepositoryProvider).watchSchedule(_scheduleId);
       final schedule = await scheduleStream.first;
       if (!mounted) {
         return;
@@ -140,9 +135,8 @@ class ScheduleInteractionNotifier
           await _repository.removeReaction(_scheduleId, userId);
 
           final latestReactions = state.reactions;
-          final updatedReactions = latestReactions
-              .where((r) => r.userId != userId)
-              .toList();
+          final updatedReactions =
+              latestReactions.where((r) => r.userId != userId).toList();
           AppLogger.debug(
             'Optimistically updating state after removing reaction: ${updatedReactions.length} reactions',
           );
@@ -289,9 +283,8 @@ class ScheduleInteractionNotifier
     try {
       state = state.copyWith(isLoading: true, error: null);
 
-      final scheduleStream = _ref
-          .read(scheduleRepositoryProvider)
-          .watchSchedule(_scheduleId);
+      final scheduleStream =
+          _ref.read(scheduleRepositoryProvider).watchSchedule(_scheduleId);
       final schedule = await scheduleStream.first;
       if (!mounted) {
         return;
