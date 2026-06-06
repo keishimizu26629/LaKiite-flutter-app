@@ -246,6 +246,14 @@ class _FakeNotificationNotifier extends notification.NotificationNotifier {
           ref,
         );
 
+  int reactionNotificationCallCount = 0;
+  int commentNotificationCallCount = 0;
+  String? lastCommentToUserId;
+  String? lastCommentFromUserId;
+  String? lastCommentScheduleId;
+  String? lastCommentInteractionId;
+  String? lastCommentFromUserDisplayName;
+
   @override
   Future<void> createReactionNotification({
     required String toUserId,
@@ -253,7 +261,9 @@ class _FakeNotificationNotifier extends notification.NotificationNotifier {
     required String scheduleId,
     required String interactionId,
     String? fromUserDisplayName,
-  }) async {}
+  }) async {
+    reactionNotificationCallCount++;
+  }
 
   @override
   Future<void> createCommentNotification({
@@ -262,7 +272,14 @@ class _FakeNotificationNotifier extends notification.NotificationNotifier {
     required String scheduleId,
     required String interactionId,
     String? fromUserDisplayName,
-  }) async {}
+  }) async {
+    commentNotificationCallCount++;
+    lastCommentToUserId = toUserId;
+    lastCommentFromUserId = fromUserId;
+    lastCommentScheduleId = scheduleId;
+    lastCommentInteractionId = interactionId;
+    lastCommentFromUserDisplayName = fromUserDisplayName;
+  }
 }
 
 class _FakeScheduleInteractionRepository
@@ -310,6 +327,10 @@ class _FakeScheduleInteractionRepository
 
   Completer<String>? addReactionCompleter;
   int addReactionCallCount = 0;
+  int addCommentCallCount = 0;
+  String? lastCommentScheduleId;
+  String? lastCommentUserId;
+  String? lastCommentContent;
   int _reactionCancelCount = 0;
   int _commentListenCount = 0;
   int _commentCancelCount = 0;
@@ -385,7 +406,12 @@ class _FakeScheduleInteractionRepository
 
   @override
   Future<String> addComment(String scheduleId, String userId, String content) =>
-      Future.error(UnimplementedError());
+      Future.value('comment-${++addCommentCallCount}').then((commentId) {
+        lastCommentScheduleId = scheduleId;
+        lastCommentUserId = userId;
+        lastCommentContent = content;
+        return commentId;
+      });
 
   @override
   Future<void> deleteComment(String scheduleId, String commentId) =>
@@ -638,6 +664,197 @@ void main() {
         expect(repository.addReactionCallCount, 0);
         expect(finalState.isLoading, isFalse);
         expect(finalState.reactions, isEmpty);
+      },
+    );
+
+    test(
+      'addComment should create a comment notification for schedule owner',
+      () async {
+        final user = UserModel(
+          publicProfile: PublicUserModel(
+            id: 'user-1',
+            displayName: 'User One',
+            searchId: UserId('USRTEST1'),
+            iconUrl: null,
+            shortBio: null,
+          ),
+          privateProfile: PrivateUserModel(
+            id: 'user-1',
+            name: 'User One',
+            friends: const [],
+            groups: const [],
+            lists: const [],
+            createdAt: DateTime(2024, 1, 1),
+          ),
+        );
+
+        final schedule = Schedule(
+          id: 'schedule-1',
+          title: 'Sample',
+          description: 'Desc',
+          startDateTime: DateTime(2024, 1, 1, 10),
+          endDateTime: DateTime(2024, 1, 1, 12),
+          ownerId: 'owner-1',
+          ownerDisplayName: 'Owner',
+          sharedLists: const [],
+          visibleTo: const [],
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+        );
+
+        final repository = _FakeScheduleInteractionRepository();
+        addTearDown(repository.dispose);
+        late _FakeNotificationNotifier fakeNotificationNotifier;
+
+        final container = ProviderContainer(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(user)),
+            ),
+            scheduleInteractionRepositoryProvider.overrideWithValue(repository),
+            scheduleInteractionNotifierProvider.overrideWith((ref, scheduleId) {
+              return ScheduleInteractionNotifier(
+                ref.watch(scheduleInteractionRepositoryProvider),
+                scheduleId,
+                ref,
+                enablePushNotifications: false,
+              );
+            }),
+            scheduleRepositoryProvider.overrideWithValue(
+              _FakeScheduleRepository(schedule),
+            ),
+            userRepositoryProvider.overrideWithValue(_FakeUserRepository(user)),
+            notification.notificationRepositoryProvider.overrideWithValue(
+              _FakeNotificationRepository(),
+            ),
+            notification.pushNotificationSenderProvider.overrideWithValue(
+              PushNotificationSender(
+                cloudFunctionUrl: 'https://example.test/push',
+                tokenResolver: (_) async => const [],
+              ),
+            ),
+            notification.notificationNotifierProvider.overrideWith((ref) {
+              fakeNotificationNotifier = _FakeNotificationNotifier(ref);
+              return fakeNotificationNotifier;
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final provider = scheduleInteractionNotifierProvider(schedule.id);
+        final subscription = container.listen(
+          provider,
+          (_, __) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        await repository.waitForCommentListener();
+
+        await container.read(provider.notifier).addComment(user.id, 'hello');
+
+        expect(repository.addCommentCallCount, 1);
+        expect(repository.lastCommentScheduleId, schedule.id);
+        expect(repository.lastCommentUserId, user.id);
+        expect(repository.lastCommentContent, 'hello');
+        expect(fakeNotificationNotifier.commentNotificationCallCount, 1);
+        expect(fakeNotificationNotifier.lastCommentToUserId, schedule.ownerId);
+        expect(fakeNotificationNotifier.lastCommentFromUserId, user.id);
+        expect(fakeNotificationNotifier.lastCommentScheduleId, schedule.id);
+        expect(fakeNotificationNotifier.lastCommentInteractionId, 'comment-1');
+        expect(
+          fakeNotificationNotifier.lastCommentFromUserDisplayName,
+          user.displayName,
+        );
+      },
+    );
+
+    test(
+      'addComment should skip notification when commenter is schedule owner',
+      () async {
+        final user = UserModel(
+          publicProfile: PublicUserModel(
+            id: 'owner-1',
+            displayName: 'Owner',
+            searchId: UserId('OWNER001'),
+            iconUrl: null,
+            shortBio: null,
+          ),
+          privateProfile: PrivateUserModel(
+            id: 'owner-1',
+            name: 'Owner',
+            friends: const [],
+            groups: const [],
+            lists: const [],
+            createdAt: DateTime(2024, 1, 1),
+          ),
+        );
+
+        final schedule = Schedule(
+          id: 'schedule-1',
+          title: 'Sample',
+          description: 'Desc',
+          startDateTime: DateTime(2024, 1, 1, 10),
+          endDateTime: DateTime(2024, 1, 1, 12),
+          ownerId: user.id,
+          ownerDisplayName: user.displayName,
+          sharedLists: const [],
+          visibleTo: const [],
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+        );
+
+        final repository = _FakeScheduleInteractionRepository();
+        addTearDown(repository.dispose);
+        var notificationNotifierWasCreated = false;
+
+        final container = ProviderContainer(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(user)),
+            ),
+            scheduleInteractionRepositoryProvider.overrideWithValue(repository),
+            scheduleInteractionNotifierProvider.overrideWith((ref, scheduleId) {
+              return ScheduleInteractionNotifier(
+                ref.watch(scheduleInteractionRepositoryProvider),
+                scheduleId,
+                ref,
+                enablePushNotifications: false,
+              );
+            }),
+            scheduleRepositoryProvider.overrideWithValue(
+              _FakeScheduleRepository(schedule),
+            ),
+            userRepositoryProvider.overrideWithValue(_FakeUserRepository(user)),
+            notification.notificationRepositoryProvider.overrideWithValue(
+              _FakeNotificationRepository(),
+            ),
+            notification.pushNotificationSenderProvider.overrideWithValue(
+              PushNotificationSender(
+                cloudFunctionUrl: 'https://example.test/push',
+                tokenResolver: (_) async => const [],
+              ),
+            ),
+            notification.notificationNotifierProvider.overrideWith((ref) {
+              notificationNotifierWasCreated = true;
+              return _FakeNotificationNotifier(ref);
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final provider = scheduleInteractionNotifierProvider(schedule.id);
+        final subscription = container.listen(
+          provider,
+          (_, __) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        await repository.waitForCommentListener();
+
+        await container.read(provider.notifier).addComment(user.id, 'memo');
+
+        expect(repository.addCommentCallCount, 1);
+        expect(notificationNotifierWasCreated, isFalse);
       },
     );
 
