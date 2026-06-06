@@ -6,11 +6,13 @@ commitish: "main"
 filter-by-commitish: true
 
 categories:
-  - type: "pre-exclude"
+  - title: "Skipped Changes"
+    type: "pre-exclude"
     when:
       label: "skip-changelog"
 
-  - type: "pre-exclude"
+  - title: "No Version Changes"
+    type: "pre-exclude"
     when:
       label: "semver:none"
 
@@ -72,24 +74,28 @@ categories:
   - title: "Other Changes"
     semver-increment: "patch"
 
-  - type: "version-resolver"
+  - title: "Major Version"
+    type: "version-resolver"
     semver-increment: "major"
     when:
       labels:
         - "semver:major"
         - "breaking-change"
 
-  - type: "version-resolver"
+  - title: "Minor Version"
+    type: "version-resolver"
     semver-increment: "minor"
     when:
       label: "semver:minor"
 
-  - type: "version-resolver"
+  - title: "Patch Version"
+    type: "version-resolver"
     semver-increment: "patch"
     when:
       label: "semver:patch"
 
-  - type: "version-resolver"
+  - title: "Default Version"
+    type: "version-resolver"
     semver-increment: "patch"
 
 change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
