@@ -20,50 +20,6 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   /// Firestoreのインスタンス
   final FirebaseFirestore _firestore;
 
-  /// スケジュールのカウンターを更新する内部メソッド
-  Future<void> _updateScheduleCounters(String scheduleId) async {
-    AppLogger.debug('Updating schedule counters for scheduleId: $scheduleId');
-
-    try {
-      await _firestore.runTransaction((transaction) async {
-        final scheduleRef = _firestore.collection('schedules').doc(scheduleId);
-
-        // リアクション数を取得
-        final reactionsSnapshot = await _firestore
-            .collection('schedules')
-            .doc(scheduleId)
-            .collection('reactions')
-            .get();
-        final reactionCount = reactionsSnapshot.docs.length;
-        AppLogger.debug('Current reaction count: $reactionCount');
-
-        // コメント数を取得
-        final commentsSnapshot = await _firestore
-            .collection('schedules')
-            .doc(scheduleId)
-            .collection('comments')
-            .get();
-        final commentCount = commentsSnapshot.docs.length;
-        AppLogger.debug('Current comment count: $commentCount');
-
-        // スケジュールドキュメントを更新
-        transaction.update(scheduleRef, {
-          'reactionCount': reactionCount,
-          'commentCount': commentCount,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-
-        AppLogger.debug('Schedule counters updated in transaction');
-      }, maxAttempts: 3);
-
-      AppLogger.debug('Schedule counters transaction completed successfully');
-    } catch (e, stack) {
-      AppLogger.error('Error updating schedule counters: $e');
-      AppLogger.error('Stack trace: $stack');
-      rethrow;
-    }
-  }
-
   /// 指定された[scheduleId]に関連する全リアクションを取得
   ///
   /// Firestoreから`schedules/{scheduleId}/reactions`コレクションの
@@ -131,8 +87,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
     AppLogger.debug(
         'addReaction: Successfully added reaction with createdAt: $now');
 
-    // カウンターはCloud Functionsで自動的に更新されるため削除
-    // await _updateScheduleCounters(scheduleId);
+    // カウンターはCloud Functionsで自動的に更新される
     AppLogger.debug(
         'Reaction added - counter will be updated by Cloud Functions');
 
@@ -154,8 +109,7 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         .delete();
     AppLogger.debug('Successfully removed reaction for user: $userId');
 
-    // カウンターはCloud Functionsで自動的に更新されるため削除
-    // await _updateScheduleCounters(scheduleId);
+    // カウンターはCloud Functionsで自動的に更新される
     AppLogger.debug(
         'Reaction removed - counter will be updated by Cloud Functions');
   }
@@ -320,8 +274,10 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
           .add(commentData);
       AppLogger.debug('Comment added successfully with ID: ${docRef.id}');
 
-      // カウンターを更新
-      await _updateScheduleCounters(scheduleId);
+      // カウンターはCloud Functionsで自動的に更新される
+      AppLogger.debug(
+        'Comment added - counter will be updated by Cloud Functions',
+      );
 
       return docRef.id;
     } catch (e, stackTrace) {
@@ -346,10 +302,9 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         .delete();
     AppLogger.debug('Successfully deleted comment: $commentId');
 
-    // カウンターはCloud Functionsで自動的に更新されるため削除
-    // await _updateScheduleCounters(scheduleId);
+    // カウンターはCloud Functionsで自動的に更新される
     AppLogger.debug(
-        'Reaction removed - counter will be updated by Cloud Functions');
+        'Comment removed - counter will be updated by Cloud Functions');
   }
 
   /// 指定された[scheduleId]と[commentId]に対応するコメントを更新
