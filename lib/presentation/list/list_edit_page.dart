@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../application/list/list_notifier.dart';
 import '../../domain/entity/list.dart';
+import '../../infrastructure/providers.dart';
 import 'list_edit_save_action.dart';
 import 'list_member_profile_tile.dart';
 import 'list_providers.dart';
@@ -35,31 +36,65 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
   }
 
   Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      if (image == null) {
+        return;
+      }
 
-    if (image != null) {
+      final sourceFile = File(image.path);
+      final croppedImage = await ref
+          .read(imageCropperServiceProvider)
+          .cropImage(sourceFile: sourceFile, aspectRatioX: 1, aspectRatioY: 1);
+      if (croppedImage == null) {
+        return;
+      }
+
+      final compressedImage =
+          await ref.read(imageProcessorServiceProvider).compressImage(
+                croppedImage,
+                minWidth: 1024,
+                minHeight: 1024,
+                quality: 90,
+              );
+
+      if (!mounted) {
+        return;
+      }
       setState(() {
-        _selectedImage = File(image.path);
+        _selectedImage = compressedImage;
       });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('画像の選択に失敗しました: ${e.toString()}')),
+        );
+      }
     }
   }
 
   Future<void> _saveChanges(UserList currentList) async {
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('リスト名を入力してください')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('リスト名を入力してください')));
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final String? newIconUrl = currentList.iconUrl;
+      String? newIconUrl = currentList.iconUrl;
       if (_selectedImage != null) {
-        // 画像のアップロード処理を実装
-        // newIconUrl = await uploadImage(_selectedImage!);
+        newIconUrl = await ref.read(storageServiceProvider).uploadFile(
+          path: 'v1/lists/icon/${currentList.ownerId}/${currentList.id}',
+          file: _selectedImage!,
+          metadata: {
+            'ownerId': currentList.ownerId,
+            'listId': currentList.id,
+          },
+        );
       }
 
       // メンバーリストの更新
@@ -86,9 +121,9 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('更新に失敗しました: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('更新に失敗しました: ${e.toString()}')));
       }
     } finally {
       if (mounted) {
@@ -141,8 +176,10 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
                       child: CircleAvatar(
                         backgroundColor: theme.primaryColor,
                         child: IconButton(
-                          icon:
-                              const Icon(Icons.camera_alt, color: Colors.white),
+                          icon: const Icon(
+                            Icons.camera_alt,
+                            color: Colors.white,
+                          ),
                           onPressed: _pickImage,
                         ),
                       ),
@@ -168,10 +205,7 @@ class _ListEditPageState extends ConsumerState<ListEditPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '除外する友人を選択してください',
-                    style: theme.textTheme.titleMedium,
-                  ),
+                  Text('除外する友人を選択してください', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
                   ListView.builder(
                     shrinkWrap: true,
