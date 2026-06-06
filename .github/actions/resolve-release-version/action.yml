@@ -1,0 +1,63 @@
+name: Resolve Release Version
+description: Resolve the next app version from Release Drafter labels.
+
+outputs:
+  version:
+    description: SemVer version without the leading v.
+    value: ${{ steps.normalize.outputs.version }}
+  tag:
+    description: Release tag with the leading v.
+    value: ${{ steps.normalize.outputs.tag }}
+  release_id:
+    description: Draft release id from Release Drafter.
+    value: ${{ steps.release_drafter.outputs.id }}
+  release_url:
+    description: Draft release URL from Release Drafter.
+    value: ${{ steps.release_drafter.outputs.html_url }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Resolve version with Release Drafter
+      id: release_drafter
+      uses: release-drafter/release-drafter@v7
+      with:
+        config-name: release-drafter.yml
+        dry-run: true
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+
+    - name: Normalize release version
+      id: normalize
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        base_version="$(awk '/^version:/ { print $2; exit }' pubspec.yaml | cut -d '+' -f 1)"
+        version="${{ steps.release_drafter.outputs.resolved_version }}"
+        if [ -z "$version" ] || [ "$version" = "null" ]; then
+          version="$base_version"
+          echo "::warning ::Release Drafter did not return resolved_version. Falling back to pubspec.yaml version: $version"
+        fi
+
+        version="${version#v}"
+        if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "::error ::Resolved release version must be x.y.z for Android/iOS store builds: $version"
+          exit 1
+        fi
+
+        version="$(python3 - "$base_version" "$version" <<'PY'
+        import sys
+
+        def parse(value):
+            return tuple(int(part) for part in value.split("."))
+
+        base = sys.argv[1]
+        candidate = sys.argv[2]
+        print(candidate if parse(candidate) >= parse(base) else base)
+        PY
+        )"
+
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+        echo "tag=v$version" >> "$GITHUB_OUTPUT"
+        echo "Resolved app version: $version"
