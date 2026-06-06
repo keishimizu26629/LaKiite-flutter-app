@@ -94,10 +94,6 @@ categories:
     when:
       label: "semver:patch"
 
-  - title: "Default Version"
-    type: "version-resolver"
-    semver-increment: "patch"
-
 change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
 change-title-escapes: '\<*_&`#@'
 no-changes-template: "- No user-facing changes"
