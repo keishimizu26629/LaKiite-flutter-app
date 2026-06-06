@@ -1,0 +1,131 @@
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
+tag-prefix: "v"
+version-template: "$MAJOR.$MINOR.$PATCH"
+
+categories:
+  - type: "pre-exclude"
+    when:
+      label: "skip-changelog"
+
+  - type: "pre-exclude"
+    when:
+      label: "semver:none"
+
+  - title: "Breaking Changes"
+    semver-increment: "major"
+    when:
+      label: "breaking-change"
+
+  - title: "Features"
+    semver-increment: "minor"
+    when:
+      labels:
+        - "type:feature"
+        - "enhancement"
+        - "1 : ストーリー - story"
+
+  - title: "Fixes"
+    semver-increment: "patch"
+    when:
+      labels:
+        - "type:fix"
+        - "3 : バグ - bug"
+
+  - title: "Security"
+    semver-increment: "patch"
+    when:
+      label: "type:security"
+
+  - title: "Performance"
+    semver-increment: "patch"
+    when:
+      label: "type:performance"
+
+  - title: "Refactoring"
+    semver-increment: "patch"
+    when:
+      label: "type:refactor"
+
+  - title: "Tests"
+    semver-increment: "patch"
+    when:
+      label: "type:test"
+
+  - title: "Documentation"
+    semver-increment: "patch"
+    when:
+      labels:
+        - "type:docs"
+        - "0 : 書類 - documentation"
+
+  - title: "CI and Maintenance"
+    semver-increment: "patch"
+    when:
+      labels:
+        - "type:ci"
+        - "type:chore"
+        - "環境構築"
+
+  - title: "Other Changes"
+    semver-increment: "patch"
+
+  - type: "version-resolver"
+    semver-increment: "major"
+    when:
+      labels:
+        - "semver:major"
+        - "breaking-change"
+
+  - type: "version-resolver"
+    semver-increment: "minor"
+    when:
+      label: "semver:minor"
+
+  - type: "version-resolver"
+    semver-increment: "patch"
+    when:
+      label: "semver:patch"
+
+  - type: "version-resolver"
+    semver-increment: "patch"
+
+change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
+change-title-escapes: '\<*_&`#@'
+no-changes-template: "- No user-facing changes"
+
+template: |
+  ## Changes
+
+  $CHANGES
+
+  ## Contributors
+
+  $CONTRIBUTORS
+
+autolabeler:
+  - label: "type:ci"
+    files:
+      - ".github/**"
+    branch:
+      - "/^(ci|chore)\\//"
+    title:
+      - "/\\b(ci|workflow|actions?)\\b/i"
+
+  - label: "type:docs"
+    files:
+      - "**/*.md"
+      - "docs/**"
+    branch:
+      - "/^docs?\\//"
+
+  - label: "type:fix"
+    branch:
+      - "/^fix\\//"
+      - "/^hotfix\\//"
+    title:
+      - "/\\b(fix|bug|不具合|修正)\\b/i"
+
+  - label: "type:feature"
+    title:
+      - "/\\b(feat|feature|追加|実装)\\b/i"
