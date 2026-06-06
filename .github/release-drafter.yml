@@ -2,6 +2,8 @@ name-template: "v$RESOLVED_VERSION"
 tag-template: "v$RESOLVED_VERSION"
 tag-prefix: "v"
 version-template: "$MAJOR.$MINOR.$PATCH"
+commitish: "main"
+filter-by-commitish: true
 
 categories:
   - type: "pre-exclude"
@@ -120,9 +122,6 @@ autolabeler:
       - "/^docs?\\//"
 
   - label: "type:fix"
-    branch:
-      - "/^fix\\//"
-      - "/^hotfix\\//"
     title:
       - "/\\b(fix|bug|不具合|修正)\\b/i"
 
