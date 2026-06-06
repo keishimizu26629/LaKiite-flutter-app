@@ -74,26 +74,6 @@ categories:
   - title: "Other Changes"
     semver-increment: "patch"
 
-  - title: "Major Version"
-    type: "version-resolver"
-    semver-increment: "major"
-    when:
-      labels:
-        - "semver:major"
-        - "breaking-change"
-
-  - title: "Minor Version"
-    type: "version-resolver"
-    semver-increment: "minor"
-    when:
-      label: "semver:minor"
-
-  - title: "Patch Version"
-    type: "version-resolver"
-    semver-increment: "patch"
-    when:
-      label: "semver:patch"
-
 change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
 change-title-escapes: '\<*_&`#@'
 no-changes-template: "- No user-facing changes"
