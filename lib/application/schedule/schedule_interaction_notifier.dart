@@ -326,16 +326,6 @@ class ScheduleInteractionNotifier
               interactionId: commentId,
               fromUserDisplayName: userDoc.displayName,
             );
-        if (!mounted) return;
-        if (_enablePushNotifications && _pushNotificationSender != null) {
-          await _pushNotificationSender!.sendCommentNotification(
-            toUserId: schedule.ownerId,
-            fromUserId: userId,
-            fromUserName: userDoc.displayName,
-            scheduleId: _scheduleId,
-            interactionId: commentId,
-          );
-        }
         AppLogger.debug('Notification created successfully for comment');
       } else {
         AppLogger.debug(
