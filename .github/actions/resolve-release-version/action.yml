@@ -27,6 +27,59 @@ runs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
 
+    - name: Resolve semver label from main release PR
+      id: release_pr
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPOSITORY: ${{ github.repository }}
+        RELEASE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      run: |
+        set -euo pipefail
+
+        semver_label=""
+        pr_number=""
+
+        if [ -n "$RELEASE_SHA" ]; then
+          pr_json="$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$REPOSITORY/commits/$RELEASE_SHA/pulls" 2>/dev/null || echo "[]")"
+
+          release_pr="$(printf '%s' "$pr_json" | jq -r '
+            [
+              .[]
+              | select(.base.ref == "main")
+              | {
+                  number,
+                  semverLabels: [
+                    .labels[].name
+                    | select(test("^semver:(major|minor|patch|none)$"))
+                  ]
+                }
+              | select(.semverLabels | length > 0)
+            ][0] // empty
+            | if . == "" then "" else "\(.number)\t\(.semverLabels[0])" end
+          ')"
+
+          if [ -n "$release_pr" ]; then
+            pr_number="$(printf '%s' "$release_pr" | cut -f1)"
+            semver_label="$(printf '%s' "$release_pr" | cut -f2)"
+          fi
+        fi
+
+        latest_tag="$(gh api "repos/$REPOSITORY/releases/latest" --jq '.tag_name' 2>/dev/null || true)"
+        latest_version="${latest_tag#v}"
+
+        echo "semver_label=$semver_label" >> "$GITHUB_OUTPUT"
+        echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
+        echo "latest_version=$latest_version" >> "$GITHUB_OUTPUT"
+
+        if [ -n "$semver_label" ]; then
+          echo "Resolved release PR #$pr_number semver label: $semver_label"
+        else
+          echo "No main release PR semver label found for $RELEASE_SHA. Falling back to Release Drafter version."
+        fi
+
     - name: Normalize release version
       id: normalize
       shell: bash
@@ -34,7 +87,38 @@ runs:
         set -euo pipefail
 
         base_version="$(awk '/^version:/ { print $2; exit }' pubspec.yaml | cut -d '+' -f 1)"
-        version="${{ steps.release_drafter.outputs.resolved_version }}"
+        drafter_version="${{ steps.release_drafter.outputs.resolved_version }}"
+        semver_label="${{ steps.release_pr.outputs.semver_label }}"
+        latest_version="${{ steps.release_pr.outputs.latest_version }}"
+        version="$drafter_version"
+
+        if [ -n "$semver_label" ] && [ -n "$latest_version" ]; then
+          version="$(python3 - "$latest_version" "$semver_label" <<'PY'
+        import sys
+
+        major, minor, patch = (int(part) for part in sys.argv[1].split("."))
+        label = sys.argv[2]
+
+        if label == "semver:major":
+            major += 1
+            minor = 0
+            patch = 0
+        elif label == "semver:minor":
+            minor += 1
+            patch = 0
+        elif label == "semver:patch":
+            patch += 1
+        elif label == "semver:none":
+            pass
+        else:
+            raise SystemExit(f"Unsupported semver label: {label}")
+
+        print(f"{major}.{minor}.{patch}")
+        PY
+        )"
+          echo "Using main release PR semver label $semver_label with latest release $latest_version: $version"
+        fi
+
         if [ -z "$version" ] || [ "$version" = "null" ]; then
           version="$base_version"
           echo "::warning ::Release Drafter did not return resolved_version. Falling back to pubspec.yaml version: $version"
