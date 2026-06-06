@@ -54,6 +54,60 @@ void main() {
     expect(find.text('メンバー一郎'), findsOneWidget);
     expect(find.text('メンバー二郎'), findsOneWidget);
   });
+
+  testWidgets('リスト詳細は同じメンバーの公開プロフィールを再取得しない', (tester) async {
+    final listController = StreamController<UserList?>();
+    final userRepository = _CountingUserRepository()
+      ..addTestUser(
+        UserModel.create(id: 'member-1', name: 'メンバー1', displayName: 'メンバー一郎'),
+      );
+    final initialList = _list(memberIds: const ['member-1']);
+    final updatedList = initialList.copyWith(listName: 'テストリスト 更新後');
+
+    addTearDown(listController.close);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          userRepositoryProvider.overrideWithValue(userRepository),
+          listStreamProvider.overrideWith(
+            (ref, listId) => listController.stream,
+          ),
+        ],
+        child: MaterialApp(home: ListDetailPage(list: initialList)),
+      ),
+    );
+
+    listController.add(initialList);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    expect(find.text('メンバー一郎'), findsOneWidget);
+    expect(userRepository.getFriendPublicProfileCallCount('member-1'), 1);
+
+    listController.add(updatedList);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    expect(find.text('テストリスト 更新後'), findsOneWidget);
+    expect(find.text('メンバー一郎'), findsOneWidget);
+    expect(userRepository.getFriendPublicProfileCallCount('member-1'), 1);
+  });
+}
+
+class _CountingUserRepository extends MockUserRepository {
+  final Map<String, int> _getFriendPublicProfileCallCounts = {};
+
+  int getFriendPublicProfileCallCount(String id) {
+    return _getFriendPublicProfileCallCounts[id] ?? 0;
+  }
+
+  @override
+  Future<PublicUserModel?> getFriendPublicProfile(String id) {
+    _getFriendPublicProfileCallCounts[id] =
+        getFriendPublicProfileCallCount(id) + 1;
+    return super.getFriendPublicProfile(id);
+  }
 }
 
 UserList _list({required List<String> memberIds}) {

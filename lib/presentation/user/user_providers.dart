@@ -24,3 +24,9 @@ final userStreamProvider =
     error: (_, __) => Stream.value(null),
   );
 });
+
+/// Public user profile read model for member rows and lightweight user chips.
+final publicUserProvider =
+    FutureProvider.autoDispose.family<PublicUserModel?, String>((ref, userId) {
+  return ref.watch(userRepositoryProvider).getFriendPublicProfile(userId);
+});

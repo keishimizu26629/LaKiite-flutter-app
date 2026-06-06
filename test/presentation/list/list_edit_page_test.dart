@@ -52,6 +52,58 @@ void main() {
     expect(listRepository.updatedList, isNotNull);
     expect(listRepository.updatedList!.memberIds, ['member-1', 'member-2']);
   });
+
+  testWidgets('リスト編集は同じメンバーの公開プロフィールを再取得しない', (tester) async {
+    final listController = StreamController<UserList?>();
+    final userRepository = _CountingUserRepository()
+      ..addTestUser(
+        UserModel.create(id: 'member-1', name: 'メンバー1', displayName: 'メンバー一郎'),
+      );
+    final list = _list(memberIds: const ['member-1']);
+
+    addTearDown(listController.close);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          userRepositoryProvider.overrideWithValue(userRepository),
+          listStreamProvider.overrideWith(
+            (ref, listId) => listController.stream,
+          ),
+        ],
+        child: MaterialApp(home: ListEditPage(list: list)),
+      ),
+    );
+
+    listController.add(list);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    expect(find.text('メンバー一郎'), findsOneWidget);
+    expect(userRepository.getFriendPublicProfileCallCount('member-1'), 1);
+
+    await tester.tap(find.byType(Checkbox));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    expect(find.text('メンバー一郎'), findsOneWidget);
+    expect(userRepository.getFriendPublicProfileCallCount('member-1'), 1);
+  });
+}
+
+class _CountingUserRepository extends MockUserRepository {
+  final Map<String, int> _getFriendPublicProfileCallCounts = {};
+
+  int getFriendPublicProfileCallCount(String id) {
+    return _getFriendPublicProfileCallCounts[id] ?? 0;
+  }
+
+  @override
+  Future<PublicUserModel?> getFriendPublicProfile(String id) {
+    _getFriendPublicProfileCallCounts[id] =
+        getFriendPublicProfileCallCount(id) + 1;
+    return super.getFriendPublicProfile(id);
+  }
 }
 
 class _CapturingListRepository implements IListRepository {
