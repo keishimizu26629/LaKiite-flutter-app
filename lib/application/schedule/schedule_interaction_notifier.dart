@@ -11,18 +11,19 @@ import 'package:lakiite/application/notification/notification_notifier.dart';
 import '../../infrastructure/firebase/push_notification_sender.dart';
 
 final scheduleInteractionNotifierProvider = StateNotifierProvider.autoDispose
-    .family<ScheduleInteractionNotifier, ScheduleInteractionState, String>(
-  (ref, scheduleId) {
-    ref.watch(repositorySessionKeyProvider);
-
-    return ScheduleInteractionNotifier(
-      ref.watch(scheduleInteractionRepositoryProvider),
-      scheduleId,
+    .family<ScheduleInteractionNotifier, ScheduleInteractionState, String>((
       ref,
-      pushNotificationSender: ref.watch(pushNotificationSenderProvider),
-    );
-  },
-);
+      scheduleId,
+    ) {
+      ref.watch(repositorySessionKeyProvider);
+
+      return ScheduleInteractionNotifier(
+        ref.watch(scheduleInteractionRepositoryProvider),
+        scheduleId,
+        ref,
+        pushNotificationSender: ref.watch(pushNotificationSenderProvider),
+      );
+    });
 
 class ScheduleInteractionNotifier
     extends StateNotifier<ScheduleInteractionState> {
@@ -32,8 +33,8 @@ class ScheduleInteractionNotifier
     this._ref, {
     PushNotificationSender? pushNotificationSender,
     bool enablePushNotifications = true,
-  })  : _enablePushNotifications = enablePushNotifications,
-        super(const ScheduleInteractionState()) {
+  }) : _enablePushNotifications = enablePushNotifications,
+       super(const ScheduleInteractionState()) {
     if (_enablePushNotifications) {
       _pushNotificationSender =
           pushNotificationSender ?? PushNotificationSender();
@@ -60,27 +61,31 @@ class ScheduleInteractionNotifier
         throw Exception('User not authenticated');
       }
 
-      _reactionsSubscription = _repository.watchReactions(_scheduleId).listen(
-        (reactions) {
-          if (!mounted) return;
-          state = state.copyWith(reactions: reactions);
-        },
-        onError: (error) {
-          if (!mounted) return;
-          state = state.copyWith(error: error.toString());
-        },
-      );
+      _reactionsSubscription = _repository
+          .watchReactions(_scheduleId)
+          .listen(
+            (reactions) {
+              if (!mounted) return;
+              state = state.copyWith(reactions: reactions);
+            },
+            onError: (error) {
+              if (!mounted) return;
+              state = state.copyWith(error: error.toString());
+            },
+          );
 
-      _commentsSubscription = _repository.watchComments(_scheduleId).listen(
-        (comments) {
-          if (!mounted) return;
-          state = state.copyWith(comments: comments);
-        },
-        onError: (error) {
-          if (!mounted) return;
-          state = state.copyWith(error: error.toString());
-        },
-      );
+      _commentsSubscription = _repository
+          .watchComments(_scheduleId)
+          .listen(
+            (comments) {
+              if (!mounted) return;
+              state = state.copyWith(comments: comments);
+            },
+            onError: (error) {
+              if (!mounted) return;
+              state = state.copyWith(error: error.toString());
+            },
+          );
     } catch (e) {
       AppLogger.error('Error initializing subscriptions: $e');
       if (mounted) {
@@ -93,15 +98,17 @@ class ScheduleInteractionNotifier
     try {
       AppLogger.debug('toggleReaction called - userId: $userId, type: $type');
       AppLogger.debug(
-          'Current state before update: ${state.reactions.length} reactions');
+        'Current state before update: ${state.reactions.length} reactions',
+      );
 
       final currentReaction = state.getUserReaction(userId);
       AppLogger.debug('Current reaction before update: $currentReaction');
 
       state = state.copyWith(isLoading: true, error: null);
 
-      final scheduleStream =
-          _ref.read(scheduleRepositoryProvider).watchSchedule(_scheduleId);
+      final scheduleStream = _ref
+          .read(scheduleRepositoryProvider)
+          .watchSchedule(_scheduleId);
       final schedule = await scheduleStream.first;
       if (!mounted) {
         return;
@@ -128,23 +135,30 @@ class ScheduleInteractionNotifier
       if (currentReaction != null) {
         if (currentReaction.type == type) {
           AppLogger.debug(
-              'Removing same reaction - userId: $userId, type: $type');
+            'Removing same reaction - userId: $userId, type: $type',
+          );
           await _repository.removeReaction(_scheduleId, userId);
 
           final latestReactions = state.reactions;
-          final updatedReactions =
-              latestReactions.where((r) => r.userId != userId).toList();
+          final updatedReactions = latestReactions
+              .where((r) => r.userId != userId)
+              .toList();
           AppLogger.debug(
-              'Optimistically updating state after removing reaction: ${updatedReactions.length} reactions');
+            'Optimistically updating state after removing reaction: ${updatedReactions.length} reactions',
+          );
           if (!mounted) return;
           state = state.copyWith(isLoading: false, reactions: updatedReactions);
         } else {
           AppLogger.debug(
-              'Updating to different reaction - from: ${currentReaction.type}, to: $type');
+            'Updating to different reaction - from: ${currentReaction.type}, to: $type',
+          );
           await _repository.removeReaction(_scheduleId, userId);
 
-          final reactionId =
-              await _repository.addReaction(_scheduleId, userId, type);
+          final reactionId = await _repository.addReaction(
+            _scheduleId,
+            userId,
+            type,
+          );
 
           final latestReactions = state.reactions
               .where((reaction) => reaction.userId != userId)
@@ -162,13 +176,15 @@ class ScheduleInteractionNotifier
           ];
 
           AppLogger.debug(
-              'Optimistically updating state after changing reaction: ${updatedReactions.length} reactions');
+            'Optimistically updating state after changing reaction: ${updatedReactions.length} reactions',
+          );
           if (!mounted) return;
           state = state.copyWith(isLoading: false, reactions: updatedReactions);
 
           if (userId != schedule.ownerId) {
             AppLogger.debug(
-                'Creating notification for reaction update - fromUserId: $userId, toUserId: ${schedule.ownerId}');
+              'Creating notification for reaction update - fromUserId: $userId, toUserId: ${schedule.ownerId}',
+            );
             await _ref
                 .read(notificationNotifierProvider.notifier)
                 .createReactionNotification(
@@ -190,16 +206,21 @@ class ScheduleInteractionNotifier
             }
 
             AppLogger.debug(
-                'Notification created successfully for reaction update');
+              'Notification created successfully for reaction update',
+            );
           } else {
             AppLogger.debug(
-                'Skipping notification creation - user is the schedule owner');
+              'Skipping notification creation - user is the schedule owner',
+            );
           }
         }
       } else {
         AppLogger.debug('Adding new reaction');
-        final reactionId =
-            await _repository.addReaction(_scheduleId, userId, type);
+        final reactionId = await _repository.addReaction(
+          _scheduleId,
+          userId,
+          type,
+        );
 
         final newReaction = ScheduleReaction(
           id: reactionId,
@@ -215,13 +236,15 @@ class ScheduleInteractionNotifier
             .toList();
         final updatedReactions = [...latestReactions, newReaction];
         AppLogger.debug(
-            'Optimistically updating state after adding reaction: ${updatedReactions.length} reactions');
+          'Optimistically updating state after adding reaction: ${updatedReactions.length} reactions',
+        );
         if (!mounted) return;
         state = state.copyWith(isLoading: false, reactions: updatedReactions);
 
         if (userId != schedule.ownerId) {
           AppLogger.debug(
-              'Creating notification for new reaction - fromUserId: $userId, toUserId: ${schedule.ownerId}');
+            'Creating notification for new reaction - fromUserId: $userId, toUserId: ${schedule.ownerId}',
+          );
           await _ref
               .read(notificationNotifierProvider.notifier)
               .createReactionNotification(
@@ -245,12 +268,14 @@ class ScheduleInteractionNotifier
           AppLogger.debug('Notification created successfully for new reaction');
         } else {
           AppLogger.debug(
-              'Skipping notification creation - user is the schedule owner');
+            'Skipping notification creation - user is the schedule owner',
+          );
         }
       }
 
       AppLogger.debug(
-          'Final state after reaction update: ${state.reactions.length} reactions');
+        'Final state after reaction update: ${state.reactions.length} reactions',
+      );
     } catch (e, stack) {
       AppLogger.error('Error in toggleReaction: $e');
       AppLogger.error('Stack trace: $stack');
@@ -264,8 +289,9 @@ class ScheduleInteractionNotifier
     try {
       state = state.copyWith(isLoading: true, error: null);
 
-      final scheduleStream =
-          _ref.read(scheduleRepositoryProvider).watchSchedule(_scheduleId);
+      final scheduleStream = _ref
+          .read(scheduleRepositoryProvider)
+          .watchSchedule(_scheduleId);
       final schedule = await scheduleStream.first;
       if (!mounted) {
         return;
@@ -282,16 +308,47 @@ class ScheduleInteractionNotifier
         throw Exception('User not found');
       }
 
-      final commentId =
-          await _repository.addComment(_scheduleId, userId, content);
-
-      // TODO: 通知機能は後で実装
+      final commentId = await _repository.addComment(
+        _scheduleId,
+        userId,
+        content,
+      );
       AppLogger.debug('Comment added: $commentId');
 
       if (!mounted) {
         return;
       }
       state = state.copyWith(isLoading: false);
+
+      if (userId != schedule.ownerId) {
+        AppLogger.debug(
+          'Creating notification for comment - fromUserId: $userId, toUserId: ${schedule.ownerId}',
+        );
+        await _ref
+            .read(notificationNotifierProvider.notifier)
+            .createCommentNotification(
+              toUserId: schedule.ownerId,
+              fromUserId: userId,
+              scheduleId: _scheduleId,
+              interactionId: commentId,
+              fromUserDisplayName: userDoc.displayName,
+            );
+        if (!mounted) return;
+        if (_enablePushNotifications && _pushNotificationSender != null) {
+          await _pushNotificationSender!.sendCommentNotification(
+            toUserId: schedule.ownerId,
+            fromUserId: userId,
+            fromUserName: userDoc.displayName,
+            scheduleId: _scheduleId,
+            interactionId: commentId,
+          );
+        }
+        AppLogger.debug('Notification created successfully for comment');
+      } else {
+        AppLogger.debug(
+          'Skipping comment notification creation - user is the schedule owner',
+        );
+      }
     } catch (e) {
       if (mounted) {
         state = state.copyWith(isLoading: false, error: e.toString());
@@ -305,7 +362,8 @@ class ScheduleInteractionNotifier
   Future<void> deleteComment(String commentId) async {
     try {
       AppLogger.debug(
-          'Deleting comment - scheduleId: $_scheduleId, commentId: $commentId');
+        'Deleting comment - scheduleId: $_scheduleId, commentId: $commentId',
+      );
       await _repository.deleteComment(_scheduleId, commentId);
 
       AppLogger.debug('Successfully deleted comment: $commentId');
