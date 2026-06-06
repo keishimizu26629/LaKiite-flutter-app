@@ -1,0 +1,46 @@
+name: Release Label Check
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, labeled, unlabeled, edited]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  check_release_labels:
+    name: Check release labels
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Require one semver label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          labels="$(gh pr view "$PR_NUMBER" --repo "$REPOSITORY" --json labels --jq '.labels[].name')"
+
+          semver_count="$(printf '%s\n' "$labels" | grep -Ec '^semver:(major|minor|patch|none)$' || true)"
+          if [ "$semver_count" -ne 1 ]; then
+            echo "::error ::main向けPRには semver:major / semver:minor / semver:patch / semver:none のいずれか1つだけを付けてください。"
+            printf 'Current labels:\n%s\n' "$labels"
+            exit 1
+          fi
+
+          if printf '%s\n' "$labels" | grep -qx 'semver:none'; then
+            echo "semver:none is set. Release Drafter will exclude this PR from changelog/version resolution."
+            exit 0
+          fi
+
+          type_count="$(printf '%s\n' "$labels" | grep -Ec '^type:(feature|fix|docs|ci|chore|refactor|test|security|performance)$' || true)"
+          if [ "$type_count" -lt 1 ]; then
+            echo "::error ::main向けPRには release note 分類用の type:* ラベルを少なくとも1つ付けてください。"
+            printf 'Current labels:\n%s\n' "$labels"
+            exit 1
+          fi
+
+          echo "Release labels are valid."

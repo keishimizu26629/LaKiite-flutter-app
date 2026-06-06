@@ -5,6 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pull-requests: read
+
 jobs:
   build:
     runs-on: macos-26
@@ -80,6 +84,10 @@ jobs:
           TOTAL_COMMITS=$(($TOTAL_COMMITS + 10000))  # オフセットとして一律で 10000 を加算する。
           echo "buildNumber=$TOTAL_COMMITS" >> $GITHUB_OUTPUT
 
+      - name: Resolve release version
+        id: release_version
+        uses: ./.github/actions/resolve-release-version
+
       - name: flutter build ipa
         run: |
           flutter build ipa --release \
@@ -87,7 +95,7 @@ jobs:
             --export-options-plist=ios/ExportOptions.plist \
             --dart-define-from-file="dart_define.json" \
             -t "lib/main.dart" \
-            --build-name=$(grep 'version:' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1) \
+            --build-name="${{ steps.release_version.outputs.version }}" \
             --build-number="${{ steps.calculate_build_number.outputs.buildNumber }}"
 
       - name: Get latest 10 commit messages
