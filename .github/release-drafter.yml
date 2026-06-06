@@ -4,99 +4,70 @@ tag-prefix: "v"
 version-template: "$MAJOR.$MINOR.$PATCH"
 commitish: "main"
 filter-by-commitish: true
+exclude-labels:
+  - "skip-changelog"
+  - "semver:none"
 
 categories:
-  - title: "Skipped Changes"
-    type: "pre-exclude"
-    when:
-      label: "skip-changelog"
-
-  - title: "No Version Changes"
-    type: "pre-exclude"
-    when:
-      label: "semver:none"
-
   - title: "Breaking Changes"
-    semver-increment: "major"
-    when:
-      label: "breaking-change"
+    labels:
+      - "breaking-change"
 
   - title: "Features"
-    semver-increment: "minor"
-    when:
-      labels:
-        - "type:feature"
-        - "enhancement"
-        - "1 : ストーリー - story"
+    labels:
+      - "type:feature"
+      - "enhancement"
+      - "1 : ストーリー - story"
 
   - title: "Fixes"
-    semver-increment: "patch"
-    when:
-      labels:
-        - "type:fix"
-        - "3 : バグ - bug"
+    labels:
+      - "type:fix"
+      - "3 : バグ - bug"
 
   - title: "Security"
-    semver-increment: "patch"
-    when:
-      label: "type:security"
+    labels:
+      - "type:security"
 
   - title: "Performance"
-    semver-increment: "patch"
-    when:
-      label: "type:performance"
+    labels:
+      - "type:performance"
 
   - title: "Refactoring"
-    semver-increment: "patch"
-    when:
-      label: "type:refactor"
+    labels:
+      - "type:refactor"
 
   - title: "Tests"
-    semver-increment: "patch"
-    when:
-      label: "type:test"
+    labels:
+      - "type:test"
 
   - title: "Documentation"
-    semver-increment: "patch"
-    when:
-      labels:
-        - "type:docs"
-        - "0 : 書類 - documentation"
+    labels:
+      - "type:docs"
+      - "0 : 書類 - documentation"
 
   - title: "CI and Maintenance"
-    semver-increment: "patch"
-    when:
-      labels:
-        - "type:ci"
-        - "type:chore"
-        - "環境構築"
+    labels:
+      - "type:ci"
+      - "type:chore"
+      - "環境構築"
 
   - title: "Other Changes"
-    semver-increment: "patch"
 
-  - title: "Major Version"
-    type: "version-resolver"
-    semver-increment: "major"
-    when:
-      labels:
-        - "semver:major"
-        - "breaking-change"
-
-  - title: "Minor Version"
-    type: "version-resolver"
-    semver-increment: "minor"
-    when:
-      label: "semver:minor"
-
-  - title: "Patch Version"
-    type: "version-resolver"
-    semver-increment: "patch"
-    when:
-      label: "semver:patch"
-
-  - title: "Default Version"
-    type: "version-resolver"
-    semver-increment: "patch"
+version-resolver:
+  major:
+    labels:
+      - "semver:major"
+      - "breaking-change"
+  minor:
+    labels:
+      - "semver:minor"
+      - "type:feature"
+      - "enhancement"
+      - "1 : ストーリー - story"
+  patch:
+    labels:
+      - "semver:patch"
+  default: patch
 
 change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
 change-title-escapes: '\<*_&`#@'
