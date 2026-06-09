@@ -1,5 +1,6 @@
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/interfaces/i_list_repository.dart';
+import 'package:lakiite/domain/interfaces/i_schedule_access_grant_repository.dart';
 
 /// リスト関連のビジネスロジックを集約するManager
 ///
@@ -40,8 +41,13 @@ abstract class IListManager {
 }
 
 class ListManager implements IListManager {
-  ListManager(this._listRepository);
+  ListManager(
+    this._listRepository, {
+    IScheduleAccessGrantRepository? scheduleAccessGrantRepository,
+  }) : _scheduleAccessGrantRepository = scheduleAccessGrantRepository;
+
   final IListRepository _listRepository;
+  final IScheduleAccessGrantRepository? _scheduleAccessGrantRepository;
 
   @override
   Future<List<UserList>> getAuthenticatedUserLists(String userId) async {
@@ -88,6 +94,10 @@ class ListManager implements IListManager {
   @override
   Future<void> addMember(String listId, String userId) async {
     await _listRepository.addMember(listId, userId);
+    await _scheduleAccessGrantRepository?.grantListSchedulesAccessToUser(
+      listId: listId,
+      userId: userId,
+    );
   }
 
   @override

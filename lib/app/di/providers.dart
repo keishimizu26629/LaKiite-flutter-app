@@ -5,6 +5,7 @@ import 'package:lakiite/domain/interfaces/i_friend_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_display_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_notification_repository.dart';
+import 'package:lakiite/domain/interfaces/i_schedule_access_grant_repository.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
 import 'package:lakiite/domain/interfaces/i_user_repository.dart';
@@ -97,8 +98,14 @@ final reactionRepositoryProvider = Provider<ReactionRepository>((ref) {
 
 /// リスト管理サービスのプロバイダー。
 final listManagerProvider = Provider<IListManager>((ref) {
+  final scheduleRepository = ref.watch(scheduleRepositoryProvider);
+  final scheduleAccessGrantRepository =
+      scheduleRepository is IScheduleAccessGrantRepository
+          ? scheduleRepository as IScheduleAccessGrantRepository
+          : null;
   return ListManager(
     ref.watch(listRepositoryProvider),
+    scheduleAccessGrantRepository: scheduleAccessGrantRepository,
   );
 });
 
