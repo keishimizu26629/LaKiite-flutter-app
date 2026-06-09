@@ -98,16 +98,36 @@ final reactionRepositoryProvider = Provider<ReactionRepository>((ref) {
 
 /// リスト管理サービスのプロバイダー。
 final listManagerProvider = Provider<IListManager>((ref) {
-  final scheduleRepository = ref.watch(scheduleRepositoryProvider);
-  final scheduleAccessGrantRepository =
-      scheduleRepository is IScheduleAccessGrantRepository
-          ? scheduleRepository as IScheduleAccessGrantRepository
-          : null;
   return ListManager(
     ref.watch(listRepositoryProvider),
-    scheduleAccessGrantRepository: scheduleAccessGrantRepository,
+    scheduleAccessGrantRepository: _LazyScheduleAccessGrantRepository(ref),
   );
 });
+
+class _LazyScheduleAccessGrantRepository
+    implements IScheduleAccessGrantRepository {
+  _LazyScheduleAccessGrantRepository(this._ref);
+
+  final Ref _ref;
+
+  @override
+  Future<void> grantListSchedulesAccessToUser({
+    required String listId,
+    required String userId,
+  }) async {
+    final scheduleRepository = _ref.read(scheduleRepositoryProvider);
+    if (scheduleRepository is! IScheduleAccessGrantRepository) {
+      return;
+    }
+
+    final scheduleAccessGrantRepository =
+        scheduleRepository as IScheduleAccessGrantRepository;
+    await scheduleAccessGrantRepository.grantListSchedulesAccessToUser(
+      listId: listId,
+      userId: userId,
+    );
+  }
+}
 
 /// ユーザー管理サービスのプロバイダー。
 final userManagerProvider = Provider<IUserManager>((ref) {
