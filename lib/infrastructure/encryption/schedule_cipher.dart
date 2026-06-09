@@ -60,6 +60,37 @@ class ScheduleCipher {
     return SchedulePlainDetails.fromJson(json);
   }
 
+  Future<ScheduleEncryptedPayload> encryptText({
+    required String text,
+    required SecretKey scheduleKey,
+  }) async {
+    final secretBox = await _aesGcm.encrypt(
+      utf8.encode(text),
+      secretKey: scheduleKey,
+    );
+    return ScheduleEncryptedPayload(
+      cipherText: _encode(secretBox.cipherText),
+      nonce: _encode(secretBox.nonce),
+      mac: _encode(secretBox.mac.bytes),
+      algorithm: payloadAlgorithm,
+    );
+  }
+
+  Future<String> decryptText({
+    required ScheduleEncryptedPayload payload,
+    required SecretKey scheduleKey,
+  }) async {
+    final clearText = await _aesGcm.decrypt(
+      SecretBox(
+        _decode(payload.cipherText),
+        nonce: _decode(payload.nonce),
+        mac: Mac(_decode(payload.mac)),
+      ),
+      secretKey: scheduleKey,
+    );
+    return utf8.decode(clearText);
+  }
+
   Future<ScheduleEncryptedKey> encryptScheduleKey({
     required SecretKeyData scheduleKey,
     required SimplePublicKey recipientPublicKey,

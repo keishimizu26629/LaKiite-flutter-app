@@ -4,6 +4,7 @@ import 'package:lakiite/domain/entity/schedule_comment.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
 import '../utils/logger.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'encryption/schedule_encryption_service.dart';
 
 /// スケジュールの相互作用（リアクション・コメント）に関するデータアクセスを管理
 ///
@@ -14,11 +15,16 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   ///
   /// [firestore]が指定されない場合は、デフォルトのインスタンスを使用します。
   /// テスト時にモックの[FirebaseFirestore]インスタンスを注入できます。
-  ScheduleInteractionRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  ScheduleInteractionRepository({
+    FirebaseFirestore? firestore,
+    ScheduleEncryptionService? encryptionService,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _encryptionService = encryptionService ??
+            ScheduleEncryptionService(firestore: firestore);
 
   /// Firestoreのインスタンス
   final FirebaseFirestore _firestore;
+  final ScheduleEncryptionService _encryptionService;
 
   /// 指定された[scheduleId]に関連する全リアクションを取得
   ///
@@ -195,6 +201,8 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   /// コメントは作成日時の降順でソートされ、[ScheduleComment]のリストとして返されます。
   @override
   Future<List<ScheduleComment>> getComments(String scheduleId) async {
+    final scheduleDoc = await _scheduleDoc(scheduleId).get();
+    final currentUserId = await _getCurrentUserId();
     final snapshot = await _firestore
         .collection('schedules')
         .doc(scheduleId)
@@ -202,40 +210,15 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         .orderBy('createdAt', descending: true)
         .get();
 
-    // すべてのコメントフィールドの詳細をログ出力
-    AppLogger.debug('========= コメントデータ詳細 =========');
     AppLogger.debug('スケジュールID: $scheduleId, 取得コメント数: ${snapshot.docs.length}');
 
-    // 各コメントのデータ構造を詳細に記録
-    for (final doc in snapshot.docs) {
-      final data = doc.data();
-      AppLogger.debug('コメントID: ${doc.id}');
-      AppLogger.debug('フィールド一覧: ${data.keys.join(", ")}');
-      AppLogger.debug('contentフィールドの有無: ${data.containsKey("content")}');
-      AppLogger.debug('textフィールドの有無: ${data.containsKey("text")}');
-      if (data.containsKey('content')) {
-        AppLogger.debug('content値: ${data["content"]}');
-      }
-      if (data.containsKey('text')) {
-        AppLogger.debug('text値: ${data["text"]}');
-      }
-    }
-    AppLogger.debug('===================================');
-
-    final comments = snapshot.docs.map((doc) {
-      try {
-        final data = {...doc.data(), 'id': doc.id};
-        AppLogger.debug('Comment Data from Firestore: $data');
-        final comment = ScheduleComment.fromJson(data);
-        AppLogger.debug('Converted Comment: $comment');
-        return comment;
-      } catch (e, stackTrace) {
-        AppLogger.error('Error converting comment: $e');
-        AppLogger.error('Stack trace: $stackTrace');
-        rethrow;
-      }
-    }).toList();
-    return comments;
+    return Future.wait(snapshot.docs.map(
+      (doc) => _commentFromDoc(
+        scheduleDoc: scheduleDoc,
+        currentUserId: currentUserId,
+        doc: doc,
+      ),
+    ));
   }
 
   /// 指定された[scheduleId]のスケジュールに新しいコメントを追加
@@ -256,16 +239,23 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       AppLogger.debug('User data fetched: $userData');
 
       final now = Timestamp.now();
+      final scheduleDoc = await _scheduleDoc(scheduleId).get();
+      final contentData =
+          await _encryptionService.toEncryptedCommentContentData(
+        scheduleDoc: scheduleDoc,
+        currentUserId: userId,
+        content: content,
+      );
       final commentData = {
         'userId': userId,
-        'content': content,
+        ...contentData,
         'createdAt': now,
         'updatedAt': now, // createdAtと同じ値に設定
         'isEdited': false, // 初期値としてfalseを設定
         'userDisplayName': userData?['displayName'],
         'userPhotoUrl': userData?['iconUrl'],
       };
-      AppLogger.debug('Comment data to save: $commentData');
+      AppLogger.debug('Comment data prepared for save');
 
       final docRef = await _firestore
           .collection('schedules')
@@ -353,17 +343,6 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
 
       // 更新するデータを準備 - セキュリティルールを満たすために必要最小限のフィールドのみ含める
       // セキュリティルールでは ['content', 'updatedAt', 'isEdited'] のみが許可されている
-      final now = Timestamp.now();
-      final updateData = {
-        'content': content,
-        'isEdited': true,
-        'updatedAt': now,
-      };
-
-      AppLogger.debug('更新データ: $updateData');
-      AppLogger.debug(
-          '更新データの型: updatedAt=${updateData['updatedAt']?.runtimeType}, isEdited=${updateData['isEdited']?.runtimeType}');
-
       // 現在のユーザーIDを取得して権限チェック
       final currentUserId = await _getCurrentUserId();
       final commentUserId = existingData?['userId'];
@@ -371,10 +350,34 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       AppLogger.debug('現在のユーザーID: $currentUserId');
       AppLogger.debug('コメント所有者ID: $commentUserId');
 
+      if (currentUserId == null) {
+        throw Exception('ユーザーが認証されていません');
+      }
+
       if (currentUserId != commentUserId) {
         AppLogger.error('権限エラー: コメント所有者ではありません');
         throw Exception('このコメントを編集する権限がありません');
       }
+
+      final scheduleDoc = await _scheduleDoc(scheduleId).get();
+      final now = Timestamp.now();
+      final contentData =
+          await _encryptionService.toEncryptedCommentContentData(
+        scheduleDoc: scheduleDoc,
+        currentUserId: currentUserId,
+        content: content,
+      );
+      final updateData = {
+        ...contentData,
+        'isEdited': true,
+        'updatedAt': now,
+      };
+      if (contentData['encrypted'] == true) {
+        updateData['content'] = FieldValue.delete();
+      }
+
+      AppLogger.debug(
+          '更新データの型: updatedAt=${updateData['updatedAt']?.runtimeType}, isEdited=${updateData['isEdited']?.runtimeType}');
 
       try {
         await _firestore
@@ -394,8 +397,6 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
           AppLogger.error('ユーザーID: $currentUserId');
           AppLogger.error('コメント所有者ID: $commentUserId');
 
-          // 更新データの詳細をログ出力
-          AppLogger.error('更新データの詳細: $updateData');
           AppLogger.error('更新対象フィールド: ${updateData.keys.join(", ")}');
 
           // ドキュメントデータを再度取得して確認
@@ -448,22 +449,18 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
         .collection('comments')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) {
+        .asyncMap((snapshot) async {
+      final scheduleDoc = await _scheduleDoc(scheduleId).get();
+      final currentUserId = await _getCurrentUserId();
       AppLogger.debug(
           'Received comment snapshot with ${snapshot.docs.length} documents');
-      final comments = snapshot.docs.map((doc) {
-        try {
-          final data = {...doc.data(), 'id': doc.id};
-          AppLogger.debug('Comment Data from Firestore (Watch): $data');
-          final comment = ScheduleComment.fromJson(data);
-          AppLogger.debug('Converted Comment (Watch): $comment');
-          return comment;
-        } catch (e, stackTrace) {
-          AppLogger.error('Error converting comment: $e');
-          AppLogger.error('Stack trace: $stackTrace');
-          rethrow;
-        }
-      }).toList();
+      final comments = await Future.wait(snapshot.docs.map(
+        (doc) => _commentFromDoc(
+          scheduleDoc: scheduleDoc,
+          currentUserId: currentUserId,
+          doc: doc,
+        ),
+      ));
       AppLogger.debug('Converted ${comments.length} comments');
       return comments;
     });
@@ -511,5 +508,39 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
   Future<String?> _getCurrentUserId() async {
     final auth = FirebaseAuth.instance;
     return auth.currentUser?.uid;
+  }
+
+  DocumentReference<Map<String, dynamic>> _scheduleDoc(String scheduleId) {
+    return _firestore.collection('schedules').doc(scheduleId);
+  }
+
+  Future<ScheduleComment> _commentFromDoc({
+    required DocumentSnapshot scheduleDoc,
+    required String? currentUserId,
+    required QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  }) async {
+    try {
+      final data = {...doc.data(), 'id': doc.id};
+      if (data['encrypted'] == true && currentUserId != null) {
+        data['content'] =
+            await _encryptionService.decryptCommentContentForCurrentUser(
+          scheduleDoc: scheduleDoc,
+          currentUserId: currentUserId,
+          commentData: data,
+        );
+      } else if (data['encrypted'] == true) {
+        data['content'] = 'コメントを復号できません';
+      }
+
+      return ScheduleComment.fromJson(data);
+    } catch (e, stackTrace) {
+      AppLogger.error('Error converting comment: $e');
+      AppLogger.error('Stack trace: $stackTrace');
+      return ScheduleComment.fromJson({
+        ...doc.data(),
+        'id': doc.id,
+        'content': 'コメントを復号できません',
+      });
+    }
   }
 }

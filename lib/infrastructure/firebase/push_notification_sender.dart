@@ -121,19 +121,12 @@ class PushNotificationSender {
     required String interactionId,
     String? commentContent,
   }) async {
-    final commentPreview = commentContent != null && commentContent.isNotEmpty
-        ? (commentContent.length > 50
-            ? '${commentContent.substring(0, 47)}...'
-            : commentContent)
-        : '';
-
     return _sendNotification(
       logContext: 'コメント通知',
       toUserId: toUserId,
       notificationBody: {
         'title': '新しいコメント',
-        'body':
-            '$fromUserNameさんがあなたの投稿にコメントしました${commentPreview.isNotEmpty ? ': $commentPreview' : ''}',
+        'body': '$fromUserNameさんがあなたの投稿にコメントしました',
       },
       data: {
         'type': 'comment',
@@ -142,7 +135,7 @@ class PushNotificationSender {
         'fromUserName': fromUserName,
         'scheduleId': scheduleId,
         'interactionId': interactionId,
-        'commentContent': commentContent ?? '',
+        'commentContent': '',
         'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
       },
     );

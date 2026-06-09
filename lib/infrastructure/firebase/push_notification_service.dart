@@ -672,7 +672,6 @@ class PushNotificationService {
     AppLogger.info('💬 コメントメッセージを処理中');
     AppLogger.info('💬 送信元ユーザーID: ${data['fromUserId']}');
     AppLogger.info('💬 スケジュールID: ${data['scheduleId']}');
-    AppLogger.info('💬 コメント内容: ${data['commentText']}');
     AppLogger.info('💬 データ詳細: $data');
   }
 

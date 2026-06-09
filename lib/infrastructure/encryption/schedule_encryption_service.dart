@@ -147,6 +147,67 @@ class ScheduleEncryptionService {
     );
   }
 
+  Future<Map<String, dynamic>> toEncryptedCommentContentData({
+    required DocumentSnapshot scheduleDoc,
+    required String currentUserId,
+    required String content,
+  }) async {
+    final scheduleKey = await scheduleKeyForCurrentUser(
+      scheduleDoc: scheduleDoc,
+      currentUserId: currentUserId,
+    );
+    if (scheduleKey == null) {
+      return {'content': content};
+    }
+
+    final payload = await _cipher.encryptText(
+      text: content,
+      scheduleKey: scheduleKey,
+    );
+    return {
+      'encrypted': true,
+      'encryptedContent': payload.toJson(),
+    };
+  }
+
+  Future<String> decryptCommentContentForCurrentUser({
+    required DocumentSnapshot scheduleDoc,
+    required String currentUserId,
+    required Map<String, dynamic> commentData,
+  }) async {
+    if (commentData['encrypted'] != true) {
+      return commentData['content'] as String? ?? '';
+    }
+
+    final scheduleKey = await scheduleKeyForCurrentUser(
+      scheduleDoc: scheduleDoc,
+      currentUserId: currentUserId,
+    );
+    if (scheduleKey == null) {
+      throw const ScheduleEncryptionException(
+        'Parent schedule is not encrypted',
+      );
+    }
+
+    final payload = ScheduleEncryptedPayload.fromJson(
+      Map<String, dynamic>.from(commentData['encryptedContent'] as Map),
+    );
+    return _cipher.decryptText(payload: payload, scheduleKey: scheduleKey);
+  }
+
+  Future<SecretKeyData?> scheduleKeyForCurrentUser({
+    required DocumentSnapshot scheduleDoc,
+    required String currentUserId,
+  }) async {
+    final data = scheduleDoc.data() as Map<String, dynamic>?;
+    if (data == null || data['encrypted'] != true) return null;
+
+    return _decryptScheduleKeyFromData(
+      data: data,
+      currentUserId: currentUserId,
+    );
+  }
+
   Future<void> _savePublicKey({
     required String uid,
     required SimpleKeyPairData keyPair,

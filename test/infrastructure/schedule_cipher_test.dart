@@ -86,5 +86,21 @@ void main() {
         throwsA(isA<Exception>()),
       );
     });
+
+    test('encrypts and decrypts comment text with a schedule key', () async {
+      final cipher = ScheduleCipher();
+      final scheduleKey = cipher.newScheduleKey();
+
+      final payload = await cipher.encryptText(
+        text: 'コメント本文',
+        scheduleKey: scheduleKey,
+      );
+
+      expect(payload.cipherText, isNot(contains('コメント本文')));
+      expect(
+        await cipher.decryptText(payload: payload, scheduleKey: scheduleKey),
+        'コメント本文',
+      );
+    });
   });
 }
