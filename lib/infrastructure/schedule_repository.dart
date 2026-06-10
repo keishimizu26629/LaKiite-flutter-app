@@ -92,6 +92,24 @@ class ScheduleRepository
     }
   }
 
+  Future<Schedule?> _enrichScheduleIfDisplayable(DocumentSnapshot doc) async {
+    await _ensureAuthenticated();
+
+    final data = doc.data() as Map<String, dynamic>?;
+    final currentUserId = _auth.currentUser!.uid;
+    if (!ScheduleEncryptionService.canDecryptScheduleData(
+      data,
+      currentUserId: currentUserId,
+    )) {
+      AppLogger.debug(
+        'Skipping encrypted schedule without key for current user: ${doc.id}',
+      );
+      return null;
+    }
+
+    return _enrichSchedule(doc);
+  }
+
   // キャッシュをクリア（必要に応じて呼び出す）
   void clearCache() {
     _enrichmentCache.clear();
@@ -118,9 +136,10 @@ class ScheduleRepository
           .get();
     });
 
-    final schedules =
-        await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
-    return schedules;
+    final schedules = await Future.wait(
+      snapshot.docs.map((doc) => _enrichScheduleIfDisplayable(doc)),
+    );
+    return schedules.whereType<Schedule>().toList();
   }
 
   @override
@@ -151,9 +170,10 @@ class ScheduleRepository
           .get();
     });
 
-    final schedules =
-        await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
-    return schedules;
+    final schedules = await Future.wait(
+      snapshot.docs.map((doc) => _enrichScheduleIfDisplayable(doc)),
+    );
+    return schedules.whereType<Schedule>().toList();
   }
 
   @override
@@ -281,9 +301,10 @@ class ScheduleRepository
         .orderBy('startDateTime', descending: false)
         .snapshots()
         .asyncMap((snapshot) async {
-      final schedules =
-          await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
-      return schedules;
+      final schedules = await Future.wait(
+        snapshot.docs.map((doc) => _enrichScheduleIfDisplayable(doc)),
+      );
+      return schedules.whereType<Schedule>().toList();
     });
   }
 
@@ -312,9 +333,9 @@ class ScheduleRepository
       await for (final snapshot in stream) {
         try {
           final schedules = await Future.wait(
-            snapshot.docs.map((doc) => _enrichSchedule(doc)),
+            snapshot.docs.map((doc) => _enrichScheduleIfDisplayable(doc)),
           );
-          yield schedules;
+          yield schedules.whereType<Schedule>().toList();
         } catch (e) {
           AppLogger.error('Error processing schedule snapshot: $e');
           // エラーが発生した場合は空のリストを返す
@@ -357,13 +378,14 @@ class ScheduleRepository
           final cachedSchedules = (await Future.wait(
             cachedSnapshot.docs.map((doc) async {
               try {
-                return await _enrichSchedule(doc);
+                return await _enrichScheduleIfDisplayable(doc);
               } catch (e) {
-                // エンリッチ中のエラーは無視してマッピングのみを行う
-                return ScheduleMapper.fromFirestore(doc);
+                AppLogger.error('Error enriching cached schedule: $e');
+                return null;
               }
             }),
           ))
+              .whereType<Schedule>()
               .where(range.overlaps)
               .toList();
 
@@ -427,16 +449,15 @@ class ScheduleRepository
       final batchResults = await Future.wait(
         batch.map((doc) async {
           try {
-            return await _enrichSchedule(doc);
+            return await _enrichScheduleIfDisplayable(doc);
           } catch (e) {
-            // エラー時はベーシックな情報だけでスケジュールを作成
             AppLogger.error('Error enriching schedule in batch: $e');
-            return ScheduleMapper.fromFirestore(doc);
+            return null;
           }
         }),
       );
 
-      results.addAll(batchResults);
+      results.addAll(batchResults.whereType<Schedule>());
     }
 
     return results;

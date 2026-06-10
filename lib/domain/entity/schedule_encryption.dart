@@ -154,6 +154,66 @@ class ScheduleUserPublicKey {
   final int keyVersion;
 }
 
+class ScheduleMigrationPublicKey {
+  const ScheduleMigrationPublicKey({
+    required this.keyId,
+    required this.publicKey,
+    required this.keyVersion,
+  });
+
+  factory ScheduleMigrationPublicKey.fromJson(Map<String, dynamic> json) {
+    return ScheduleMigrationPublicKey(
+      keyId: json['keyId'] as String,
+      publicKey: json['publicKey'] as String,
+      keyVersion: json['keyVersion'] as int? ?? 1,
+    );
+  }
+
+  final String keyId;
+  final String publicKey;
+  final int keyVersion;
+}
+
+class SchedulePendingEncryptedRecipient {
+  const SchedulePendingEncryptedRecipient({
+    required this.reason,
+    required this.migrationKeyId,
+    required this.sharedListIds,
+  });
+
+  factory SchedulePendingEncryptedRecipient.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return SchedulePendingEncryptedRecipient(
+      reason: json['reason'] as String? ?? 'missingPublicKey',
+      migrationKeyId: json['migrationKeyId'] as String,
+      sharedListIds: List<String>.from(json['sharedListIds'] as List? ?? []),
+    );
+  }
+
+  final String reason;
+  final String migrationKeyId;
+  final List<String> sharedListIds;
+
+  Map<String, dynamic> toJson() => {
+        'reason': reason,
+        'migrationKeyId': migrationKeyId,
+        'sharedListIds': sharedListIds,
+      };
+}
+
+class ScheduleRecipientEncryptionPlan {
+  const ScheduleRecipientEncryptionPlan({
+    required this.publicKeysByUserId,
+    required this.readyUserIds,
+    required this.missingUserIds,
+  });
+
+  final Map<String, ScheduleUserPublicKey> publicKeysByUserId;
+  final List<String> readyUserIds;
+  final List<String> missingUserIds;
+}
+
 enum SchedulePrivateKeySetupStatus {
   ready,
   notStarted,

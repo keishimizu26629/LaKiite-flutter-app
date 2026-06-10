@@ -18,12 +18,52 @@ class ScheduleEncryptionService {
 
   static const encryptionVersion = 1;
   static const currentKeyVersion = 1;
+  static const migrationPublicKeyCollection = 'encryptionMigration';
+  static const migrationPublicKeyDoc = 'current';
 
   final FirebaseFirestore? _firestore;
   final ScheduleCipher _cipher;
   final SchedulePrivateKeyStore _privateKeyStore;
 
   FirebaseFirestore get _db => _firestore ?? FirebaseFirestore.instance;
+
+  static ScheduleRecipientEncryptionPlan planRecipientEncryption({
+    required Iterable<String> viewerIds,
+    required Iterable<ScheduleUserPublicKey> publicKeys,
+  }) {
+    final uniqueViewerIds = <String>{
+      for (final viewerId in viewerIds)
+        if (viewerId.isNotEmpty) viewerId,
+    }.toList();
+    final publicKeysByUserId = <String, ScheduleUserPublicKey>{
+      for (final publicKey in publicKeys) publicKey.uid: publicKey,
+    };
+    final readyUserIds = <String>[];
+    final missingUserIds = <String>[];
+
+    for (final viewerId in uniqueViewerIds) {
+      if (publicKeysByUserId.containsKey(viewerId)) {
+        readyUserIds.add(viewerId);
+      } else {
+        missingUserIds.add(viewerId);
+      }
+    }
+
+    return ScheduleRecipientEncryptionPlan(
+      publicKeysByUserId: publicKeysByUserId,
+      readyUserIds: readyUserIds,
+      missingUserIds: missingUserIds,
+    );
+  }
+
+  static bool canDecryptScheduleData(
+    Map<String, dynamic>? data, {
+    required String currentUserId,
+  }) {
+    if (data == null || data['encrypted'] != true) return true;
+    final encryptedKeys = data['encryptedKeys'];
+    return encryptedKeys is Map && encryptedKeys[currentUserId] != null;
+  }
 
   Future<void> tryEnsureCurrentUserKey(String uid) async {
     try {
@@ -168,12 +208,33 @@ class ScheduleEncryptionService {
       details: details,
       scheduleKey: scheduleKey,
     );
-    final encryptedKeys = await _encryptScheduleKeyForViewers(
+    final viewerIds = <String>{currentUserId, ...schedule.visibleTo};
+    final publicKeys = await _fetchAvailablePublicKeys(viewerIds);
+    final recipientPlan = planRecipientEncryption(
+      viewerIds: viewerIds,
+      publicKeys: publicKeys,
+    );
+    final encryptedKeys = await _encryptScheduleKeyForPublicKeys(
       scheduleKey: scheduleKey,
-      viewerIds: schedule.visibleTo,
+      publicKeys: recipientPlan.publicKeysByUserId.values,
     );
 
-    final data = ScheduleMapper.toFirestore(schedule);
+    final migrationPublicKey = schedule.sharedLists.isNotEmpty ||
+            recipientPlan.missingUserIds.isNotEmpty
+        ? await _fetchMigrationPublicKey()
+        : null;
+    final migrationEncryptedKey = migrationPublicKey == null
+        ? null
+        : await _cipher.encryptScheduleKey(
+            scheduleKey: scheduleKey,
+            recipientPublicKey:
+                _cipher.publicKeyFromBase64(migrationPublicKey.publicKey),
+            keyVersion: migrationPublicKey.keyVersion,
+          );
+
+    final data = ScheduleMapper.toFirestore(
+      schedule.copyWith(visibleTo: recipientPlan.readyUserIds),
+    );
     data
       ..remove('title')
       ..remove('description')
@@ -184,6 +245,29 @@ class ScheduleEncryptionService {
       ..['encryptedKeys'] = encryptedKeys.map(
         (uid, encryptedKey) => MapEntry(uid, encryptedKey.toJson()),
       );
+    if (migrationEncryptedKey != null && migrationPublicKey != null) {
+      data['migrationEncryptedKeys'] = {
+        migrationPublicKey.keyId: migrationEncryptedKey.toJson(),
+      };
+    } else if (existingDoc != null) {
+      data['migrationEncryptedKeys'] = FieldValue.delete();
+    }
+
+    if (recipientPlan.missingUserIds.isNotEmpty && migrationPublicKey != null) {
+      final pendingRecipients = {
+        for (final userId in recipientPlan.missingUserIds)
+          userId: SchedulePendingEncryptedRecipient(
+            reason: 'missingPublicKey',
+            migrationKeyId: migrationPublicKey.keyId,
+            sharedListIds: schedule.sharedLists,
+          ).toJson(),
+      };
+      data['pendingEncryptedRecipients'] = pendingRecipients;
+      data['pendingEncryptedRecipientIds'] = recipientPlan.missingUserIds;
+    } else if (existingDoc != null) {
+      data['pendingEncryptedRecipients'] = FieldValue.delete();
+      data['pendingEncryptedRecipientIds'] = FieldValue.delete();
+    }
     return data;
   }
 
@@ -219,7 +303,9 @@ class ScheduleEncryptionService {
       data: data,
       currentUserId: currentUserId,
     );
-    final publicKey = (await _fetchPublicKeys({viewerId})).single;
+    final publicKeys = await _fetchAvailablePublicKeys({viewerId});
+    if (publicKeys.isEmpty) return null;
+    final publicKey = publicKeys.single;
     return _cipher.encryptScheduleKey(
       scheduleKey: scheduleKey,
       recipientPublicKey: _cipher.publicKeyFromBase64(publicKey.publicKey),
@@ -354,11 +440,10 @@ class ScheduleEncryptionService {
     );
   }
 
-  Future<Map<String, ScheduleEncryptedKey>> _encryptScheduleKeyForViewers({
+  Future<Map<String, ScheduleEncryptedKey>> _encryptScheduleKeyForPublicKeys({
     required SecretKeyData scheduleKey,
-    required Iterable<String> viewerIds,
+    required Iterable<ScheduleUserPublicKey> publicKeys,
   }) async {
-    final publicKeys = await _fetchPublicKeys(viewerIds.toSet());
     final entries = await Future.wait(publicKeys.map((publicKey) async {
       final encryptedKey = await _cipher.encryptScheduleKey(
         scheduleKey: scheduleKey,
@@ -370,7 +455,7 @@ class ScheduleEncryptionService {
     return Map.fromEntries(entries);
   }
 
-  Future<List<ScheduleUserPublicKey>> _fetchPublicKeys(
+  Future<List<ScheduleUserPublicKey>> _fetchAvailablePublicKeys(
     Set<String> viewerIds,
   ) async {
     final results = await Future.wait(viewerIds.map((uid) async {
@@ -383,13 +468,18 @@ class ScheduleEncryptionService {
         keyVersion: data['keyVersion'] as int? ?? currentKeyVersion,
       );
     }));
-    final publicKeys = results.whereType<ScheduleUserPublicKey>().toList();
-    final foundUserIds = publicKeys.map((key) => key.uid).toSet();
-    final missingUserIds = viewerIds.difference(foundUserIds).toList();
-    if (missingUserIds.isNotEmpty) {
-      throw MissingRecipientPublicKeyException(missingUserIds);
-    }
-    return publicKeys;
+    return results.whereType<ScheduleUserPublicKey>().toList();
+  }
+
+  Future<ScheduleMigrationPublicKey?> _fetchMigrationPublicKey() async {
+    final doc = await _db
+        .collection(migrationPublicKeyCollection)
+        .doc(migrationPublicKeyDoc)
+        .get();
+    if (!doc.exists) return null;
+    final data = doc.data();
+    if (data == null || data['enabled'] == false) return null;
+    return ScheduleMigrationPublicKey.fromJson(data);
   }
 
   DocumentReference _publicKeyRef(String uid) {
