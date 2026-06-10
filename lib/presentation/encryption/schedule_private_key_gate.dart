@@ -2,19 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/di/providers.dart';
 import '../../application/auth/auth_notifier.dart';
-import '../../domain/entity/schedule_encryption.dart';
+import 'package:lakiite/domain/entity/schedule_encryption.dart';
+import 'package:lakiite/infrastructure/encryption/schedule_encryption_service.dart';
 import '../login/login_page.dart';
 
 class SchedulePrivateKeyGate extends ConsumerStatefulWidget {
   const SchedulePrivateKeyGate({
     super.key,
     required this.userId,
+    required this.encryptionService,
     required this.child,
   });
 
   final String userId;
+  final ScheduleEncryptionService encryptionService;
   final Widget child;
 
   @override
@@ -43,9 +45,7 @@ class _SchedulePrivateKeyGateState
   }
 
   Future<SchedulePrivateKeySetupStatus> _loadStatus() {
-    return ref
-        .read(scheduleEncryptionServiceProvider)
-        .currentUserPrivateKeyStatus(widget.userId);
+    return widget.encryptionService.currentUserPrivateKeyStatus(widget.userId);
   }
 
   Future<void> _signOutToLogin() async {
@@ -90,6 +90,7 @@ class _SchedulePrivateKeyGateState
             if (_showRestoreForm) {
               return _PrivateKeyRestoreScaffold(
                 userId: widget.userId,
+                encryptionService: widget.encryptionService,
                 onRestored: _reloadStatus,
                 onCancel: _signOutToLogin,
               );
@@ -126,11 +127,13 @@ class _SchedulePrivateKeyGateState
 class _PrivateKeyRestoreScaffold extends ConsumerStatefulWidget {
   const _PrivateKeyRestoreScaffold({
     required this.userId,
+    required this.encryptionService,
     required this.onRestored,
     required this.onCancel,
   });
 
   final String userId;
+  final ScheduleEncryptionService encryptionService;
   final VoidCallback onRestored;
   final Future<void> Function() onCancel;
 
@@ -162,12 +165,10 @@ class _PrivateKeyRestoreScaffoldState
 
     setState(() => _isSubmitting = true);
     try {
-      await ref
-          .read(scheduleEncryptionServiceProvider)
-          .restorePrivateKeyFromBackup(
-            uid: widget.userId,
-            password: password,
-          );
+      await widget.encryptionService.restorePrivateKeyFromBackup(
+        uid: widget.userId,
+        password: password,
+      );
       widget.onRestored();
     } catch (_) {
       if (mounted) {

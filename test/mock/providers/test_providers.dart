@@ -1,9 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:lakiite/app/di/providers.dart';
 import 'package:lakiite/application/auth/auth_notifier.dart';
 import 'package:lakiite/application/force_update/force_update_providers.dart';
 import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/entity/notification.dart';
+import 'package:lakiite/domain/entity/schedule_encryption.dart';
+import 'package:lakiite/infrastructure/encryption/schedule_encryption_service.dart';
 import 'package:lakiite/infrastructure/how_to_use_prompt_preferences.dart';
 import '../repository/mock_auth_repository.dart';
 import '../repository/mock_schedule_repository.dart';
@@ -29,6 +32,9 @@ class TestProviders {
         ),
         userRepositoryProvider.overrideWithValue(mockUserRepository),
         forceUpdateFeatureEnabledProvider.overrideWithValue(false),
+        scheduleEncryptionServiceProvider.overrideWithValue(
+          _ReadyScheduleEncryptionService(),
+        ),
         howToUsePromptPreferencesProvider.overrideWithValue(
           const _SeenHowToUsePromptPreferences(),
         ),
@@ -182,6 +188,15 @@ class TestProviders {
     _mockListRepository = null;
     _mockNotificationRepository = null;
     _mockUserRepository = null;
+  }
+}
+
+class _ReadyScheduleEncryptionService extends ScheduleEncryptionService {
+  @override
+  Future<SchedulePrivateKeySetupStatus> currentUserPrivateKeyStatus(
+    String uid,
+  ) {
+    return SynchronousFuture(SchedulePrivateKeySetupStatus.ready);
   }
 }
 

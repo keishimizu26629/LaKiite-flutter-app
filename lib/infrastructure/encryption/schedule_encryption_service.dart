@@ -12,16 +12,18 @@ class ScheduleEncryptionService {
     FirebaseFirestore? firestore,
     ScheduleCipher? cipher,
     SchedulePrivateKeyStore? privateKeyStore,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+  })  : _firestore = firestore,
         _cipher = cipher ?? ScheduleCipher(),
         _privateKeyStore = privateKeyStore ?? SchedulePrivateKeyStore();
 
   static const encryptionVersion = 1;
   static const currentKeyVersion = 1;
 
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _firestore;
   final ScheduleCipher _cipher;
   final SchedulePrivateKeyStore _privateKeyStore;
+
+  FirebaseFirestore get _db => _firestore ?? FirebaseFirestore.instance;
 
   Future<void> tryEnsureCurrentUserKey(String uid) async {
     try {
@@ -391,7 +393,7 @@ class ScheduleEncryptionService {
   }
 
   DocumentReference _publicKeyRef(String uid) {
-    return _firestore
+    return _db
         .collection('users')
         .doc(uid)
         .collection('encryption')
