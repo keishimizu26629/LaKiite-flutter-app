@@ -92,6 +92,56 @@ class ScheduleEncryptedKey {
       };
 }
 
+class SchedulePrivateKeyBackup {
+  const SchedulePrivateKeyBackup({
+    required this.cipherText,
+    required this.nonce,
+    required this.mac,
+    required this.algorithm,
+    required this.kdf,
+    required this.kdfIterations,
+    required this.salt,
+    required this.keyVersion,
+    required this.version,
+  });
+
+  factory SchedulePrivateKeyBackup.fromJson(Map<String, dynamic> json) {
+    return SchedulePrivateKeyBackup(
+      cipherText: json['cipherText'] as String,
+      nonce: json['nonce'] as String,
+      mac: json['mac'] as String,
+      algorithm: json['algorithm'] as String? ?? 'AES-GCM',
+      kdf: json['kdf'] as String? ?? 'PBKDF2-HMAC-SHA256',
+      kdfIterations: json['kdfIterations'] as int? ?? 210000,
+      salt: json['salt'] as String,
+      keyVersion: json['keyVersion'] as int? ?? 1,
+      version: json['version'] as int? ?? 1,
+    );
+  }
+
+  final String cipherText;
+  final String nonce;
+  final String mac;
+  final String algorithm;
+  final String kdf;
+  final int kdfIterations;
+  final String salt;
+  final int keyVersion;
+  final int version;
+
+  Map<String, dynamic> toJson() => {
+        'cipherText': cipherText,
+        'nonce': nonce,
+        'mac': mac,
+        'algorithm': algorithm,
+        'kdf': kdf,
+        'kdfIterations': kdfIterations,
+        'salt': salt,
+        'keyVersion': keyVersion,
+        'version': version,
+      };
+}
+
 class ScheduleUserPublicKey {
   const ScheduleUserPublicKey({
     required this.uid,
@@ -102,6 +152,13 @@ class ScheduleUserPublicKey {
   final String uid;
   final String publicKey;
   final int keyVersion;
+}
+
+enum SchedulePrivateKeySetupStatus {
+  ready,
+  notStarted,
+  restoreAvailable,
+  backupMissing,
 }
 
 class ScheduleEncryptionException implements Exception {

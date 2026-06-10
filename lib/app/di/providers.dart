@@ -15,6 +15,7 @@ import 'package:lakiite/domain/service/schedule_manager.dart';
 import 'package:lakiite/domain/service/user_manager.dart';
 import 'package:lakiite/infrastructure/friend_list_repository.dart';
 import 'package:lakiite/infrastructure/display_list_repository.dart';
+import 'package:lakiite/infrastructure/encryption/schedule_encryption_service.dart';
 import 'package:lakiite/infrastructure/list_repository.dart';
 import 'package:lakiite/infrastructure/notification_repository.dart';
 import 'package:lakiite/infrastructure/repository/reaction_repository_impl.dart';
@@ -27,6 +28,11 @@ typedef ScheduleRepositoryFactory = IScheduleRepository Function();
 
 /// Firebase認証インスタンスを提供するプロバイダー。
 final firebaseAuthProvider = Provider((ref) => FirebaseAuth.instance);
+
+final scheduleEncryptionServiceProvider =
+    Provider<ScheduleEncryptionService>((ref) {
+  return ScheduleEncryptionService();
+});
 
 /// Firebase 認証状態の変化を監視し、repository のセッション境界を提供する。
 final repositorySessionKeyProvider = StreamProvider.autoDispose<String?>((ref) {

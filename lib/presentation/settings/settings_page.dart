@@ -7,6 +7,7 @@ import 'edit_email_page.dart';
 import 'edit_search_id_page.dart';
 import 'account_deletion_webview_page.dart';
 import 'schedule_digest_settings_page.dart';
+import 'schedule_key_backup_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -51,6 +52,15 @@ class SettingsPage extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               context.push('/settings/${ScheduleDigestSettingsPage.path}');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.key_outlined),
+            title: const Text('端末引き継ぎ設定'),
+            subtitle: const Text('暗号化された予定を別端末で復元'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              context.push('/settings/${ScheduleKeyBackupPage.path}');
             },
           ),
           const Divider(),

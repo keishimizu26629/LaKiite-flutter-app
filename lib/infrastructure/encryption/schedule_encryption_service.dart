@@ -27,8 +27,31 @@ class ScheduleEncryptionService {
     try {
       await ensureCurrentUserKey(uid);
     } on MissingLocalPrivateKeyException {
-      // Phase 2 の復元導線が入るまで、読み込み自体は継続する。
+      // 復元導線はログイン後のガードで扱う。読み込み自体は継続する。
     }
+  }
+
+  Future<SchedulePrivateKeySetupStatus> currentUserPrivateKeyStatus(
+    String uid,
+  ) async {
+    final publicKeyDoc = await _publicKeyRef(uid).get();
+    if (!publicKeyDoc.exists) {
+      return SchedulePrivateKeySetupStatus.notStarted;
+    }
+
+    final data = publicKeyDoc.data() as Map<String, dynamic>;
+    final keyVersion = data['keyVersion'] as int? ?? currentKeyVersion;
+    final localKey = await _privateKeyStore.read(
+      uid: uid,
+      keyVersion: keyVersion,
+    );
+    if (localKey != null) {
+      return SchedulePrivateKeySetupStatus.ready;
+    }
+
+    return _privateKeyBackupFromData(data) == null
+        ? SchedulePrivateKeySetupStatus.backupMissing
+        : SchedulePrivateKeySetupStatus.restoreAvailable;
   }
 
   Future<SimpleKeyPairData> ensureCurrentUserKey(String uid) async {
@@ -65,6 +88,61 @@ class ScheduleEncryptionService {
     );
     await _savePublicKey(uid: uid, keyPair: keyPair);
     return keyPair;
+  }
+
+  Future<void> createPrivateKeyBackup({
+    required String uid,
+    required String password,
+  }) async {
+    final keyPair = await ensureCurrentUserKey(uid);
+    final backup = await _cipher.encryptPrivateKeyBackup(
+      keyPair: keyPair,
+      password: password,
+      keyVersion: currentKeyVersion,
+    );
+
+    await _publicKeyRef(uid).set({
+      'encryptedPrivateKeyBackup': backup.toJson(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> restorePrivateKeyFromBackup({
+    required String uid,
+    required String password,
+  }) async {
+    final publicKeyDoc = await _publicKeyRef(uid).get();
+    if (!publicKeyDoc.exists) {
+      throw const ScheduleEncryptionException(
+        'Private key backup is missing',
+      );
+    }
+
+    final data = publicKeyDoc.data() as Map<String, dynamic>;
+    final backup = _privateKeyBackupFromData(data);
+    if (backup == null) {
+      throw const ScheduleEncryptionException(
+        'Private key backup is missing',
+      );
+    }
+
+    final keyPair = await _cipher.decryptPrivateKeyBackup(
+      backup: backup,
+      password: password,
+    );
+    final expectedPublicKey = data['publicKey'] as String?;
+    if (expectedPublicKey != null &&
+        expectedPublicKey != _cipher.publicKeyToBase64(keyPair.publicKey)) {
+      throw const ScheduleEncryptionException(
+        'Restored private key does not match the current public key',
+      );
+    }
+
+    await _privateKeyStore.write(
+      uid: uid,
+      keyVersion: backup.keyVersion,
+      keyPair: keyPair,
+    );
   }
 
   Future<Map<String, dynamic>> toEncryptedFirestoreData({
@@ -318,5 +396,15 @@ class ScheduleEncryptionService {
         .doc(uid)
         .collection('encryption')
         .doc('current');
+  }
+
+  SchedulePrivateKeyBackup? _privateKeyBackupFromData(
+    Map<String, dynamic> data,
+  ) {
+    final backupJson = data['encryptedPrivateKeyBackup'];
+    if (backupJson is! Map) return null;
+    return SchedulePrivateKeyBackup.fromJson(
+      Map<String, dynamic>.from(backupJson),
+    );
   }
 }

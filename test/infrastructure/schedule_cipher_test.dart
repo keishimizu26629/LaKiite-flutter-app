@@ -102,5 +102,47 @@ void main() {
         'コメント本文',
       );
     });
+
+    test('backs up and restores a private key with a transfer password',
+        () async {
+      final cipher = ScheduleCipher();
+      final keyPair = await cipher.newUserKeyPair();
+      const password = 'transfer-password-123';
+
+      final backup = await cipher.encryptPrivateKeyBackup(
+        keyPair: keyPair,
+        password: password,
+        keyVersion: 1,
+      );
+      final restored = await cipher.decryptPrivateKeyBackup(
+        backup: backup,
+        password: password,
+      );
+
+      expect(
+          backup.cipherText, isNot(contains(cipher.privateKeyToJson(keyPair))));
+      expect(restored.bytes, keyPair.bytes);
+      expect(restored.publicKey.bytes, keyPair.publicKey.bytes);
+    });
+
+    test('does not restore a private key backup with a wrong password',
+        () async {
+      final cipher = ScheduleCipher();
+      final keyPair = await cipher.newUserKeyPair();
+
+      final backup = await cipher.encryptPrivateKeyBackup(
+        keyPair: keyPair,
+        password: 'correct-password',
+        keyVersion: 1,
+      );
+
+      expect(
+        cipher.decryptPrivateKeyBackup(
+          backup: backup,
+          password: 'wrong-password',
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
   });
 }

@@ -13,6 +13,8 @@ class ScheduleCipher {
 
   static const payloadAlgorithm = 'AES-GCM';
   static const encryptedKeyAlgorithm = 'X25519+AES-GCM';
+  static const privateKeyBackupKdf = 'PBKDF2-HMAC-SHA256';
+  static const privateKeyBackupIterations = 210000;
 
   final AesGcm _aesGcm;
   final X25519 _keyExchange;
@@ -91,6 +93,54 @@ class ScheduleCipher {
     return utf8.decode(clearText);
   }
 
+  Future<SchedulePrivateKeyBackup> encryptPrivateKeyBackup({
+    required SimpleKeyPairData keyPair,
+    required String password,
+    required int keyVersion,
+  }) async {
+    final salt = SecretKeyData.random(length: 16).bytes;
+    final backupKey = await _derivePrivateKeyBackupKey(
+      password: password,
+      salt: salt,
+      iterations: privateKeyBackupIterations,
+    );
+    final secretBox = await _aesGcm.encrypt(
+      utf8.encode(privateKeyToJson(keyPair)),
+      secretKey: backupKey,
+    );
+    return SchedulePrivateKeyBackup(
+      cipherText: _encode(secretBox.cipherText),
+      nonce: _encode(secretBox.nonce),
+      mac: _encode(secretBox.mac.bytes),
+      algorithm: payloadAlgorithm,
+      kdf: privateKeyBackupKdf,
+      kdfIterations: privateKeyBackupIterations,
+      salt: _encode(salt),
+      keyVersion: keyVersion,
+      version: 1,
+    );
+  }
+
+  Future<SimpleKeyPairData> decryptPrivateKeyBackup({
+    required SchedulePrivateKeyBackup backup,
+    required String password,
+  }) async {
+    final backupKey = await _derivePrivateKeyBackupKey(
+      password: password,
+      salt: _decode(backup.salt),
+      iterations: backup.kdfIterations,
+    );
+    final clearText = await _aesGcm.decrypt(
+      SecretBox(
+        _decode(backup.cipherText),
+        nonce: _decode(backup.nonce),
+        mac: Mac(_decode(backup.mac)),
+      ),
+      secretKey: backupKey,
+    );
+    return privateKeyFromJson(utf8.decode(clearText));
+  }
+
   Future<ScheduleEncryptedKey> encryptScheduleKey({
     required SecretKeyData scheduleKey,
     required SimplePublicKey recipientPublicKey,
@@ -164,6 +214,22 @@ class ScheduleCipher {
         type: KeyPairType.x25519,
       ),
       type: KeyPairType.x25519,
+    );
+  }
+
+  Future<SecretKey> _derivePrivateKeyBackupKey({
+    required String password,
+    required List<int> salt,
+    required int iterations,
+  }) {
+    final pbkdf2 = Pbkdf2(
+      macAlgorithm: Hmac.sha256(),
+      iterations: iterations,
+      bits: 256,
+    );
+    return pbkdf2.deriveKey(
+      secretKey: SecretKey(utf8.encode(password)),
+      nonce: salt,
     );
   }
 

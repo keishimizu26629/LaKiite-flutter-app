@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../home/home_page.dart';
 import '../friend/friend_list_page.dart';
+import '../encryption/schedule_private_key_gate.dart';
 import '../list/list_page.dart';
 import '../my_page/my_page.dart';
 import '../widgets/auth_dependent_builder.dart';
@@ -22,7 +23,10 @@ class _BottomNavigationPageState extends ConsumerState<BottomNavigationPage> {
   @override
   Widget build(BuildContext context) {
     return AuthDependentBuilder(
-      onAuthenticated: (_) => const _AuthenticatedBottomNavigationShell(),
+      onAuthenticated: (userId) => SchedulePrivateKeyGate(
+        userId: userId,
+        child: const _AuthenticatedBottomNavigationShell(),
+      ),
       onLoading: (_) =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       onUnauthenticated: (_) => const Scaffold(body: SizedBox.shrink()),
