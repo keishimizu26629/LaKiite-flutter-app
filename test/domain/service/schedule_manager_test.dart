@@ -3,7 +3,6 @@ import 'package:lakiite/domain/service/schedule_manager.dart';
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
-import 'package:lakiite/domain/interfaces/i_friend_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_user_repository.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
 import 'package:lakiite/domain/entity/schedule_reaction.dart';
@@ -70,24 +69,6 @@ class MockScheduleRepository implements IScheduleRepository {
   @override
   Stream<Schedule?> watchSchedule(String scheduleId) {
     return Stream.value(null);
-  }
-}
-
-class MockFriendListRepository implements IFriendListRepository {
-  final Map<String, List<String>?> _memberIds = {};
-
-  void setMemberIds(String listId, List<String>? memberIds) {
-    _memberIds[listId] = memberIds;
-  }
-
-  @override
-  Future<List<String>?> getListMemberIds(String listId) async {
-    if (_memberIds.containsKey(listId)) {
-      final result = _memberIds[listId];
-      if (result == null) throw Exception('Network error');
-      return result;
-    }
-    return null;
   }
 }
 
@@ -287,26 +268,23 @@ void main() {
   group('ScheduleManager', () {
     late ScheduleManager scheduleManager;
     late MockScheduleRepository mockScheduleRepo;
-    late MockFriendListRepository mockFriendListRepo;
     late MockUserRepository mockUserRepo;
     late MockScheduleInteractionRepository mockInteractionRepo;
 
     setUp(() {
       mockScheduleRepo = MockScheduleRepository();
-      mockFriendListRepo = MockFriendListRepository();
       mockUserRepo = MockUserRepository();
       mockInteractionRepo = MockScheduleInteractionRepository();
 
       scheduleManager = ScheduleManager(
         mockScheduleRepo,
-        mockFriendListRepo,
         mockUserRepo,
         mockInteractionRepo,
       );
     });
 
     group('createSchedule', () {
-      test('共有リストのメンバーをvisibleToに追加する', () async {
+      test('visibleToはownerのみを初期値として保存する', () async {
         // Arrange
         final user = UserModel.create(
           id: 'owner1',
@@ -331,7 +309,6 @@ void main() {
         );
 
         mockUserRepo.setUser('owner1', user);
-        mockFriendListRepo.setMemberIds('list1', ['user1', 'user2']);
         mockScheduleRepo.setScheduleToReturn(
           schedule.copyWith(id: 'new-schedule-id'),
         );
@@ -343,10 +320,7 @@ void main() {
         expect(result.id, 'new-schedule-id');
         expect(result.ownerDisplayName, 'Owner User'); // ユーザー情報が設定されている
         expect(result.ownerPhotoUrl, 'https://example.com/icon.png');
-        expect(result.visibleTo, contains('owner1'));
-        expect(result.visibleTo, contains('user1'));
-        expect(result.visibleTo, contains('user2'));
-        expect(result.visibleTo.length, 3);
+        expect(result.visibleTo, ['owner1']);
 
         // 基本的な検証（手動モックでは詳細な検証は省略）
         expect(result.id, isNotEmpty);
@@ -439,7 +413,7 @@ void main() {
         }
       });
 
-      test('重複するユーザーIDは1回のみ追加する', () async {
+      test('複数リストを指定してもvisibleToはownerのみになる', () async {
         // Arrange
         final user = UserModel.create(
           id: 'owner1',
@@ -448,11 +422,6 @@ void main() {
         );
 
         mockUserRepo.setUser('owner1', user);
-        mockFriendListRepo.setMemberIds('list1', ['user1', 'user2']);
-        mockFriendListRepo.setMemberIds('list2', [
-          'user2',
-          'user3',
-        ]); // user2が重複
 
         final schedule = Schedule(
           id: '',
@@ -473,9 +442,7 @@ void main() {
         // Act
         final result = await scheduleManager.createSchedule(schedule);
 
-        // Assert - user2は1回のみ
-        expect(result.visibleTo.where((id) => id == 'user2').length, 1);
-        expect(result.visibleTo.length, 4); // owner1, user1, user2, user3
+        expect(result.visibleTo, ['owner1']);
       });
     });
 

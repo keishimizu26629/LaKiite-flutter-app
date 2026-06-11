@@ -37,6 +37,9 @@ Web公開用のファイル（プライバシーポリシー、利用規約な�
 - プッシュ通知
 - AdMob広告統合
 
+### 機能仕様
+- [予定暗号化 Firestore フィールド](./schedule-encryption-fields.md)
+
 ## 🔗 関連リンク
 
 - [Web公開ファイル](/web/) - GitHub Pages用ファイル

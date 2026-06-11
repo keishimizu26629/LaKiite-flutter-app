@@ -1,6 +1,5 @@
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
-import 'package:lakiite/domain/interfaces/i_friend_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_user_repository.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
 import 'package:lakiite/utils/logger.dart';
@@ -9,14 +8,14 @@ import 'package:lakiite/utils/logger.dart';
 ///
 /// 責務:
 /// - スケジュール作成時のビジネスルール適用
-/// - 可視対象ユーザーの計算
+/// - サーバー正規化前の可視対象ユーザー初期値の設定
 /// - スケジュールのエンリッチメント（リアクション数・コメント数）
 /// - バリデーション
 abstract class IScheduleManager {
   /// スケジュールを作成する
   ///
   /// ビジネスルール:
-  /// 1. 共有リストのメンバーを可視対象に追加
+  /// 1. owner を可視対象の初期値として設定
   /// 2. ユーザー情報（表示名、アイコン）を取得して設定
   /// 3. 作成日時・更新日時を設定
   ///
@@ -29,7 +28,7 @@ abstract class IScheduleManager {
   /// スケジュールを更新する
   ///
   /// ビジネスルール:
-  /// 1. 共有リストのメンバーを可視対象に追加
+  /// 1. owner を可視対象の初期値として設定
   /// 2. 更新日時を設定
   ///
   /// [schedule] 更新するスケジュール
@@ -76,12 +75,10 @@ abstract class IScheduleManager {
 class ScheduleManager implements IScheduleManager {
   ScheduleManager(
     this._scheduleRepository,
-    this._friendListRepository,
     this._userRepository,
     this._interactionRepository,
   );
   final IScheduleRepository _scheduleRepository;
-  final IFriendListRepository _friendListRepository;
   final IUserRepository _userRepository;
   final IScheduleInteractionRepository _interactionRepository;
 
@@ -237,25 +234,10 @@ class ScheduleManager implements IScheduleManager {
 
   /// 可視対象ユーザーを計算
   Future<List<String>> _calculateVisibleUsers(Schedule schedule) async {
-    final Set<String> visibleTo = {...schedule.visibleTo};
-
-    // 共有リストのメンバーを追加
-    for (final listId in schedule.sharedLists) {
-      try {
-        final memberIds = await _friendListRepository.getListMemberIds(listId);
-        if (memberIds != null) {
-          visibleTo.addAll(memberIds);
-          AppLogger.debug(
-              'ScheduleManager: Added ${memberIds.length} members from list $listId');
-        }
-      } catch (e) {
-        AppLogger.warning(
-            'ScheduleManager: Error getting members for list $listId - $e');
-        // エラーが発生しても処理を継続
-      }
-    }
-
-    return visibleTo.toList();
+    // visibleTo は検索用の派生データとして Cloud Functions が正規化する。
+    // クライアントは owner のみを初期値として送り、リストメンバー展開は
+    // サーバー側で sharedLists から再計算する。
+    return [schedule.ownerId];
   }
 
   /// スケジュールリストのエンリッチメント

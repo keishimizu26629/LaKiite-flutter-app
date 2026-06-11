@@ -146,7 +146,6 @@ final userManagerProvider = Provider<IUserManager>((ref) {
 final scheduleManagerProvider = Provider<IScheduleManager>((ref) {
   return ScheduleManager(
     ref.watch(scheduleRepositoryProvider),
-    ref.watch(friendListRepositoryProvider),
     ref.watch(userRepositoryProvider),
     ref.watch(scheduleInteractionRepositoryProvider),
   );
