@@ -139,6 +139,10 @@ Firestore 上の構造。
 
 公開先リストに公開鍵を持っていないユーザーがいる場合、またはリスト公開予定の場合に保存される。これにより、後から対象ユーザーの公開鍵が作られたときに Functions が `encryptedKeys.{uid}` を作れる。
 
+`migrationEncryptedKeys` は暗号化予定に必ず入るフィールドではない。通常の復号は `encryptedKeys.{uid}` で行う。`migrationEncryptedKeys` は、移行期間中に公開鍵未発行ユーザーが共有先に含まれる、またはリスト公開で未発行ユーザーが含まれる可能性がある予定の救済用として保存する。
+
+公開鍵がすでに発行されているユーザーには `encryptedKeys.{uid}` が作られる。公開鍵がまだないユーザーは `pendingEncryptedRecipients` に入り、後から公開鍵が作られたときに Functions が `migrationEncryptedKeys` から予定鍵を復号し、そのユーザー向けの `encryptedKeys.{uid}` を追加する。
+
 ```json
 {
   "schedule-migration-v1": {
@@ -168,6 +172,10 @@ Functions は `array-contains` クエリでこのフィールドを検索し、�
 ### pendingEncryptedRecipients
 
 `pendingEncryptedRecipientIds` の詳細 map。
+
+`pendingEncryptedRecipients` も暗号化予定に必ず入るフィールドではない。作成・更新時点で共有先に公開鍵未発行ユーザーがいる場合だけ、そのユーザーごとの pending 状態を記録する。公開鍵があるユーザーは `encryptedKeys.{uid}` に入り、pending には入らない。
+
+このフィールドはユーザー端末の復号には使わない。Functions が公開鍵作成後の補完対象、pending 理由、対応する移行用鍵、対象リストを判断するために使う。
 
 ```json
 {
