@@ -341,8 +341,6 @@ class ScheduleInteractionRepository implements IScheduleInteractionRepository {
       AppLogger.debug(
           '既存コメントのisEdited: $isEditedValue (${isEditedValue?.runtimeType})');
 
-      // 更新するデータを準備 - セキュリティルールを満たすために必要最小限のフィールドのみ含める
-      // セキュリティルールでは ['content', 'updatedAt', 'isEdited'] のみが許可されている
       // 現在のユーザーIDを取得して権限チェック
       final currentUserId = await _getCurrentUserId();
       final commentUserId = existingData?['userId'];
