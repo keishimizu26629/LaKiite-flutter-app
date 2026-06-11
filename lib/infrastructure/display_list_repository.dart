@@ -44,7 +44,7 @@ class DisplayListRepository implements IDisplayListRepository {
       id: doc.id,
       name: data['name'] as String? ?? '',
       ownerId: data['ownerId'] as String? ?? doc.reference.parent.parent!.id,
-      colorKey: data['colorKey'] as String? ?? 'blue',
+      colorKey: data['colorKey'] as String? ?? 'red',
       memberIds: List<String>.from(data['memberIds'] as List? ?? []),
       createdAt: parseDateTime(data['createdAt']),
       updatedAt: parseDateTime(data['updatedAt']),
