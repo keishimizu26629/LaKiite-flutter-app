@@ -96,6 +96,16 @@ class ScheduleEncryptionService {
         : SchedulePrivateKeySetupStatus.restoreAvailable;
   }
 
+  Future<bool> hasPrivateKeyBackup(String uid) async {
+    final publicKeyDoc = await _publicKeyRef(uid).get();
+    if (!publicKeyDoc.exists) {
+      return false;
+    }
+
+    final data = publicKeyDoc.data() as Map<String, dynamic>;
+    return _privateKeyBackupFromData(data) != null;
+  }
+
   Future<SimpleKeyPairData> ensureCurrentUserKey(String uid) async {
     final publicKeyRef = _publicKeyRef(uid);
     final publicKeyDoc = await publicKeyRef.get();

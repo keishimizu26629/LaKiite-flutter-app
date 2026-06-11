@@ -97,7 +97,7 @@ class _SchedulePrivateKeyGateState
             }
             return _KeyGateMessageScaffold(
               title: '端末引き継ぎ',
-              message: 'Phase2で実装予定の端末引き継ぎをしますか？',
+              message: 'この端末で暗号化された予定を表示するため、端末引き継ぎを行いますか？',
               actionLabel: 'OK',
               secondaryActionLabel: 'キャンセル',
               onAction: () async => setState(() => _showRestoreForm = true),

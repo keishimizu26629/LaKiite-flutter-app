@@ -19,6 +19,7 @@ class _ScheduleKeyBackupPageState extends ConsumerState<ScheduleKeyBackupPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   bool _isSubmitting = false;
 
   @override
@@ -89,6 +90,10 @@ class _ScheduleKeyBackupPageState extends ConsumerState<ScheduleKeyBackupPage> {
           const Text(
             '別の端末でも暗号化された予定を表示できるように、秘密キーを引き継ぎパスワードで暗号化して保存します。',
           ),
+          const SizedBox(height: 8),
+          const Text(
+            'すでに設定済みの場合、新しいパスワードで保存すると既存の引き継ぎ設定は上書きされます。',
+          ),
           const SizedBox(height: 24),
           TextField(
             controller: _passwordController,
@@ -97,7 +102,7 @@ class _ScheduleKeyBackupPageState extends ConsumerState<ScheduleKeyBackupPage> {
               labelText: '引き継ぎパスワード',
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
-                tooltip: _obscurePassword ? '表示' : '非表示',
+                tooltip: _obscurePassword ? '引き継ぎパスワードを表示' : '引き継ぎパスワードを非表示',
                 icon: Icon(
                   _obscurePassword ? Icons.visibility : Icons.visibility_off,
                 ),
@@ -110,10 +115,23 @@ class _ScheduleKeyBackupPageState extends ConsumerState<ScheduleKeyBackupPage> {
           const SizedBox(height: 16),
           TextField(
             controller: _confirmPasswordController,
-            obscureText: _obscurePassword,
-            decoration: const InputDecoration(
+            obscureText: _obscureConfirmPassword,
+            decoration: InputDecoration(
               labelText: '確認用パスワード',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                tooltip:
+                    _obscureConfirmPassword ? '確認用パスワードを表示' : '確認用パスワードを非表示',
+                icon: Icon(
+                  _obscureConfirmPassword
+                      ? Icons.visibility
+                      : Icons.visibility_off,
+                ),
+                onPressed: () {
+                  setState(
+                      () => _obscureConfirmPassword = !_obscureConfirmPassword);
+                },
+              ),
             ),
           ),
           const SizedBox(height: 24),
