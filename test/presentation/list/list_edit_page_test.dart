@@ -25,6 +25,7 @@ void main() {
       );
     final initialList = _list(memberIds: const ['member-1']);
     final latestList = _list(memberIds: const ['member-1', 'member-2']);
+    listRepository.listToReturn = latestList;
 
     addTearDown(listController.close);
 
@@ -108,6 +109,7 @@ class _CountingUserRepository extends MockUserRepository {
 
 class _CapturingListRepository implements IListRepository {
   UserList? updatedList;
+  UserList? listToReturn;
 
   @override
   Future<void> updateList(UserList list) async {
@@ -132,8 +134,7 @@ class _CapturingListRepository implements IListRepository {
   Future<void> deleteList(String listId) => Future.error(UnimplementedError());
 
   @override
-  Future<UserList?> getList(String listId) =>
-      Future.error(UnimplementedError());
+  Future<UserList?> getList(String listId) async => listToReturn;
 
   @override
   Future<List<UserList>> getLists(String ownerId) =>
