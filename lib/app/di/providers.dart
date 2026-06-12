@@ -9,6 +9,7 @@ import 'package:lakiite/domain/interfaces/i_schedule_access_grant_repository.dar
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
 import 'package:lakiite/domain/interfaces/i_user_repository.dart';
+import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/repository/reaction_repository.dart';
 import 'package:lakiite/domain/service/list_manager.dart';
 import 'package:lakiite/domain/service/schedule_manager.dart';
@@ -131,6 +132,24 @@ class _LazyScheduleAccessGrantRepository
     await scheduleAccessGrantRepository.grantListSchedulesAccessToUser(
       listId: listId,
       userId: userId,
+    );
+  }
+
+  @override
+  Future<void> syncListSchedulesAccess({
+    required UserList beforeList,
+    required UserList afterList,
+  }) async {
+    final scheduleRepository = _ref.read(scheduleRepositoryProvider);
+    if (scheduleRepository is! IScheduleAccessGrantRepository) {
+      return;
+    }
+
+    final scheduleAccessGrantRepository =
+        scheduleRepository as IScheduleAccessGrantRepository;
+    await scheduleAccessGrantRepository.syncListSchedulesAccess(
+      beforeList: beforeList,
+      afterList: afterList,
     );
   }
 }

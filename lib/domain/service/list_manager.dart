@@ -78,7 +78,14 @@ class ListManager implements IListManager {
 
   @override
   Future<void> updateList(UserList list) async {
+    final beforeList = await _listRepository.getList(list.id);
     await _listRepository.updateList(list);
+    if (beforeList != null) {
+      await _scheduleAccessGrantRepository?.syncListSchedulesAccess(
+        beforeList: beforeList,
+        afterList: list,
+      );
+    }
   }
 
   @override
@@ -93,15 +100,31 @@ class ListManager implements IListManager {
 
   @override
   Future<void> addMember(String listId, String userId) async {
+    final beforeList = await _listRepository.getList(listId);
     await _listRepository.addMember(listId, userId);
-    await _scheduleAccessGrantRepository?.grantListSchedulesAccessToUser(
-      listId: listId,
-      userId: userId,
-    );
+    if (beforeList != null) {
+      final afterList = beforeList.copyWith(
+        memberIds: {...beforeList.memberIds, userId}.toList(),
+      );
+      await _scheduleAccessGrantRepository?.syncListSchedulesAccess(
+        beforeList: beforeList,
+        afterList: afterList,
+      );
+    }
   }
 
   @override
   Future<void> removeMember(String listId, String userId) async {
+    final beforeList = await _listRepository.getList(listId);
     await _listRepository.removeMember(listId, userId);
+    if (beforeList != null) {
+      final afterList = beforeList.copyWith(
+        memberIds: beforeList.memberIds.where((id) => id != userId).toList(),
+      );
+      await _scheduleAccessGrantRepository?.syncListSchedulesAccess(
+        beforeList: beforeList,
+        afterList: afterList,
+      );
+    }
   }
 }

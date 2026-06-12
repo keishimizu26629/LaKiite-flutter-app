@@ -7,6 +7,16 @@ import '../mapper/schedule_mapper.dart';
 import 'schedule_cipher.dart';
 import 'schedule_private_key_store.dart';
 
+class ScheduleRekeyEncryptionResult {
+  const ScheduleRekeyEncryptionResult({
+    required this.scheduleData,
+    required this.scheduleKey,
+  });
+
+  final Map<String, dynamic> scheduleData;
+  final SecretKeyData scheduleKey;
+}
+
 class ScheduleEncryptionService {
   ScheduleEncryptionService({
     FirebaseFirestore? firestore,
@@ -208,7 +218,39 @@ class ScheduleEncryptionService {
       currentUserKey: currentUserKey,
       existingDoc: existingDoc,
     );
+    return _toEncryptedFirestoreDataWithScheduleKey(
+      schedule: schedule,
+      currentUserId: currentUserId,
+      scheduleKey: scheduleKey,
+      existingDoc: existingDoc,
+    );
+  }
 
+  Future<ScheduleRekeyEncryptionResult> toRekeyedFirestoreData({
+    required Schedule schedule,
+    required String currentUserId,
+    DocumentSnapshot? existingDoc,
+  }) async {
+    await ensureCurrentUserKey(currentUserId);
+    final scheduleKey = _cipher.newScheduleKey();
+    final data = await _toEncryptedFirestoreDataWithScheduleKey(
+      schedule: schedule,
+      currentUserId: currentUserId,
+      scheduleKey: scheduleKey,
+      existingDoc: existingDoc,
+    );
+    return ScheduleRekeyEncryptionResult(
+      scheduleData: data,
+      scheduleKey: scheduleKey,
+    );
+  }
+
+  Future<Map<String, dynamic>> _toEncryptedFirestoreDataWithScheduleKey({
+    required Schedule schedule,
+    required String currentUserId,
+    required SecretKeyData scheduleKey,
+    DocumentSnapshot? existingDoc,
+  }) async {
     final details = SchedulePlainDetails(
       title: schedule.title,
       description: schedule.description,
@@ -336,6 +378,20 @@ class ScheduleEncryptionService {
       return {'content': content};
     }
 
+    final payload = await _cipher.encryptText(
+      text: content,
+      scheduleKey: scheduleKey,
+    );
+    return {
+      'encrypted': true,
+      'encryptedContent': payload.toJson(),
+    };
+  }
+
+  Future<Map<String, dynamic>> toEncryptedCommentContentDataWithScheduleKey({
+    required SecretKeyData scheduleKey,
+    required String content,
+  }) async {
     final payload = await _cipher.encryptText(
       text: content,
       scheduleKey: scheduleKey,
