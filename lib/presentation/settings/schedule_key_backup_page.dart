@@ -22,6 +22,8 @@ class _ScheduleKeyBackupPageState extends ConsumerState<ScheduleKeyBackupPage> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isSubmitting = false;
+  String? _backupStatusUserId;
+  Future<bool>? _backupStatusFuture;
 
   @override
   void dispose() {
@@ -83,73 +85,120 @@ class _ScheduleKeyBackupPageState extends ConsumerState<ScheduleKeyBackupPage> {
     );
   }
 
+  Future<bool> _loadBackupStatus(String? userId) {
+    if (userId == null) {
+      _backupStatusUserId = null;
+      _backupStatusFuture = Future.value(false);
+      return _backupStatusFuture!;
+    }
+
+    if (_backupStatusFuture == null || _backupStatusUserId != userId) {
+      _backupStatusUserId = userId;
+      _backupStatusFuture =
+          ref.read(scheduleEncryptionServiceProvider).hasPrivateKeyBackup(
+                userId,
+              );
+    }
+    return _backupStatusFuture!;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authNotifierProvider).valueOrNull;
+    final userId = authState?.status == AuthStatus.authenticated
+        ? authState?.user?.id
+        : null;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('端末引き継ぎ設定'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          const Text(
-            '別の端末でも暗号化された予定を表示できるように、秘密キーを引き継ぎパスワードで暗号化して保存します。',
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'すでに設定済みの場合、新しいパスワードで保存すると既存の引き継ぎ設定は上書きされます。',
-          ),
-          const SizedBox(height: 24),
-          TextField(
-            controller: _passwordController,
-            obscureText: _obscurePassword,
-            decoration: InputDecoration(
-              labelText: '引き継ぎパスワード',
-              border: const OutlineInputBorder(),
-              suffixIcon: IconButton(
-                tooltip: _obscurePassword ? '引き継ぎパスワードを表示' : '引き継ぎパスワードを非表示',
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                ),
-                onPressed: () {
-                  setState(() => _obscurePassword = !_obscurePassword);
-                },
+      body: FutureBuilder<bool>(
+        future: _loadBackupStatus(userId),
+        builder: (context, snapshot) {
+          final hasBackup = snapshot.data ?? false;
+          final isLoading = snapshot.connectionState != ConnectionState.done;
+          final statusLabel = isLoading
+              ? '確認中'
+              : hasBackup
+                  ? '設定済み'
+                  : '未設定';
+          final description = hasBackup
+              ? 'このアカウントには端末引き継ぎ設定が保存されています。新しいパスワードで保存すると、別端末で復元するときに使うパスワードも新しいものに変わります。'
+              : '別の端末でも暗号化された予定を表示できるように、秘密キーを引き継ぎパスワードで暗号化して保存します。';
+          final passwordLabel = hasBackup ? '新しい引き継ぎパスワード' : '引き継ぎパスワード';
+          final buttonLabel = hasBackup ? '引き継ぎパスワードを更新' : '保存';
+
+          return ListView(
+            padding: const EdgeInsets.all(24),
+            children: [
+              Text(
+                '状態: $statusLabel',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _confirmPasswordController,
-            obscureText: _obscureConfirmPassword,
-            decoration: InputDecoration(
-              labelText: '確認用パスワード',
-              border: const OutlineInputBorder(),
-              suffixIcon: IconButton(
-                tooltip:
-                    _obscureConfirmPassword ? '確認用パスワードを表示' : '確認用パスワードを非表示',
-                icon: Icon(
-                  _obscureConfirmPassword
-                      ? Icons.visibility
-                      : Icons.visibility_off,
-                ),
-                onPressed: () {
-                  setState(
-                      () => _obscureConfirmPassword = !_obscureConfirmPassword);
-                },
+              const SizedBox(height: 8),
+              Text(description),
+              const SizedBox(height: 8),
+              const Text(
+                '復元パスワードはアプリ内で確認できません。別端末で復元するときに必要になるため、忘れないように保管してください。',
               ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _isSubmitting ? null : _save,
-            child: _isSubmitting
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('保存'),
-          ),
-        ],
+              const SizedBox(height: 24),
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
+                  labelText: passwordLabel,
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    tooltip:
+                        _obscurePassword ? '引き継ぎパスワードを表示' : '引き継ぎパスワードを非表示',
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() => _obscurePassword = !_obscurePassword);
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _confirmPasswordController,
+                obscureText: _obscureConfirmPassword,
+                decoration: InputDecoration(
+                  labelText: '確認用パスワード',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    tooltip: _obscureConfirmPassword
+                        ? '確認用パスワードを表示'
+                        : '確認用パスワードを非表示',
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() =>
+                          _obscureConfirmPassword = !_obscureConfirmPassword);
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: _isSubmitting ? null : _save,
+                child: _isSubmitting
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(buttonLabel),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
