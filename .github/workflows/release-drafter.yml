@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, reopened, synchronize, edited]
+    types: [opened, reopened, synchronize, edited, labeled, unlabeled]
   workflow_dispatch:
 
 permissions:
@@ -37,3 +37,72 @@ jobs:
           config-name: release-drafter.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update_main_pr_draft_version:
+    name: Update main PR draft version
+    if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Update draft release version from PR semver label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          labels="$(gh pr view "$PR_NUMBER" --repo "$REPOSITORY" --json labels --jq '.labels[].name')"
+          semver_count="$(printf '%s\n' "$labels" | grep -Ec '^semver:(major|minor|patch|none)$' || true)"
+
+          if [ "$semver_count" -ne 1 ]; then
+            echo "Exactly one semver label is required before draft version can be updated."
+            printf 'Current labels:\n%s\n' "$labels"
+            exit 0
+          fi
+
+          semver_label="$(printf '%s\n' "$labels" | grep -E '^semver:(major|minor|patch|none)$')"
+          if [ "$semver_label" = "semver:none" ]; then
+            echo "semver:none is set. Draft version update skipped."
+            exit 0
+          fi
+
+          latest_tag="$(gh api "repos/$REPOSITORY/releases/latest" --jq '.tag_name')"
+          latest_version="${latest_tag#v}"
+          IFS=. read -r major minor patch <<< "$latest_version"
+
+          case "$semver_label" in
+            semver:major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            semver:minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            semver:patch)
+              patch=$((patch + 1))
+              ;;
+            *)
+              echo "::error ::Unsupported semver label: $semver_label"
+              exit 1
+              ;;
+          esac
+
+          next_version="$major.$minor.$patch"
+
+          draft_id="$(gh api "repos/$REPOSITORY/releases" --jq '[.[] | select(.draft == true and .target_commitish == "main")][0].id // empty')"
+          if [ -z "$draft_id" ]; then
+            echo "::error ::No draft release targeting main was found."
+            exit 1
+          fi
+
+          gh api \
+            --method PATCH \
+            "repos/$REPOSITORY/releases/$draft_id" \
+            -f "name=v$next_version" \
+            -f "tag_name=v$next_version" \
+            -f "target_commitish=main"
+
+          echo "Updated draft release #$draft_id to v$next_version from $semver_label."
