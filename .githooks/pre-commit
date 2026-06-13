@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+run_fvm() {
+  env \
+    -u GIT_DIR \
+    -u GIT_WORK_TREE \
+    -u GIT_INDEX_FILE \
+    -u GIT_PREFIX \
+    -u GIT_OBJECT_DIRECTORY \
+    -u GIT_ALTERNATE_OBJECT_DIRECTORIES \
+    fvm "$@"
+}
+
+echo "[pre-commit] Checking staged whitespace..."
+git diff --cached --check
+
+staged_dart_files="$(
+  git diff --cached --name-only --diff-filter=ACMR -- '*.dart' \
+    | grep -vE '(^|/)(.*\.g\.dart|.*\.freezed\.dart|.*\.mocks\.dart)$' || true
+)"
+
+if [ -n "$staged_dart_files" ]; then
+  echo "[pre-commit] Checking Dart formatting for staged Dart files..."
+  # shellcheck disable=SC2086
+  run_fvm dart format --output=none --set-exit-if-changed $staged_dart_files
+else
+  echo "[pre-commit] No staged Dart files to format-check."
+fi
+
+echo "[pre-commit] Running Flutter analyze..."
+run_fvm flutter analyze
+
+if git diff --cached --name-only --diff-filter=ACMR | grep -qE '^(lib|test)/(domain|utils|application|infrastructure)/|^pubspec\.(yaml|lock)$|^analysis_options\.yaml$'; then
+  echo "[pre-commit] Running unit and infrastructure tests..."
+  run_fvm flutter test \
+    test/domain/ \
+    test/utils/ \
+    test/application/ \
+    test/infrastructure/ \
+    --dart-define=FLUTTER_TEST=true
+else
+  echo "[pre-commit] Unit and infrastructure tests skipped: no matching staged changes."
+fi
+
+echo "[pre-commit] Checks passed."
