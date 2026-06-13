@@ -125,6 +125,27 @@ void main() {
       expect(restored.publicKey.bytes, keyPair.publicKey.bytes);
     });
 
+    test('detects whether a private key matches a stored public key', () async {
+      final cipher = ScheduleCipher();
+      final keyPair = await cipher.newUserKeyPair();
+      final otherKeyPair = await cipher.newUserKeyPair();
+
+      expect(
+        cipher.publicKeyMatchesPrivateKey(
+          privateKey: keyPair,
+          publicKey: cipher.publicKeyToBase64(keyPair.publicKey),
+        ),
+        isTrue,
+      );
+      expect(
+        cipher.publicKeyMatchesPrivateKey(
+          privateKey: otherKeyPair,
+          publicKey: cipher.publicKeyToBase64(keyPair.publicKey),
+        ),
+        isFalse,
+      );
+    });
+
     test('does not restore a private key backup with a wrong password',
         () async {
       final cipher = ScheduleCipher();

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/di/providers.dart';
 import '../../application/auth/auth_notifier.dart';
 import '../../application/auth/auth_state.dart';
+import '../../domain/entity/schedule_encryption.dart';
 
 class ScheduleKeyBackupPage extends ConsumerStatefulWidget {
   const ScheduleKeyBackupPage({super.key});
@@ -60,6 +61,10 @@ class _ScheduleKeyBackupPageState extends ConsumerState<ScheduleKeyBackupPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('端末引き継ぎ設定を保存しました')),
         );
+      }
+    } on LocalPrivateKeyMismatchException {
+      if (mounted) {
+        _showSnackBar('この端末の暗号化キーが現在の公開キーと一致しないため保存できません');
       }
     } catch (_) {
       if (mounted) {

@@ -197,6 +197,13 @@ class ScheduleCipher {
   String publicKeyToBase64(SimplePublicKey publicKey) =>
       _encode(publicKey.bytes);
 
+  bool publicKeyMatchesPrivateKey({
+    required SimpleKeyPairData privateKey,
+    required String publicKey,
+  }) {
+    return publicKeyToBase64(privateKey.publicKey) == publicKey;
+  }
+
   String privateKeyToJson(SimpleKeyPairData keyPair) {
     return jsonEncode({
       'privateKey': _encode(keyPair.bytes),

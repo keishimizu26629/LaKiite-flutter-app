@@ -235,6 +235,19 @@ class MissingLocalPrivateKeyException extends ScheduleEncryptionException {
       : super('Local private key is missing for user $uid');
 }
 
+class LocalPrivateKeyMismatchException extends ScheduleEncryptionException {
+  const LocalPrivateKeyMismatchException(String uid)
+      : super(
+            'Local private key does not match the current public key for $uid');
+}
+
+class RestoredPrivateKeyMismatchException extends ScheduleEncryptionException {
+  const RestoredPrivateKeyMismatchException(String uid)
+      : super(
+          'Restored private key does not match the current public key for $uid',
+        );
+}
+
 class MissingRecipientPublicKeyException extends ScheduleEncryptionException {
   MissingRecipientPublicKeyException(List<String> userIds)
       : missingUserIds = userIds,

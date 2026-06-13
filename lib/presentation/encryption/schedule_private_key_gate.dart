@@ -170,6 +170,14 @@ class _PrivateKeyRestoreScaffoldState
         password: password,
       );
       widget.onRestored();
+    } on RestoredPrivateKeyMismatchException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('保存されている引き継ぎキーが現在の暗号化キーと一致しません'),
+          ),
+        );
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

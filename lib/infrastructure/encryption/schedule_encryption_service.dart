@@ -97,7 +97,12 @@ class ScheduleEncryptionService {
       uid: uid,
       keyVersion: keyVersion,
     );
-    if (localKey != null) {
+    final publicKey = data['publicKey'] as String?;
+    if (localKey != null &&
+        _localPrivateKeyMatchesPublicKey(
+          localKey: localKey,
+          publicKey: publicKey,
+        )) {
       return SchedulePrivateKeySetupStatus.ready;
     }
 
@@ -129,6 +134,13 @@ class ScheduleEncryptionService {
       );
       if (localKey == null) {
         throw MissingLocalPrivateKeyException(uid);
+      }
+      final publicKey = data['publicKey'] as String?;
+      if (!_localPrivateKeyMatchesPublicKey(
+        localKey: localKey,
+        publicKey: publicKey,
+      )) {
+        throw LocalPrivateKeyMismatchException(uid);
       }
       return localKey;
     }
@@ -194,10 +206,11 @@ class ScheduleEncryptionService {
     );
     final expectedPublicKey = data['publicKey'] as String?;
     if (expectedPublicKey != null &&
-        expectedPublicKey != _cipher.publicKeyToBase64(keyPair.publicKey)) {
-      throw const ScheduleEncryptionException(
-        'Restored private key does not match the current public key',
-      );
+        !_cipher.publicKeyMatchesPrivateKey(
+          privateKey: keyPair,
+          publicKey: expectedPublicKey,
+        )) {
+      throw RestoredPrivateKeyMismatchException(uid);
     }
 
     await _privateKeyStore.write(
@@ -564,5 +577,16 @@ class ScheduleEncryptionService {
     return SchedulePrivateKeyBackup.fromJson(
       Map<String, dynamic>.from(backupJson),
     );
+  }
+
+  bool _localPrivateKeyMatchesPublicKey({
+    required SimpleKeyPairData localKey,
+    required String? publicKey,
+  }) {
+    return publicKey == null ||
+        _cipher.publicKeyMatchesPrivateKey(
+          privateKey: localKey,
+          publicKey: publicKey,
+        );
   }
 }
