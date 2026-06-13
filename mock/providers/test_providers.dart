@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lakiite/application/notification/notification_notifier.dart'
     as notification;
+import 'package:lakiite/domain/entity/schedule_encryption.dart';
 import 'package:lakiite/domain/entity/user.dart';
+import 'package:lakiite/infrastructure/encryption/schedule_encryption_service.dart';
 import 'package:lakiite/infrastructure/providers.dart';
 import 'package:lakiite/presentation/presentation_provider.dart';
 import '../repositories/mock_auth_repository.dart';
@@ -69,6 +72,9 @@ class TestProviders {
       storageServiceProvider.overrideWithValue(mockStorageService),
       imageProcessorServiceProvider
           .overrideWithValue(mockImageProcessorService),
+      scheduleEncryptionServiceProvider.overrideWithValue(
+        _ReadyScheduleEncryptionService(),
+      ),
       if (currentUserId != null)
         notification.currentUserIdProvider.overrideWithValue(currentUserId),
     ];
@@ -129,5 +135,14 @@ class TestProviders {
     mockScheduleRepository.setupSampleSchedules();
 
     return _baseOverrides(currentUserId: testUser.id);
+  }
+}
+
+class _ReadyScheduleEncryptionService extends ScheduleEncryptionService {
+  @override
+  Future<SchedulePrivateKeySetupStatus> currentUserPrivateKeyStatus(
+    String uid,
+  ) {
+    return SynchronousFuture(SchedulePrivateKeySetupStatus.ready);
   }
 }

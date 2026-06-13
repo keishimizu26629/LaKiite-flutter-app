@@ -1,16 +1,37 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entity/schedule.dart';
+import '../../domain/entity/schedule_encryption.dart';
 
 /// スケジュールのドメインモデルとFirestoreデータの変換を担当するマッパー
 class ScheduleMapper {
   /// FirestoreのドキュメントからScheduleエンティティを生成
-  static Schedule fromFirestore(DocumentSnapshot doc) {
+  static Schedule fromFirestore(
+    DocumentSnapshot doc, {
+    SchedulePlainDetails? decryptedDetails,
+  }) {
     final data = doc.data() as Map<String, dynamic>;
+    return fromFirestoreData(
+      doc.id,
+      data,
+      decryptedDetails: decryptedDetails,
+    );
+  }
+
+  static Schedule fromFirestoreData(
+    String id,
+    Map<String, dynamic> data, {
+    SchedulePlainDetails? decryptedDetails,
+  }) {
+    final isEncrypted = data['encrypted'] == true;
     return Schedule(
-      id: doc.id,
-      title: data['title'] as String,
-      description: data['description'] as String,
-      location: data['location'] as String?,
+      id: id,
+      title: decryptedDetails?.title ??
+          (data['title'] as String?) ??
+          (isEncrypted ? '予定を復号できません' : ''),
+      description: decryptedDetails?.description ??
+          (data['description'] as String?) ??
+          '',
+      location: decryptedDetails?.location ?? (data['location'] as String?),
       startDateTime: _parseDateTime(data['startDateTime']),
       endDateTime: _parseDateTime(data['endDateTime']),
       isAllDay: data['isAllDay'] as bool? ?? false,

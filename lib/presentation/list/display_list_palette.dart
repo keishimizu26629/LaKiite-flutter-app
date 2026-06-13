@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 class DisplayListPalette {
   const DisplayListPalette._();
 
-  static const defaultColorKey = 'blue';
-
   static const entries = [
     DisplayListPaletteEntry(key: 'red', label: 'レッド', color: Colors.red),
     DisplayListPaletteEntry(key: 'green', label: 'グリーン', color: Colors.green),
@@ -20,13 +18,15 @@ class DisplayListPalette {
     DisplayListPaletteEntry(key: 'pink', label: 'ピンク', color: Colors.pink),
   ];
 
+  static final defaultColorKey = entries.first.key;
+
   static Color colorForKey(String colorKey) {
     for (final entry in entries) {
       if (entry.key == colorKey) {
         return entry.color;
       }
     }
-    return Colors.blue;
+    return entries.first.color;
   }
 }
 

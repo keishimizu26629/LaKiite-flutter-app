@@ -6,8 +6,11 @@ import 'package:lakiite/app/di/providers.dart';
 import 'package:lakiite/application/auth/auth_notifier.dart';
 import 'package:lakiite/application/list/list_notifier.dart';
 import 'package:lakiite/domain/entity/list.dart';
+import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/domain/interfaces/i_list_repository.dart';
+import 'package:lakiite/domain/interfaces/i_schedule_access_grant_repository.dart';
+import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
 
 import '../../../mock/repositories/mock_auth_repository.dart';
 import '../../../mock/repositories/mock_user_repository.dart';
@@ -21,6 +24,9 @@ class _TrackingListRepository implements IListRepository {
 
   final _listsController = StreamController<List<UserList>>.broadcast();
   int cancelCount = 0;
+  final addedMembers = <({String listId, String userId})>[];
+  UserList? listToReturn;
+  UserList? updatedList;
 
   @override
   Stream<List<UserList>> watchUserLists(String ownerId) =>
@@ -30,8 +36,9 @@ class _TrackingListRepository implements IListRepository {
   Stream<UserList?> watchList(String listId) => const Stream<UserList?>.empty();
 
   @override
-  Future<void> addMember(String listId, String userId) =>
-      Future.error(UnimplementedError());
+  Future<void> addMember(String listId, String userId) async {
+    addedMembers.add((listId: listId, userId: userId));
+  }
 
   @override
   Future<UserList> createList({
@@ -47,8 +54,7 @@ class _TrackingListRepository implements IListRepository {
   Future<void> deleteList(String listId) => Future.error(UnimplementedError());
 
   @override
-  Future<UserList?> getList(String listId) =>
-      Future.error(UnimplementedError());
+  Future<UserList?> getList(String listId) async => listToReturn;
 
   @override
   Future<List<UserList>> getLists(String ownerId) =>
@@ -59,11 +65,73 @@ class _TrackingListRepository implements IListRepository {
       Future.error(UnimplementedError());
 
   @override
-  Future<void> updateList(UserList list) => Future.error(UnimplementedError());
+  Future<void> updateList(UserList list) async {
+    updatedList = list;
+  }
 
   void dispose() {
     _listsController.close();
   }
+}
+
+class _TrackingScheduleAccessGrantRepository
+    implements IScheduleRepository, IScheduleAccessGrantRepository {
+  final grantRequests = <({String listId, String userId})>[];
+  final syncRequests = <({UserList beforeList, UserList afterList})>[];
+
+  @override
+  Future<void> grantListSchedulesAccessToUser({
+    required String listId,
+    required String userId,
+  }) async {
+    grantRequests.add((listId: listId, userId: userId));
+  }
+
+  @override
+  Future<void> syncListSchedulesAccess({
+    required UserList beforeList,
+    required UserList afterList,
+  }) async {
+    syncRequests.add((beforeList: beforeList, afterList: afterList));
+  }
+
+  @override
+  Future<Schedule> createSchedule(Schedule schedule) =>
+      Future.error(UnimplementedError());
+
+  @override
+  Future<void> deleteSchedule(String scheduleId) =>
+      Future.error(UnimplementedError());
+
+  @override
+  Future<List<Schedule>> getListSchedules(String listId) =>
+      Future.error(UnimplementedError());
+
+  @override
+  Future<List<Schedule>> getUserSchedules(String userId) =>
+      Future.error(UnimplementedError());
+
+  @override
+  Future<void> updateSchedule(Schedule schedule) =>
+      Future.error(UnimplementedError());
+
+  @override
+  Stream<List<Schedule>> watchListSchedules(String listId) =>
+      const Stream.empty();
+
+  @override
+  Stream<Schedule?> watchSchedule(String scheduleId) => const Stream.empty();
+
+  @override
+  Stream<List<Schedule>> watchUserSchedules(String userId) =>
+      const Stream.empty();
+
+  @override
+  Stream<List<Schedule>> watchUserSchedulesForMonth(
+    String userId,
+    DateTime displayMonth,
+  ) =>
+      const Stream.empty();
 }
 
 void main() {
@@ -113,6 +181,69 @@ void main() {
 
       expect(listRepository.cancelCount, 1);
       expect(container.read(listNotifierProvider).hasError, isFalse);
+    });
+
+    test('メンバー追加後に変更前後のリストで予定公開範囲を同期する', () async {
+      final beforeList = UserList(
+        id: 'list-id',
+        listName: 'list',
+        ownerId: 'owner-id',
+        memberIds: const ['existing-user-id'],
+        createdAt: DateTime(2026, 6, 12),
+      );
+      listRepository.listToReturn = beforeList;
+      final scheduleRepository = _TrackingScheduleAccessGrantRepository();
+      final scopedContainer = ProviderContainer(
+        overrides: [
+          listRepositoryProvider.overrideWithValue(listRepository),
+          scheduleRepositoryProvider.overrideWithValue(scheduleRepository),
+        ],
+      );
+      addTearDown(scopedContainer.dispose);
+
+      await scopedContainer
+          .read(listManagerProvider)
+          .addMember('list-id', 'new-user-id');
+
+      expect(
+        listRepository.addedMembers,
+        [(listId: 'list-id', userId: 'new-user-id')],
+      );
+      expect(scheduleRepository.grantRequests, isEmpty);
+      expect(scheduleRepository.syncRequests.single.beforeList, beforeList);
+      expect(
+        scheduleRepository.syncRequests.single.afterList.memberIds,
+        ['existing-user-id', 'new-user-id'],
+      );
+    });
+
+    test('リスト更新後に変更前後のリストで予定公開範囲を同期する', () async {
+      final beforeList = UserList(
+        id: 'list-id',
+        listName: 'before',
+        ownerId: 'owner-id',
+        memberIds: const ['a', 'b'],
+        createdAt: DateTime(2026, 6, 12),
+      );
+      final afterList = beforeList.copyWith(
+        listName: 'after',
+        memberIds: const ['b', 'c'],
+      );
+      listRepository.listToReturn = beforeList;
+      final scheduleRepository = _TrackingScheduleAccessGrantRepository();
+      final scopedContainer = ProviderContainer(
+        overrides: [
+          listRepositoryProvider.overrideWithValue(listRepository),
+          scheduleRepositoryProvider.overrideWithValue(scheduleRepository),
+        ],
+      );
+      addTearDown(scopedContainer.dispose);
+
+      await scopedContainer.read(listManagerProvider).updateList(afterList);
+
+      expect(listRepository.updatedList, afterList);
+      expect(scheduleRepository.syncRequests.single.beforeList, beforeList);
+      expect(scheduleRepository.syncRequests.single.afterList, afterList);
     });
   });
 }

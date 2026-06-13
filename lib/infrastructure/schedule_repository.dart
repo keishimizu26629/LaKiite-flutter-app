@@ -1,18 +1,30 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../domain/entity/list.dart';
 import '../domain/entity/schedule.dart';
+import '../domain/interfaces/i_schedule_access_grant_repository.dart';
 import '../domain/interfaces/i_schedule_repository.dart';
+import '../domain/service/schedule_recipient_diff_calculator.dart';
 import '../domain/value/schedule_month_range.dart';
 import '../utils/logger.dart';
+import 'encryption/schedule_encryption_service.dart';
 import 'mapper/schedule_mapper.dart';
 import 'schedule_enrichment_cache.dart';
 
-class ScheduleRepository implements IScheduleRepository {
-  ScheduleRepository()
-      : _firestore = FirebaseFirestore.instance,
-        _auth = FirebaseAuth.instance;
+class ScheduleRepository
+    implements IScheduleRepository, IScheduleAccessGrantRepository {
+  ScheduleRepository({
+    FirebaseFirestore? firestore,
+    FirebaseAuth? auth,
+    ScheduleEncryptionService? encryptionService,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = auth ?? FirebaseAuth.instance,
+        _encryptionService = encryptionService ??
+            ScheduleEncryptionService(firestore: firestore);
+
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
+  final ScheduleEncryptionService _encryptionService;
 
   final ScheduleEnrichmentCache _enrichmentCache = ScheduleEnrichmentCache();
 
@@ -25,6 +37,9 @@ class ScheduleRepository implements IScheduleRepository {
         throw Exception('User not authenticated');
       }
     }
+
+    final uid = _auth.currentUser!.uid;
+    await _encryptionService.tryEnsureCurrentUserKey(uid);
   }
 
   // リアクション数とコメント数を一括で取得（バッチ処理）
@@ -57,25 +72,44 @@ class ScheduleRepository implements IScheduleRepository {
     await _ensureAuthenticated();
 
     try {
-      // 基本的なスケジュール情報を取得
-      final schedule = ScheduleMapper.fromFirestore(doc);
+      final currentUserId = _auth.currentUser!.uid;
+      final decryptedDetails = await _encryptionService
+          .decryptDetailsForCurrentUser(doc: doc, currentUserId: currentUserId);
 
-      // リアクション数とコメント数を一括取得
+      final schedule = ScheduleMapper.fromFirestore(
+        doc,
+        decryptedDetails: decryptedDetails,
+      );
+
       final (reactionCount, commentCount) =
           await _fetchInteractionCounts(doc.reference);
 
-      // リアクション数とコメント数を更新したスケジュールを作成
-      final enrichedSchedule = schedule.copyWith(
+      return schedule.copyWith(
         reactionCount: reactionCount,
         commentCount: commentCount,
       );
-
-      return enrichedSchedule;
     } catch (e) {
       AppLogger.error('Error enriching schedule: $e');
-      // エラーが発生した場合でも基本的なスケジュール情報は返す
       return ScheduleMapper.fromFirestore(doc);
     }
+  }
+
+  Future<Schedule?> _enrichScheduleIfDisplayable(DocumentSnapshot doc) async {
+    await _ensureAuthenticated();
+
+    final data = doc.data() as Map<String, dynamic>?;
+    final currentUserId = _auth.currentUser!.uid;
+    if (!ScheduleEncryptionService.canDecryptScheduleData(
+      data,
+      currentUserId: currentUserId,
+    )) {
+      AppLogger.debug(
+        'Skipping encrypted schedule without key for current user: ${doc.id}',
+      );
+      return null;
+    }
+
+    return _enrichSchedule(doc);
   }
 
   // キャッシュをクリア（必要に応じて呼び出す）
@@ -104,9 +138,10 @@ class ScheduleRepository implements IScheduleRepository {
           .get();
     });
 
-    final schedules =
-        await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
-    return schedules;
+    final schedules = await Future.wait(
+      snapshot.docs.map((doc) => _enrichScheduleIfDisplayable(doc)),
+    );
+    return schedules.whereType<Schedule>().toList();
   }
 
   @override
@@ -137,48 +172,36 @@ class ScheduleRepository implements IScheduleRepository {
           .get();
     });
 
-    final schedules =
-        await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
-    return schedules;
+    final schedules = await Future.wait(
+      snapshot.docs.map((doc) => _enrichScheduleIfDisplayable(doc)),
+    );
+    return schedules.whereType<Schedule>().toList();
   }
 
   @override
   Future<Schedule> createSchedule(Schedule schedule) async {
     try {
-      AppLogger.debug('ScheduleRepository: Starting schedule creation');
-      AppLogger.debug('Schedule details:');
-      AppLogger.debug('Title: ${schedule.title}');
-      AppLogger.debug('Description: ${schedule.description}');
-      AppLogger.debug('Location: ${schedule.location}');
-      AppLogger.debug('StartDateTime: ${schedule.startDateTime}');
-      AppLogger.debug('EndDateTime: ${schedule.endDateTime}');
+      await _ensureAuthenticated();
+      AppLogger.debug(
+          'ScheduleRepository: Starting encrypted schedule creation');
       AppLogger.debug('OwnerId: ${schedule.ownerId}');
-      AppLogger.debug('OwnerDisplayName: ${schedule.ownerDisplayName}');
-      AppLogger.debug('OwnerPhotoUrl: ${schedule.ownerPhotoUrl}');
       AppLogger.debug('SharedLists: ${schedule.sharedLists}');
       AppLogger.debug('VisibleTo: ${schedule.visibleTo}');
-      AppLogger.debug('CreatedAt: ${schedule.createdAt}');
-      AppLogger.debug('UpdatedAt: ${schedule.updatedAt}');
 
-      // スケジュールをそのままFirestoreに保存
-      final data = ScheduleMapper.toFirestore(schedule);
-      AppLogger.debug('Prepared Firestore data:');
-      AppLogger.debug(data.toString());
+      final data = await _encryptionService.toEncryptedFirestoreData(
+        schedule: schedule,
+        currentUserId: _auth.currentUser!.uid,
+      );
 
-      AppLogger.debug('Attempting to create document in Firestore');
       final docRef = await _firestore.collection('schedules').add(data);
-      AppLogger.debug('Document created with ID: ${docRef.id}');
-
-      AppLogger.debug('Fetching created document');
       final doc = await docRef.get();
       if (!doc.exists) {
         AppLogger.error('Created document does not exist: ${docRef.id}');
         throw Exception('Created document not found');
       }
 
-      AppLogger.debug('Enriching schedule data');
       final enrichedSchedule = await _enrichSchedule(doc);
-      AppLogger.debug('Schedule creation completed successfully');
+      AppLogger.debug('Encrypted schedule creation completed successfully');
       return enrichedSchedule;
     } catch (e, stackTrace) {
       AppLogger.error('Error creating schedule', e, stackTrace);
@@ -189,29 +212,304 @@ class ScheduleRepository implements IScheduleRepository {
   @override
   Future<void> updateSchedule(Schedule schedule) async {
     try {
-      AppLogger.debug('Starting schedule update for ID: ${schedule.id}');
-      AppLogger.debug('Current schedule details:');
-      AppLogger.debug('Title: ${schedule.title}');
-      AppLogger.debug('Description: ${schedule.description}');
-      AppLogger.debug('Location: ${schedule.location}');
-      AppLogger.debug('StartDateTime: ${schedule.startDateTime}');
-      AppLogger.debug('EndDateTime: ${schedule.endDateTime}');
+      await _ensureAuthenticated();
+      AppLogger.debug(
+          'Starting encrypted schedule update for ID: ${schedule.id}');
       AppLogger.debug('SharedLists: ${schedule.sharedLists}');
       AppLogger.debug('VisibleTo: ${schedule.visibleTo}');
 
-      // 作成時と同じFirestore保存形式に揃えて更新する
-      final data = ScheduleMapper.toFirestore(schedule);
-      AppLogger.debug('Prepared update data:');
-      AppLogger.debug(data.toString());
+      final docRef = _firestore.collection('schedules').doc(schedule.id);
+      final existingDoc = await docRef.get();
+      final currentUserId = _auth.currentUser!.uid;
+      final existingData = existingDoc.data();
+      final beforeSharedListIds = List<String>.from(
+        existingData?['sharedLists'] as List? ?? [],
+      );
+      final afterSharedListIds = schedule.sharedLists;
+      final membersByListId = await _currentMembersByListId({
+        ...beforeSharedListIds,
+        ...afterSharedListIds,
+      });
+      final recipientDiff = ScheduleRecipientDiffCalculator.calculate(
+        ownerId: currentUserId,
+        beforeSharedListIds: beforeSharedListIds,
+        afterSharedListIds: afterSharedListIds,
+        membersByListId: membersByListId,
+      );
 
-      AppLogger.debug('Attempting to update document in Firestore');
-      await _firestore.collection('schedules').doc(schedule.id).update(data);
+      if (existingDoc.exists && recipientDiff.requiresRekey) {
+        await _rekeyScheduleForRecipients(
+          doc: existingDoc,
+          recipientIds: recipientDiff.afterRecipientIds,
+          currentUserId: currentUserId,
+          scheduleOverride: schedule,
+        );
+        invalidateScheduleCache(schedule.id);
+        return;
+      }
+
+      final scheduleForEncryption = schedule.copyWith(
+        visibleTo: recipientDiff.afterRecipientIds.toList(),
+      );
+      final data = await _encryptionService.toEncryptedFirestoreData(
+        schedule: scheduleForEncryption,
+        currentUserId: currentUserId,
+        existingDoc: existingDoc.exists ? existingDoc : null,
+      );
+      data['visibleTo'] = [currentUserId];
+
+      await docRef.update(data);
       invalidateScheduleCache(schedule.id);
-      AppLogger.debug('Schedule update completed successfully');
+      AppLogger.debug('Encrypted schedule update completed successfully');
     } catch (e, stackTrace) {
       AppLogger.error('Error updating schedule', e, stackTrace);
       rethrow;
     }
+  }
+
+  @override
+  Future<void> grantListSchedulesAccessToUser({
+    required String listId,
+    required String userId,
+  }) async {
+    await _ensureAuthenticated();
+
+    final snapshot = await _firestore
+        .collection('schedules')
+        .where('sharedLists', arrayContains: listId)
+        .get();
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final visibleTo = List<String>.from(data['visibleTo'] as List? ?? []);
+      if (visibleTo.contains(userId)) continue;
+
+      final updates = <String, dynamic>{
+        'updatedAt': DateTime.now().toIso8601String(),
+      };
+
+      if (data['encrypted'] == true) {
+        final encryptedKey =
+            await _encryptionService.encryptedScheduleKeyForAdditionalViewer(
+          doc: doc,
+          currentUserId: _auth.currentUser!.uid,
+          viewerId: userId,
+        );
+        if (encryptedKey == null) {
+          continue;
+        }
+        final encryptedKeys = Map<String, dynamic>.from(
+          data['encryptedKeys'] as Map? ?? {},
+        );
+        encryptedKeys[userId] = encryptedKey.toJson();
+        updates['encryptedKeys'] = encryptedKeys;
+      }
+      updates['visibleTo'] = FieldValue.arrayUnion([userId]);
+
+      await doc.reference.update(updates);
+      invalidateScheduleCache(doc.id);
+    }
+  }
+
+  @override
+  Future<void> syncListSchedulesAccess({
+    required UserList beforeList,
+    required UserList afterList,
+  }) async {
+    await _ensureAuthenticated();
+    final currentUserId = _auth.currentUser!.uid;
+    if (beforeList.ownerId != currentUserId ||
+        afterList.ownerId != currentUserId) {
+      return;
+    }
+
+    final today = DateTime.now();
+    final todayIso =
+        DateTime(today.year, today.month, today.day).toIso8601String();
+    final snapshot = await _firestore
+        .collection('schedules')
+        .where('ownerId', isEqualTo: currentUserId)
+        .where('startDateTime', isGreaterThanOrEqualTo: todayIso)
+        .get();
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      if (data['encrypted'] != true) {
+        continue;
+      }
+
+      final sharedListIds =
+          List<String>.from(data['sharedLists'] as List? ?? []);
+      if (!sharedListIds.contains(afterList.id)) {
+        continue;
+      }
+
+      final beforeMembersByListId = await _membersByListId(
+        sharedListIds,
+        changedList: beforeList,
+      );
+      final afterMembersByListId = await _membersByListId(
+        sharedListIds,
+        changedList: afterList,
+      );
+      final diff = ScheduleRecipientDiffCalculator.calculate(
+        ownerId: currentUserId,
+        beforeSharedListIds: sharedListIds,
+        afterSharedListIds: sharedListIds,
+        membersByListId: beforeMembersByListId,
+        afterMembersByListId: afterMembersByListId,
+      );
+
+      if (diff.hasNoKeyChange) {
+        continue;
+      }
+
+      if (diff.requiresRekey) {
+        await _rekeyScheduleForRecipients(
+          doc: doc,
+          recipientIds: diff.afterRecipientIds,
+          currentUserId: currentUserId,
+        );
+      } else if (diff.requiresRewrap) {
+        await _rewrapScheduleForAddedRecipients(
+          doc: doc,
+          addedUserIds: diff.addedUserIds,
+          currentUserId: currentUserId,
+        );
+      }
+
+      invalidateScheduleCache(doc.id);
+    }
+  }
+
+  Future<Map<String, Iterable<String>>> _membersByListId(
+    Iterable<String> listIds, {
+    required UserList changedList,
+  }) async {
+    final entries = await Future.wait(listIds.map((listId) async {
+      if (listId == changedList.id) {
+        return MapEntry(listId, changedList.memberIds);
+      }
+
+      final doc = await _firestore.collection('lists').doc(listId).get();
+      final data = doc.data();
+      return MapEntry(
+        listId,
+        List<String>.from(data?['memberIds'] as List? ?? []),
+      );
+    }));
+    return Map.fromEntries(entries);
+  }
+
+  Future<Map<String, Iterable<String>>> _currentMembersByListId(
+    Iterable<String> listIds,
+  ) async {
+    final entries = await Future.wait(listIds.map((listId) async {
+      final doc = await _firestore.collection('lists').doc(listId).get();
+      final data = doc.data();
+      return MapEntry(
+        listId,
+        List<String>.from(data?['memberIds'] as List? ?? []),
+      );
+    }));
+    return Map.fromEntries(entries);
+  }
+
+  Future<void> _rewrapScheduleForAddedRecipients({
+    required QueryDocumentSnapshot<Map<String, dynamic>> doc,
+    required Set<String> addedUserIds,
+    required String currentUserId,
+  }) async {
+    final data = doc.data();
+    final encryptedKeys = Map<String, dynamic>.from(
+      data['encryptedKeys'] as Map? ?? {},
+    );
+
+    for (final userId in addedUserIds) {
+      if (userId == currentUserId || encryptedKeys.containsKey(userId)) {
+        continue;
+      }
+
+      final encryptedKey =
+          await _encryptionService.encryptedScheduleKeyForAdditionalViewer(
+        doc: doc,
+        currentUserId: currentUserId,
+        viewerId: userId,
+      );
+      if (encryptedKey != null) {
+        encryptedKeys[userId] = encryptedKey.toJson();
+      }
+    }
+
+    await doc.reference.update({
+      'encryptedKeys': encryptedKeys,
+      'visibleTo': [currentUserId],
+      'updatedAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> _rekeyScheduleForRecipients({
+    required DocumentSnapshot<Map<String, dynamic>> doc,
+    required Set<String> recipientIds,
+    required String currentUserId,
+    Schedule? scheduleOverride,
+  }) async {
+    final schedule =
+        (scheduleOverride ?? await _decryptedSchedule(doc)).copyWith(
+      visibleTo: recipientIds.toList(),
+      updatedAt: DateTime.now(),
+    );
+    final commentSnapshot = await doc.reference.collection('comments').get();
+    final decryptedComments = await Future.wait(
+      commentSnapshot.docs.map((commentDoc) async {
+        final commentData = commentDoc.data();
+        final content = commentData['encrypted'] == true
+            ? await _encryptionService.decryptCommentContentForCurrentUser(
+                scheduleDoc: doc,
+                currentUserId: currentUserId,
+                commentData: commentData,
+              )
+            : commentData['content'] as String? ?? '';
+        return MapEntry(commentDoc.reference, content);
+      }),
+    );
+
+    final rekeyed = await _encryptionService.toRekeyedFirestoreData(
+      schedule: schedule,
+      currentUserId: currentUserId,
+      existingDoc: doc,
+    );
+    rekeyed.scheduleData['visibleTo'] = [currentUserId];
+
+    final batch = _firestore.batch();
+    batch.update(doc.reference, rekeyed.scheduleData);
+    for (final comment in decryptedComments) {
+      final contentData =
+          await _encryptionService.toEncryptedCommentContentDataWithScheduleKey(
+        scheduleKey: rekeyed.scheduleKey,
+        content: comment.value,
+      );
+      batch.update(comment.key, {
+        ...contentData,
+        'content': FieldValue.delete(),
+      });
+    }
+    await batch.commit();
+  }
+
+  Future<Schedule> _decryptedSchedule(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) async {
+    final currentUserId = _auth.currentUser!.uid;
+    final decryptedDetails =
+        await _encryptionService.decryptDetailsForCurrentUser(
+      doc: doc,
+      currentUserId: currentUserId,
+    );
+    return ScheduleMapper.fromFirestore(
+      doc,
+      decryptedDetails: decryptedDetails,
+    );
   }
 
   @override
@@ -239,9 +537,10 @@ class ScheduleRepository implements IScheduleRepository {
         .orderBy('startDateTime', descending: false)
         .snapshots()
         .asyncMap((snapshot) async {
-      final schedules =
-          await Future.wait(snapshot.docs.map((doc) => _enrichSchedule(doc)));
-      return schedules;
+      final schedules = await Future.wait(
+        snapshot.docs.map((doc) => _enrichScheduleIfDisplayable(doc)),
+      );
+      return schedules.whereType<Schedule>().toList();
     });
   }
 
@@ -270,9 +569,9 @@ class ScheduleRepository implements IScheduleRepository {
       await for (final snapshot in stream) {
         try {
           final schedules = await Future.wait(
-            snapshot.docs.map((doc) => _enrichSchedule(doc)),
+            snapshot.docs.map((doc) => _enrichScheduleIfDisplayable(doc)),
           );
-          yield schedules;
+          yield schedules.whereType<Schedule>().toList();
         } catch (e) {
           AppLogger.error('Error processing schedule snapshot: $e');
           // エラーが発生した場合は空のリストを返す
@@ -315,13 +614,14 @@ class ScheduleRepository implements IScheduleRepository {
           final cachedSchedules = (await Future.wait(
             cachedSnapshot.docs.map((doc) async {
               try {
-                return await _enrichSchedule(doc);
+                return await _enrichScheduleIfDisplayable(doc);
               } catch (e) {
-                // エンリッチ中のエラーは無視してマッピングのみを行う
-                return ScheduleMapper.fromFirestore(doc);
+                AppLogger.error('Error enriching cached schedule: $e');
+                return null;
               }
             }),
           ))
+              .whereType<Schedule>()
               .where(range.overlaps)
               .toList();
 
@@ -385,16 +685,15 @@ class ScheduleRepository implements IScheduleRepository {
       final batchResults = await Future.wait(
         batch.map((doc) async {
           try {
-            return await _enrichSchedule(doc);
+            return await _enrichScheduleIfDisplayable(doc);
           } catch (e) {
-            // エラー時はベーシックな情報だけでスケジュールを作成
             AppLogger.error('Error enriching schedule in batch: $e');
-            return ScheduleMapper.fromFirestore(doc);
+            return null;
           }
         }),
       );
 
-      results.addAll(batchResults);
+      results.addAll(batchResults.whereType<Schedule>());
     }
 
     return results;
