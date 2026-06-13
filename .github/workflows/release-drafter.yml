@@ -6,6 +6,11 @@ on:
   pull_request:
     types: [opened, reopened, synchronize, edited, labeled, unlabeled]
   workflow_dispatch:
+    inputs:
+      main_pr_number:
+        description: "Main release PR number used to resolve the draft version"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -40,7 +45,13 @@ jobs:
 
   update_main_pr_draft_version:
     name: Update main PR draft version
-    if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
+    needs: update_release_draft
+    if: >-
+      always() &&
+      (
+        (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') ||
+        (github.event_name == 'workflow_dispatch' && inputs.main_pr_number != '')
+      )
     runs-on: ubuntu-latest
 
     steps:
@@ -48,9 +59,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.main_pr_number }}
         run: |
           set -euo pipefail
+
+          base_ref="$(gh pr view "$PR_NUMBER" --repo "$REPOSITORY" --json baseRefName --jq '.baseRefName')"
+          if [ "$base_ref" != "main" ]; then
+            echo "::error ::PR #$PR_NUMBER targets $base_ref, but draft version updates require a main PR."
+            exit 1
+          fi
 
           labels="$(gh pr view "$PR_NUMBER" --repo "$REPOSITORY" --json labels --jq '.labels[].name')"
           semver_count="$(printf '%s\n' "$labels" | grep -Ec '^semver:(major|minor|patch|none)$' || true)"
