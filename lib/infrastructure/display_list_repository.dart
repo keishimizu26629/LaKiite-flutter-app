@@ -27,6 +27,19 @@ class DisplayListRepository implements IDisplayListRepository {
     return fallback ?? DateTime.now();
   }
 
+  static List<DisplayList> sortByName(Iterable<DisplayList> displayLists) {
+    final sortedDisplayLists = [...displayLists];
+    sortedDisplayLists.sort((a, b) {
+      final nameComparison =
+          a.name.trim().toLowerCase().compareTo(b.name.trim().toLowerCase());
+      if (nameComparison != 0) {
+        return nameComparison;
+      }
+      return a.id.compareTo(b.id);
+    });
+    return sortedDisplayLists;
+  }
+
   Map<String, dynamic> _toFirestore(DisplayList displayList) {
     return {
       'name': displayList.name,
@@ -56,7 +69,7 @@ class DisplayListRepository implements IDisplayListRepository {
     final snapshot = await _collection(ownerId)
         .orderBy('createdAt', descending: false)
         .get();
-    return snapshot.docs.map(_fromFirestore).toList();
+    return sortByName(snapshot.docs.map(_fromFirestore));
   }
 
   @override
@@ -64,7 +77,7 @@ class DisplayListRepository implements IDisplayListRepository {
     return _collection(ownerId)
         .orderBy('createdAt', descending: false)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map(_fromFirestore).toList());
+        .map((snapshot) => sortByName(snapshot.docs.map(_fromFirestore)));
   }
 
   @override

@@ -88,49 +88,49 @@ class ReactionIconWidget extends StatelessWidget {
     // リアクションの種類に基づいて表示を切り替え
     if (hasGoing && hasThinking) {
       // 両方のリアクションがある場合は重なり合ったアイコンを表示
-      return Stack(
-        children: [
-          Positioned(
-            right: 2,
-            child: Text(
-              '🤔',
-              style: TextStyle(
-                fontSize: iconSize,
-              ),
+      return SizedBox.square(
+        dimension: iconSize * 1.5,
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            Transform.translate(
+              offset: Offset(iconSize * 0.2, iconSize * 0.1),
+              child: _emoji('🤔'),
             ),
-          ),
-          Positioned(
-            top: -1,
-            left: -2,
-            child: Text(
-              '🙋',
-              style: TextStyle(
-                fontSize: iconSize,
-              ),
+            Transform.translate(
+              offset: Offset(-iconSize * 0.2, iconSize * 0.1),
+              child: _emoji('🙋'),
             ),
-          ),
-        ],
+          ],
+        ),
       );
     } else if (hasGoing) {
       // 「行きます！」のみの場合
       return Center(
-        child: Text(
-          '🙋',
-          style: TextStyle(
-            fontSize: iconSize,
-          ),
-        ),
+        child: _emoji('🙋'),
       );
     } else {
       // 「考え中！」のみの場合（defaultはこちら）
       return Center(
-        child: Text(
-          '🤔',
-          style: TextStyle(
-            fontSize: iconSize,
-          ),
-        ),
+        child: _emoji('🤔'),
       );
     }
+  }
+
+  Widget _emoji(String value) {
+    return Text(
+      value,
+      textAlign: TextAlign.center,
+      strutStyle: StrutStyle(
+        fontSize: iconSize,
+        height: 1,
+        forceStrutHeight: true,
+      ),
+      style: TextStyle(
+        fontSize: iconSize,
+        height: 1,
+      ),
+    );
   }
 }

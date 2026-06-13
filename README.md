@@ -59,6 +59,16 @@ Engine • revision e85ea0e79c
 Tools • Dart 2.17.6 • DevTools 2.12.2
 ```
 
+### ローカルGit hooks
+
+PR更新ごとのGitHub Actions自動テストは使わず、ローカルGit hooksでコミット・push前に検証する運用です。
+
+```bash
+./scripts/install_git_hooks.sh
+```
+
+詳細は [docs/local_git_hooks.md](docs/local_git_hooks.md) を参照。
+
 ## プロジェクト進行について
 
 ### 全体のタスク管理

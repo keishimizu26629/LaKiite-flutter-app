@@ -19,6 +19,21 @@ class ListRepository implements IListRepository {
     return fallback ?? DateTime.now();
   }
 
+  static List<UserList> sortByName(Iterable<UserList> lists) {
+    final sortedLists = [...lists];
+    sortedLists.sort((a, b) {
+      final nameComparison = a.listName
+          .trim()
+          .toLowerCase()
+          .compareTo(b.listName.trim().toLowerCase());
+      if (nameComparison != 0) {
+        return nameComparison;
+      }
+      return a.id.compareTo(b.id);
+    });
+    return sortedLists;
+  }
+
   Map<String, dynamic> _toFirestore(UserList list) {
     final data = list.toJson();
     if (data['createdAt'] != null) {
@@ -42,7 +57,7 @@ class ListRepository implements IListRepository {
         .collection('lists')
         .where('ownerId', isEqualTo: ownerId)
         .get();
-    return snapshot.docs.map(_fromFirestore).toList();
+    return sortByName(snapshot.docs.map(_fromFirestore));
   }
 
   @override
@@ -102,7 +117,7 @@ class ListRepository implements IListRepository {
         .collection('lists')
         .where('ownerId', isEqualTo: ownerId)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map(_fromFirestore).toList());
+        .map((snapshot) => sortByName(snapshot.docs.map(_fromFirestore)));
   }
 
   @override
