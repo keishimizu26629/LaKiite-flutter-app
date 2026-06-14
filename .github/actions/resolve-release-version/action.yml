@@ -1,6 +1,12 @@
 name: Resolve Release Version
 description: Resolve the next app version from Release Drafter labels.
 
+inputs:
+  version:
+    description: Explicit SemVer version without the leading v.
+    required: false
+    default: ""
+
 outputs:
   version:
     description: SemVer version without the leading v.
@@ -87,12 +93,16 @@ runs:
         set -euo pipefail
 
         base_version="$(awk '/^version:/ { print $2; exit }' pubspec.yaml | cut -d '+' -f 1)"
+        input_version="${{ inputs.version }}"
         drafter_version="${{ steps.release_drafter.outputs.resolved_version }}"
         semver_label="${{ steps.release_pr.outputs.semver_label }}"
         latest_version="${{ steps.release_pr.outputs.latest_version }}"
         version="$drafter_version"
 
-        if [ -n "$semver_label" ] && [ -n "$latest_version" ]; then
+        if [ -n "$input_version" ]; then
+          version="${input_version#v}"
+          echo "Using explicit release version input: $version"
+        elif [ -n "$semver_label" ] && [ -n "$latest_version" ]; then
           version="$(python3 - "$latest_version" "$semver_label" <<'PY'
         import sys
 
