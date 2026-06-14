@@ -28,6 +28,7 @@ jobs:
       - uses: actions/checkout@v5.0.1
         with:
           fetch-depth: 0
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - name: Check Xcode version
         run: |
@@ -40,6 +41,7 @@ jobs:
 
       - name: Restore Firebase config files
         run: |
+          mkdir -p ios/Runner/Firebase/Prod
           echo "${{ secrets.PROD_GOOGLESERVICE_INFO_PLIST_BASE64 }}" | base64 -d > ios/Runner/Firebase/Prod/GoogleService-Info.plist
           cp ios/Runner/Firebase/Prod/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
           echo "${{ secrets.PROD_FIREBASE_OPTIONS_DART_BASE64 }}" | base64 -d > lib/firebase_options.dart
