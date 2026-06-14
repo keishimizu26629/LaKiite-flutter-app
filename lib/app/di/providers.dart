@@ -5,15 +5,18 @@ import 'package:lakiite/domain/interfaces/i_friend_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_display_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_notification_repository.dart';
+import 'package:lakiite/domain/interfaces/i_schedule_access_grant_repository.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
 import 'package:lakiite/domain/interfaces/i_user_repository.dart';
+import 'package:lakiite/domain/entity/list.dart';
 import 'package:lakiite/domain/repository/reaction_repository.dart';
 import 'package:lakiite/domain/service/list_manager.dart';
 import 'package:lakiite/domain/service/schedule_manager.dart';
 import 'package:lakiite/domain/service/user_manager.dart';
 import 'package:lakiite/infrastructure/friend_list_repository.dart';
 import 'package:lakiite/infrastructure/display_list_repository.dart';
+import 'package:lakiite/infrastructure/encryption/schedule_encryption_service.dart';
 import 'package:lakiite/infrastructure/list_repository.dart';
 import 'package:lakiite/infrastructure/notification_repository.dart';
 import 'package:lakiite/infrastructure/repository/reaction_repository_impl.dart';
@@ -26,6 +29,11 @@ typedef ScheduleRepositoryFactory = IScheduleRepository Function();
 
 /// Firebase認証インスタンスを提供するプロバイダー。
 final firebaseAuthProvider = Provider((ref) => FirebaseAuth.instance);
+
+final scheduleEncryptionServiceProvider =
+    Provider<ScheduleEncryptionService>((ref) {
+  return ScheduleEncryptionService();
+});
 
 /// Firebase 認証状態の変化を監視し、repository のセッション境界を提供する。
 final repositorySessionKeyProvider = StreamProvider.autoDispose<String?>((ref) {
@@ -99,8 +107,52 @@ final reactionRepositoryProvider = Provider<ReactionRepository>((ref) {
 final listManagerProvider = Provider<IListManager>((ref) {
   return ListManager(
     ref.watch(listRepositoryProvider),
+    scheduleAccessGrantRepository: _LazyScheduleAccessGrantRepository(ref),
   );
 });
+
+class _LazyScheduleAccessGrantRepository
+    implements IScheduleAccessGrantRepository {
+  _LazyScheduleAccessGrantRepository(this._ref);
+
+  final Ref _ref;
+
+  @override
+  Future<void> grantListSchedulesAccessToUser({
+    required String listId,
+    required String userId,
+  }) async {
+    final scheduleRepository = _ref.read(scheduleRepositoryProvider);
+    if (scheduleRepository is! IScheduleAccessGrantRepository) {
+      return;
+    }
+
+    final scheduleAccessGrantRepository =
+        scheduleRepository as IScheduleAccessGrantRepository;
+    await scheduleAccessGrantRepository.grantListSchedulesAccessToUser(
+      listId: listId,
+      userId: userId,
+    );
+  }
+
+  @override
+  Future<void> syncListSchedulesAccess({
+    required UserList beforeList,
+    required UserList afterList,
+  }) async {
+    final scheduleRepository = _ref.read(scheduleRepositoryProvider);
+    if (scheduleRepository is! IScheduleAccessGrantRepository) {
+      return;
+    }
+
+    final scheduleAccessGrantRepository =
+        scheduleRepository as IScheduleAccessGrantRepository;
+    await scheduleAccessGrantRepository.syncListSchedulesAccess(
+      beforeList: beforeList,
+      afterList: afterList,
+    );
+  }
+}
 
 /// ユーザー管理サービスのプロバイダー。
 final userManagerProvider = Provider<IUserManager>((ref) {
@@ -113,7 +165,6 @@ final userManagerProvider = Provider<IUserManager>((ref) {
 final scheduleManagerProvider = Provider<IScheduleManager>((ref) {
   return ScheduleManager(
     ref.watch(scheduleRepositoryProvider),
-    ref.watch(friendListRepositoryProvider),
     ref.watch(userRepositoryProvider),
     ref.watch(scheduleInteractionRepositoryProvider),
   );

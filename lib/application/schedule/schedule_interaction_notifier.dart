@@ -366,7 +366,7 @@ class ScheduleInteractionNotifier
     try {
       AppLogger.debug('======= コメント更新処理開始 =======');
       AppLogger.debug('スケジュールID: $_scheduleId, コメントID: $commentId');
-      AppLogger.debug('更新内容: $content');
+      AppLogger.debug('コメント更新内容を受け付けました');
 
       // 現在のユーザーIDを確認
       final authState = await _ref.read(authNotifierProvider.future);

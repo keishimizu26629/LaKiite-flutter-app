@@ -105,3 +105,9 @@ assets/icon/dev_icon.png
 .hatcher-auto-copy.json
 lib/firebase_options.dart
 ios/Runner/GoogleService-Info.plist
+
+# Firebase runtime config files
+android/app/src/*/google-services.json
+ios/Runner/Firebase/*/GoogleService-Info.plist
+ios/Runner/Firebase/*/GoogleService-Info.plist.backup
+ios/Runner/GoogleService-Info.plist

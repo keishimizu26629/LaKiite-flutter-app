@@ -44,7 +44,9 @@ jobs:
 
       - name: Restore Firebase config files
         run: |
-          echo "${{ secrets.DEV_GOOGLESERVICE_INFO_PLIST_BASE64 }}" | base64 -d > ios/Runner/GoogleService-Info.plist
+          mkdir -p ios/Runner/Firebase/Dev
+          echo "${{ secrets.DEV_GOOGLESERVICE_INFO_PLIST_BASE64 }}" | base64 -d > ios/Runner/Firebase/Dev/GoogleService-Info.plist
+          cp ios/Runner/Firebase/Dev/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
           echo "${{ secrets.DEV_FIREBASE_OPTIONS_DART_BASE64 }}" | base64 -d > lib/firebase_options.dart
 
       - name: Restore dart-define config

@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+run_fvm() {
+  env \
+    -u GIT_DIR \
+    -u GIT_WORK_TREE \
+    -u GIT_INDEX_FILE \
+    -u GIT_PREFIX \
+    -u GIT_OBJECT_DIRECTORY \
+    -u GIT_ALTERNATE_OBJECT_DIRECTORIES \
+    fvm "$@"
+}
+
+if git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' >/dev/null 2>&1; then
+  changed_files="$(git diff --name-only '@{upstream}'...HEAD)"
+elif git rev-parse --verify origin/dev >/dev/null 2>&1; then
+  changed_files="$(git diff --name-only origin/dev...HEAD)"
+else
+  changed_files="$(git diff --name-only HEAD~1...HEAD 2>/dev/null || true)"
+fi
+
+if echo "$changed_files" | grep -qE '^(lib|test/presentation|pubspec\.(yaml|lock)$|analysis_options\.yaml$)'; then
+  echo "[pre-push] Running presentation/widget tests..."
+  run_fvm flutter test test/presentation/ --dart-define=FLUTTER_TEST=true
+else
+  echo "[pre-push] Presentation/widget tests skipped: no matching pushed changes."
+fi
+
+echo "[pre-push] Checks passed."

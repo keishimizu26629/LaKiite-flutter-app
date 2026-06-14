@@ -1,0 +1,169 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lakiite/domain/entity/schedule_encryption.dart';
+import 'package:lakiite/infrastructure/encryption/schedule_cipher.dart';
+
+void main() {
+  group('ScheduleCipher', () {
+    test('encrypts details once and unwraps the schedule key for each viewer',
+        () async {
+      final cipher = ScheduleCipher();
+      final ownerKeyPair = await cipher.newUserKeyPair();
+      final viewerKeyPair = await cipher.newUserKeyPair();
+      final scheduleKey = cipher.newScheduleKey();
+
+      const details = SchedulePlainDetails(
+        title: '打ち合わせ',
+        description: '次回リリースの確認',
+        location: '会議室A',
+      );
+
+      final encryptedPayload = await cipher.encryptDetails(
+        details: details,
+        scheduleKey: scheduleKey,
+      );
+      final ownerEncryptedKey = await cipher.encryptScheduleKey(
+        scheduleKey: scheduleKey,
+        recipientPublicKey: ownerKeyPair.publicKey,
+        keyVersion: 1,
+      );
+      final viewerEncryptedKey = await cipher.encryptScheduleKey(
+        scheduleKey: scheduleKey,
+        recipientPublicKey: viewerKeyPair.publicKey,
+        keyVersion: 1,
+      );
+
+      final ownerScheduleKey = await cipher.decryptScheduleKey(
+        encryptedKey: ownerEncryptedKey,
+        privateKey: ownerKeyPair,
+      );
+      final viewerScheduleKey = await cipher.decryptScheduleKey(
+        encryptedKey: viewerEncryptedKey,
+        privateKey: viewerKeyPair,
+      );
+
+      expect(
+        await cipher.decryptDetails(
+          payload: encryptedPayload,
+          scheduleKey: ownerScheduleKey,
+        ),
+        isA<SchedulePlainDetails>()
+            .having((value) => value.title, 'title', details.title)
+            .having(
+              (value) => value.description,
+              'description',
+              details.description,
+            )
+            .having((value) => value.location, 'location', details.location),
+      );
+      expect(
+        await cipher.decryptDetails(
+          payload: encryptedPayload,
+          scheduleKey: viewerScheduleKey,
+        ),
+        isA<SchedulePlainDetails>()
+            .having((value) => value.title, 'title', details.title),
+      );
+    });
+
+    test('does not unwrap a schedule key with a different private key',
+        () async {
+      final cipher = ScheduleCipher();
+      final viewerKeyPair = await cipher.newUserKeyPair();
+      final otherKeyPair = await cipher.newUserKeyPair();
+      final scheduleKey = cipher.newScheduleKey();
+
+      final encryptedKey = await cipher.encryptScheduleKey(
+        scheduleKey: scheduleKey,
+        recipientPublicKey: viewerKeyPair.publicKey,
+        keyVersion: 1,
+      );
+
+      expect(
+        cipher.decryptScheduleKey(
+          encryptedKey: encryptedKey,
+          privateKey: otherKeyPair,
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('encrypts and decrypts comment text with a schedule key', () async {
+      final cipher = ScheduleCipher();
+      final scheduleKey = cipher.newScheduleKey();
+
+      final payload = await cipher.encryptText(
+        text: 'コメント本文',
+        scheduleKey: scheduleKey,
+      );
+
+      expect(payload.cipherText, isNot(contains('コメント本文')));
+      expect(
+        await cipher.decryptText(payload: payload, scheduleKey: scheduleKey),
+        'コメント本文',
+      );
+    });
+
+    test('backs up and restores a private key with a transfer password',
+        () async {
+      final cipher = ScheduleCipher();
+      final keyPair = await cipher.newUserKeyPair();
+      const password = 'transfer-password-123';
+
+      final backup = await cipher.encryptPrivateKeyBackup(
+        keyPair: keyPair,
+        password: password,
+        keyVersion: 1,
+      );
+      final restored = await cipher.decryptPrivateKeyBackup(
+        backup: backup,
+        password: password,
+      );
+
+      expect(
+          backup.cipherText, isNot(contains(cipher.privateKeyToJson(keyPair))));
+      expect(restored.bytes, keyPair.bytes);
+      expect(restored.publicKey.bytes, keyPair.publicKey.bytes);
+    });
+
+    test('detects whether a private key matches a stored public key', () async {
+      final cipher = ScheduleCipher();
+      final keyPair = await cipher.newUserKeyPair();
+      final otherKeyPair = await cipher.newUserKeyPair();
+
+      expect(
+        cipher.publicKeyMatchesPrivateKey(
+          privateKey: keyPair,
+          publicKey: cipher.publicKeyToBase64(keyPair.publicKey),
+        ),
+        isTrue,
+      );
+      expect(
+        cipher.publicKeyMatchesPrivateKey(
+          privateKey: otherKeyPair,
+          publicKey: cipher.publicKeyToBase64(keyPair.publicKey),
+        ),
+        isFalse,
+      );
+    });
+
+    test('does not restore a private key backup with a wrong password',
+        () async {
+      final cipher = ScheduleCipher();
+      final keyPair = await cipher.newUserKeyPair();
+
+      final backup = await cipher.encryptPrivateKeyBackup(
+        keyPair: keyPair,
+        password: 'correct-password',
+        keyVersion: 1,
+      );
+
+      expect(
+        cipher.decryptPrivateKeyBackup(
+          backup: backup,
+          password: 'wrong-password',
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
+  });
+}

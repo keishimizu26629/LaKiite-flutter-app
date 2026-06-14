@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../app/di/providers.dart';
 import '../../application/auth/auth_notifier.dart';
+import '../../application/auth/auth_state.dart';
 import 'edit_name_page.dart';
 import 'edit_email_page.dart';
 import 'edit_search_id_page.dart';
 import 'account_deletion_webview_page.dart';
 import 'schedule_digest_settings_page.dart';
+import 'schedule_key_backup_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -14,6 +17,11 @@ class SettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authNotifierProvider).valueOrNull;
+    final currentUserId = authState?.status == AuthStatus.authenticated
+        ? authState?.user?.id
+        : null;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('設定'),
@@ -51,6 +59,15 @@ class SettingsPage extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               context.push('/settings/${ScheduleDigestSettingsPage.path}');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.key_outlined),
+            title: const Text('端末引き継ぎ設定'),
+            subtitle: _ScheduleKeyBackupSubtitle(userId: currentUserId),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              context.push('/settings/${ScheduleKeyBackupPage.path}');
             },
           ),
           const Divider(),
@@ -307,6 +324,36 @@ class SettingsPage extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ScheduleKeyBackupSubtitle extends ConsumerWidget {
+  const _ScheduleKeyBackupSubtitle({required this.userId});
+
+  final String? userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final uid = userId;
+    if (uid == null) {
+      return const Text('ログイン後に設定できます');
+    }
+
+    final encryptionService = ref.watch(scheduleEncryptionServiceProvider);
+    return FutureBuilder<bool>(
+      future: encryptionService.hasPrivateKeyBackup(uid),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Text('暗号化された予定を別端末で復元・確認中...');
+        }
+        if (snapshot.hasError) {
+          return const Text('暗号化された予定を別端末で復元・設定状態を確認できません');
+        }
+
+        final label = snapshot.data == true ? '設定済み' : '未設定';
+        return Text('暗号化された予定を別端末で復元・$label');
+      },
     );
   }
 }

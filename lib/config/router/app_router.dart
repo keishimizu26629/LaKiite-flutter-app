@@ -10,6 +10,7 @@ import '../../presentation/settings/edit_name_page.dart';
 import '../../presentation/settings/edit_search_id_page.dart';
 import '../../presentation/settings/legal_info_page.dart';
 import '../../presentation/settings/schedule_digest_settings_page.dart';
+import '../../presentation/settings/schedule_key_backup_page.dart';
 import '../../presentation/settings/settings_page.dart';
 import '../../presentation/settings/account_deletion_webview_page.dart';
 import '../../presentation/signup/signup.dart';
@@ -113,6 +114,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: ScheduleDigestSettingsPage.path,
             builder: (context, state) => const ScheduleDigestSettingsPage(),
+          ),
+          GoRoute(
+            path: ScheduleKeyBackupPage.path,
+            builder: (context, state) => const ScheduleKeyBackupPage(),
           ),
           GoRoute(
             path: 'how-to-use',

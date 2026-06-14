@@ -11,6 +11,7 @@ import 'package:lakiite/presentation/calendar/schedule_detail_page.dart';
 import 'package:lakiite/presentation/calendar/widgets/schedule_ownership_style.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_notifier.dart';
 import 'package:lakiite/presentation/widgets/reaction_icon_widget.dart';
+import 'package:lakiite/presentation/widgets/schedule_tile_interaction_counts.dart';
 
 /// 予定タイルを表示するウィジェット
 ///
@@ -235,73 +236,74 @@ class ScheduleTile extends ConsumerWidget {
                 ),
               ],
               // インタラクションセクション（リアクションとコメント）
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  // リアクション表示部分
-                  if (schedule.reactionCount > 0)
-                    // リアクションアイコンをタップすると詳細ページに遷移（または指定されたコールバックを実行）
-                    GestureDetector(
-                      onTap: onReactionTap ??
-                          () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ScheduleDetailPage(schedule: schedule),
-                              ),
-                            );
-                          },
-                      child: Consumer(
-                        builder: (context, ref, _) {
-                          // 予定のインタラクション情報（リアクション、コメント）を取得
-                          final interactionState = ref.watch(
-                            scheduleInteractionNotifierProvider(schedule.id),
-                          );
+              Consumer(
+                builder: (context, ref, _) {
+                  final interactionState = ref.watch(
+                    scheduleInteractionNotifierProvider(schedule.id),
+                  );
+                  final counts = ScheduleTileInteractionCounts.resolve(
+                    schedule: schedule,
+                    interactionState: interactionState,
+                  );
 
-                          // リアクションアイコンを表示
-                          return SizedBox(
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      // リアクション表示部分
+                      if (counts.reactionCount > 0)
+                        // リアクションアイコンをタップすると詳細ページに遷移（または指定されたコールバックを実行）
+                        GestureDetector(
+                          onTap: onReactionTap ??
+                              () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ScheduleDetailPage(schedule: schedule),
+                                  ),
+                                );
+                              },
+                          child: SizedBox(
                             width: 30,
                             height: 30,
                             child: ReactionIconWidget.fromReactionCounts(
-                              interactionState.reactionCounts,
-                              isLoading: interactionState.isLoading ||
-                                  interactionState.error != null,
+                              counts.reactionCounts,
+                              isLoading: counts.isLoading,
                             ),
-                          );
-                        },
+                          ),
+                        )
+                      else
+                        // リアクションがない場合はデフォルトのピープルアイコンを表示
+                        Icon(
+                          Icons.people,
+                          size: 16,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      const SizedBox(width: 4),
+                      // リアクション数を表示
+                      Text(
+                        '${counts.reactionCount}',
+                        style: TextStyle(
+                          color: counts.reactionCount > 0
+                              ? Colors.grey
+                              : Theme.of(context).primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    )
-                  else
-                    // リアクションがない場合はデフォルトのピープルアイコンを表示
-                    Icon(
-                      Icons.people,
-                      size: 16,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                  const SizedBox(width: 4),
-                  // リアクション数を表示
-                  Text(
-                    '${schedule.reactionCount}',
-                    style: TextStyle(
-                      color: schedule.reactionCount > 0
-                          ? Colors.grey
-                          : Theme.of(context).primaryColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  // コメントアイコン
-                  Icon(Icons.comment, size: 16, color: Colors.blue[400]),
-                  const SizedBox(width: 4),
-                  // コメント数を表示
-                  Text(
-                    '${schedule.commentCount}',
-                    style: TextStyle(
-                      color: Colors.blue[400],
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+                      const SizedBox(width: 16),
+                      // コメントアイコン
+                      Icon(Icons.comment, size: 16, color: Colors.blue[400]),
+                      const SizedBox(width: 4),
+                      // コメント数を表示
+                      Text(
+                        '${counts.commentCount}',
+                        style: TextStyle(
+                          color: Colors.blue[400],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
