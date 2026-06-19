@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../application/auth/auth_notifier.dart';
+import '../../config/hosting_base_url.dart';
 import '../../utils/logger.dart';
 import '../login/login_page.dart';
 
@@ -105,8 +106,7 @@ class _AccountDeletionWebViewPageState
       // マウント状態を確認してからURLをロード
       if (mounted && !_isDisposed) {
         _controller.loadRequest(
-          Uri.parse(
-              'https://keishimizu26629.github.io/LaKiite-flutter-app/account-deletion-webview.html'),
+          Uri.parse('${hostingBaseUrl()}/account-deletion-webview.html'),
         );
       }
     } catch (e) {
