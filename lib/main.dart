@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker_android/image_picker_android.dart';
+import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'application/force_update/force_update_providers.dart';
@@ -45,6 +47,12 @@ Future<void> startApp([
   // iOS でのプラットフォームビュー問題を予防
   if (Platform.isIOS) {
     await _resetPlatformViews();
+  }
+
+  // Android では写真/動画への広範アクセス権限を使わず、ユーザーが選択した画像だけを扱う。
+  final imagePickerImplementation = ImagePickerPlatform.instance;
+  if (imagePickerImplementation is ImagePickerAndroid) {
+    imagePickerImplementation.useAndroidPhotoPicker = true;
   }
 
   // 環境設定の初期化
