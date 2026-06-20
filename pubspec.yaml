@@ -39,6 +39,8 @@ dependencies:
 
   # Media & Assets
   image_picker: ^1.0.7
+  image_picker_android: ^0.8.12+21
+  image_picker_platform_interface: ^2.10.1
   image_cropper: ^9.1.0
   flutter_image_compress: ^2.1.0
   path: ^1.8.3

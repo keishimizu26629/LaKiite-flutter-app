@@ -28,6 +28,26 @@ void main() {
     );
   });
 
+  test('AndroidManifest does not request broad photo or video permissions', () {
+    final manifest = File(manifestPath).readAsStringSync();
+
+    const disallowedPermissions = [
+      'android.permission.READ_MEDIA_IMAGES',
+      'android.permission.READ_MEDIA_VIDEO',
+      'android.permission.READ_EXTERNAL_STORAGE',
+      'android.permission.WRITE_EXTERNAL_STORAGE',
+    ];
+
+    for (final permission in disallowedPermissions) {
+      expect(
+        manifest,
+        isNot(contains(permission)),
+        reason:
+            'Use Android Photo Picker for user-selected media instead of broad storage access.',
+      );
+    }
+  });
+
   test('Android flavors use matching AdMob app ids', () {
     final devAdMobAppId = _readDartDefine(
       'dart_define/dev_dart_define.json',
