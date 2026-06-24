@@ -149,11 +149,13 @@ jobs:
       - name: Deploy to Firebase App Distribution
         env:
           DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64: ${{ secrets.DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 }}
+          DEV_FIREBASE_PROJECT_ID: ${{ secrets.DEV_FIREBASE_PROJECT_ID }}
+          DEV_FIREBASE_ANDROID_APP_ID: ${{ secrets.DEV_FIREBASE_ANDROID_APP_ID }}
         run: |
-          echo $DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 | base64 -d > /tmp/dev_firebase_service_account_key.json
+          echo "$DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64" | base64 -d > /tmp/dev_firebase_service_account_key.json
           export GOOGLE_APPLICATION_CREDENTIALS=/tmp/dev_firebase_service_account_key.json
-          firebase use --project ${{ secrets.DEV_FIREBASE_PROJECT_ID }}
           firebase appdistribution:distribute ./build/app/outputs/flutter-apk/app-dev-release.apk \
-            --app ${{ secrets.DEV_FIREBASE_ANDROID_APP_ID }} \
+            --project "$DEV_FIREBASE_PROJECT_ID" \
+            --app "$DEV_FIREBASE_ANDROID_APP_ID" \
             --groups internal-testers  \
             --release-notes "${LATEST_COMMIT_MESSAGES}"
