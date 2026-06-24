@@ -22,8 +22,25 @@ class AirbridgeDeepLinkService {
 
     _isStarted = true;
     Airbridge.setOnDeeplinkReceived((deepLink) {
-      AppLogger.info('Airbridge Deep Linkを受信しました');
+      AppLogger.info(
+        'Airbridge Deep Linkを受信しました: ${_summarizeDeepLink(deepLink)}',
+      );
       unawaited(_navigationService.handleReceivedDeepLink(deepLink));
     });
+  }
+
+  String _summarizeDeepLink(String deepLink) {
+    final uri = Uri.tryParse(deepLink);
+    if (uri == null) {
+      return 'invalid_uri';
+    }
+
+    final queryKeys = uri.queryParametersAll.keys.toList()..sort();
+    final queryKeySummary = queryKeys.isEmpty ? '-' : queryKeys.join(',');
+    final scheme = uri.scheme.isEmpty ? '-' : uri.scheme;
+    final host = uri.host.isEmpty ? '-' : uri.host;
+    final path = uri.path.isEmpty ? '/' : uri.path;
+
+    return 'scheme=$scheme host=$host path=$path queryKeys=$queryKeySummary';
   }
 }
