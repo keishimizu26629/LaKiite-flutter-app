@@ -3,6 +3,7 @@ import Flutter
 import Firebase
 import FirebaseMessaging
 import UserNotifications
+import airbridge_flutter_sdk
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -55,8 +56,55 @@ import UserNotifications
       print("   - soundSetting: \(settings.soundSetting.rawValue)")
     }
 
+    configureAirbridge()
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  private func configureAirbridge() {
+    guard let appName = airbridgeInfoValue(forKey: "AirbridgeAppName") else {
+      print("Airbridge app name is not configured. Initialization skipped.")
+      return
+    }
+    guard let sdkToken = airbridgeInfoValue(forKey: "AirbridgeSDKToken") else {
+      print("Airbridge SDK token is not configured. Initialization skipped.")
+      return
+    }
+
+    AirbridgeFlutter.initializeSDK(name: appName, token: sdkToken)
+  }
+
+  private func airbridgeInfoValue(forKey key: String) -> String? {
+    guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String else {
+      return nil
+    }
+    let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.isEmpty || trimmed.hasPrefix("$(") {
+      return nil
+    }
+    return trimmed
+  }
+
+  override func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey : Any] = [:]
+  ) -> Bool {
+    AirbridgeFlutter.trackDeeplink(url: url)
+    return super.application(app, open: url, options: options)
+  }
+
+  override func application(
+    _ application: UIApplication,
+    continue userActivity: NSUserActivity,
+    restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
+  ) -> Bool {
+    AirbridgeFlutter.trackDeeplink(userActivity: userActivity)
+    return super.application(
+      application,
+      continue: userActivity,
+      restorationHandler: restorationHandler
+    )
   }
 
   // リモート通知の登録成功時

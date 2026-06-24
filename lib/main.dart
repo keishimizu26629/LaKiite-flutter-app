@@ -1,6 +1,8 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker_android/image_picker_android.dart';
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
@@ -12,8 +14,11 @@ import 'config/admob_config.dart';
 import 'config/firebase_emulator_config.dart';
 import 'config/router/app_router.dart';
 import 'infrastructure/admob_service.dart';
+import 'infrastructure/airbridge_deep_link_service.dart';
+import 'infrastructure/deep_link_navigation_service.dart';
 import 'infrastructure/firebase/push_notification_service.dart';
 import 'infrastructure/notification_navigation_service.dart';
+import 'presentation/friend/friend_search_page.dart';
 import 'presentation/force_update/force_update_gate.dart';
 import 'presentation/notification/notification_list_page.dart';
 import 'presentation/theme/app_theme.dart';
@@ -176,6 +181,18 @@ class MyApp extends ConsumerWidget {
     NotificationNavigationService.instance.configureNotificationListBuilder(
       (_) => const NotificationListPage(),
     );
+    DeepLinkNavigationService.instance.configureFriendSearchPageBuilder(
+      (_, searchId) => FriendSearchPage(initialSearchId: searchId),
+    );
+
+    const skipAirbridgeRuntime = bool.fromEnvironment(
+          'TEST_MODE',
+          defaultValue: false,
+        ) ||
+        bool.fromEnvironment('FLUTTER_TEST', defaultValue: false);
+    if (!skipAirbridgeRuntime) {
+      AirbridgeDeepLinkService.instance.start();
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       const skipPushNotificationRuntime = bool.fromEnvironment(
@@ -190,6 +207,7 @@ class MyApp extends ConsumerWidget {
         PushNotificationService.instance.requestAndroidNotificationPermission();
       }
       NotificationNavigationService.instance.flushPendingNavigation();
+      unawaited(DeepLinkNavigationService.instance.flushPendingNavigation());
     });
 
     return MaterialApp.router(

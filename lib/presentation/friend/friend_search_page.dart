@@ -10,7 +10,9 @@ import 'friend_search_qr_scanner_page.dart';
 import 'friend_search_view_model.dart';
 
 class FriendSearchPage extends ConsumerStatefulWidget {
-  const FriendSearchPage({super.key});
+  const FriendSearchPage({super.key, this.initialSearchId});
+
+  final String? initialSearchId;
 
   @override
   ConsumerState<FriendSearchPage> createState() => _FriendSearchPageState();
@@ -19,6 +21,26 @@ class FriendSearchPage extends ConsumerStatefulWidget {
 class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
   final TextEditingController searchController = TextEditingController();
   bool isDialogShowing = false;
+  bool _hasHandledInitialSearchId = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _hasHandledInitialSearchId) {
+        return;
+      }
+
+      final initialSearchId = widget.initialSearchId?.trim();
+      if (initialSearchId == null || initialSearchId.isEmpty) {
+        return;
+      }
+
+      _hasHandledInitialSearchId = true;
+      _searchById(
+          initialSearchId, ref.read(friendSearchViewModelProvider.notifier));
+    });
+  }
 
   @override
   void dispose() {

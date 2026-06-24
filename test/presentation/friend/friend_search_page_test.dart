@@ -134,6 +134,49 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
+    testWidgets('初期検索IDがある場合は友達申請できる検索結果を表示する', (tester) async {
+      final friend = UserModel.create(
+        id: 'friend-user-id',
+        name: '招待ユーザー',
+        displayName: '招待ユーザー',
+      );
+      final currentUser = UserModel.create(
+        id: 'current-user-id',
+        name: '現在ユーザー',
+        displayName: '現在ユーザー',
+      );
+      final userRepository = MockUserRepository()
+        ..addTestUser(currentUser)
+        ..addTestUser(friend);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(currentUser)),
+            ),
+            userRepositoryProvider.overrideWithValue(userRepository),
+            notificationRepositoryProvider.overrideWithValue(
+              MockNotificationRepository(),
+            ),
+            notification.unreadNotificationCountByTypeProvider.overrideWith(
+              (ref, domain.NotificationType type) => Stream.value(0),
+            ),
+          ],
+          child: MaterialApp(
+            home: FriendSearchPage(
+              initialSearchId: friend.searchId.toString(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('招待ユーザー'), findsWidgets);
+      expect(find.text('申請する'), findsOneWidget);
+      expect(find.text('追加済み'), findsNothing);
+    });
+
     testWidgets('検索時はログイン時点ではなく最新の友達状態で追加済みを判定する', (tester) async {
       final friend = UserModel.create(
         id: 'friend-user-id',

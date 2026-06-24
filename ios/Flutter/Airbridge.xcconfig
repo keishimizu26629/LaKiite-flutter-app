@@ -1,0 +1,6 @@
+AIRBRIDGE_DEV_APP_NAME = lakiitedev
+AIRBRIDGE_DEV_SDK_TOKEN =
+AIRBRIDGE_PROD_APP_NAME = lakiite
+AIRBRIDGE_PROD_SDK_TOKEN =
+
+#include? "Airbridge.local.xcconfig"

@@ -66,6 +66,7 @@ app.*.map.json
 .ai/
 
 ios/Runner/GoogleService-Info.plist
+ios/Flutter/Airbridge.local.xcconfig
 
 # Nested project directory
 /lakiite-flutter-app/
