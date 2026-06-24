@@ -100,6 +100,8 @@ jobs:
           ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
           ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
           ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+          AIRBRIDGE_DEV_APP_NAME: ${{ secrets.AIRBRIDGE_DEV_APP_NAME }}
+          AIRBRIDGE_DEV_SDK_TOKEN: ${{ secrets.AIRBRIDGE_DEV_SDK_TOKEN }}
         run: |
           flutter build appbundle --release \
             --flavor dev \
@@ -117,6 +119,8 @@ jobs:
           ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
           ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
           ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+          AIRBRIDGE_DEV_APP_NAME: ${{ secrets.AIRBRIDGE_DEV_APP_NAME }}
+          AIRBRIDGE_DEV_SDK_TOKEN: ${{ secrets.AIRBRIDGE_DEV_SDK_TOKEN }}
         run: |
           flutter build apk --release \
             --flavor dev \
