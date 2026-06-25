@@ -7,6 +7,10 @@ import airbridge_flutter_sdk
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
+  private let rawDeepLinkChannelName = "lakiite/deep_link"
+  private var rawDeepLinkChannel: FlutterMethodChannel?
+  private var pendingInitialDeepLink: String?
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -58,6 +62,7 @@ import airbridge_flutter_sdk
 
     configureAirbridge()
     GeneratedPluginRegistrant.register(with: self)
+    configureRawDeepLinkChannel()
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -85,12 +90,49 @@ import airbridge_flutter_sdk
     return trimmed
   }
 
+  private func configureRawDeepLinkChannel() {
+    guard let controller = window?.rootViewController as? FlutterViewController else {
+      print("Raw deep link channel setup skipped: FlutterViewController is unavailable.")
+      return
+    }
+
+    let channel = FlutterMethodChannel(
+      name: rawDeepLinkChannelName,
+      binaryMessenger: controller.binaryMessenger
+    )
+    rawDeepLinkChannel = channel
+    channel.setMethodCallHandler { [weak self] call, result in
+      guard let self = self else {
+        result(nil)
+        return
+      }
+
+      switch call.method {
+      case "getInitialDeepLink":
+        result(self.pendingInitialDeepLink)
+        self.pendingInitialDeepLink = nil
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  private func dispatchRawDeepLink(_ url: URL) {
+    let deepLink = url.absoluteString
+    guard let channel = rawDeepLinkChannel else {
+      pendingInitialDeepLink = deepLink
+      return
+    }
+    channel.invokeMethod("onDeepLink", arguments: deepLink)
+  }
+
   override func application(
     _ app: UIApplication,
     open url: URL,
     options: [UIApplication.OpenURLOptionsKey : Any] = [:]
   ) -> Bool {
     AirbridgeFlutter.trackDeeplink(url: url)
+    dispatchRawDeepLink(url)
     return super.application(app, open: url, options: options)
   }
 
@@ -100,6 +142,9 @@ import airbridge_flutter_sdk
     restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
   ) -> Bool {
     AirbridgeFlutter.trackDeeplink(userActivity: userActivity)
+    if let url = userActivity.webpageURL {
+      dispatchRawDeepLink(url)
+    }
     return super.application(
       application,
       continue: userActivity,

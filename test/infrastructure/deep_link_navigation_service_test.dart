@@ -90,5 +90,34 @@ void main() {
       expect(service.hasPendingFriendSearchOpen, isFalse);
       expect(find.textContaining('friend search:'), findsNothing);
     });
+
+    testWidgets('同じ検索IDのDeep Linkを短時間に重複受信しても二重遷移しない', (tester) async {
+      final openedSearchIds = <String>[];
+      service.configureFriendSearchPageBuilder(
+        (_, searchId) {
+          openedSearchIds.add(searchId);
+          return Text('friend search: $searchId');
+        },
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigatorKey,
+          home: const Text('home'),
+        ),
+      );
+      await service.markNavigationReady();
+
+      await service.handleReceivedDeepLink(
+        'https://lakiitedev.airbridge.io/friend/search?searchId=Pj5I7M58',
+      );
+      await service.handleReceivedDeepLink(
+        'lakiitedev://friend/search?searchId=Pj5I7M58',
+      );
+      await tester.pumpAndSettle();
+
+      expect(openedSearchIds, ['Pj5I7M58']);
+      expect(find.text('friend search: Pj5I7M58'), findsOneWidget);
+    });
   });
 }
