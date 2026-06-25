@@ -145,6 +145,22 @@ jobs:
           tracks: internal
           status: completed
 
+      - name: Diagnose Firebase App Distribution auth
+        env:
+          DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64: ${{ secrets.DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 }}
+          DEV_FIREBASE_PROJECT_ID: ${{ secrets.DEV_FIREBASE_PROJECT_ID }}
+        run: |
+          echo "$DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64" | base64 -d > /tmp/dev_firebase_service_account_key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/dev_firebase_service_account_key.json
+          if [ ! -s "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+            echo "::error ::Decoded Firebase service account is empty. Check DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64."
+            exit 1
+          fi
+          echo "Firebase CLI version: $(firebase --version)"
+          jq -r '"service_account_email=\(.client_email)\nservice_account_project_id=\(.project_id)\nservice_account_key_id_prefix=\(.private_key_id[0:6])***"' "$GOOGLE_APPLICATION_CREDENTIALS"
+          firebase apps:list --project "$DEV_FIREBASE_PROJECT_ID"
+          firebase appdistribution:groups:list --project "$DEV_FIREBASE_PROJECT_ID"
+
       # 事前に Firebase プロジェクトの Project Settings > Integrations から Google Play Console と連携しておく必要がある。
       - name: Deploy to Firebase App Distribution
         env:
