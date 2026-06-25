@@ -17,7 +17,7 @@ void main() {
 
     expect(source, contains('設定済み'));
     expect(source, contains('未設定'));
-    expect(source, contains('hasPrivateKeyBackup'));
+    expect(source, contains('schedulePrivateKeyBackupExistsProvider'));
   });
 
   test('端末引き継ぎの案内文に未実装予定の文言を残さない', () {
