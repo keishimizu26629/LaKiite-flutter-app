@@ -10,10 +10,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: dev
+    strategy:
+      fail-fast: false
+      matrix:
+        node_version:
+          - 20
+          - 22
+          - 24
+        firebase_tools:
+          - 14.25.0
+          - 14.27.0
+          - 15.22.2
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node_version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node_version }}
 
       - name: Prepare service account credentials JSON
         id: firebase_credentials
@@ -40,12 +56,12 @@ jobs:
           export_environment_variables: true
 
       - name: Install Firebase CLI
-        run: npm install -g firebase-tools@15.22.2
+        run: npm install -g firebase-tools@${{ matrix.firebase_tools }}
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v3
 
-      - name: Diagnose Firebase service account auth with google-github-actions/auth
+      - name: Diagnose Firebase auth on Node ${{ matrix.node_version }} / firebase-tools ${{ matrix.firebase_tools }}
         env:
           DEV_FIREBASE_PROJECT_ID: ${{ secrets.DEV_FIREBASE_PROJECT_ID }}
         run: |
@@ -56,6 +72,8 @@ jobs:
             exit 1
           fi
 
+          echo "Node version: $(node --version)"
+          echo "npm version: $(npm --version)"
           echo "Firebase CLI version: $(firebase --version)"
           echo "gcloud version: $(gcloud version --format='value(Google Cloud SDK)' 2>/dev/null || true)"
           echo "google_application_credentials=present"
