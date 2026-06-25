@@ -104,9 +104,13 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     );
   }
 
-  Future<void> _shareFriendInvite(String searchId) async {
+  Future<void> _shareFriendInvite({
+    required String searchId,
+    required String inviterName,
+  }) async {
     final content = FriendInviteShareContent.create(
       searchId: searchId,
+      inviterName: inviterName,
       environment: AppConfig.instance.environment,
     );
     final renderBox = context.findRenderObject() as RenderBox?;
@@ -153,6 +157,19 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     final state = ref.watch(friendSearchViewModelProvider);
     final currentUser = ref.watch(auth.authNotifierProvider).value?.user;
     final currentSearchId = currentUser?.searchId.toString();
+    final currentDisplayName = currentUser?.displayName;
+    final qrButtonStyle = OutlinedButton.styleFrom(
+      minimumSize: const Size.fromHeight(54),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      textStyle: Theme.of(context).textTheme.titleSmall,
+      iconSize: 24,
+    );
+    final inviteButtonStyle = OutlinedButton.styleFrom(
+      minimumSize: const Size.fromHeight(58),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      textStyle: Theme.of(context).textTheme.titleSmall,
+      iconSize: 24,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -178,8 +195,10 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
           children: [
             TextField(
               controller: searchController,
+              style: Theme.of(context).textTheme.bodyLarge,
               decoration: InputDecoration(
                 labelText: '検索IDを入力',
+                labelStyle: Theme.of(context).textTheme.bodyLarge,
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.search),
                   onPressed: () {
@@ -194,6 +213,7 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
+                    style: qrButtonStyle,
                     onPressed: currentSearchId == null
                         ? null
                         : () => _showSearchIdQr(currentSearchId),
@@ -204,6 +224,7 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
                 const Gap(12),
                 Expanded(
                   child: OutlinedButton.icon(
+                    style: qrButtonStyle,
                     onPressed: () => _openQrScanner(viewModel),
                     icon: const Icon(Icons.qr_code_scanner),
                     label: const Text('QRを読み取る'),
@@ -215,12 +236,24 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
+                style: inviteButtonStyle,
                 onPressed: currentSearchId == null
                     ? null
-                    : () => _shareFriendInvite(currentSearchId),
+                    : () => _shareFriendInvite(
+                          searchId: currentSearchId,
+                          inviterName: currentDisplayName ?? '',
+                        ),
                 icon: const Icon(Icons.ios_share),
-                label: const Text('友人を招待する'),
+                label: const Text('友人をアプリに招待する'),
               ),
+            ),
+            const Gap(8),
+            Text(
+              'アプリをまだ使っていない人にも、すでに使っている人にも、フレンド追加の招待を送れます。',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[700],
+                    height: 1.45,
+                  ),
             ),
             const Gap(20),
             if (state.isLoading)
