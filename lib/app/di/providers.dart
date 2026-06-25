@@ -35,6 +35,12 @@ final scheduleEncryptionServiceProvider =
   return ScheduleEncryptionService();
 });
 
+final schedulePrivateKeyBackupExistsProvider =
+    FutureProvider.autoDispose.family<bool, String>((ref, uid) {
+  final encryptionService = ref.watch(scheduleEncryptionServiceProvider);
+  return encryptionService.hasPrivateKeyBackup(uid);
+});
+
 /// Firebase 認証状態の変化を監視し、repository のセッション境界を提供する。
 final repositorySessionKeyProvider = StreamProvider.autoDispose<String?>((ref) {
   final firebaseAuth = ref.watch(firebaseAuthProvider);
