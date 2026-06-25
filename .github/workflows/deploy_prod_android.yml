@@ -211,14 +211,9 @@ jobs:
           PROD_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64: ${{ secrets.PROD_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 }}
           PROD_FIREBASE_PROJECT_ID: ${{ secrets.PROD_FIREBASE_PROJECT_ID }}
           PROD_FIREBASE_ANDROID_APP_ID: ${{ secrets.PROD_FIREBASE_ANDROID_APP_ID }}
-          GOOGLE_APPLICATION_CREDENTIALS: /tmp/prod_firebase_service_account_key.json
         run: |
           echo "$PROD_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64" | base64 -d > /tmp/prod_firebase_service_account_key.json
-          if [ ! -s "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
-            echo "::error ::Decoded Firebase service account is empty. Check PROD_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64."
-            exit 1
-          fi
-          jq -e '.client_email and .private_key and .project_id' "$GOOGLE_APPLICATION_CREDENTIALS" >/dev/null
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/prod_firebase_service_account_key.json
           firebase appdistribution:distribute ./build/app/outputs/flutter-apk/app-prod-release.apk \
             --project "$PROD_FIREBASE_PROJECT_ID" \
             --app "$PROD_FIREBASE_ANDROID_APP_ID" \
