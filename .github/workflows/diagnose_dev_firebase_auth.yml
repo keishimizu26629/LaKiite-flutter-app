@@ -58,7 +58,18 @@ jobs:
           fi
           echo "::endgroup::"
 
-          echo "::group::firebase apps:list after gcloud auth"
+          echo "::group::create ADC from service account key"
+          mkdir -p "$HOME/.config/gcloud"
+          cp "$GOOGLE_APPLICATION_CREDENTIALS" "$HOME/.config/gcloud/application_default_credentials.json"
+          unset GOOGLE_APPLICATION_CREDENTIALS
+          if [ ! -s "$HOME/.config/gcloud/application_default_credentials.json" ]; then
+            echo "::error ::ADC file is empty"
+            exit 1
+          fi
+          echo "adc_file=present"
+          echo "::endgroup::"
+
+          echo "::group::firebase apps:list after ADC"
           set +e
           firebase apps:list --project "$DEV_FIREBASE_PROJECT_ID"
           firebase_apps_after_status=$?
@@ -66,7 +77,7 @@ jobs:
           echo "firebase_apps_after_status=$firebase_apps_after_status"
           echo "::endgroup::"
 
-          echo "::group::firebase appdistribution:groups:list after gcloud auth"
+          echo "::group::firebase appdistribution:groups:list after ADC"
           set +e
           firebase appdistribution:groups:list --project "$DEV_FIREBASE_PROJECT_ID"
           firebase_groups_after_status=$?
