@@ -84,6 +84,35 @@ void main() {
       expect(find.text('@${currentUser.searchId}'), findsNothing);
     });
 
+    testWidgets('ログインユーザーの検索IDがある場合は友人招待ボタンを表示する', (tester) async {
+      final currentUser = UserModel.create(
+        id: 'current-user-id',
+        name: '現在ユーザー',
+        displayName: '現在ユーザー',
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(currentUser)),
+            ),
+            userRepositoryProvider.overrideWithValue(MockUserRepository()),
+            notificationRepositoryProvider.overrideWithValue(
+              MockNotificationRepository(),
+            ),
+            notification.unreadNotificationCountByTypeProvider.overrideWith(
+              (ref, domain.NotificationType type) => Stream.value(0),
+            ),
+          ],
+          child: const MaterialApp(home: FriendSearchPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('友人を招待する'), findsOneWidget);
+    });
+
     testWidgets('フレンド追加済みユーザー検索では申請ボタンを無効化する', (tester) async {
       final friend = UserModel.create(
         id: 'friend-user-id',
