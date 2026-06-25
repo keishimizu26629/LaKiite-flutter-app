@@ -27,6 +27,44 @@ void main() {
     );
   }
 
+  Widget buildRefreshTestTarget(_StubScheduleEncryptionService service) {
+    final user = BaseMock.createTestUser();
+    return ProviderScope(
+      overrides: [
+        authNotifierProvider.overrideWith(
+          () => _StubAuthNotifier(AuthState.authenticated(user)),
+        ),
+        scheduleEncryptionServiceProvider.overrideWithValue(service),
+      ],
+      child: MaterialApp(
+        home: Consumer(
+          builder: (context, ref, _) {
+            final backupStatus = ref.watch(
+              schedulePrivateKeyBackupExistsProvider(user.id),
+            );
+            return Scaffold(
+              body: Column(
+                children: [
+                  Text('parent: ${backupStatus.valueOrNull == true}'),
+                  FilledButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ScheduleKeyBackupPage(),
+                        ),
+                      );
+                    },
+                    child: const Text('open'),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   testWidgets('引き継ぎパスワードと確認用パスワードの表示切替は独立している', (tester) async {
     await tester.pumpWidget(buildTestTarget());
 
@@ -70,6 +108,23 @@ void main() {
     expect(find.text('引き継ぎパスワード'), findsOneWidget);
     expect(find.text('保存'), findsOneWidget);
   });
+
+  testWidgets('保存後に引き継ぎ設定状態を再取得する', (tester) async {
+    final service = _StubScheduleEncryptionService(hasBackup: false);
+    await tester.pumpWidget(buildRefreshTestTarget(service));
+    await tester.pump();
+
+    expect(find.text('parent: false'), findsOneWidget);
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(0), 'new-password');
+    await tester.enterText(find.byType(TextField).at(1), 'new-password');
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('parent: true'), findsOneWidget);
+  });
 }
 
 class _StubAuthNotifier extends AuthNotifier {
@@ -84,10 +139,18 @@ class _StubAuthNotifier extends AuthNotifier {
 class _StubScheduleEncryptionService extends ScheduleEncryptionService {
   _StubScheduleEncryptionService({required this.hasBackup});
 
-  final bool hasBackup;
+  bool hasBackup;
 
   @override
   Future<bool> hasPrivateKeyBackup(String uid) async {
     return hasBackup;
+  }
+
+  @override
+  Future<void> createPrivateKeyBackup({
+    required String uid,
+    required String password,
+  }) async {
+    hasBackup = true;
   }
 }

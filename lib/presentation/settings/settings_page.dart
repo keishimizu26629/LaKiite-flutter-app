@@ -340,20 +340,15 @@ class _ScheduleKeyBackupSubtitle extends ConsumerWidget {
       return const Text('ログイン後に設定できます');
     }
 
-    final encryptionService = ref.watch(scheduleEncryptionServiceProvider);
-    return FutureBuilder<bool>(
-      future: encryptionService.hasPrivateKeyBackup(uid),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Text('暗号化された予定を別端末で復元・確認中...');
-        }
-        if (snapshot.hasError) {
-          return const Text('暗号化された予定を別端末で復元・設定状態を確認できません');
-        }
+    final backupStatus = ref.watch(schedulePrivateKeyBackupExistsProvider(uid));
+    if (backupStatus.isLoading) {
+      return const Text('暗号化された予定を別端末で復元・確認中...');
+    }
+    if (backupStatus.hasError) {
+      return const Text('暗号化された予定を別端末で復元・設定状態を確認できません');
+    }
 
-        final label = snapshot.data == true ? '設定済み' : '未設定';
-        return Text('暗号化された予定を別端末で復元・$label');
-      },
-    );
+    final label = backupStatus.valueOrNull == true ? '設定済み' : '未設定';
+    return Text('暗号化された予定を別端末で復元・$label');
   }
 }

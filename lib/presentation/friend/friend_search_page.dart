@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../application/auth/auth_notifier.dart' as auth;
+import '../../config/app_config.dart';
 import '../widgets/notification_badge.dart';
 import '../notification/notification_list_page.dart';
+import 'friend_invite_share_content.dart';
 import 'friend_search_qr_scanner_page.dart';
 import 'friend_search_view_model.dart';
 
@@ -101,6 +104,25 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     );
   }
 
+  Future<void> _shareFriendInvite(String searchId) async {
+    final content = FriendInviteShareContent.create(
+      searchId: searchId,
+      environment: AppConfig.instance.environment,
+    );
+    final renderBox = context.findRenderObject() as RenderBox?;
+    final sharePositionOrigin = renderBox == null
+        ? null
+        : renderBox.localToGlobal(Offset.zero) & renderBox.size;
+
+    await SharePlus.instance.share(
+      ShareParams(
+        text: content.message,
+        subject: 'LaKiiteに招待',
+        sharePositionOrigin: sharePositionOrigin,
+      ),
+    );
+  }
+
   Widget _buildDisabledRequestButton(String label) {
     return ElevatedButton(
       onPressed: null,
@@ -188,6 +210,17 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
                   ),
                 ),
               ],
+            ),
+            const Gap(12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: currentSearchId == null
+                    ? null
+                    : () => _shareFriendInvite(currentSearchId),
+                icon: const Icon(Icons.ios_share),
+                label: const Text('友人を招待する'),
+              ),
             ),
             const Gap(20),
             if (state.isLoading)
