@@ -151,9 +151,9 @@ jobs:
           DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64: ${{ secrets.DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 }}
           DEV_FIREBASE_PROJECT_ID: ${{ secrets.DEV_FIREBASE_PROJECT_ID }}
           DEV_FIREBASE_ANDROID_APP_ID: ${{ secrets.DEV_FIREBASE_ANDROID_APP_ID }}
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/dev_firebase_service_account_key.json
         run: |
           echo "$DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64" | base64 -d > /tmp/dev_firebase_service_account_key.json
-          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/dev_firebase_service_account_key.json
           if [ ! -s "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
             echo "::error ::Decoded Firebase service account is empty. Check DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64."
             exit 1
