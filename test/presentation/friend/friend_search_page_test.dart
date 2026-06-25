@@ -84,7 +84,7 @@ void main() {
       expect(find.text('@${currentUser.searchId}'), findsNothing);
     });
 
-    testWidgets('ログインユーザーの検索IDがある場合は友人招待ボタンを表示する', (tester) async {
+    testWidgets('ログインユーザーの検索IDがある場合は友人をアプリに招待するボタンを表示する', (tester) async {
       final currentUser = UserModel.create(
         id: 'current-user-id',
         name: '現在ユーザー',
@@ -110,7 +110,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('友人を招待する'), findsOneWidget);
+      expect(find.text('友人をアプリに招待する'), findsOneWidget);
+      expect(
+        find.text(
+          'アプリをまだ使っていない人にも、すでに使っている人にも、フレンド追加の招待を送れます。',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('友人を招待する'), findsNothing);
     });
 
     testWidgets('フレンド追加済みユーザー検索では申請ボタンを無効化する', (tester) async {

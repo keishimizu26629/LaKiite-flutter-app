@@ -11,6 +11,16 @@ void main() {
     expect(source, contains("context.push('/settings/how-to-use')"));
   });
 
+  test('使い方HTMLで友人招待リンクの役割を説明する', () {
+    final source = File('web/how-to-use.html').readAsStringSync();
+
+    expect(source, contains('友人をアプリに招待する'));
+    expect(source, contains('アプリをまだ使っていない人にも'));
+    expect(source, contains('すでに使っている人にも'));
+    expect(source, contains('フレンド追加の招待を送れます'));
+    expect(source, contains('LaKiiteを使ってほしい友人に送ってください'));
+  });
+
   test('端末引き継ぎ設定の設定状態を表示する', () {
     final source =
         File('lib/presentation/settings/settings_page.dart').readAsStringSync();
