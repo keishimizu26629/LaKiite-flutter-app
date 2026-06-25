@@ -1,7 +1,9 @@
 name: '[Diagnose] Dev Firebase Auth'
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - diagnose/dev-firebase-auth-from-airbridge
 
 jobs:
   diagnose:
