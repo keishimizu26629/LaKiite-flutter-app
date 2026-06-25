@@ -17,8 +17,13 @@ jobs:
       - name: Setup CI
         uses: ./.github/actions/setup
 
+      - name: Setup Node for Firebase CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Install Firebase CLI
-        run: npm install -g firebase-tools
+        run: npm install -g firebase-tools@15.22.2
 
       - name: Setup Java
         uses: actions/setup-java@v5.2.0
@@ -145,15 +150,39 @@ jobs:
           tracks: internal
           status: completed
 
+      - name: Prepare Firebase App Distribution credentials
+        id: firebase_app_distribution_credentials
+        env:
+          DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64: ${{ secrets.DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 }}
+        run: |
+          set -euo pipefail
+
+          credentials_json="$(echo "$DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64" | base64 -d | jq -c .)"
+          if [ -z "$credentials_json" ]; then
+            echo "::error ::Decoded Firebase service account JSON is empty."
+            exit 1
+          fi
+
+          echo "::add-mask::$credentials_json"
+          printf 'credentials_json=%s\n' "$credentials_json" >> "$GITHUB_OUTPUT"
+
+      - name: Authenticate to Google Cloud for Firebase App Distribution
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ steps.firebase_app_distribution_credentials.outputs.credentials_json }}
+          project_id: ${{ secrets.DEV_FIREBASE_PROJECT_ID }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Setup gcloud for Firebase App Distribution
+        uses: google-github-actions/setup-gcloud@v3
+
       # 事前に Firebase プロジェクトの Project Settings > Integrations から Google Play Console と連携しておく必要がある。
       - name: Deploy to Firebase App Distribution
         env:
-          DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64: ${{ secrets.DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 }}
           DEV_FIREBASE_PROJECT_ID: ${{ secrets.DEV_FIREBASE_PROJECT_ID }}
           DEV_FIREBASE_ANDROID_APP_ID: ${{ secrets.DEV_FIREBASE_ANDROID_APP_ID }}
         run: |
-          echo "$DEV_FIREBASE_SERVICE_ACCOUNT_KEY_BASE64" | base64 -d > /tmp/dev_firebase_service_account_key.json
-          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/dev_firebase_service_account_key.json
           firebase appdistribution:distribute ./build/app/outputs/flutter-apk/app-dev-release.apk \
             --project "$DEV_FIREBASE_PROJECT_ID" \
             --app "$DEV_FIREBASE_ANDROID_APP_ID" \
