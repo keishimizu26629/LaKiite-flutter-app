@@ -79,9 +79,13 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     );
   }
 
-  Future<void> _shareFriendInvite(String searchId) async {
+  Future<void> _shareFriendInvite({
+    required String searchId,
+    required String inviterName,
+  }) async {
     final content = FriendInviteShareContent.create(
       searchId: searchId,
+      inviterName: inviterName,
       environment: AppConfig.instance.environment,
     );
     final renderBox = context.findRenderObject() as RenderBox?;
@@ -128,6 +132,7 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     final state = ref.watch(friendSearchViewModelProvider);
     final currentUser = ref.watch(auth.authNotifierProvider).value?.user;
     final currentSearchId = currentUser?.searchId.toString();
+    final currentDisplayName = currentUser?.displayName;
 
     return Scaffold(
       appBar: AppBar(
@@ -192,10 +197,20 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
               child: OutlinedButton.icon(
                 onPressed: currentSearchId == null
                     ? null
-                    : () => _shareFriendInvite(currentSearchId),
+                    : () => _shareFriendInvite(
+                          searchId: currentSearchId,
+                          inviterName: currentDisplayName ?? '',
+                        ),
                 icon: const Icon(Icons.ios_share),
-                label: const Text('友人を招待する'),
+                label: const Text('友人をアプリに招待する'),
               ),
+            ),
+            const Gap(8),
+            Text(
+              'アプリをまだ使っていない人にも、すでに使っている人にも、フレンド追加の招待を送れます。',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[700],
+                  ),
             ),
             const Gap(20),
             if (state.isLoading)

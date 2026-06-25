@@ -7,6 +7,7 @@ void main() {
     test('developmentではlakiitedevのAirbridge招待リンクを作る', () {
       final content = FriendInviteShareContent.create(
         searchId: 'Pj5I7M58',
+        inviterName: '田中太郎',
         environment: Environment.development,
       );
 
@@ -16,13 +17,18 @@ void main() {
           'https://lakiitedev.airbridge.io/friend/search?searchId=Pj5I7M58',
         ),
       );
-      expect(content.message, contains('LaKiite'));
-      expect(content.message, contains(content.url.toString()));
+      expect(
+        content.message,
+        'LaKiite（ラキーテ）に招待されています！\n'
+        'インストールして田中太郎さんと友達になりましょう！\n'
+        '${content.url}',
+      );
     });
 
     test('productionではlakiiteのAirbridge招待リンクを作る', () {
       final content = FriendInviteShareContent.create(
         searchId: 'Pj5I7M58',
+        inviterName: '田中太郎',
         environment: Environment.production,
       );
 
@@ -33,11 +39,13 @@ void main() {
         ),
       );
       expect(content.message, contains(content.url.toString()));
+      expect(content.message, contains('田中太郎さん'));
     });
 
     test('検索IDはtrimしてURL queryに入れる', () {
       final content = FriendInviteShareContent.create(
         searchId: ' Pj5I7M58 ',
+        inviterName: '田中太郎',
         environment: Environment.development,
       );
 

@@ -11,11 +11,16 @@ class FriendInviteShareContent {
 
   static FriendInviteShareContent create({
     required String searchId,
+    required String inviterName,
     required Environment environment,
   }) {
     final normalizedSearchId = searchId.trim();
     if (normalizedSearchId.isEmpty) {
       throw ArgumentError.value(searchId, 'searchId', '検索IDが空です');
+    }
+    final normalizedInviterName = inviterName.trim();
+    if (normalizedInviterName.isEmpty) {
+      throw ArgumentError.value(inviterName, 'inviterName', '招待者名が空です');
     }
 
     final airbridgeAppName =
@@ -28,7 +33,9 @@ class FriendInviteShareContent {
 
     return FriendInviteShareContent(
       url: url,
-      message: 'LaKiiteで友人になりましょう。\n$url',
+      message: 'LaKiite（ラキーテ）に招待されています！\n'
+          'インストールして$normalizedInviterNameさんと友達になりましょう！\n'
+          '$url',
     );
   }
 }
