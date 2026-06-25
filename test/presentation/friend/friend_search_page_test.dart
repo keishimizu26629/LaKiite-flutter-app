@@ -175,6 +175,10 @@ void main() {
       expect(find.text('招待ユーザー'), findsWidgets);
       expect(find.text('申請する'), findsOneWidget);
       expect(find.text('追加済み'), findsNothing);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller?.text,
+        isEmpty,
+      );
     });
 
     testWidgets('検索時はログイン時点ではなく最新の友達状態で追加済みを判定する', (tester) async {

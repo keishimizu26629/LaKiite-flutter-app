@@ -38,7 +38,10 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
 
       _hasHandledInitialSearchId = true;
       _searchById(
-          initialSearchId, ref.read(friendSearchViewModelProvider.notifier));
+        initialSearchId,
+        ref.read(friendSearchViewModelProvider.notifier),
+        updateInput: false,
+      );
     });
   }
 
