@@ -91,7 +91,7 @@ void main() {
       expect(find.textContaining('friend search:'), findsNothing);
     });
 
-    testWidgets('同じ検索IDのDeep Linkを短時間に重複受信しても二重遷移しない', (tester) async {
+    testWidgets('同じ検索IDのDeep Linkを表示中に重複受信しても二重遷移しない', (tester) async {
       final openedSearchIds = <String>[];
       service.configureFriendSearchPageBuilder(
         (_, searchId) {
@@ -117,6 +117,71 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(openedSearchIds, ['Pj5I7M58']);
+      expect(find.text('friend search: Pj5I7M58'), findsOneWidget);
+    });
+
+    testWidgets('別の検索IDのDeep Linkは友達検索画面を表示中でも遷移する', (tester) async {
+      final openedSearchIds = <String>[];
+      service.configureFriendSearchPageBuilder(
+        (_, searchId) {
+          openedSearchIds.add(searchId);
+          return Text('friend search: $searchId');
+        },
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigatorKey,
+          home: const Text('home'),
+        ),
+      );
+      await service.markNavigationReady();
+
+      await service.handleReceivedDeepLink(
+        'https://lakiitedev.airbridge.io/friend/search?searchId=Pj5I7M58',
+      );
+      await service.handleReceivedDeepLink(
+        'lakiitedev://friend/search?searchId=ABCD1234',
+      );
+      await tester.pumpAndSettle();
+
+      expect(openedSearchIds, ['Pj5I7M58', 'ABCD1234']);
+      expect(find.text('friend search: ABCD1234'), findsOneWidget);
+    });
+
+    testWidgets('同じ検索IDのDeep Linkでも友達検索画面を閉じた後は再度遷移できる', (tester) async {
+      final openedSearchIds = <String>[];
+      service.configureFriendSearchPageBuilder(
+        (_, searchId) {
+          openedSearchIds.add(searchId);
+          return Text('friend search: $searchId');
+        },
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigatorKey,
+          home: const Text('home'),
+        ),
+      );
+      await service.markNavigationReady();
+
+      await service.handleReceivedDeepLink(
+        'https://lakiitedev.airbridge.io/friend/search?searchId=Pj5I7M58',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('friend search: Pj5I7M58'), findsOneWidget);
+
+      navigatorKey.currentState!.pop();
+      await tester.pumpAndSettle();
+
+      await service.handleReceivedDeepLink(
+        'lakiitedev://friend/search?searchId=Pj5I7M58',
+      );
+      await tester.pumpAndSettle();
+
+      expect(openedSearchIds, ['Pj5I7M58', 'Pj5I7M58']);
       expect(find.text('friend search: Pj5I7M58'), findsOneWidget);
     });
   });

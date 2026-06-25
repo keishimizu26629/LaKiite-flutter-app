@@ -22,15 +22,13 @@ class DeepLinkNavigationService {
             deepLinkInvitePreferences ?? const DeepLinkInvitePreferences();
 
   static final DeepLinkNavigationService instance = DeepLinkNavigationService();
-  static const Duration _duplicateDeepLinkWindow = Duration(seconds: 2);
 
   final GlobalKey<NavigatorState> navigatorKey;
   final DeepLinkInvitePreferences _deepLinkInvitePreferences;
 
   FriendSearchPageBuilder? _friendSearchPageBuilder;
   String? _pendingFriendSearchId;
-  String? _lastReceivedFriendSearchId;
-  DateTime? _lastReceivedAt;
+  String? _activeFriendSearchId;
   bool _isNavigationReady = false;
 
   bool get hasPendingFriendSearchOpen => _pendingFriendSearchId != null;
@@ -48,12 +46,6 @@ class DeepLinkNavigationService {
       AppLogger.debug('未対応のDeep Linkを受信しました: $deepLink');
       return false;
     }
-
-    if (_isDuplicateFriendSearchDeepLink(friendInvite.searchId)) {
-      AppLogger.debug('重複したDeep Linkをスキップしました: ${friendInvite.searchId}');
-      return true;
-    }
-    _markFriendSearchDeepLinkReceived(friendInvite.searchId);
 
     await _deepLinkInvitePreferences.savePendingFriendSearchId(
       friendInvite.searchId,
@@ -94,13 +86,26 @@ class DeepLinkNavigationService {
       return false;
     }
 
+    if (_activeFriendSearchId == searchId) {
+      AppLogger.debug('表示中のDeep Link遷移をスキップしました: $searchId');
+      await _deepLinkInvitePreferences.clearPendingFriendSearchId();
+      return true;
+    }
+
     _pendingFriendSearchId = null;
+    _activeFriendSearchId = searchId;
     await _deepLinkInvitePreferences.clearPendingFriendSearchId();
-    navigator.push(
+    navigator
+        .push(
       MaterialPageRoute<void>(
         builder: (context) => friendSearchPageBuilder(context, searchId),
       ),
-    );
+    )
+        .whenComplete(() {
+      if (_activeFriendSearchId == searchId) {
+        _activeFriendSearchId = null;
+      }
+    });
     return true;
   }
 
@@ -116,19 +121,5 @@ class DeepLinkNavigationService {
     }
 
     return openFriendSearch(pendingFriendSearchId);
-  }
-
-  bool _isDuplicateFriendSearchDeepLink(String searchId) {
-    final lastReceivedAt = _lastReceivedAt;
-    if (_lastReceivedFriendSearchId != searchId || lastReceivedAt == null) {
-      return false;
-    }
-
-    return DateTime.now().difference(lastReceivedAt) < _duplicateDeepLinkWindow;
-  }
-
-  void _markFriendSearchDeepLinkReceived(String searchId) {
-    _lastReceivedFriendSearchId = searchId;
-    _lastReceivedAt = DateTime.now();
   }
 }
