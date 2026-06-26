@@ -54,11 +54,11 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     super.dispose();
   }
 
-  void _searchById(
+  Future<void> _searchById(
     String searchId,
     FriendSearchViewModel viewModel, {
     bool updateInput = true,
-  }) {
+  }) async {
     final trimmedSearchId = searchId.trim();
     if (trimmedSearchId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -70,7 +70,13 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     if (updateInput) {
       searchController.text = trimmedSearchId;
     }
-    viewModel.searchUser(trimmedSearchId);
+    await viewModel.searchUser(trimmedSearchId);
+    if (!mounted || viewModel.message == null) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(viewModel.message!)),
+    );
   }
 
   Future<void> _showSearchIdQr(String searchId) async {

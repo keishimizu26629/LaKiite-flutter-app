@@ -217,6 +217,46 @@ void main() {
       );
     });
 
+    testWidgets('初期検索IDが自分自身の場合はエラーではなく案内を表示する', (tester) async {
+      final currentUser = UserModel.create(
+        id: 'current-user-id',
+        name: '現在ユーザー',
+        displayName: '現在ユーザー',
+      );
+      final userRepository = MockUserRepository()..addTestUser(currentUser);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(currentUser)),
+            ),
+            userRepositoryProvider.overrideWithValue(userRepository),
+            notificationRepositoryProvider.overrideWithValue(
+              MockNotificationRepository(),
+            ),
+            notification.unreadNotificationCountByTypeProvider.overrideWith(
+              (ref, domain.NotificationType type) => Stream.value(0),
+            ),
+          ],
+          child: MaterialApp(
+            home: FriendSearchPage(
+              initialSearchId: currentUser.searchId.toString(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('自分自身は友達に追加できません'), findsOneWidget);
+      expect(find.textContaining('エラー:'), findsNothing);
+      expect(find.text('申請する'), findsNothing);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller?.text,
+        isEmpty,
+      );
+    });
+
     testWidgets('検索時はログイン時点ではなく最新の友達状態で追加済みを判定する', (tester) async {
       final friend = UserModel.create(
         id: 'friend-user-id',
