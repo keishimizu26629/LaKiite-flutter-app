@@ -59,6 +59,14 @@ void main() {
       expect(deepLink?.searchId, 'Pj5I7M58');
     });
 
+    test('Airbridge custom domainのURLから検索IDを抽出する', () {
+      final deepLink = FriendInviteDeepLink.tryParse(
+        'https://lakiite-dev.inoworl.com/friend/search?searchId=Pj5I7M58',
+      );
+
+      expect(deepLink?.searchId, 'Pj5I7M58');
+    });
+
     test('Airbridgeのnested scheme deep linkから検索IDを抽出する', () {
       final deepLink = FriendInviteDeepLink.tryParse(
         'https://lakiitedev.airbridge.io/abc123'
@@ -71,6 +79,15 @@ void main() {
     test('Airbridgeのnested path deep linkから検索IDを抽出する', () {
       final deepLink = FriendInviteDeepLink.tryParse(
         'https://lakiitedev.airbridge.io/abc123'
+        '?deep_link=%2Ffriend%2Fsearch%3FsearchId%3DPj5I7M58',
+      );
+
+      expect(deepLink?.searchId, 'Pj5I7M58');
+    });
+
+    test('Airbridge custom domainのnested path deep linkから検索IDを抽出する', () {
+      final deepLink = FriendInviteDeepLink.tryParse(
+        'https://lakiite-dev.inoworl.com/friend_xfrhk82o08rg1555q'
         '?deep_link=%2Ffriend%2Fsearch%3FsearchId%3DPj5I7M58',
       );
 
