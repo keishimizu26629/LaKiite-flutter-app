@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,7 +18,10 @@ import '../../presentation/settings/account_deletion_webview_page.dart';
 import '../../presentation/signup/signup.dart';
 import '../../presentation/splash/splash_screen.dart';
 import '../../application/auth/auth_notifier.dart';
+import '../../domain/deep_link/friend_invite_deep_link.dart';
+import '../../infrastructure/deep_link_navigation_service.dart';
 import '../../infrastructure/notification_navigation_service.dart';
+import '../../utils/logger.dart';
 
 /// アプリケーションのルーティング設定を提供するプロバイダー
 ///
@@ -36,6 +41,24 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: NotificationNavigationService.instance.navigatorKey,
     refreshListenable: refreshNotifier,
     initialLocation: SplashScreen.path,
+    overridePlatformDefaultLocation: true,
+    onException: (context, state, router) {
+      final location = state.uri.toString();
+      final friendInviteDeepLink = FriendInviteDeepLink.tryParse(location);
+      if (friendInviteDeepLink != null) {
+        AppLogger.info(
+          'GoRouterで受信したDeep Linkを専用処理へ委譲しました: '
+          'searchId=${friendInviteDeepLink.searchId}',
+        );
+        unawaited(
+          DeepLinkNavigationService.instance.handleReceivedDeepLink(location),
+        );
+        return;
+      }
+
+      AppLogger.warning('GoRouter例外を検出しました: ${state.error}');
+      router.go(SplashScreen.path);
+    },
     redirect: (context, state) {
       final authState = ref.read(authNotifierProvider);
 
