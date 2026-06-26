@@ -4,8 +4,13 @@ import '../firebase_options.dart';
 /// アプリケーションの環境設定を管理するクラス
 class AppConfig {
   /// プライベートコンストラクタ
-  AppConfig._(this.environment, this.firebaseOptions, this.appName,
-      this.pushNotificationUrl);
+  AppConfig._(
+    this.environment,
+    this.firebaseOptions,
+    this.appName,
+    this.pushNotificationUrl,
+    this.friendInviteLinkUrl,
+  );
 
   /// 環境の種類
   final Environment environment;
@@ -18,6 +23,9 @@ class AppConfig {
 
   /// プッシュ通知用Cloud FunctionのURL
   final String pushNotificationUrl;
+
+  /// フレンド招待リンク生成Cloud FunctionのURL
+  final String friendInviteLinkUrl;
 
   /// シングルトンインスタンス
   static AppConfig? _instance;
@@ -38,6 +46,7 @@ class AppConfig {
     FirebaseOptions options;
     String appName;
     String pushNotificationUrl;
+    String friendInviteLinkUrl;
 
     // 環境変数からFirebaseOptionsクラス名を取得（検証用）
     const firebaseOptionsClass =
@@ -60,6 +69,7 @@ class AppConfig {
       );
       environment = Environment.development;
       pushNotificationUrl = 'https://test-functions.net/sendNotification';
+      friendInviteLinkUrl = 'https://test-functions.net/createFriendInviteLink';
     } else {
       // 統合されたDefaultFirebaseOptionsを使用（ZEN方式）
       // 環境変数FLAVORで自動的に適切な設定が選択される
@@ -70,6 +80,8 @@ class AppConfig {
           // 本番環境
           pushNotificationUrl =
               'https://asia-northeast1-lakiite-flutter-app-prod.cloudfunctions.net/sendNotification';
+          friendInviteLinkUrl =
+              'https://asia-northeast1-lakiite-flutter-app-prod.cloudfunctions.net/createFriendInviteLink';
 
           // 検証: FIREBASE_OPTIONS_CLASSが一致しているか確認（後方互換性のため）
           if (firebaseOptionsClass.isNotEmpty &&
@@ -82,6 +94,8 @@ class AppConfig {
           // 開発環境
           pushNotificationUrl =
               'https://asia-northeast1-lakiite-flutter-app-dev.cloudfunctions.net/sendNotification';
+          friendInviteLinkUrl =
+              'https://asia-northeast1-lakiite-flutter-app-dev.cloudfunctions.net/createFriendInviteLink';
 
           // 検証: FIREBASE_OPTIONS_CLASSが一致しているか確認（後方互換性のため）
           if (firebaseOptionsClass.isNotEmpty &&
@@ -102,10 +116,18 @@ class AppConfig {
         );
         environment = Environment.development;
         pushNotificationUrl = 'https://fallback-functions.net/sendNotification';
+        friendInviteLinkUrl =
+            'https://fallback-functions.net/createFriendInviteLink';
       }
     }
 
-    _instance = AppConfig._(environment, options, appName, pushNotificationUrl);
+    _instance = AppConfig._(
+      environment,
+      options,
+      appName,
+      pushNotificationUrl,
+      friendInviteLinkUrl,
+    );
   }
 
   /// 開発環境かどうか
