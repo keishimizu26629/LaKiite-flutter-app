@@ -29,25 +29,11 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
   bool _isSharingInvite = false;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _hasHandledInitialSearchId) {
-        return;
-      }
-
-      final initialSearchId = widget.initialSearchId?.trim();
-      if (initialSearchId == null || initialSearchId.isEmpty) {
-        return;
-      }
-
-      _hasHandledInitialSearchId = true;
-      _searchById(
-        initialSearchId,
-        ref.read(friendSearchViewModelProvider.notifier),
-        updateInput: false,
-      );
-    });
+  void didUpdateWidget(covariant FriendSearchPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialSearchId != widget.initialSearchId) {
+      _hasHandledInitialSearchId = false;
+    }
   }
 
   @override
@@ -192,6 +178,33 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     _searchById(scannedSearchId, viewModel, updateInput: false);
   }
 
+  void _searchInitialIdWhenReady({
+    required String? currentUserId,
+    required FriendSearchViewModel viewModel,
+  }) {
+    if (_hasHandledInitialSearchId || currentUserId == null) {
+      return;
+    }
+
+    final initialSearchId = widget.initialSearchId?.trim();
+    if (initialSearchId == null || initialSearchId.isEmpty) {
+      return;
+    }
+
+    _hasHandledInitialSearchId = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      _searchById(
+        initialSearchId,
+        viewModel,
+        updateInput: false,
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final viewModel = ref.watch(friendSearchViewModelProvider.notifier);
@@ -199,6 +212,10 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     final currentUser = ref.watch(auth.authNotifierProvider).value?.user;
     final currentSearchId = currentUser?.searchId.toString();
     final currentDisplayName = currentUser?.displayName;
+    _searchInitialIdWhenReady(
+      currentUserId: currentUser?.id,
+      viewModel: viewModel,
+    );
     final qrButtonStyle = OutlinedButton.styleFrom(
       minimumSize: const Size.fromHeight(54),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
