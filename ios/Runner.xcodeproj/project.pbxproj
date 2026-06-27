@@ -240,6 +240,8 @@
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				702630DF86CC92C176C9170C /* [CP] Embed Pods Frameworks */,
 				02CE8D436BB48FA7F0788C30 /* [CP] Copy Pods Resources */,
+				45CC890483E6A1D4FB01CD5F /* [Airbridge] Copy airbridge.json */,
+				E46282ABA137BB37F64BD74B /* [Airbridge] Create LibraryInfo.json */,
 			);
 			buildRules = (
 			);
@@ -341,6 +343,24 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+		};
+		45CC890483E6A1D4FB01CD5F /* [Airbridge] Copy airbridge.json */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "[Airbridge] Copy airbridge.json";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "ENVIRONMENT=$(echo \"${AIRBRIDGE_ENVIRONMENT:-}\" | tr '[:upper:]' '[:lower:]')\nENVIRONMENT=$(echo \"$ENVIRONMENT\" | grep -Eq '^[A-Za-z0-9_-]*$' && echo \"$ENVIRONMENT\" || echo \"\")\nFILENAME=\"${SRCROOT}/../airbridge.json\"\n\nCANDIDATE=\"${SRCROOT}/../airbridge.${ENVIRONMENT}.json\"\nif [ -r \"$CANDIDATE\" ]; then\n    FILENAME=\"$CANDIDATE\"\nfi\n\nif [ -r \"$FILENAME\" ]; then\n    cp \"$FILENAME\" \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/airbridge.json\"\nfi";
 		};
 		4C2CBA5EE5C66A6EA1695370 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -447,6 +467,24 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner-RunnerUITests/Pods-Runner-RunnerUITests-resources.sh\"\n";
 			showEnvVarsInLog = 0;
+		};
+		E46282ABA137BB37F64BD74B /* [Airbridge] Create LibraryInfo.json */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "[Airbridge] Create LibraryInfo.json";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "echo '{\"wrapperName\": \"airbridge-flutter-sdk\", \"wrapperVersion\": \"4.9.0\"}' > \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/LibraryInfo.json\"\n";
 		};
 		F40E5AEBE2844D069DF20BF1 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -604,9 +642,13 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
+				AIRBRIDGE_APP_NAME = "$(AIRBRIDGE_DEV_APP_NAME)";
+				AIRBRIDGE_ENVIRONMENT = dev;
+				AIRBRIDGE_SDK_TOKEN = "$(AIRBRIDGE_DEV_SDK_TOKEN)";
+				AIRBRIDGE_URL_SCHEME = lakiitedev;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-production";
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Runner/Runner-Dev.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
@@ -944,10 +986,14 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
 			buildSettings = {
+				AIRBRIDGE_APP_NAME = "$(AIRBRIDGE_DEV_APP_NAME)";
+				AIRBRIDGE_ENVIRONMENT = dev;
+				AIRBRIDGE_SDK_TOKEN = "$(AIRBRIDGE_DEV_SDK_TOKEN)";
+				AIRBRIDGE_URL_SCHEME = lakiitedev;
 				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "";
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-development";
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Runner/Runner-Dev.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
@@ -973,9 +1019,13 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
+				AIRBRIDGE_APP_NAME = "$(AIRBRIDGE_DEV_APP_NAME)";
+				AIRBRIDGE_ENVIRONMENT = dev;
+				AIRBRIDGE_SDK_TOKEN = "$(AIRBRIDGE_DEV_SDK_TOKEN)";
+				AIRBRIDGE_URL_SCHEME = lakiitedev;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-production";
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Runner/Runner-Dev.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
@@ -1082,6 +1132,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
+				AIRBRIDGE_APP_NAME = "$(AIRBRIDGE_DEV_APP_NAME)";
+				AIRBRIDGE_ENVIRONMENT = dev;
+				AIRBRIDGE_SDK_TOKEN = "$(AIRBRIDGE_DEV_SDK_TOKEN)";
+				AIRBRIDGE_URL_SCHEME = lakiitedev;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-development";
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "Runner/Runner-Dev.entitlements";
@@ -1162,9 +1216,13 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
+				AIRBRIDGE_APP_NAME = "$(AIRBRIDGE_DEV_APP_NAME)";
+				AIRBRIDGE_ENVIRONMENT = dev;
+				AIRBRIDGE_SDK_TOKEN = "$(AIRBRIDGE_DEV_SDK_TOKEN)";
+				AIRBRIDGE_URL_SCHEME = lakiitedev;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-development";
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Runner/Runner-Dev.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
@@ -1243,6 +1301,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
+				AIRBRIDGE_APP_NAME = "$(AIRBRIDGE_DEV_APP_NAME)";
+				AIRBRIDGE_ENVIRONMENT = dev;
+				AIRBRIDGE_SDK_TOKEN = "$(AIRBRIDGE_DEV_SDK_TOKEN)";
+				AIRBRIDGE_URL_SCHEME = lakiitedev;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-development";
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "Runner/Runner-Dev.entitlements";
@@ -1324,6 +1386,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
 			buildSettings = {
+				AIRBRIDGE_APP_NAME = "$(AIRBRIDGE_PROD_APP_NAME)";
+				AIRBRIDGE_ENVIRONMENT = prod;
+				AIRBRIDGE_SDK_TOKEN = "$(AIRBRIDGE_PROD_SDK_TOKEN)";
+				AIRBRIDGE_URL_SCHEME = lakiite;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-production";
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "Runner/Runner-Prod-Debug.entitlements";
@@ -1404,6 +1470,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
+				AIRBRIDGE_APP_NAME = "$(AIRBRIDGE_PROD_APP_NAME)";
+				AIRBRIDGE_ENVIRONMENT = prod;
+				AIRBRIDGE_SDK_TOKEN = "$(AIRBRIDGE_PROD_SDK_TOKEN)";
+				AIRBRIDGE_URL_SCHEME = lakiite;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-production";
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
@@ -1484,6 +1554,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
+				AIRBRIDGE_APP_NAME = "$(AIRBRIDGE_PROD_APP_NAME)";
+				AIRBRIDGE_ENVIRONMENT = prod;
+				AIRBRIDGE_SDK_TOKEN = "$(AIRBRIDGE_PROD_SDK_TOKEN)";
+				AIRBRIDGE_URL_SCHEME = lakiite;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon-production";
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "Runner/Runner-Prod-Debug.entitlements";

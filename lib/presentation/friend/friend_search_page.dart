@@ -5,7 +5,8 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../application/auth/auth_notifier.dart' as auth;
-import '../../config/app_config.dart';
+import '../../infrastructure/friend_invite_link_service.dart';
+import '../../infrastructure/providers.dart';
 import '../widgets/notification_badge.dart';
 import '../notification/notification_list_page.dart';
 import 'friend_invite_share_content.dart';
@@ -13,7 +14,9 @@ import 'friend_search_qr_scanner_page.dart';
 import 'friend_search_view_model.dart';
 
 class FriendSearchPage extends ConsumerStatefulWidget {
-  const FriendSearchPage({super.key});
+  const FriendSearchPage({super.key, this.initialSearchId});
+
+  final String? initialSearchId;
 
   @override
   ConsumerState<FriendSearchPage> createState() => _FriendSearchPageState();
@@ -22,6 +25,16 @@ class FriendSearchPage extends ConsumerStatefulWidget {
 class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
   final TextEditingController searchController = TextEditingController();
   bool isDialogShowing = false;
+  bool _hasHandledInitialSearchId = false;
+  bool _isSharingInvite = false;
+
+  @override
+  void didUpdateWidget(covariant FriendSearchPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialSearchId != widget.initialSearchId) {
+      _hasHandledInitialSearchId = false;
+    }
+  }
 
   @override
   void dispose() {
@@ -29,11 +42,11 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     super.dispose();
   }
 
-  void _searchById(
+  Future<void> _searchById(
     String searchId,
     FriendSearchViewModel viewModel, {
     bool updateInput = true,
-  }) {
+  }) async {
     final trimmedSearchId = searchId.trim();
     if (trimmedSearchId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -45,7 +58,13 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     if (updateInput) {
       searchController.text = trimmedSearchId;
     }
-    viewModel.searchUser(trimmedSearchId);
+    await viewModel.searchUser(trimmedSearchId);
+    if (!mounted || viewModel.message == null) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(viewModel.message!)),
+    );
   }
 
   Future<void> _showSearchIdQr(String searchId) async {
@@ -80,26 +99,59 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
   }
 
   Future<void> _shareFriendInvite({
-    required String searchId,
     required String inviterName,
   }) async {
-    final content = FriendInviteShareContent.create(
-      searchId: searchId,
-      inviterName: inviterName,
-      environment: AppConfig.instance.environment,
-    );
-    final renderBox = context.findRenderObject() as RenderBox?;
-    final sharePositionOrigin = renderBox == null
-        ? null
-        : renderBox.localToGlobal(Offset.zero) & renderBox.size;
+    if (_isSharingInvite) {
+      return;
+    }
 
-    await SharePlus.instance.share(
-      ShareParams(
-        text: content.message,
-        subject: 'LaKiiteに招待',
-        sharePositionOrigin: sharePositionOrigin,
-      ),
-    );
+    setState(() {
+      _isSharingInvite = true;
+    });
+    try {
+      final inviteUrl =
+          await ref.read(friendInviteLinkServiceProvider).createInviteLink();
+      if (!mounted) {
+        return;
+      }
+
+      final content = FriendInviteShareContent.create(
+        inviteUrl: inviteUrl,
+        inviterName: inviterName,
+      );
+      final renderBox = context.findRenderObject() as RenderBox?;
+      final sharePositionOrigin = renderBox == null
+          ? null
+          : renderBox.localToGlobal(Offset.zero) & renderBox.size;
+
+      await SharePlus.instance.share(
+        ShareParams(
+          text: content.message,
+          subject: 'LaKiiteに招待',
+          sharePositionOrigin: sharePositionOrigin,
+        ),
+      );
+    } on FriendInviteLinkException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('招待リンクの生成に失敗しました')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSharingInvite = false;
+        });
+      }
+    }
   }
 
   Widget _buildDisabledRequestButton(String label) {
@@ -126,6 +178,33 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     _searchById(scannedSearchId, viewModel, updateInput: false);
   }
 
+  void _searchInitialIdWhenReady({
+    required String? currentUserId,
+    required FriendSearchViewModel viewModel,
+  }) {
+    if (_hasHandledInitialSearchId || currentUserId == null) {
+      return;
+    }
+
+    final initialSearchId = widget.initialSearchId?.trim();
+    if (initialSearchId == null || initialSearchId.isEmpty) {
+      return;
+    }
+
+    _hasHandledInitialSearchId = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      _searchById(
+        initialSearchId,
+        viewModel,
+        updateInput: false,
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final viewModel = ref.watch(friendSearchViewModelProvider.notifier);
@@ -133,6 +212,10 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     final currentUser = ref.watch(auth.authNotifierProvider).value?.user;
     final currentSearchId = currentUser?.searchId.toString();
     final currentDisplayName = currentUser?.displayName;
+    _searchInitialIdWhenReady(
+      currentUserId: currentUser?.id,
+      viewModel: viewModel,
+    );
     final qrButtonStyle = OutlinedButton.styleFrom(
       minimumSize: const Size.fromHeight(54),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -212,14 +295,18 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
               width: double.infinity,
               child: OutlinedButton.icon(
                 style: inviteButtonStyle,
-                onPressed: currentSearchId == null
+                onPressed: currentSearchId == null || _isSharingInvite
                     ? null
                     : () => _shareFriendInvite(
-                          searchId: currentSearchId,
                           inviterName: currentDisplayName ?? '',
                         ),
-                icon: const Icon(Icons.ios_share),
-                label: const Text('友人をアプリに招待する'),
+                icon: _isSharingInvite
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.ios_share),
+                label: Text(_isSharingInvite ? '招待リンクを作成中' : '友人をアプリに招待する'),
               ),
             ),
             const Gap(8),

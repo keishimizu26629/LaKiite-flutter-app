@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +10,7 @@ import '../list/list_page.dart';
 import '../my_page/my_page.dart';
 import '../widgets/auth_dependent_builder.dart';
 import '../../infrastructure/how_to_use_prompt_preferences.dart';
+import '../../infrastructure/deep_link_navigation_service.dart';
 import '../../infrastructure/notification_navigation_service.dart';
 import 'package:lakiite/app/di/providers.dart';
 
@@ -66,10 +69,13 @@ class _AuthenticatedBottomNavigationShellState
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       NotificationNavigationService.instance.markNavigationReady();
-      _showHowToUsePromptIfNeeded();
+      final didOpenDeepLink =
+          await DeepLinkNavigationService.instance.markNavigationReady();
+      if (!mounted || didOpenDeepLink) return;
+      unawaited(_showHowToUsePromptIfNeeded());
     });
   }
 
@@ -110,6 +116,7 @@ class _AuthenticatedBottomNavigationShellState
   @override
   void dispose() {
     NotificationNavigationService.instance.markNavigationNotReady();
+    DeepLinkNavigationService.instance.markNavigationNotReady();
     super.dispose();
   }
 

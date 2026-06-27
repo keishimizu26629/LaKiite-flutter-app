@@ -53,6 +53,15 @@ jobs:
         run: |
           echo "${{ secrets.DEV_DART_DEFINE_JSON_BASE64 }}" | base64 -d > dart_define/dev_dart_define.json
 
+      - name: Restore Airbridge config
+        run: |
+          cat > ios/Flutter/Airbridge.local.xcconfig <<EOF
+          AIRBRIDGE_DEV_APP_NAME = ${{ secrets.AIRBRIDGE_DEV_APP_NAME }}
+          AIRBRIDGE_DEV_SDK_TOKEN = ${{ secrets.AIRBRIDGE_DEV_SDK_TOKEN }}
+          AIRBRIDGE_PROD_APP_NAME = ${{ secrets.AIRBRIDGE_PROD_APP_NAME }}
+          AIRBRIDGE_PROD_SDK_TOKEN = ${{ secrets.AIRBRIDGE_PROD_SDK_TOKEN }}
+          EOF
+
       - name: Setup Provisioning Profile Directory
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/

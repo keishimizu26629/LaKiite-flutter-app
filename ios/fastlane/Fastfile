@@ -111,6 +111,9 @@ platform :ios do
       File.open(asc_api_key_path, 'wb') do |file|
         file.write(Base64.decode64(asc_api_key_base64))
       end
+
+      ENV["ASC_API_KEY_PATH"] = asc_api_key_path
+      ENV.delete("ASC_API_KEY_BASE64")
     end
 
     app_store_connect_api_key(
@@ -159,6 +162,8 @@ platform :ios do
       File.open(certificate_path, 'wb') do |file|
         file.write(Base64.decode64(certificate_base64))
       end
+
+      ENV.delete("IOS_CERTIFICATE_BASE64")
     elsif certificate_path.empty?
       UI.user_error!("❌ IOS_CERTIFICATE_PATH or IOS_CERTIFICATE_BASE64 environment variable is required")
     end
@@ -230,6 +235,8 @@ platform :ios do
       File.open(profile_full_path, 'wb') do |file|
         file.write(Base64.decode64(provisioning_profile_base64))
       end
+
+      ENV.delete("PROVISIONING_PROFILE_BASE64")
 
       UI.message "📁 Provisioning profile saved to: #{profile_full_path}"
     end

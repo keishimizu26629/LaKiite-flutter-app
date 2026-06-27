@@ -1,9 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 
+import '../domain/interfaces/i_friend_invite_link_service.dart';
 import '../domain/interfaces/i_image_cropper_service.dart';
-import '../domain/interfaces/i_image_processor_service.dart';
 import '../domain/interfaces/i_storage_service.dart';
+import '../domain/interfaces/i_image_processor_service.dart';
 import 'firebase/firebase_storage_service.dart';
+import 'friend_invite_link_service.dart';
 import 'image/flutter_image_cropper_service.dart';
 import 'image/flutter_image_processor_service.dart';
 
@@ -17,4 +20,11 @@ final imageProcessorServiceProvider = Provider<IImageProcessorService>((ref) {
 
 final imageCropperServiceProvider = Provider<IImageCropperService>((ref) {
   return FlutterImageCropperService();
+});
+
+final friendInviteLinkServiceProvider =
+    Provider<IFriendInviteLinkService>((ref) {
+  final httpClient = http.Client();
+  ref.onDispose(httpClient.close);
+  return FriendInviteLinkService.fromAppConfig(httpClient: httpClient);
 });
