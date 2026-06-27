@@ -61,7 +61,7 @@ void main() {
 
     test('Airbridge custom domainのURLから検索IDを抽出する', () {
       final deepLink = FriendInviteDeepLink.tryParse(
-        'https://lakiite-dev.inoworl.com/friend/search?searchId=Pj5I7M58',
+        'https://invite.lakiite-dev.inoworl.com/friend/search?searchId=Pj5I7M58',
       );
 
       expect(deepLink?.searchId, 'Pj5I7M58');
@@ -87,7 +87,7 @@ void main() {
 
     test('Airbridge custom domainのnested path deep linkから検索IDを抽出する', () {
       final deepLink = FriendInviteDeepLink.tryParse(
-        'https://lakiite-dev.inoworl.com/friend_xfrhk82o08rg1555q'
+        'https://invite.lakiite-dev.inoworl.com/friend_xfrhk82o08rg1555q'
         '?deep_link=%2Ffriend%2Fsearch%3FsearchId%3DPj5I7M58',
       );
 
@@ -95,7 +95,8 @@ void main() {
     });
 
     test('Airbridge custom domainの短縮リンク本体はSDK解決待ちリンクとして判定する', () {
-      const link = 'https://lakiite-dev.inoworl.com/friend_e3oe2ol2ohordcvbm';
+      const link =
+          'https://invite.lakiite-dev.inoworl.com/friend_e3oe2ol2ohordcvbm';
 
       expect(FriendInviteDeepLink.tryParse(link), isNull);
       expect(FriendInviteDeepLink.isSupportedAirbridgeLink(link), isTrue);

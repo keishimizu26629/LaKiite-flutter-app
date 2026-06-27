@@ -7,8 +7,8 @@ class FriendInviteDeepLink {
     'lakiite.abr.ge',
     'lakiitedev.airbridge.io',
     'lakiitedev.abr.ge',
-    'lakiite.inoworl.com',
-    'lakiite-dev.inoworl.com',
+    'invite.lakiite.inoworl.com',
+    'invite.lakiite-dev.inoworl.com',
   };
   static const Set<String> _nestedDeepLinkKeys = {
     'airbridge_deeplink',
@@ -102,8 +102,8 @@ class FriendInviteDeepLink {
       final path = candidate.startsWith('/') ? candidate : '/$candidate';
       yield 'https://lakiitedev.airbridge.io$path';
       yield 'https://lakiite.airbridge.io$path';
-      yield 'https://lakiite-dev.inoworl.com$path';
-      yield 'https://lakiite.inoworl.com$path';
+      yield 'https://invite.lakiite-dev.inoworl.com$path';
+      yield 'https://invite.lakiite.inoworl.com$path';
     }
   }
 
