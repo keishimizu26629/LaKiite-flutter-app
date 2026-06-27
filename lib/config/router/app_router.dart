@@ -57,6 +57,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         return;
       }
 
+      if (FriendInviteDeepLink.isSupportedAirbridgeLink(location)) {
+        AppLogger.info(
+          'Airbridge LinkのSDK解決を待機します: '
+          'host=${state.uri.host}, path=${state.uri.path}',
+        );
+        return;
+      }
+
       AppLogger.warning('GoRouter例外を検出しました: ${state.error}');
       router.go(SplashScreen.path);
     },

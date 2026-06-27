@@ -28,6 +28,11 @@ class FriendInviteDeepLink {
     return _tryParse(value.trim(), <String>{});
   }
 
+  static bool isSupportedAirbridgeLink(String value) {
+    final uri = Uri.tryParse(value.trim());
+    return uri != null && _isSupportedAirbridgeHttps(uri);
+  }
+
   static FriendInviteDeepLink? _tryParse(
     String value,
     Set<String> visitedValues,

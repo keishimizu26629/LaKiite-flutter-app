@@ -94,12 +94,25 @@ void main() {
       expect(deepLink?.searchId, 'Pj5I7M58');
     });
 
+    test('Airbridge custom domainの短縮リンク本体はSDK解決待ちリンクとして判定する', () {
+      const link = 'https://lakiite-dev.inoworl.com/friend_e3oe2ol2ohordcvbm';
+
+      expect(FriendInviteDeepLink.tryParse(link), isNull);
+      expect(FriendInviteDeepLink.isSupportedAirbridgeLink(link), isTrue);
+    });
+
     test('招待URLではないURLはnullを返す', () {
       final deepLink = FriendInviteDeepLink.tryParse(
         'https://example.com/friend/search?searchId=ABCD1234',
       );
 
       expect(deepLink, isNull);
+      expect(
+        FriendInviteDeepLink.isSupportedAirbridgeLink(
+          'https://example.com/friend/search?searchId=ABCD1234',
+        ),
+        isFalse,
+      );
     });
 
     test('不正にencodeされたnested URLはnullを返す', () {
