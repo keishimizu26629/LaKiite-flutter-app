@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../domain/deep_link/friend_invite_deep_link.dart';
@@ -10,14 +12,18 @@ typedef FriendSearchPageBuilder = Widget Function(
   String searchId,
 );
 
+typedef FriendSearchNavigator = Future<void> Function(String searchId);
+
 class DeepLinkNavigationService {
   DeepLinkNavigationService({
     GlobalKey<NavigatorState>? navigatorKey,
     FriendSearchPageBuilder? friendSearchPageBuilder,
+    FriendSearchNavigator? friendSearchNavigator,
     DeepLinkInvitePreferences? deepLinkInvitePreferences,
   })  : navigatorKey =
             navigatorKey ?? NotificationNavigationService.instance.navigatorKey,
         _friendSearchPageBuilder = friendSearchPageBuilder,
+        _friendSearchNavigator = friendSearchNavigator,
         _deepLinkInvitePreferences =
             deepLinkInvitePreferences ?? const DeepLinkInvitePreferences();
 
@@ -27,6 +33,7 @@ class DeepLinkNavigationService {
   final DeepLinkInvitePreferences _deepLinkInvitePreferences;
 
   FriendSearchPageBuilder? _friendSearchPageBuilder;
+  FriendSearchNavigator? _friendSearchNavigator;
   String? _pendingFriendSearchId;
   String? _activeFriendSearchId;
   bool _isNavigationReady = false;
@@ -38,6 +45,12 @@ class DeepLinkNavigationService {
     FriendSearchPageBuilder friendSearchPageBuilder,
   ) {
     _friendSearchPageBuilder = friendSearchPageBuilder;
+  }
+
+  void configureFriendSearchNavigator(
+    FriendSearchNavigator friendSearchNavigator,
+  ) {
+    _friendSearchNavigator = friendSearchNavigator;
   }
 
   Future<bool> handleReceivedDeepLink(String deepLink) async {
@@ -70,17 +83,18 @@ class DeepLinkNavigationService {
       return false;
     }
 
-    final navigator = navigatorKey.currentState;
-    if (navigator == null) {
-      AppLogger.debug('Deep Link遷移を保留しました: Navigator未準備');
+    final friendSearchNavigator = _friendSearchNavigator;
+    final friendSearchPageBuilder = _friendSearchPageBuilder;
+    if (friendSearchNavigator == null && friendSearchPageBuilder == null) {
+      AppLogger.warning('Deep Link遷移を保留しました: 遷移先未設定');
       _pendingFriendSearchId = searchId;
       await _deepLinkInvitePreferences.savePendingFriendSearchId(searchId);
       return false;
     }
 
-    final friendSearchPageBuilder = _friendSearchPageBuilder;
-    if (friendSearchPageBuilder == null) {
-      AppLogger.warning('Deep Link遷移を保留しました: builder未設定');
+    final navigator = navigatorKey.currentState;
+    if (friendSearchNavigator == null && navigator == null) {
+      AppLogger.debug('Deep Link遷移を保留しました: Navigator未準備');
       _pendingFriendSearchId = searchId;
       await _deepLinkInvitePreferences.savePendingFriendSearchId(searchId);
       return false;
@@ -95,10 +109,22 @@ class DeepLinkNavigationService {
     _pendingFriendSearchId = null;
     _activeFriendSearchId = searchId;
     await _deepLinkInvitePreferences.clearPendingFriendSearchId();
-    navigator
+
+    if (friendSearchNavigator != null) {
+      unawaited(
+        friendSearchNavigator(searchId).whenComplete(() {
+          if (_activeFriendSearchId == searchId) {
+            _activeFriendSearchId = null;
+          }
+        }),
+      );
+      return true;
+    }
+
+    navigator!
         .push(
       MaterialPageRoute<void>(
-        builder: (context) => friendSearchPageBuilder(context, searchId),
+        builder: (context) => friendSearchPageBuilder!(context, searchId),
       ),
     )
         .whenComplete(() {

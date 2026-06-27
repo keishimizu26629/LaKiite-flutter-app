@@ -91,6 +91,30 @@ void main() {
       expect(find.textContaining('friend search:'), findsNothing);
     });
 
+    testWidgets('GoRouter用の遷移が設定されている場合はNavigator直pushではなく委譲する',
+        (tester) async {
+      final navigatedSearchIds = <String>[];
+      service = DeepLinkNavigationService(
+        navigatorKey: navigatorKey,
+        friendSearchNavigator: (searchId) async {
+          navigatedSearchIds.add(searchId);
+        },
+        friendSearchPageBuilder: (_, searchId) =>
+            Text('friend search fallback: $searchId'),
+      );
+
+      await service.markNavigationReady();
+
+      await service.handleReceivedDeepLink(
+        'lakiite://friend/search?searchId=ABCD1234',
+      );
+      await tester.pumpAndSettle();
+
+      expect(navigatedSearchIds, ['ABCD1234']);
+      expect(find.text('friend search fallback: ABCD1234'), findsNothing);
+      expect(service.hasPendingFriendSearchOpen, isFalse);
+    });
+
     testWidgets('同じ検索IDのDeep Linkを表示中に重複受信しても二重遷移しない', (tester) async {
       final openedSearchIds = <String>[];
       service.configureFriendSearchPageBuilder(

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../application/auth/auth_state.dart';
 import '../../infrastructure/go_router_refresh_notifier.dart';
 import '../../presentation/bottom_navigation/bottom_navigation.dart';
+import '../../presentation/friend/friend_search_page.dart';
 import '../../presentation/login/login_page.dart';
 import '../../presentation/settings/edit_email_page.dart';
 import '../../presentation/settings/edit_name_page.dart';
@@ -117,6 +118,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: SignupPage.path,
         builder: (context, state) => const SignupPage(),
+      ),
+      GoRoute(
+        path: '/friend/search',
+        builder: (context, state) => FriendSearchPage(
+          initialSearchId: state.uri.queryParameters['searchId'],
+        ),
       ),
       GoRoute(
         path: SettingsPage.path,

@@ -18,7 +18,6 @@ import 'infrastructure/airbridge_deep_link_service.dart';
 import 'infrastructure/deep_link_navigation_service.dart';
 import 'infrastructure/firebase/push_notification_service.dart';
 import 'infrastructure/notification_navigation_service.dart';
-import 'presentation/friend/friend_search_page.dart';
 import 'presentation/force_update/force_update_gate.dart';
 import 'presentation/notification/notification_list_page.dart';
 import 'presentation/theme/app_theme.dart';
@@ -181,8 +180,10 @@ class MyApp extends ConsumerWidget {
     NotificationNavigationService.instance.configureNotificationListBuilder(
       (_) => const NotificationListPage(),
     );
-    DeepLinkNavigationService.instance.configureFriendSearchPageBuilder(
-      (_, searchId) => FriendSearchPage(initialSearchId: searchId),
+    DeepLinkNavigationService.instance.configureFriendSearchNavigator(
+      (searchId) => router.push<void>(
+        '/friend/search?searchId=${Uri.encodeQueryComponent(searchId)}',
+      ),
     );
 
     const skipAirbridgeRuntime = bool.fromEnvironment(
