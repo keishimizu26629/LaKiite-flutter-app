@@ -131,7 +131,7 @@ android {
                     airbridgeUrlScheme: "lakiitedev",
                     airbridgePrimaryHost: "lakiitedev.airbridge.io",
                     airbridgeShortHost: "lakiitedev.abr.ge",
-                    airbridgeCustomHost: "lakiite-dev.inoworl.com"
+                    airbridgeCustomHost: "invite.lakiite-dev.inoworl.com"
             ]
             versionNameSuffix "-dev"
         }
@@ -146,7 +146,7 @@ android {
                     airbridgeUrlScheme: "lakiite",
                     airbridgePrimaryHost: "lakiite.airbridge.io",
                     airbridgeShortHost: "lakiite.abr.ge",
-                    airbridgeCustomHost: "lakiite.inoworl.com"
+                    airbridgeCustomHost: "invite.lakiite.inoworl.com"
             ]
         }
     }

@@ -6,7 +6,7 @@
 	<array>
 		<string>applinks:lakiite.airbridge.io</string>
 		<string>applinks:lakiite.abr.ge</string>
-		<string>applinks:lakiite.inoworl.com</string>
+		<string>applinks:invite.lakiite.inoworl.com</string>
 	</array>
 	<key>aps-environment</key>
 	<string>production</string>
