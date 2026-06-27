@@ -6,6 +6,7 @@ import '../base_mock.dart';
 
 class MockUserRepository extends BaseMock implements IUserRepository {
   final Map<String, UserModel> _users = {};
+  final Set<String> _reservedSearchIds = {};
   final List<String> _friendConnections = [];
   bool _shouldFailGet = false;
   bool _shouldFailCreate = false;
@@ -35,6 +36,7 @@ class MockUserRepository extends BaseMock implements IUserRepository {
 
   void addTestUser(UserModel user) {
     _users[user.id] = user;
+    _reservedSearchIds.add(user.searchId.toString());
   }
 
   void addFriendConnection(String userId1, String userId2) {
@@ -46,6 +48,7 @@ class MockUserRepository extends BaseMock implements IUserRepository {
 
   void clearUsers() {
     _users.clear();
+    _reservedSearchIds.clear();
     _friendConnections.clear();
   }
 
@@ -83,8 +86,12 @@ class MockUserRepository extends BaseMock implements IUserRepository {
     if (_users.containsKey(user.id)) {
       throw Exception('ユーザーは既に存在します');
     }
+    if (_reservedSearchIds.contains(user.searchId.toString())) {
+      throw Exception('このsearchIdは既に使用されています');
+    }
 
     _users[user.id] = user;
+    _reservedSearchIds.add(user.searchId.toString());
   }
 
   @override
@@ -98,8 +105,16 @@ class MockUserRepository extends BaseMock implements IUserRepository {
     if (!_users.containsKey(user.id)) {
       throw Exception('ユーザーが見つかりません');
     }
+    final currentUser = _users[user.id];
+    final currentSearchId = currentUser?.searchId.toString();
+    final nextSearchId = user.searchId.toString();
+    if (currentSearchId != nextSearchId &&
+        _reservedSearchIds.contains(nextSearchId)) {
+      throw Exception('このsearchIdは既に使用されています');
+    }
 
     _users[user.id] = user;
+    _reservedSearchIds.add(nextSearchId);
   }
 
   @override
@@ -145,7 +160,7 @@ class MockUserRepository extends BaseMock implements IUserRepository {
   Future<bool> isUserIdUnique(UserId userId) async {
     await Future.delayed(const Duration(milliseconds: 150));
 
-    return !_users.values.any((user) => user.searchId == userId);
+    return !_reservedSearchIds.contains(userId.toString());
   }
 
   @override

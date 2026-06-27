@@ -10,6 +10,8 @@ import 'package:lakiite/application/notification/notification_notifier.dart'
     as notification;
 import 'package:lakiite/domain/entity/notification.dart' as domain;
 import 'package:lakiite/domain/entity/user.dart';
+import 'package:lakiite/domain/interfaces/i_friend_invite_link_service.dart';
+import 'package:lakiite/infrastructure/providers.dart' as infrastructure;
 import 'package:lakiite/presentation/friend/friend_search_page.dart';
 
 import '../../mock/repository/mock_notification_repository.dart';
@@ -37,6 +39,15 @@ class _MutableAuthNotifier extends auth.AuthNotifier {
   }
 }
 
+class _StubFriendInviteLinkService implements IFriendInviteLinkService {
+  _StubFriendInviteLinkService(this.inviteLink);
+
+  final Uri inviteLink;
+
+  @override
+  Future<Uri> createInviteLink() async => inviteLink;
+}
+
 void main() {
   group('FriendSearchPage', () {
     UserModel userWithFriends(UserModel user, List<String> friendIds) {
@@ -54,7 +65,7 @@ void main() {
       );
     }
 
-    testWidgets('自分の検索ID QR表示とQR読み取りボタンを表示する', (tester) async {
+    testWidgets('自分のQRには招待リンクURLを表示する', (tester) async {
       tester.view.physicalSize = const Size(390, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(() {
@@ -66,6 +77,9 @@ void main() {
         id: 'current-user-id',
         name: '現在ユーザー',
         displayName: '現在ユーザー',
+      );
+      final inviteLink = Uri.parse(
+        'https://lakiite-dev.inoworl.com/friend_cached',
       );
 
       await tester.pumpWidget(
@@ -81,6 +95,9 @@ void main() {
             notification.unreadNotificationCountByTypeProvider.overrideWith(
               (ref, domain.NotificationType type) => Stream.value(0),
             ),
+            infrastructure.friendInviteLinkServiceProvider.overrideWithValue(
+              _StubFriendInviteLinkService(inviteLink),
+            ),
           ],
           child: const MaterialApp(home: FriendSearchPage()),
         ),
@@ -93,7 +110,7 @@ void main() {
       await tester.tap(find.text('自分のQR'));
       await tester.pumpAndSettle();
 
-      expect(find.text('自分の検索ID'), findsNothing);
+      expect(find.text(inviteLink.toString()), findsOneWidget);
       expect(find.text('@${currentUser.searchId}'), findsNothing);
     });
 
