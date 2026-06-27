@@ -65,7 +65,7 @@ void main() {
       );
     }
 
-    testWidgets('自分のQRには招待リンクURLを表示する', (tester) async {
+    testWidgets('自分のQRには案内文と中央アイコンを表示しURLは表示しない', (tester) async {
       tester.view.physicalSize = const Size(390, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(() {
@@ -110,7 +110,13 @@ void main() {
       await tester.tap(find.text('自分のQR'));
       await tester.pumpAndSettle();
 
-      expect(find.text(inviteLink.toString()), findsOneWidget);
+      expect(
+        find.text('QRコードを友達に読み込んでもらうと、フレンド追加できます'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('friend-search-qr-center-icon')),
+          findsOneWidget);
+      expect(find.text(inviteLink.toString()), findsNothing);
       expect(find.text('@${currentUser.searchId}'), findsNothing);
     });
 

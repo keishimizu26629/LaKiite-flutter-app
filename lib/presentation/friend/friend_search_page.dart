@@ -111,17 +111,40 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
             children: [
               SizedBox.square(
                 dimension: qrSize,
-                child: QrImageView(
-                  data: inviteUrl.toString(),
-                  version: QrVersions.auto,
-                  backgroundColor: Colors.white,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    QrImageView(
+                      data: inviteUrl.toString(),
+                      version: QrVersions.auto,
+                      errorCorrectionLevel: QrErrorCorrectLevel.H,
+                      backgroundColor: Colors.white,
+                    ),
+                    Container(
+                      key: const ValueKey('friend-search-qr-center-icon'),
+                      width: qrSize * 0.22,
+                      height: qrSize * 0.22,
+                      padding: EdgeInsets.all(qrSize * 0.025),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(qrSize * 0.045),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(qrSize * 0.03),
+                        child: Image.asset(
+                          'assets/icon/icon.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const Gap(12),
-              SelectableText(
-                inviteUrl.toString(),
+              Text(
+                'QRコードを友達に読み込んでもらうと、フレンド追加できます',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
             ],
           ),
