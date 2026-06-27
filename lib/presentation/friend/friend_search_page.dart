@@ -67,7 +67,33 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     );
   }
 
-  Future<void> _showSearchIdQr(String searchId) async {
+  Future<void> _showSearchIdQr() async {
+    Uri inviteUrl;
+    try {
+      inviteUrl =
+          await ref.read(friendInviteLinkServiceProvider).createInviteLink();
+    } on FriendInviteLinkException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+      return;
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('招待リンクの生成に失敗しました')),
+      );
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
     await showDialog<void>(
       context: context,
       builder: (context) {
@@ -75,17 +101,52 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
         final qrSize = [
           280.0,
           screenSize.width - 96.0,
-          screenSize.height - 192.0,
+          screenSize.height - 240.0,
         ].reduce((value, element) => value < element ? value : element);
 
         return AlertDialog(
-          content: SizedBox.square(
-            dimension: qrSize,
-            child: QrImageView(
-              data: searchId,
-              version: QrVersions.auto,
-              backgroundColor: Colors.white,
-            ),
+          title: const Text('友達追加QR'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox.square(
+                dimension: qrSize,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    QrImageView(
+                      data: inviteUrl.toString(),
+                      version: QrVersions.auto,
+                      errorCorrectionLevel: QrErrorCorrectLevel.H,
+                      backgroundColor: Colors.white,
+                    ),
+                    Container(
+                      key: const ValueKey('friend-search-qr-center-icon'),
+                      width: qrSize * 0.22,
+                      height: qrSize * 0.22,
+                      padding: EdgeInsets.all(qrSize * 0.025),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(qrSize * 0.045),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(qrSize * 0.03),
+                        child: Image.asset(
+                          'assets/icon/icon.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(12),
+              Text(
+                'QRコードを友達に読み込んでもらうと、フレンド追加できます',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -274,7 +335,7 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
                     style: qrButtonStyle,
                     onPressed: currentSearchId == null
                         ? null
-                        : () => _showSearchIdQr(currentSearchId),
+                        : () => _showSearchIdQr(),
                     icon: const Icon(Icons.qr_code),
                     label: const Text('自分のQR'),
                   ),

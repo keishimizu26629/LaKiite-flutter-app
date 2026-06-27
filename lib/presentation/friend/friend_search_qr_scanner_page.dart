@@ -1,6 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+String? extractFriendSearchIdFromQrValue(String rawValue) {
+  final trimmedValue = rawValue.trim();
+  if (trimmedValue.isEmpty) {
+    return null;
+  }
+
+  final directSearchId = _validFriendSearchId(trimmedValue);
+  if (directSearchId != null) {
+    return directSearchId;
+  }
+
+  final uri = Uri.tryParse(trimmedValue);
+  if (uri == null) {
+    return null;
+  }
+
+  final querySearchId = _validFriendSearchId(uri.queryParameters['searchId']);
+  if (querySearchId != null) {
+    return querySearchId;
+  }
+
+  for (final nestedKey in const ['deep_link', 'deeplink_url']) {
+    final nestedValue = uri.queryParameters[nestedKey];
+    if (nestedValue == null || nestedValue.trim().isEmpty) {
+      continue;
+    }
+
+    final nestedSearchId = extractFriendSearchIdFromQrValue(nestedValue);
+    if (nestedSearchId != null) {
+      return nestedSearchId;
+    }
+  }
+
+  return null;
+}
+
+String? _validFriendSearchId(String? searchId) {
+  if (searchId == null) {
+    return null;
+  }
+
+  final trimmedSearchId = searchId.trim();
+  if (!RegExp(r'^[a-zA-Z0-9]{8}$').hasMatch(trimmedSearchId)) {
+    return null;
+  }
+
+  return trimmedSearchId;
+}
+
 class FriendSearchQrScannerPage extends StatefulWidget {
   const FriendSearchQrScannerPage({super.key});
 
@@ -49,18 +98,7 @@ class _FriendSearchQrScannerPageState extends State<FriendSearchQrScannerPage> {
   }
 
   String? _extractSearchId(String rawValue) {
-    final trimmedValue = rawValue.trim();
-    final uri = Uri.tryParse(trimmedValue);
-    final querySearchId = uri?.queryParameters['searchId'];
-    final searchId = querySearchId?.trim().isNotEmpty == true
-        ? querySearchId!.trim()
-        : trimmedValue;
-
-    if (!RegExp(r'^[a-zA-Z0-9]{8}$').hasMatch(searchId)) {
-      return null;
-    }
-
-    return searchId;
+    return extractFriendSearchIdFromQrValue(rawValue);
   }
 
   void _showInvalidQrMessage() {
