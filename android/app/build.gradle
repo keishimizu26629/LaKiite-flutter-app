@@ -30,6 +30,27 @@ if (flutterRoot == null) {
     throw new FileNotFoundException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
 }
 
+def airbridgeDevAppName = (
+        localProperties.getProperty("airbridge.dev.appName")
+                ?: System.getenv("AIRBRIDGE_DEV_APP_NAME")
+                ?: "lakiitedev"
+).toString()
+def airbridgeDevSdkToken = (
+        localProperties.getProperty("airbridge.dev.sdkToken")
+                ?: System.getenv("AIRBRIDGE_DEV_SDK_TOKEN")
+                ?: ""
+).toString()
+def airbridgeProdAppName = (
+        localProperties.getProperty("airbridge.prod.appName")
+                ?: System.getenv("AIRBRIDGE_PROD_APP_NAME")
+                ?: "lakiite"
+).toString()
+def airbridgeProdSdkToken = (
+        localProperties.getProperty("airbridge.prod.sdkToken")
+                ?: System.getenv("AIRBRIDGE_PROD_SDK_TOKEN")
+                ?: ""
+).toString()
+
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
     flutterVersionCode = '1'
@@ -104,7 +125,13 @@ android {
             applicationId "com.inoworl.lakiite.dev"
             manifestPlaceholders = [
                     appName: "lakiite dev",
-                    adMobApplicationId: "ca-app-pub-3940256099942544~3347511713"
+                    adMobApplicationId: "ca-app-pub-3940256099942544~3347511713",
+                    airbridgeAppName: airbridgeDevAppName,
+                    airbridgeSdkToken: airbridgeDevSdkToken,
+                    airbridgeUrlScheme: "lakiitedev",
+                    airbridgePrimaryHost: "lakiitedev.airbridge.io",
+                    airbridgeShortHost: "lakiitedev.abr.ge",
+                    airbridgeCustomHost: "invite.lakiite-dev.inoworl.com"
             ]
             versionNameSuffix "-dev"
         }
@@ -113,7 +140,13 @@ android {
             applicationId "com.inoworl.lakiite"
             manifestPlaceholders = [
                     appName: "LaKiite",
-                    adMobApplicationId: "ca-app-pub-6315199114988889~9761758494"
+                    adMobApplicationId: "ca-app-pub-6315199114988889~9761758494",
+                    airbridgeAppName: airbridgeProdAppName,
+                    airbridgeSdkToken: airbridgeProdSdkToken,
+                    airbridgeUrlScheme: "lakiite",
+                    airbridgePrimaryHost: "lakiite.airbridge.io",
+                    airbridgeShortHost: "lakiite.abr.ge",
+                    airbridgeCustomHost: "invite.lakiite.inoworl.com"
             ]
         }
     }
@@ -125,6 +158,7 @@ android {
         }
         release {
             signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 

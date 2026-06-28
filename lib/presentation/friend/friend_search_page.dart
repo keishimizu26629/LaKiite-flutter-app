@@ -2,15 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../application/auth/auth_notifier.dart' as auth;
+import '../../infrastructure/friend_invite_link_service.dart';
+import '../../infrastructure/providers.dart';
 import '../widgets/notification_badge.dart';
 import '../notification/notification_list_page.dart';
+import 'friend_invite_share_content.dart';
 import 'friend_search_qr_scanner_page.dart';
 import 'friend_search_view_model.dart';
 
 class FriendSearchPage extends ConsumerStatefulWidget {
-  const FriendSearchPage({super.key});
+  const FriendSearchPage({super.key, this.initialSearchId});
+
+  final String? initialSearchId;
 
   @override
   ConsumerState<FriendSearchPage> createState() => _FriendSearchPageState();
@@ -19,6 +25,16 @@ class FriendSearchPage extends ConsumerStatefulWidget {
 class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
   final TextEditingController searchController = TextEditingController();
   bool isDialogShowing = false;
+  bool _hasHandledInitialSearchId = false;
+  bool _isSharingInvite = false;
+
+  @override
+  void didUpdateWidget(covariant FriendSearchPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialSearchId != widget.initialSearchId) {
+      _hasHandledInitialSearchId = false;
+    }
+  }
 
   @override
   void dispose() {
@@ -26,11 +42,11 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     super.dispose();
   }
 
-  void _searchById(
+  Future<void> _searchById(
     String searchId,
     FriendSearchViewModel viewModel, {
     bool updateInput = true,
-  }) {
+  }) async {
     final trimmedSearchId = searchId.trim();
     if (trimmedSearchId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -42,10 +58,42 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     if (updateInput) {
       searchController.text = trimmedSearchId;
     }
-    viewModel.searchUser(trimmedSearchId);
+    await viewModel.searchUser(trimmedSearchId);
+    if (!mounted || viewModel.message == null) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(viewModel.message!)),
+    );
   }
 
-  Future<void> _showSearchIdQr(String searchId) async {
+  Future<void> _showSearchIdQr() async {
+    Uri inviteUrl;
+    try {
+      inviteUrl =
+          await ref.read(friendInviteLinkServiceProvider).createInviteLink();
+    } on FriendInviteLinkException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+      return;
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('招待リンクの生成に失敗しました')),
+      );
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
     await showDialog<void>(
       context: context,
       builder: (context) {
@@ -53,17 +101,52 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
         final qrSize = [
           280.0,
           screenSize.width - 96.0,
-          screenSize.height - 192.0,
+          screenSize.height - 240.0,
         ].reduce((value, element) => value < element ? value : element);
 
         return AlertDialog(
-          content: SizedBox.square(
-            dimension: qrSize,
-            child: QrImageView(
-              data: searchId,
-              version: QrVersions.auto,
-              backgroundColor: Colors.white,
-            ),
+          title: const Text('友達追加QR'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox.square(
+                dimension: qrSize,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    QrImageView(
+                      data: inviteUrl.toString(),
+                      version: QrVersions.auto,
+                      errorCorrectionLevel: QrErrorCorrectLevel.H,
+                      backgroundColor: Colors.white,
+                    ),
+                    Container(
+                      key: const ValueKey('friend-search-qr-center-icon'),
+                      width: qrSize * 0.22,
+                      height: qrSize * 0.22,
+                      padding: EdgeInsets.all(qrSize * 0.025),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(qrSize * 0.045),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(qrSize * 0.03),
+                        child: Image.asset(
+                          'assets/icon/icon.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(12),
+              Text(
+                'QRコードを友達に読み込んでもらうと、フレンド追加できます',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -74,6 +157,62 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
         );
       },
     );
+  }
+
+  Future<void> _shareFriendInvite({
+    required String inviterName,
+  }) async {
+    if (_isSharingInvite) {
+      return;
+    }
+
+    setState(() {
+      _isSharingInvite = true;
+    });
+    try {
+      final inviteUrl =
+          await ref.read(friendInviteLinkServiceProvider).createInviteLink();
+      if (!mounted) {
+        return;
+      }
+
+      final content = FriendInviteShareContent.create(
+        inviteUrl: inviteUrl,
+        inviterName: inviterName,
+      );
+      final renderBox = context.findRenderObject() as RenderBox?;
+      final sharePositionOrigin = renderBox == null
+          ? null
+          : renderBox.localToGlobal(Offset.zero) & renderBox.size;
+
+      await SharePlus.instance.share(
+        ShareParams(
+          text: content.message,
+          subject: 'LaKiiteに招待',
+          sharePositionOrigin: sharePositionOrigin,
+        ),
+      );
+    } on FriendInviteLinkException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('招待リンクの生成に失敗しました')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSharingInvite = false;
+        });
+      }
+    }
   }
 
   Widget _buildDisabledRequestButton(String label) {
@@ -100,12 +239,56 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     _searchById(scannedSearchId, viewModel, updateInput: false);
   }
 
+  void _searchInitialIdWhenReady({
+    required String? currentUserId,
+    required FriendSearchViewModel viewModel,
+  }) {
+    if (_hasHandledInitialSearchId || currentUserId == null) {
+      return;
+    }
+
+    final initialSearchId = widget.initialSearchId?.trim();
+    if (initialSearchId == null || initialSearchId.isEmpty) {
+      return;
+    }
+
+    _hasHandledInitialSearchId = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      _searchById(
+        initialSearchId,
+        viewModel,
+        updateInput: false,
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final viewModel = ref.watch(friendSearchViewModelProvider.notifier);
     final state = ref.watch(friendSearchViewModelProvider);
     final currentUser = ref.watch(auth.authNotifierProvider).value?.user;
     final currentSearchId = currentUser?.searchId.toString();
+    final currentDisplayName = currentUser?.displayName;
+    _searchInitialIdWhenReady(
+      currentUserId: currentUser?.id,
+      viewModel: viewModel,
+    );
+    final qrButtonStyle = OutlinedButton.styleFrom(
+      minimumSize: const Size.fromHeight(54),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      textStyle: Theme.of(context).textTheme.titleSmall,
+      iconSize: 24,
+    );
+    final inviteButtonStyle = OutlinedButton.styleFrom(
+      minimumSize: const Size.fromHeight(58),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      textStyle: Theme.of(context).textTheme.titleSmall,
+      iconSize: 24,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -131,8 +314,10 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
           children: [
             TextField(
               controller: searchController,
+              style: Theme.of(context).textTheme.bodyLarge,
               decoration: InputDecoration(
                 labelText: '検索IDを入力',
+                labelStyle: Theme.of(context).textTheme.bodyLarge,
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.search),
                   onPressed: () {
@@ -147,9 +332,10 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
+                    style: qrButtonStyle,
                     onPressed: currentSearchId == null
                         ? null
-                        : () => _showSearchIdQr(currentSearchId),
+                        : () => _showSearchIdQr(),
                     icon: const Icon(Icons.qr_code),
                     label: const Text('自分のQR'),
                   ),
@@ -157,12 +343,40 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
                 const Gap(12),
                 Expanded(
                   child: OutlinedButton.icon(
+                    style: qrButtonStyle,
                     onPressed: () => _openQrScanner(viewModel),
                     icon: const Icon(Icons.qr_code_scanner),
                     label: const Text('QRを読み取る'),
                   ),
                 ),
               ],
+            ),
+            const Gap(12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: inviteButtonStyle,
+                onPressed: currentSearchId == null || _isSharingInvite
+                    ? null
+                    : () => _shareFriendInvite(
+                          inviterName: currentDisplayName ?? '',
+                        ),
+                icon: _isSharingInvite
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.ios_share),
+                label: Text(_isSharingInvite ? '招待リンクを作成中' : '友人をアプリに招待する'),
+              ),
+            ),
+            const Gap(8),
+            Text(
+              'アプリをまだ使っていない人にも、すでに使っている人にも、フレンド追加の招待を送れます。',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[700],
+                    height: 1.45,
+                  ),
             ),
             const Gap(20),
             if (state.isLoading)

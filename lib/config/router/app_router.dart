@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../application/auth/auth_state.dart';
 import '../../infrastructure/go_router_refresh_notifier.dart';
 import '../../presentation/bottom_navigation/bottom_navigation.dart';
+import '../../presentation/friend/friend_search_page.dart';
 import '../../presentation/login/login_page.dart';
 import '../../presentation/settings/edit_email_page.dart';
 import '../../presentation/settings/edit_name_page.dart';
@@ -16,7 +19,10 @@ import '../../presentation/settings/account_deletion_webview_page.dart';
 import '../../presentation/signup/signup.dart';
 import '../../presentation/splash/splash_screen.dart';
 import '../../application/auth/auth_notifier.dart';
+import '../../domain/deep_link/friend_invite_deep_link.dart';
+import '../../infrastructure/deep_link_navigation_service.dart';
 import '../../infrastructure/notification_navigation_service.dart';
+import '../../utils/logger.dart';
 
 /// アプリケーションのルーティング設定を提供するプロバイダー
 ///
@@ -36,6 +42,32 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: NotificationNavigationService.instance.navigatorKey,
     refreshListenable: refreshNotifier,
     initialLocation: SplashScreen.path,
+    overridePlatformDefaultLocation: true,
+    onException: (context, state, router) {
+      final location = state.uri.toString();
+      final friendInviteDeepLink = FriendInviteDeepLink.tryParse(location);
+      if (friendInviteDeepLink != null) {
+        AppLogger.info(
+          'GoRouterで受信したDeep Linkを専用処理へ委譲しました: '
+          'searchId=${friendInviteDeepLink.searchId}',
+        );
+        unawaited(
+          DeepLinkNavigationService.instance.handleReceivedDeepLink(location),
+        );
+        return;
+      }
+
+      if (FriendInviteDeepLink.isSupportedAirbridgeLink(location)) {
+        AppLogger.info(
+          'Airbridge LinkのSDK解決を待機します: '
+          'host=${state.uri.host}, path=${state.uri.path}',
+        );
+        return;
+      }
+
+      AppLogger.warning('GoRouter例外を検出しました: ${state.error}');
+      router.go(SplashScreen.path);
+    },
     redirect: (context, state) {
       final authState = ref.read(authNotifierProvider);
 
@@ -94,6 +126,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: SignupPage.path,
         builder: (context, state) => const SignupPage(),
+      ),
+      GoRoute(
+        path: '/friend/search',
+        builder: (context, state) => FriendSearchPage(
+          initialSearchId: state.uri.queryParameters['searchId'],
+        ),
       ),
       GoRoute(
         path: SettingsPage.path,

@@ -1,0 +1,6 @@
+{
+  "autoDetermineTrackingAuthorizationTimeoutInSecond": 0,
+  "trackingLinkCustomDomains": [
+    "invite.lakiite-dev.inoworl.com"
+  ]
+}

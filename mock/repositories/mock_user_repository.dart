@@ -6,6 +6,7 @@ import 'package:lakiite/domain/value/user_id.dart';
 class MockUserRepository implements IUserRepository {
   final Map<String, UserModel> _users = {};
   final Map<String, String> _searchIdToId = {};
+  final Set<String> _reservedSearchIds = {};
   bool _shouldFailGet = false;
   bool _shouldFailCreate = false;
   bool _shouldFailUpdate = false;
@@ -30,11 +31,13 @@ class MockUserRepository implements IUserRepository {
   void addTestUser(UserModel user) {
     _users[user.id] = user;
     _searchIdToId[user.searchId.toString()] = user.id;
+    _reservedSearchIds.add(user.searchId.toString());
   }
 
   void clearUsers() {
     _users.clear();
     _searchIdToId.clear();
+    _reservedSearchIds.clear();
   }
 
   @override
@@ -67,9 +70,13 @@ class MockUserRepository implements IUserRepository {
     if (_shouldFailCreate) {
       throw Exception('ユーザー作成に失敗しました');
     }
+    if (_reservedSearchIds.contains(user.searchId.toString())) {
+      throw Exception('このsearchIdは既に使用されています');
+    }
 
     _users[user.id] = user;
     _searchIdToId[user.searchId.toString()] = user.id;
+    _reservedSearchIds.add(user.searchId.toString());
   }
 
   @override
@@ -79,9 +86,20 @@ class MockUserRepository implements IUserRepository {
     if (_shouldFailUpdate) {
       throw Exception('ユーザー更新に失敗しました');
     }
+    final currentUser = _users[user.id];
+    final currentSearchId = currentUser?.searchId.toString();
+    final nextSearchId = user.searchId.toString();
+    if (currentSearchId != nextSearchId &&
+        _reservedSearchIds.contains(nextSearchId)) {
+      throw Exception('このsearchIdは既に使用されています');
+    }
 
+    if (currentSearchId != null && currentSearchId != nextSearchId) {
+      _searchIdToId.remove(currentSearchId);
+    }
     _users[user.id] = user;
-    _searchIdToId[user.searchId.toString()] = user.id;
+    _searchIdToId[nextSearchId] = user.id;
+    _reservedSearchIds.add(nextSearchId);
   }
 
   @override
@@ -114,7 +132,7 @@ class MockUserRepository implements IUserRepository {
   @override
   Future<bool> isUserIdUnique(UserId userId) async {
     await Future.delayed(const Duration(milliseconds: 100));
-    return !_searchIdToId.containsKey(userId.toString());
+    return !_reservedSearchIds.contains(userId.toString());
   }
 
   @override

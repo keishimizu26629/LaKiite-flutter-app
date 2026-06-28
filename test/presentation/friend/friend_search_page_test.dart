@@ -10,6 +10,8 @@ import 'package:lakiite/application/notification/notification_notifier.dart'
     as notification;
 import 'package:lakiite/domain/entity/notification.dart' as domain;
 import 'package:lakiite/domain/entity/user.dart';
+import 'package:lakiite/domain/interfaces/i_friend_invite_link_service.dart';
+import 'package:lakiite/infrastructure/providers.dart' as infrastructure;
 import 'package:lakiite/presentation/friend/friend_search_page.dart';
 
 import '../../mock/repository/mock_notification_repository.dart';
@@ -22,6 +24,28 @@ class _StubAuthNotifier extends auth.AuthNotifier {
 
   @override
   FutureOr<AuthState> build() => _state;
+}
+
+class _MutableAuthNotifier extends auth.AuthNotifier {
+  _MutableAuthNotifier(this._initialState);
+
+  final AuthState _initialState;
+
+  @override
+  FutureOr<AuthState> build() => _initialState;
+
+  void authenticate(UserModel user) {
+    state = AsyncData(AuthState.authenticated(user));
+  }
+}
+
+class _StubFriendInviteLinkService implements IFriendInviteLinkService {
+  _StubFriendInviteLinkService(this.inviteLink);
+
+  final Uri inviteLink;
+
+  @override
+  Future<Uri> createInviteLink() async => inviteLink;
 }
 
 void main() {
@@ -41,7 +65,7 @@ void main() {
       );
     }
 
-    testWidgets('自分の検索ID QR表示とQR読み取りボタンを表示する', (tester) async {
+    testWidgets('自分のQRには案内文と中央アイコンを表示しURLは表示しない', (tester) async {
       tester.view.physicalSize = const Size(390, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(() {
@@ -49,6 +73,54 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
+      final currentUser = UserModel.create(
+        id: 'current-user-id',
+        name: '現在ユーザー',
+        displayName: '現在ユーザー',
+      );
+      final inviteLink = Uri.parse(
+        'https://lakiite-dev.inoworl.com/friend_cached',
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(currentUser)),
+            ),
+            userRepositoryProvider.overrideWithValue(MockUserRepository()),
+            notificationRepositoryProvider.overrideWithValue(
+              MockNotificationRepository(),
+            ),
+            notification.unreadNotificationCountByTypeProvider.overrideWith(
+              (ref, domain.NotificationType type) => Stream.value(0),
+            ),
+            infrastructure.friendInviteLinkServiceProvider.overrideWithValue(
+              _StubFriendInviteLinkService(inviteLink),
+            ),
+          ],
+          child: const MaterialApp(home: FriendSearchPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('自分のQR'), findsOneWidget);
+      expect(find.text('QRを読み取る'), findsOneWidget);
+
+      await tester.tap(find.text('自分のQR'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('QRコードを友達に読み込んでもらうと、フレンド追加できます'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('friend-search-qr-center-icon')),
+          findsOneWidget);
+      expect(find.text(inviteLink.toString()), findsNothing);
+      expect(find.text('@${currentUser.searchId}'), findsNothing);
+    });
+
+    testWidgets('ログインユーザーの検索IDがある場合は友人をアプリに招待するボタンを表示する', (tester) async {
       final currentUser = UserModel.create(
         id: 'current-user-id',
         name: '現在ユーザー',
@@ -74,14 +146,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('自分のQR'), findsOneWidget);
-      expect(find.text('QRを読み取る'), findsOneWidget);
-
-      await tester.tap(find.text('自分のQR'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('自分の検索ID'), findsNothing);
-      expect(find.text('@${currentUser.searchId}'), findsNothing);
+      expect(find.text('友人をアプリに招待する'), findsOneWidget);
+      expect(
+        find.text(
+          'アプリをまだ使っていない人にも、すでに使っている人にも、フレンド追加の招待を送れます。',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('友人を招待する'), findsNothing);
     });
 
     testWidgets('フレンド追加済みユーザー検索では申請ボタンを無効化する', (tester) async {
@@ -132,6 +204,142 @@ void main() {
         find.widgetWithText(ElevatedButton, '追加済み'),
       );
       expect(button.onPressed, isNull);
+    });
+
+    testWidgets('初期検索IDがある場合は友達申請できる検索結果を表示する', (tester) async {
+      final friend = UserModel.create(
+        id: 'friend-user-id',
+        name: '招待ユーザー',
+        displayName: '招待ユーザー',
+      );
+      final currentUser = UserModel.create(
+        id: 'current-user-id',
+        name: '現在ユーザー',
+        displayName: '現在ユーザー',
+      );
+      final userRepository = MockUserRepository()
+        ..addTestUser(currentUser)
+        ..addTestUser(friend);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(currentUser)),
+            ),
+            userRepositoryProvider.overrideWithValue(userRepository),
+            notificationRepositoryProvider.overrideWithValue(
+              MockNotificationRepository(),
+            ),
+            notification.unreadNotificationCountByTypeProvider.overrideWith(
+              (ref, domain.NotificationType type) => Stream.value(0),
+            ),
+          ],
+          child: MaterialApp(
+            home: FriendSearchPage(
+              initialSearchId: friend.searchId.toString(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('招待ユーザー'), findsWidgets);
+      expect(find.text('申請する'), findsOneWidget);
+      expect(find.text('追加済み'), findsNothing);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller?.text,
+        isEmpty,
+      );
+    });
+
+    testWidgets('初期検索IDは認証ユーザー情報が準備できてから検索する', (tester) async {
+      final friend = UserModel.create(
+        id: 'friend-user-id',
+        name: '招待ユーザー',
+        displayName: '招待ユーザー',
+      );
+      final currentUser = UserModel.create(
+        id: 'current-user-id',
+        name: '現在ユーザー',
+        displayName: '現在ユーザー',
+      );
+      final userRepository = MockUserRepository()
+        ..addTestUser(currentUser)
+        ..addTestUser(friend);
+      late _MutableAuthNotifier authNotifier;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => authNotifier =
+                  _MutableAuthNotifier(AuthState.unauthenticated()),
+            ),
+            userRepositoryProvider.overrideWithValue(userRepository),
+            notificationRepositoryProvider.overrideWithValue(
+              MockNotificationRepository(),
+            ),
+            notification.unreadNotificationCountByTypeProvider.overrideWith(
+              (ref, domain.NotificationType type) => Stream.value(0),
+            ),
+          ],
+          child: MaterialApp(
+            home: FriendSearchPage(
+              initialSearchId: friend.searchId.toString(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('招待ユーザー'), findsNothing);
+
+      authNotifier.authenticate(currentUser);
+      await tester.pumpAndSettle();
+
+      expect(find.text('招待ユーザー'), findsWidgets);
+      expect(find.text('申請する'), findsOneWidget);
+    });
+
+    testWidgets('初期検索IDが自分自身の場合はエラーではなく案内を表示する', (tester) async {
+      final currentUser = UserModel.create(
+        id: 'current-user-id',
+        name: '現在ユーザー',
+        displayName: '現在ユーザー',
+      );
+      final userRepository = MockUserRepository()..addTestUser(currentUser);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(currentUser)),
+            ),
+            userRepositoryProvider.overrideWithValue(userRepository),
+            notificationRepositoryProvider.overrideWithValue(
+              MockNotificationRepository(),
+            ),
+            notification.unreadNotificationCountByTypeProvider.overrideWith(
+              (ref, domain.NotificationType type) => Stream.value(0),
+            ),
+          ],
+          child: MaterialApp(
+            home: FriendSearchPage(
+              initialSearchId: currentUser.searchId.toString(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('自分自身は友達に追加できません'), findsOneWidget);
+      expect(find.textContaining('エラー:'), findsNothing);
+      expect(find.text('申請する'), findsNothing);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller?.text,
+        isEmpty,
+      );
     });
 
     testWidgets('検索時はログイン時点ではなく最新の友達状態で追加済みを判定する', (tester) async {

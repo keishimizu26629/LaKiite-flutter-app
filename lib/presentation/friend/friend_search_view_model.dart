@@ -68,7 +68,9 @@ class FriendSearchViewModel
       }
 
       if (user.id == _currentUserId) {
-        throw Exception('自分自身は友達に追加できません');
+        _message = '自分自身は友達に追加できません';
+        state = const AsyncValue.data(null);
+        return;
       }
 
       final currentUser = await _getCurrentUser();

@@ -40,6 +40,24 @@ class UserRepository implements IUserRepository {
     return json;
   }
 
+  DocumentReference<Map<String, dynamic>> _searchIdReservationRef(
+    UserId searchId,
+  ) {
+    return _firestore.collection('reservedSearchIds').doc(searchId.value);
+  }
+
+  Map<String, dynamic> _toSearchIdReservation({
+    required String ownerUid,
+    required UserId searchId,
+  }) {
+    return {
+      'ownerUid': ownerUid,
+      'searchId': searchId.value,
+      'source': 'client',
+      'reservedAt': FieldValue.serverTimestamp(),
+    };
+  }
+
   @override
   Future<UserModel?> getUser(String id) async {
     try {
@@ -112,6 +130,7 @@ class UserRepository implements IUserRepository {
       // ドキュメントの参照を取得
       final userRef = _firestore.collection('users').doc(user.id);
       final privateRef = userRef.collection('private').doc('profile');
+      final searchIdReservationRef = _searchIdReservationRef(user.searchId);
 
       // トランザクションでユーザーデータを作成
       await _firestore.runTransaction((transaction) async {
@@ -120,6 +139,19 @@ class UserRepository implements IUserRepository {
         if (docSnapshot.exists) {
           throw Exception('ユーザーデータが既に存在します');
         }
+        final reservationSnapshot =
+            await transaction.get(searchIdReservationRef);
+        if (reservationSnapshot.exists) {
+          throw Exception('このsearchIdは既に使用されています');
+        }
+
+        transaction.set(
+          searchIdReservationRef,
+          _toSearchIdReservation(
+            ownerUid: user.id,
+            searchId: user.searchId,
+          ),
+        );
 
         // 公開情報を親ドキュメントに保存
         transaction.set(userRef, _toFirestorePublic(user.publicProfile));
@@ -146,6 +178,29 @@ class UserRepository implements IUserRepository {
       final privateRef = userRef.collection('private').doc('profile');
 
       await _firestore.runTransaction((transaction) async {
+        final currentUserSnapshot = await transaction.get(userRef);
+        if (!currentUserSnapshot.exists) {
+          throw Exception('ユーザーが見つかりません');
+        }
+
+        final currentSearchId =
+            currentUserSnapshot.data()?['searchId'] as String?;
+        if (currentSearchId != user.searchId.value) {
+          final searchIdReservationRef = _searchIdReservationRef(user.searchId);
+          final reservationSnapshot =
+              await transaction.get(searchIdReservationRef);
+          if (reservationSnapshot.exists) {
+            throw Exception('このsearchIdは既に使用されています');
+          }
+          transaction.set(
+            searchIdReservationRef,
+            _toSearchIdReservation(
+              ownerUid: user.id,
+              searchId: user.searchId,
+            ),
+          );
+        }
+
         // 公開情報を更新
         transaction.update(userRef, _toFirestorePublic(user.publicProfile));
 
@@ -239,11 +294,17 @@ class UserRepository implements IUserRepository {
 
   @override
   Future<bool> isUserIdUnique(UserId userId) async {
-    final snapshot = await _firestore
+    final reservationSnapshot = await _searchIdReservationRef(userId).get();
+    if (reservationSnapshot.exists) {
+      return false;
+    }
+
+    final userSnapshot = await _firestore
         .collection('users')
         .where('searchId', isEqualTo: userId.value)
+        .limit(1)
         .get();
-    return snapshot.docs.isEmpty;
+    return userSnapshot.docs.isEmpty;
   }
 
   @override

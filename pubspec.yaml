@@ -50,6 +50,7 @@ dependencies:
   google_mobile_ads: ^5.3.1
 
   # Utilities
+  airbridge_flutter_sdk: ^4.9.0
   logger: ^2.0.2+1
 
   # Notifications
@@ -69,6 +70,7 @@ dependencies:
   gap: ^3.0.1
   cryptography: ^2.9.0
   flutter_secure_storage: ^10.3.1
+  share_plus: ^12.0.2
 
 dev_dependencies:
   flutter_test:
