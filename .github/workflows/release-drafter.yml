@@ -52,6 +52,9 @@ jobs:
         (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') ||
         (github.event_name == 'workflow_dispatch' && inputs.main_pr_number != '')
       )
+    concurrency:
+      group: release-drafter-main-pr-${{ github.event_name == 'pull_request' && github.event.pull_request.number || inputs.main_pr_number }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
 
     steps:
@@ -231,20 +234,31 @@ jobs:
             fi
           } > "$body_file"
 
+          body="$(cat "$body_file")"
           draft_id="$(gh api "repos/$REPOSITORY/releases" --jq '[.[] | select(.draft == true and .target_commitish == "main")] | sort_by(.updated_at) | reverse | .[0].id // empty')"
           if [ -z "$draft_id" ]; then
-            echo "::error ::No draft release targeting main was found."
-            exit 1
+            draft_id="$(
+              gh api \
+                --method POST \
+                "repos/$REPOSITORY/releases" \
+                -f "name=v$next_version" \
+                -f "tag_name=v$next_version" \
+                -f "target_commitish=main" \
+                -f "body=$body" \
+                -F "draft=true" \
+                --jq ".id"
+            )"
+            echo "Created draft release #$draft_id for v$next_version from $semver_label."
+          else
+            gh api \
+              --method PATCH \
+              "repos/$REPOSITORY/releases/$draft_id" \
+              -f "name=v$next_version" \
+              -f "tag_name=v$next_version" \
+              -f "target_commitish=main" \
+              -f "body=$body"
+            echo "Updated draft release #$draft_id to v$next_version from $semver_label."
           fi
-
-          body="$(cat "$body_file")"
-          gh api \
-            --method PATCH \
-            "repos/$REPOSITORY/releases/$draft_id" \
-            -f "name=v$next_version" \
-            -f "tag_name=v$next_version" \
-            -f "target_commitish=main" \
-            -f "body=$body"
 
           duplicate_draft_ids="$(
             gh api "repos/$REPOSITORY/releases" --jq ".[] | select(.draft == true and .target_commitish == \"main\" and .id != $draft_id) | .id"
@@ -254,5 +268,3 @@ jobs:
             gh api --method DELETE "repos/$REPOSITORY/releases/$duplicate_draft_id"
             echo "Deleted duplicate draft release #$duplicate_draft_id."
           done <<< "$duplicate_draft_ids"
-
-          echo "Updated draft release #$draft_id to v$next_version from $semver_label."
