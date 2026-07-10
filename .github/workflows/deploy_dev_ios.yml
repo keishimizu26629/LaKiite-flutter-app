@@ -26,6 +26,13 @@ jobs:
           xcodebuild -version
           echo "Using default Xcode for iOS 26 SDK upload compliance"
 
+      - name: Restore Firebase config files
+        run: |
+          mkdir -p ios/Runner/Firebase/Dev
+          echo "${{ secrets.DEV_GOOGLESERVICE_INFO_PLIST_BASE64 }}" | base64 -d > ios/Runner/Firebase/Dev/GoogleService-Info.plist
+          cp ios/Runner/Firebase/Dev/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
+          echo "${{ secrets.DEV_FIREBASE_OPTIONS_DART_BASE64 }}" | base64 -d > lib/firebase_options.dart
+
       - name: Setup CI
         uses: ./.github/actions/setup
         with:
@@ -42,13 +49,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pods-
 
-      - name: Restore Firebase config files
-        run: |
-          mkdir -p ios/Runner/Firebase/Dev
-          echo "${{ secrets.DEV_GOOGLESERVICE_INFO_PLIST_BASE64 }}" | base64 -d > ios/Runner/Firebase/Dev/GoogleService-Info.plist
-          cp ios/Runner/Firebase/Dev/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
-          echo "${{ secrets.DEV_FIREBASE_OPTIONS_DART_BASE64 }}" | base64 -d > lib/firebase_options.dart
-
       - name: Restore dart-define config
         run: |
           echo "${{ secrets.DEV_DART_DEFINE_JSON_BASE64 }}" | base64 -d > dart_define/dev_dart_define.json
@@ -62,9 +62,31 @@ jobs:
           AIRBRIDGE_PROD_SDK_TOKEN = ${{ secrets.AIRBRIDGE_PROD_SDK_TOKEN }}
           EOF
 
-      - name: Setup Provisioning Profile Directory
+      - name: Setup temporary keychain
         run: |
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
+          security create-keychain -p "" build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+
+      - name: Import Provisioning Profile
+        run: |
+          echo "${{ secrets.DEV_PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > profile.mobileprovision
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          ls -l ~/Library/MobileDevice/Provisioning\ Profiles/
+          security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+
+      - name: Import Code-Signing Certificate
+        run: |
+          echo "${{ secrets.IOS_CERTIFICATE_BASE64 }}" | base64 -d > certificates.p12
+          security import certificates.p12 -k build.keychain -P "${{ secrets.CERT_PWD }}" -A
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
+
+      - name: List available certificates
+        run: |
+          security find-identity -v -p codesigning
+          xcodebuild -version
 
       - name: Prepare iOS build cache
         run: |
@@ -80,75 +102,53 @@ jobs:
             echo "Keeping Pods and Podfile.lock so dependency caches can be reused"
           fi
 
-      - name: Debug certificates and provisioning profiles
-        env:
-          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
-          PROVISIONING_PROFILE_BASE64: ${{ secrets.DEV_PROVISIONING_PROFILE_BASE64 }}
-          DEV_PROVISIONING_PROFILE_NAME: ${{ secrets.DEV_PROVISIONING_PROFILE_NAME }}
+      - name: Prepare Xcode build settings for Distribution
         run: |
-          echo "=== Certificate and Provisioning Profile Debug ==="
+          cp ios/DevExportOptions.plist ios/ExportOptions.plist
 
-          # Check available certificates in system keychain
-          echo "📋 System keychain certificates:"
-          security find-identity -v -p codesigning | head -10 || true
+          xcodebuild -project ios/Runner.xcodeproj \
+            -scheme dev \
+            -configuration Release-dev \
+            -showBuildSettings | grep -E "PRODUCT_BUNDLE_IDENTIFIER|DEVELOPMENT_TEAM|CODE_SIGN_STYLE|CODE_SIGN_IDENTITY|PROVISIONING_PROFILE_SPECIFIER"
 
-          # Check if we have the certificate data
-          if [ ! -z "$IOS_CERTIFICATE_BASE64" ]; then
-            echo "✅ IOS_CERTIFICATE_BASE64 is set (length: ${#IOS_CERTIFICATE_BASE64})"
-          else
-            echo "❌ IOS_CERTIFICATE_BASE64 is not set"
-          fi
+      - name: Calculate Build Number
+        id: calculate_build_number
+        run: |
+          echo "buildNumber=$(date +%s)" >> $GITHUB_OUTPUT
 
-          # Check if we have the provisioning profile data
-          if [ ! -z "$PROVISIONING_PROFILE_BASE64" ]; then
-            echo "✅ PROVISIONING_PROFILE_BASE64 is set (length: ${#PROVISIONING_PROFILE_BASE64})"
-          else
-            echo "❌ PROVISIONING_PROFILE_BASE64 is not set"
-          fi
+      - name: flutter build ipa
+        run: |
+          flutter build ipa --release \
+            --flavor dev \
+            --export-options-plist=ios/ExportOptions.plist \
+            --dart-define-from-file="dart_define/dev_dart_define.json" \
+            -t "lib/main.dart" \
+            --build-number="${{ steps.calculate_build_number.outputs.buildNumber }}"
 
-          echo "📱 Expected provisioning profile name: $DEV_PROVISIONING_PROFILE_NAME"
-
-          # Check existing provisioning profiles
-          echo "📄 Existing provisioning profiles:"
-          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || echo "No provisioning profiles directory found"
-
-      - name: Deploy with fastlane (unified with local)
+      - name: Setup App Store Connect API Key
         env:
-          # 証明書設定
-          CERT_PWD: ${{ secrets.CERT_PWD }}
-          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
-
-          # App Store Connect API設定
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
-
-          # プロビジョニング設定
-          DEV_BUNDLE_ID: ${{ secrets.DEV_BUNDLE_ID }}
-          DEV_PROVISIONING_PROFILE_NAME: ${{ secrets.DEV_PROVISIONING_PROFILE_NAME }}
-          PROVISIONING_PROFILE_BASE64: ${{ secrets.DEV_PROVISIONING_PROFILE_BASE64 }}
-          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
-          IPA_OUTPUT_NAME: ${{ secrets.IPA_OUTPUT_NAME }}
-
-          # CI環境設定
-          FASTLANE_DISABLE_PTY: 1
-          FASTLANE_EXPLICIT_OPEN3: 1
-          FASTLANE_DISABLE_COLORS: 1
-          CI: 1
         run: |
-          cd ios
-          fastlane dev
+          mkdir -p private_keys
+          echo "${{ secrets.ASC_API_KEY_BASE64 }}" | base64 -d > "private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          chmod 600 "private_keys/AuthKey_${ASC_KEY_ID}.p8"
+
+      - name: Upload to TestFlight
+        run: |
+          IPA_FILE=$(ls ./build/ios/ipa/*.ipa)
+          xcrun altool --upload-app \
+            -t ios \
+            -f "$IPA_FILE" \
+            --apiKey "${{ secrets.ASC_KEY_ID }}" \
+            --apiIssuer "${{ secrets.ASC_ISSUER_ID }}"
 
       - name: Debug build settings on failure
         if: failure()
         run: |
           echo "=== Xcode Build Settings Debug ==="
-          cd ios
-          xcodebuild -showBuildSettings -workspace Runner.xcworkspace -scheme Runner -configuration Release-dev | tail -n 50 || true
-          echo "=== Gym Log Tail ==="
-          tail -n 200 /Users/runner/Library/Logs/gym/Runner-Runner.log || true
+          xcodebuild -showBuildSettings -workspace ios/Runner.xcworkspace -scheme dev -configuration Release-dev | tail -n 80 || true
           echo "=== Build Logs Directory ==="
-          ls -la ./build/logs/ || true
+          ls -la build/ios/ipa/ ios/build/ || true
 
       - name: Upload build logs
         if: failure()
@@ -156,6 +156,5 @@ jobs:
         with:
           name: build-logs-${{ github.run_id }}
           path: |
-            /Users/runner/Library/Logs/gym/Runner-Runner.log
             ios/build/logs/
           retention-days: 7

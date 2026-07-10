@@ -164,7 +164,7 @@ chmod 600 ~/Desktop/ios_distribution_certificate.p12
 ## 📚 関連ファイル
 
 - `env.template` - 環境変数テンプレート
-- `ios/fastlane/Fastfile` - Fastlane設定
+- `ios/DevExportOptions.plist`, `ios/ProdExportOptions.plist` - iOS export設定
 - `.github/workflows/deploy_dev_ios.yml` - GitHub Actionsワークフロー
 - `scripts/deploy_ios_local.sh` - ローカルデプロイスクリプト
 

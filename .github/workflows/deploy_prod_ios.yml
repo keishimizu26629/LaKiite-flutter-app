@@ -41,15 +41,15 @@ jobs:
           xcodebuild -version
           echo "Using default Xcode for iOS 26 SDK upload compliance"
 
-      - name: Setup CI
-        uses: ./.github/actions/setup
-
       - name: Restore Firebase config files
         run: |
           mkdir -p ios/Runner/Firebase/Prod
           echo "${{ secrets.PROD_GOOGLESERVICE_INFO_PLIST_BASE64 }}" | base64 -d > ios/Runner/Firebase/Prod/GoogleService-Info.plist
           cp ios/Runner/Firebase/Prod/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
           echo "${{ secrets.PROD_FIREBASE_OPTIONS_DART_BASE64 }}" | base64 -d > lib/firebase_options.dart
+
+      - name: Setup CI
+        uses: ./.github/actions/setup
 
       - name: Restore dart-define config
         run: |

@@ -56,9 +56,9 @@ fi
 # プロビジョニングプロファイルの確認
 PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
 if [ "$ENVIRONMENT" == "dev" ]; then
-    EXPECTED_PROFILE="LaKiite_Dev_App_Store"
+    EXPECTED_PROFILE="LaKiite Dev App Store"
 else
-    EXPECTED_PROFILE="LaKiite_Prod_App_Store"
+    EXPECTED_PROFILE="LaKiite Prod App Store"
 fi
 
 echo "📄 Looking for provisioning profile: $EXPECTED_PROFILE"
@@ -69,49 +69,22 @@ else
     echo "⚠️  Provisioning profiles directory not found: $PROFILE_DIR"
 fi
 
-# App Store Connect API Key の確認
-API_KEY_FILE="$HOME/Downloads/AuthKey_96BH437MBD.p8"
-if [ ! -f "$API_KEY_FILE" ]; then
-    echo "⚠️  App Store Connect API Key not found"
-    echo "📝 Expected: $API_KEY_FILE"
-    echo "💡 You can download it from App Store Connect → Users and Access → Keys"
-else
-    echo "✅ App Store Connect API Key found"
-    # API Keyをiosディレクトリにコピー
-    cp "$API_KEY_FILE" "ios/AuthKey.p8"
-fi
-
-# fastlaneの実行
-echo "🔨 Starting fastlane deployment for $ENVIRONMENT..."
-cd ios
-
-# 環境変数ファイルの読み込み（最初に実行）
+# 環境変数ファイルの読み込み
 ENV_FILE="$PROJECT_ROOT/ios/.env.local"
 if [ -f "$ENV_FILE" ]; then
     echo "📄 Loading environment variables from $ENV_FILE"
-    export $(grep -v '^#' "$ENV_FILE" | xargs)
+    set -a
+    source "$ENV_FILE"
+    set +a
 else
     echo "⚠️  Environment file not found: $ENV_FILE"
     echo "   Please create .env.local file or set environment variables manually"
 fi
 
-# 環境変数の設定
-export FASTLANE_DISABLE_PTY=1
-export FASTLANE_EXPLICIT_OPEN3=1
-export FASTLANE_DISABLE_COLORS=1
-export CI=1
-
 # UTF-8エンコーディング設定
 export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
-
-# 必須環境変数のチェック
-if [ -z "$CERT_PWD" ]; then
-    echo "❌ CERT_PWD environment variable is required"
-    echo "   Set it in .env.local or export CERT_PWD=\"your_password\""
-    exit 1
-fi
 
 # App Store Connect API設定チェック（.env.localから読み込み済み）
 if [ -z "$ASC_KEY_ID" ] || [ -z "$ASC_ISSUER_ID" ]; then
@@ -120,16 +93,61 @@ if [ -z "$ASC_KEY_ID" ] || [ -z "$ASC_ISSUER_ID" ]; then
     exit 1
 fi
 
-# SSL証明書の設定
-export SSL_CERT_FILE="/opt/homebrew/etc/ca-certificates/cert.pem"
-export SSL_CERT_DIR="/opt/homebrew/etc/openssl@3/certs"
-
-# fastlane実行
-if [ "$ENVIRONMENT" == "dev" ]; then
-    fastlane dev
-else
-    fastlane prod
+# App Store Connect API Key の確認
+API_KEY_FILE="${ASC_API_KEY_PATH:-$HOME/Downloads/AuthKey_${ASC_KEY_ID}.p8}"
+if [ ! -f "$API_KEY_FILE" ]; then
+    echo "❌ App Store Connect API Key not found"
+    echo "📝 Expected: $API_KEY_FILE"
+    echo "💡 You can download it from App Store Connect → Users and Access → Keys"
+    exit 1
 fi
+
+mkdir -p private_keys
+cp "$API_KEY_FILE" "private_keys/AuthKey_${ASC_KEY_ID}.p8"
+chmod 600 "private_keys/AuthKey_${ASC_KEY_ID}.p8"
+echo "✅ App Store Connect API Key prepared"
+
+if [ "$ENVIRONMENT" == "dev" ]; then
+    EXPORT_OPTIONS_PLIST="ios/DevExportOptions.plist"
+    XCODE_SCHEME="dev"
+    XCODE_CONFIGURATION="Release-dev"
+else
+    EXPORT_OPTIONS_PLIST="ios/ProdExportOptions.plist"
+    XCODE_SCHEME="prod"
+    XCODE_CONFIGURATION="Release-prod"
+fi
+
+cp "$EXPORT_OPTIONS_PLIST" "ios/ExportOptions.plist"
+
+echo "🔎 Checking Xcode signing settings..."
+xcodebuild -project ios/Runner.xcodeproj \
+    -scheme "$XCODE_SCHEME" \
+    -configuration "$XCODE_CONFIGURATION" \
+    -showBuildSettings | grep -E "PRODUCT_BUNDLE_IDENTIFIER|DEVELOPMENT_TEAM|CODE_SIGN_STYLE|CODE_SIGN_IDENTITY|PROVISIONING_PROFILE_SPECIFIER"
+
+FLUTTER_CMD=(flutter)
+if command -v fvm >/dev/null 2>&1; then
+    FLUTTER_CMD=(fvm flutter)
+fi
+
+BUILD_NUMBER="${BUILD_NUMBER:-$(date +%s)}"
+echo "🔢 Build number: $BUILD_NUMBER"
+
+echo "🔨 Building IPA for $ENVIRONMENT..."
+"${FLUTTER_CMD[@]}" build ipa --release \
+    --flavor "$ENVIRONMENT" \
+    --export-options-plist="ios/ExportOptions.plist" \
+    --dart-define-from-file="dart_define/${ENVIRONMENT}_dart_define.json" \
+    -t "lib/main.dart" \
+    --build-number "$BUILD_NUMBER"
+
+echo "📤 Uploading IPA to TestFlight..."
+IPA_FILE=$(ls ./build/ios/ipa/*.ipa | head -n 1)
+xcrun altool --upload-app \
+    -t ios \
+    -f "$IPA_FILE" \
+    --apiKey "$ASC_KEY_ID" \
+    --apiIssuer "$ASC_ISSUER_ID"
 
 echo ""
 echo "🎉 Deployment completed!"

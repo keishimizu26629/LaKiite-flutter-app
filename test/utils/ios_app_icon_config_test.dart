@@ -4,7 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   const xcodeProjectPath = 'ios/Runner.xcodeproj/project.pbxproj';
-  const fastfilePath = 'ios/fastlane/Fastfile';
+  const devIosWorkflowPath = '.github/workflows/deploy_dev_ios.yml';
+  const prodIosWorkflowPath = '.github/workflows/deploy_prod_ios.yml';
 
   test('iOS flavor build configurations use matching app icon sets', () {
     final project = File(xcodeProjectPath).readAsStringSync();
@@ -41,20 +42,25 @@ void main() {
     );
   });
 
-  test('fastlane uploads use flavor-specific iOS schemes', () {
-    final fastfile = File(fastfilePath).readAsStringSync();
+  test('iOS release workflows use flavor-specific build settings', () {
+    final devWorkflow = File(devIosWorkflowPath).readAsStringSync();
+    final prodWorkflow = File(prodIosWorkflowPath).readAsStringSync();
 
-    expect(fastfile, contains('ENV["SCHEME"] = "dev"'));
-    expect(fastfile, contains('ENV["CONFIGURATION"] = "Release-dev"'));
-    expect(fastfile, contains('ENV["SCHEME"] = "prod"'));
-    expect(fastfile, contains('ENV["CONFIGURATION"] = "Release-prod"'));
+    expect(devWorkflow,
+        contains('cp ios/DevExportOptions.plist ios/ExportOptions.plist'));
+    expect(devWorkflow, contains('--flavor dev'));
+    expect(devWorkflow,
+        contains('--dart-define-from-file="dart_define/dev_dart_define.json"'));
+    expect(devWorkflow, contains('-scheme dev'));
+    expect(devWorkflow, contains('-configuration Release-dev'));
+
+    expect(prodWorkflow,
+        contains('cp ios/ProdExportOptions.plist ios/ExportOptions.plist'));
+    expect(prodWorkflow, contains('--flavor prod'));
     expect(
-      fastfile,
-      contains(
-        'flutter build ios --release --flavor prod '
-        '--dart-define-from-file=dart_define/prod_dart_define.json',
-      ),
-    );
+        prodWorkflow, contains('--dart-define-from-file="dart_define.json"'));
+    expect(prodWorkflow, contains('-scheme prod'));
+    expect(prodWorkflow, contains('-configuration Release-prod'));
   });
 }
 
