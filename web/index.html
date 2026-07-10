@@ -1,1092 +1,368 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="LaKiiteは、誘うほどでもない予定を気軽に共有できる、お誘い未満の予定共有アプリです。">
-    <meta property="og:title" content="LaKiite - お誘い未満の予定共有アプリ">
-    <meta property="og:description" content="誘うほどでもない。でも、誰かと会えたらうれしい。">
-    <meta property="og:type" content="website">
-    <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <title>LaKiite - お誘い未満の予定共有アプリ</title>
-    <style>
-        :root {
-            --orange: #ffa600;
-            --deep-orange: #f47c2d;
-            --sun: #ffe274;
-            --cream: #fff8ed;
-            --ink: #312821;
-            --muted: #75675e;
-            --line: rgba(49, 40, 33, 0.14);
-            --paper: #ffffff;
-            --shadow: 0 24px 70px rgba(151, 87, 29, 0.2);
-            --radius: 8px;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            margin: 0;
-            color: var(--ink);
-            background: var(--cream);
-            font-family: 'Noto Sans JP', 'Noto Sans CJK JP', 'Hiragino Sans', 'Yu Gothic', 'YuGothic', 'Meiryo', 'Segoe UI', sans-serif;
-            line-height: 1.75;
-        }
-
-        a {
-            color: inherit;
-        }
-
-        .site-header {
-            position: sticky;
-            top: 0;
-            z-index: 20;
-            border-bottom: 1px solid rgba(255, 166, 0, 0.24);
-            background: rgba(255, 248, 237, 0.88);
-            backdrop-filter: blur(16px);
-        }
-
-        .nav {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: min(1120px, calc(100% - 32px));
-            min-height: 64px;
-            margin: 0 auto;
-            gap: 16px;
-        }
-
-        .brand {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-            font-weight: 800;
-            letter-spacing: 0;
-        }
-
-        .brand-mark {
-            display: grid;
-            place-items: center;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            color: #ffffff;
-            background: var(--orange);
-            box-shadow: 0 10px 24px rgba(255, 166, 0, 0.32);
-        }
-
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .nav-links a {
-            padding: 8px 12px;
-            border-radius: var(--radius);
-            color: var(--muted);
-            font-size: 14px;
-            font-weight: 700;
-            text-decoration: none;
-        }
-
-        .nav-links a:hover,
-        .nav-links a:focus-visible {
-            color: var(--ink);
-            background: rgba(255, 166, 0, 0.12);
-            outline: none;
-        }
-
-        main {
-            overflow: hidden;
-        }
-
-        .section {
-            width: min(1120px, calc(100% - 32px));
-            margin: 0 auto;
-            padding: 92px 0;
-        }
-
-        .hero {
-            display: grid;
-            grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr);
-            align-items: center;
-            min-height: calc(100vh - 64px);
-            gap: 56px;
-            padding-top: 48px;
-            padding-bottom: 56px;
-        }
-
-        .eyebrow {
-            display: inline-flex;
-            align-items: center;
-            width: fit-content;
-            min-height: 32px;
-            padding: 4px 12px;
-            border: 1px solid rgba(244, 124, 45, 0.28);
-            border-radius: 999px;
-            color: #8b4b20;
-            background: rgba(255, 255, 255, 0.64);
-            font-size: 13px;
-            font-weight: 800;
-        }
-
-        h1,
-        h2,
-        h3,
-        p {
-            margin: 0;
-        }
-
-        .hero h1 {
-            max-width: 760px;
-            margin-top: 24px;
-            padding-bottom: 8px;
-            font-size: clamp(44px, 8vw, 104px);
-            line-height: 1.08;
-            letter-spacing: 0;
-        }
-
-        .hero h1 span {
-            display: block;
-        }
-
-        .hero-copy {
-            max-width: 590px;
-            margin-top: 28px;
-            color: var(--muted);
-            font-size: clamp(18px, 2.1vw, 24px);
-            font-weight: 700;
-        }
-
-        .hero-actions {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 12px;
-            margin-top: 36px;
-        }
-
-        .button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 48px;
-            padding: 0 18px;
-            border: 1px solid transparent;
-            border-radius: var(--radius);
-            font-size: 15px;
-            font-weight: 800;
-            text-decoration: none;
-            transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
-        }
-
-        .button:hover,
-        .button:focus-visible {
-            transform: translateY(-1px);
-            outline: none;
-        }
-
-        .button-primary {
-            color: #ffffff;
-            background: var(--ink);
-            box-shadow: 0 18px 36px rgba(49, 40, 33, 0.18);
-        }
-
-        .button-primary:hover,
-        .button-primary:focus-visible {
-            box-shadow: 0 22px 42px rgba(49, 40, 33, 0.24);
-        }
-
-        .button-secondary {
-            border-color: rgba(49, 40, 33, 0.18);
-            background: rgba(255, 255, 255, 0.7);
-        }
-
-        .hero-note {
-            margin-top: 18px;
-            color: var(--muted);
-            font-size: 13px;
-        }
-
-        .showcase {
-            position: relative;
-            min-height: 640px;
-        }
-
-        .warm-panel {
-            position: absolute;
-            inset: 0;
-            border-radius: 22px;
-            background:
-                linear-gradient(180deg, rgba(255, 126, 48, 0.96), rgba(255, 226, 116, 0.88)),
-                var(--orange);
-            box-shadow: var(--shadow);
-        }
-
-        .phone {
-            position: relative;
-            width: min(330px, 78vw);
-            margin: 48px auto 0;
-            padding: 12px;
-            border: 8px solid #252525;
-            border-radius: 42px;
-            background: #252525;
-            box-shadow: 0 28px 72px rgba(34, 26, 20, 0.32);
-            transform: rotate(-7deg);
-        }
-
-        .phone::before {
-            content: "";
-            position: absolute;
-            top: 14px;
-            left: 50%;
-            width: 96px;
-            height: 28px;
-            border-radius: 999px;
-            background: #080808;
-            transform: translateX(-50%);
-            z-index: 2;
-        }
-
-        .phone-screen {
-            position: relative;
-            overflow: hidden;
-            height: 610px;
-            border-radius: 30px;
-            background: #ffffff;
-        }
-
-        .app-top {
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            height: 88px;
-            padding: 0 16px 16px;
-            color: #ffffff;
-            background: var(--orange);
-            font-weight: 800;
-        }
-
-        .tabs {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            border-bottom: 1px solid #ece7df;
-        }
-
-        .tabs span {
-            padding: 12px 0 10px;
-            color: #9a8c80;
-            text-align: center;
-            font-size: 12px;
-            font-weight: 800;
-        }
-
-        .tabs .active {
-            color: var(--orange);
-            border-bottom: 3px solid var(--orange);
-        }
-
-        .calendar {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 1px;
-            padding: 18px 14px;
-            background: #fbfaf8;
-        }
-
-        .calendar span {
-            display: grid;
-            place-items: center;
-            min-height: 40px;
-            border-radius: 6px;
-            color: #776b61;
-            background: #ffffff;
-            font-size: 11px;
-            font-weight: 700;
-        }
-
-        .calendar .day-name {
-            min-height: 24px;
-            color: #b0a49a;
-            background: transparent;
-        }
-
-        .calendar .today {
-            color: #ffffff;
-            background: var(--orange);
-        }
-
-        .calendar .maybe {
-            background: #fff1c7;
-        }
-
-        .mini-list {
-            display: grid;
-            gap: 10px;
-            padding: 0 16px 18px;
-        }
-
-        .mini-card {
-            padding: 12px;
-            border: 1px solid #ece7df;
-            border-radius: var(--radius);
-            background: #ffffff;
-            box-shadow: 0 6px 18px rgba(49, 40, 33, 0.06);
-        }
-
-        .mini-card strong {
-            display: block;
-            margin-bottom: 3px;
-            font-size: 14px;
-        }
-
-        .mini-card span {
-            color: #85786f;
-            font-size: 12px;
-        }
-
-        .hand-note {
-            position: absolute;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 118px;
-            min-height: 54px;
-            padding: 8px 18px;
-            border: 2px solid rgba(83, 70, 60, 0.46);
-            border-radius: 50%;
-            color: #41362f;
-            background: rgba(255, 255, 255, 0.58);
-            backdrop-filter: blur(2px);
-            font-size: 20px;
-            font-weight: 800;
-            transform: rotate(-8deg);
-        }
-
-        .hand-note.one {
-            right: 34px;
-            top: 330px;
-        }
-
-        .hand-note.two {
-            right: 48px;
-            bottom: 64px;
-            min-width: 190px;
-            transform: rotate(5deg);
-        }
-
-        .problem-band {
-            background: #fffdf9;
-            border-top: 1px solid rgba(244, 124, 45, 0.12);
-            border-bottom: 1px solid rgba(244, 124, 45, 0.12);
-        }
-
-        .section-heading {
-            max-width: 760px;
-        }
-
-        .section-heading h2 {
-            font-size: clamp(34px, 5.4vw, 68px);
-            line-height: 1.13;
-            letter-spacing: 0;
-        }
-
-        .section-heading p {
-            margin-top: 18px;
-            color: var(--muted);
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .speech-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
-            margin-top: 42px;
-        }
-
-        .speech-follow {
-            margin-top: 24px;
-            color: var(--muted);
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .speech {
-            min-height: 146px;
-            padding: 22px;
-            border: 2px solid rgba(150, 91, 87, 0.36);
-            border-radius: var(--radius);
-            color: #7c4d49;
-            background: #fff8f2;
-            font-size: 18px;
-            font-weight: 800;
-        }
-
-        .feature-row {
-            display: grid;
-            grid-template-columns: minmax(0, 0.9fr) minmax(300px, 1.1fr);
-            align-items: center;
-            gap: 56px;
-            padding: 72px 0;
-            border-bottom: 1px solid var(--line);
-        }
-
-        .feature-row:last-child {
-            border-bottom: 0;
-        }
-
-        .feature-row:nth-child(even) {
-            grid-template-columns: minmax(300px, 1.1fr) minmax(0, 0.9fr);
-        }
-
-        .feature-row:nth-child(even) .feature-copy {
-            order: 2;
-        }
-
-        .feature-copy h2 {
-            color: var(--deep-orange);
-            font-size: clamp(32px, 4.6vw, 58px);
-            line-height: 1.18;
-            letter-spacing: 0;
-        }
-
-        .feature-copy p {
-            margin-top: 16px;
-            color: var(--ink);
-            font-size: 18px;
-            font-weight: 800;
-        }
-
-        .mock-surface {
-            position: relative;
-            min-height: 520px;
-            border-radius: 20px;
-            background:
-                radial-gradient(circle at 16% 20%, rgba(255, 226, 116, 0.9), transparent 32%),
-                linear-gradient(180deg, #ffffff 0 38%, rgba(255, 166, 0, 0.68) 38% 100%);
-            box-shadow: var(--shadow);
-        }
-
-        .upright-phone {
-            position: absolute;
-            right: 50%;
-            bottom: 0;
-            width: min(286px, 78%);
-            padding: 10px;
-            border: 8px solid #333333;
-            border-radius: 38px 38px 0 0;
-            background: #333333;
-            box-shadow: 0 22px 42px rgba(49, 40, 33, 0.22);
-            transform: translateX(50%);
-        }
-
-        .upright-phone.compact {
-            width: min(240px, 64%);
-            right: 38%;
-        }
-
-        .upright-phone.back {
-            right: 66%;
-            width: min(218px, 56%);
-            opacity: 0.72;
-            transform: translateX(50%) translateY(-32px);
-        }
-
-        .form-screen,
-        .timeline-screen,
-        .detail-screen {
-            overflow: hidden;
-            min-height: 450px;
-            border-radius: 28px 28px 0 0;
-            background: #ffffff;
-        }
-
-        .form-group {
-            display: grid;
-            gap: 6px;
-            padding: 12px 14px 0;
-        }
-
-        .label {
-            color: #9a8c80;
-            font-size: 11px;
-            font-weight: 800;
-        }
-
-        .input-line {
-            min-height: 42px;
-            padding: 9px 10px;
-            border: 1px solid #ece7df;
-            border-radius: 7px;
-            color: #5d5148;
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .input-line.focused {
-            border-color: var(--orange);
-        }
-
-        .date-grid {
-            display: grid;
-            grid-template-columns: 1fr 0.8fr;
-            gap: 8px;
-            padding: 12px 14px;
-        }
-
-        .keyboard {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 7px;
-            padding: 12px 14px 18px;
-            background: #d4d5dc;
-        }
-
-        .key {
-            display: grid;
-            place-items: center;
-            min-height: 34px;
-            border-radius: 7px;
-            background: #ffffff;
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .timeline-list {
-            display: grid;
-            gap: 10px;
-            padding: 14px;
-            background: #f8f7f5;
-        }
-
-        .event-card {
-            padding: 14px;
-            border: 1px solid #ece7df;
-            border-radius: var(--radius);
-            background: #ffffff;
-        }
-
-        .event-card strong {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .event-card small {
-            display: block;
-            color: #7d7168;
-            font-size: 11px;
-            font-weight: 700;
-        }
-
-        .reaction {
-            display: inline-flex;
-            margin-top: 9px;
-            padding: 4px 8px;
-            border-radius: 999px;
-            color: #8f5a1f;
-            background: #fff1c7;
-            font-size: 11px;
-            font-weight: 800;
-        }
-
-        .detail-body {
-            display: grid;
-            gap: 12px;
-            padding: 18px 16px;
-        }
-
-        .detail-title {
-            font-size: 18px;
-            font-weight: 900;
-        }
-
-        .detail-meta {
-            display: grid;
-            gap: 7px;
-            color: #665d56;
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .comment {
-            margin-top: 6px;
-            padding: 12px;
-            border-radius: var(--radius);
-            background: #f8f7f5;
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .reaction-menu {
-            width: 130px;
-            margin: 12px auto;
-            padding: 8px;
-            border: 1px solid #ece7df;
-            border-radius: var(--radius);
-            background: #ffffff;
-            box-shadow: 0 14px 30px rgba(49, 40, 33, 0.14);
-            font-size: 12px;
-            font-weight: 800;
-        }
-
-        .closing {
-            width: 100%;
-            color: #ffffff;
-            background:
-                linear-gradient(180deg, rgba(255, 126, 48, 0.98), rgba(255, 226, 116, 0.92)),
-                var(--orange);
-        }
-
-        .closing-inner {
-            display: grid;
-            justify-items: center;
-            gap: 24px;
-            width: min(900px, calc(100% - 32px));
-            margin: 0 auto;
-            padding: 104px 0;
-            text-align: center;
-        }
-
-        .closing h2 {
-            padding-bottom: 6px;
-            font-size: clamp(42px, 8vw, 92px);
-            line-height: 1.12;
-            letter-spacing: 0;
-        }
-
-        .closing p {
-            max-width: 560px;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 19px;
-            font-weight: 800;
-        }
-
-        .toast {
-            display: inline-flex;
-            padding: 10px 24px;
-            border: 2px solid rgba(255, 255, 255, 0.72);
-            border-radius: 999px;
-            font-size: 20px;
-            font-weight: 900;
-        }
-
-        .site-footer {
-            background: #fffdf9;
-            border-top: 1px solid var(--line);
-        }
-
-        .footer-inner {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            align-items: center;
-            gap: 24px;
-            width: min(1120px, calc(100% - 32px));
-            margin: 0 auto;
-            padding: 28px 0;
-        }
-
-        .footer-copy {
-            color: var(--muted);
-            font-size: 13px;
-        }
-
-        .legal-links {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: flex-end;
-            gap: 8px 16px;
-        }
-
-        .legal-links a {
-            color: var(--muted);
-            font-size: 13px;
-            font-weight: 700;
-            text-decoration: none;
-        }
-
-        .legal-links a:hover,
-        .legal-links a:focus-visible {
-            color: var(--ink);
-            text-decoration: underline;
-            outline: none;
-        }
-
-        @media (max-width: 900px) {
-            .nav-links {
-                display: none;
-            }
-
-            .hero,
-            .feature-row,
-            .feature-row:nth-child(even) {
-                grid-template-columns: 1fr;
-                gap: 34px;
-            }
-
-            .feature-row:nth-child(even) .feature-copy {
-                order: 0;
-            }
-
-            .showcase {
-                min-height: 580px;
-            }
-
-            .mock-surface {
-                min-height: 0;
-                padding: 32px 16px 0;
-                overflow: hidden;
-            }
-
-            .upright-phone,
-            .upright-phone.compact,
-            .upright-phone.back {
-                position: relative;
-                right: auto;
-                bottom: auto;
-                width: min(286px, 70vw);
-                margin: 0 auto;
-                transform: none;
-            }
-
-            .upright-phone.back {
-                display: none;
-            }
-
-            .form-screen,
-            .timeline-screen,
-            .detail-screen {
-                min-height: 0;
-                height: 500px;
-            }
-
-            .speech-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .footer-inner {
-                grid-template-columns: 1fr;
-            }
-
-            .legal-links {
-                justify-content: flex-start;
-            }
-        }
-
-        @media (max-width: 640px) {
-            .section {
-                width: min(100% - 24px, 560px);
-                padding: 68px 0;
-            }
-
-            .hero {
-                min-height: auto;
-                padding-top: 36px;
-            }
-
-            .hero h1 {
-                font-size: clamp(34px, 10.2vw, 42px);
-                line-height: 1.08;
-            }
-
-            .hero-actions {
-                align-items: stretch;
-                flex-direction: column;
-            }
-
-            .button {
-                width: 100%;
-            }
-
-            .showcase {
-                min-height: 540px;
-            }
-
-            .phone {
-                width: min(250px, 72vw);
-                margin-top: 34px;
-                transform: rotate(-4deg);
-            }
-
-            .phone-screen {
-                height: 430px;
-            }
-
-            .hand-note.one {
-                top: 300px;
-                right: 12px;
-            }
-
-            .hand-note.two {
-                right: 18px;
-                bottom: 38px;
-                min-width: 150px;
-                font-size: 16px;
-            }
-
-            .speech-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .speech {
-                min-height: auto;
-            }
-
-            .feature-row {
-                padding: 54px 0;
-            }
-
-            .mock-surface {
-                padding-top: 24px;
-            }
-
-            .upright-phone,
-            .upright-phone.compact {
-                width: min(230px, 66vw);
-            }
-
-            .form-screen,
-            .timeline-screen,
-            .detail-screen {
-                height: 420px;
-            }
-
-            .closing-inner {
-                padding: 82px 0;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LaKiite — お誘い未満の予定共有アプリ</title>
+  <meta name="description" content="LaKiite（ラキーテ）は「わざわざ誘うほどじゃないけど、誰か来れたら嬉しい」ゆるい予定を気軽に共有できるアプリ。今日のちょっとしたお出かけを、もっと気軽につなげよう。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header class="site-header">
-        <nav class="nav" aria-label="メインナビゲーション">
-            <a class="brand" href="#top" aria-label="LaKiite トップへ">
-                <span class="brand-mark" aria-hidden="true">L</span>
-                <span>LaKiite</span>
-            </a>
-            <div class="nav-links">
-                <a href="#why">なぜ</a>
-                <a href="#share">できること</a>
-                <a href="#links">サポート</a>
-            </div>
-        </nav>
-    </header>
 
-    <main id="top">
-        <section class="section hero" aria-labelledby="hero-title">
-            <div>
-                <p class="eyebrow">お誘い未満の予定共有アプリ</p>
-                <h1 id="hero-title">
-                    <span>誘うほどでもない。</span>
-                    <span>でも、誰かと会えたらうれしい。</span>
-                </h1>
-                <p class="hero-copy">
-                    LaKiiteは、急なおでかけや空いた時間を、気をつかいすぎずに共有できる予定アプリです。
-                </p>
-                <div class="hero-actions" aria-label="主要リンク">
-                    <a class="button button-primary" href="#share">使い方を見る</a>
-                    <a class="button button-secondary" href="support.html">お問い合わせ</a>
-                </div>
-                <p class="hero-note">来れたら来て、くらいの温度でつながれます。</p>
-            </div>
+  <!-- ナビゲーション -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">LaKiite</a>
+      <ul class="nav-links">
+        <li><a href="#features">サービス特徴</a></li>
+        <li><a href="#story">想い</a></li>
+        <li><a href="#how">使い方</a></li>
+        <li><a href="#faq">よくある質問</a></li>
+      </ul>
+      <div class="nav-download">
+        <a href="#download" class="nav-cta">ダウンロード</a>
+      </div>
+    </div>
+  </nav>
 
-            <div class="showcase" aria-label="LaKiiteの画面イメージ">
-                <div class="warm-panel"></div>
-                <div class="phone" aria-hidden="true">
-                    <div class="phone-screen">
-                        <div class="app-top">ホーム</div>
-                        <div class="tabs">
-                            <span class="active">カレンダー</span>
-                            <span>タイムライン</span>
-                        </div>
-                        <div class="calendar">
-                            <span class="day-name">日</span><span class="day-name">月</span><span class="day-name">火</span><span class="day-name">水</span><span class="day-name">木</span><span class="day-name">金</span><span class="day-name">土</span>
-                            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span>
-                            <span>8</span><span>9</span><span class="maybe">10</span><span>11</span><span>12</span><span>13</span><span>14</span>
-                            <span>15</span><span>16</span><span>17</span><span>18</span><span class="today">19</span><span>20</span><span>21</span>
-                            <span>22</span><span>23</span><span>24</span><span>25</span><span>26</span><span>27</span><span>28</span>
-                        </div>
-                        <div class="mini-list">
-                            <div class="mini-card">
-                                <strong>梅田で朝カフェ</strong>
-                                <span>来れたら来てー</span>
-                            </div>
-                            <div class="mini-card">
-                                <strong>夕方ちょっと散歩</strong>
-                                <span>時間空いた人だけ</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <span class="hand-note one" aria-hidden="true">行くー！</span>
-                <span class="hand-note two" aria-hidden="true">時間空いたから<br>向かいます！</span>
-            </div>
-        </section>
-
-        <section id="why" class="problem-band">
-            <div class="section">
-                <div class="section-heading">
-                    <h2>もっと気軽に、予定をシェアできたら。</h2>
-                    <p>ちゃんと誘うほどじゃない予定ほど、少しだけ気を使いませんか？</p>
-                </div>
-                <div class="speech-grid" aria-label="予定共有で起こりやすい気持ち">
-                    <div class="speech">「イオン行くぐらいで誘うのもなぁ」</div>
-                    <div class="speech">「でも意外と子連れの友達いると子供同士で遊んでくれるしいいんよね」</div>
-                    <div class="speech">インスタ見て<br>「うわ。〇〇行ってるじゃん。連絡すれば良かった」</div>
-                    <div class="speech">「こないだグループLINEで聞いたけど断られたしなぁ」</div>
-                </div>
-                <p class="speech-follow">こういうこと、ありませんか？</p>
-            </div>
-        </section>
-
-        <section id="share" class="section" aria-label="LaKiiteでできること">
-            <div class="feature-row">
-                <div class="feature-copy">
-                    <h2>自分の予定を<br>気軽にシェア</h2>
-                    <p>公開範囲も自由に設定OK。誰に見せるかを選んで、予定をそっと置いておけます。</p>
-                </div>
-                <div class="mock-surface" aria-hidden="true">
-                    <div class="upright-phone">
-                        <div class="form-screen">
-                            <div class="app-top">予定作成</div>
-                            <div class="form-group">
-                                <span class="label">タイトル</span>
-                                <div class="input-line">朝まで飲みたい！！</div>
-                            </div>
-                            <div class="form-group">
-                                <span class="label">説明</span>
-                                <div class="input-line">誰か付き合ってーーー</div>
-                            </div>
-                            <div class="form-group">
-                                <span class="label">場所</span>
-                                <div class="input-line focused">梅田とか難波とか？</div>
-                            </div>
-                            <div class="date-grid">
-                                <div class="input-line">2026年5月24日</div>
-                                <div class="input-line">06:00</div>
-                            </div>
-                            <div class="keyboard">
-                                <span class="key">あ</span><span class="key">か</span><span class="key">さ</span><span class="key">た</span><span class="key">な</span>
-                                <span class="key">は</span><span class="key">ま</span><span class="key">や</span><span class="key">ら</span><span class="key">わ</span>
-                                <span class="key">ABC</span><span class="key">空白</span><span class="key">、</span><span class="key">。</span><span class="key">✓</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="feature-row">
-                <div class="feature-copy">
-                    <h2>みんなの予定を<br>こそっとチェック</h2>
-                    <p>見ただけで既読はつかないから気楽。行けそうな予定だけ、あとから反応できます。</p>
-                </div>
-                <div class="mock-surface" aria-hidden="true">
-                    <div class="upright-phone back">
-                        <div class="timeline-screen">
-                            <div class="app-top">ホーム</div>
-                            <div class="calendar">
-                                <span class="day-name">日</span><span class="day-name">月</span><span class="day-name">火</span><span class="day-name">水</span><span class="day-name">木</span><span class="day-name">金</span><span class="day-name">土</span>
-                                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span>
-                                <span>8</span><span class="maybe">9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span>
-                                <span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="upright-phone compact">
-                        <div class="timeline-screen">
-                            <div class="app-top">ホーム</div>
-                            <div class="tabs">
-                                <span>カレンダー</span>
-                                <span class="active">タイムライン</span>
-                            </div>
-                            <div class="timeline-list">
-                                <div class="event-card">
-                                    <strong>大枝公園</strong>
-                                    <small>2026/05/27 10:00 - 12:00</small>
-                                    <span class="reaction">行きます！</span>
-                                </div>
-                                <div class="event-card">
-                                    <strong>コストコ</strong>
-                                    <small>2026/05/30 10:00 - 15:00</small>
-                                    <span class="reaction">考え中！</span>
-                                </div>
-                                <div class="event-card">
-                                    <strong>飲みにいきたい！</strong>
-                                    <small>今日の夜</small>
-                                    <span class="reaction">考え中！</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="feature-row">
-                <div class="feature-copy">
-                    <h2>行けそうなときだけ<br>リアクション</h2>
-                    <p>コメント機能で相談もできます。参加表明も、考え中も、ちょうどいい距離感で。</p>
-                </div>
-                <div class="mock-surface" aria-hidden="true">
-                    <div class="upright-phone">
-                        <div class="detail-screen">
-                            <div class="app-top">予定の詳細</div>
-                            <div class="detail-body">
-                                <div class="detail-title">子供と一日ワンオペ</div>
-                                <div class="detail-meta">
-                                    <span>2026年5月30日（土）09:00 - 17:00</span>
-                                    <span>未定</span>
-                                    <span>一郎</span>
-                                </div>
-                                <div class="comment">
-                                    河川敷でBBQしようと思うんやけど来る？
-                                </div>
-                                <div class="reaction-menu">
-                                    <div>🙋 行きます！</div>
-                                    <div>🤔 考え中！</div>
-                                </div>
-                                <div class="input-line">コメントを追加...</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="closing" aria-labelledby="closing-title">
-            <div class="closing-inner">
-                <h2 id="closing-title">ゆるく、つながろう</h2>
-                <span class="toast">来れたら来て</span>
-                <p>予定を押しつけず、気持ちも重くしない。LaKiiteは、会えたらうれしい時間を自然につくります。</p>
-            </div>
-        </section>
-    </main>
-
-    <footer id="links" class="site-footer">
-        <div class="footer-inner">
-            <div>
-                <a class="brand" href="#top" aria-label="LaKiite トップへ">
-                    <span class="brand-mark" aria-hidden="true">L</span>
-                    <span>LaKiite</span>
-                </a>
-                <p class="footer-copy">お誘い未満の予定共有アプリ</p>
-            </div>
-            <nav class="legal-links" aria-label="法務とサポート">
-                <a href="privacy-policy.html">プライバシーポリシー</a>
-                <a href="terms-of-service.html">利用規約</a>
-                <a href="support.html">サポート</a>
-                <a href="child-safety-standards.html">子どもの安全基準</a>
-                <a href="account-deletion.html">アカウント削除</a>
-            </nav>
+  <!-- ヒーロー -->
+  <section class="hero">
+    <div class="bg-dots" aria-hidden="true">
+      <span class="bg-dot d-fill-primary" style="width:140px;height:140px;top:30px;left:-40px"></span>
+      <span class="bg-dot d-fill-pink" style="width:90px;height:90px;top:8%;right:-20px"></span>
+      <span class="bg-dot d-fill-blue soft pc-only" style="width:130px;height:130px;top:22%;left:2%"></span>
+      <span class="bg-dot d-fill-primary soft pc-only" style="width:100px;height:100px;top:38%;right:2%"></span>
+      <span class="bg-dot d-fill-pink pc-only" style="width:70px;height:70px;top:5%;left:30%"></span>
+      <span class="bg-dot d-fill-blue" style="width:160px;height:160px;bottom:-30px;right:-20px"></span>
+      <span class="bg-dot d-fill-primary soft" style="width:120px;height:120px;bottom:22%;left:-30px"></span>
+      <span class="bg-dot d-fill-pink" style="width:60px;height:60px;bottom:14%;right:18%"></span>
+    </div>
+    <div class="hero-inner">
+      <div class="hero-text">
+        <span class="hero-bubble">来れたら来てー</span>
+        <h1><span class="nobr"><span class="hand">「お誘い未満」</span>の</span><span class="nobr"><span class="text-yellow">新感覚</span>予定共有アプリ</span></h1>
+        <p class="hero-desc"><span class="nobr">誘うほどじゃないけど、</span><span class="nobr">誰かと会えたらうれしい。</span><span class="nobr">そんな「お誘い未満」の予定を、</span><span class="nobr">ゆるくシェアできるアプリ、LaKiite（ラキーテ）。</span></p>
+        <div class="hero-buttons">
+          <a href="#download" class="btn btn-primary">無料ではじめる</a>
+          <a href="#features" class="btn btn-outline">どんなアプリ？</a>
         </div>
-    </footer>
+      </div>
+      <div class="hero-visual">
+        <div class="phone-stack">
+          <div class="phone-mockup phone-back">
+            <div class="phone-screen">
+              <img src="images/app-calendar.png" alt="LaKiiteのカレンダー画面" class="phone-shot" loading="lazy">
+            </div>
+          </div>
+          <div class="phone-mockup phone-front">
+            <div class="phone-screen">
+              <img src="images/app-timeline.png" alt="LaKiiteのタイムライン画面" class="phone-shot">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 課題提示セクション -->
+  <section class="problems">
+    <div class="section-inner">
+      <div class="problems-row">
+        <div class="problems-illust">
+          <div class="problems-thought">
+            <p><span class="nobr">こう思ったこと、</span><span class="nobr">ありませんか？</span></p>
+          </div>
+          <img src="images/worry.png" alt="予定の共有に悩む人たち" loading="lazy">
+        </div>
+        <ul class="problems-list">
+          <li><span class="nobr">誰かに会いたいけど</span><span class="nobr">誘うほどじゃない</span></li>
+          <li><span class="nobr">急だと気をつかう</span></li>
+          <li><span class="nobr">グループLINEに</span><span class="nobr">入れるほどじゃないな</span></li>
+          <li><span class="nobr">断るのも、断られるのも</span><span class="nobr">ちょっとしんどい</span></li>
+        </ul>
+      </div>
+      <div class="problems-answer">
+        <div class="problems-answer-circle"></div>
+        <p><span class="nobr">もっと気軽に、</span><span class="nobr">予定をシェアできたら。</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 機能紹介（Point形式） -->
+  <section class="features" id="features">
+    <div class="bg-dots" aria-hidden="true">
+      <span class="bg-dot d-fill-pink" style="width:140px;height:140px;top:6%;right:-50px"></span>
+      <span class="bg-dot d-fill-primary soft" style="width:200px;height:200px;top:30%;left:-70px"></span>
+      <span class="bg-dot d-fill-blue" style="width:130px;height:130px;top:60%;right:-40px"></span>
+      <span class="bg-dot d-fill-pink soft" style="width:180px;height:180px;bottom:6%;left:-60px"></span>
+    </div>
+    <div class="section-inner">
+
+      <div class="feature-block">
+        <div class="feature-label-wrap">
+          <span class="feature-label">Point 01</span>
+        </div>
+        <div class="feature-content-row">
+          <div class="feature-text">
+            <h3><span class="nobr">自分の予定を</span><span class="nobr">気軽にシェア</span></h3>
+            <p class="feature-sub">公開範囲も自由に設定OK</p>
+            <p><span class="nobr">「朝まで飲みたい！」</span><span class="nobr">「子どもと公園行くよ」。</span><span class="nobr">わざわざ誘わなくても、予定を書いておくだけ。</span><span class="nobr">見せる相手は自分で選べるから安心です。</span></p>
+          </div>
+          <div class="feature-img">
+            <div class="feature-img-circle"></div>
+            <div class="feature-phone">
+              <img src="images/app-create.png" alt="予定作成画面" loading="lazy">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feature-block reverse">
+        <div class="feature-label-wrap">
+          <span class="feature-label">Point 02</span>
+        </div>
+        <div class="feature-content-row">
+          <div class="feature-text">
+            <h3><span class="nobr">みんなの予定を</span><span class="nobr">こそっとチェック</span></h3>
+            <p class="feature-sub">見ただけで既読はつかないから気楽！</p>
+            <p><span class="nobr">友達がシェアした予定を、</span><span class="nobr">タイムラインでゆるく眺める。</span><span class="nobr">見ても既読はつかないから、</span><span class="nobr">気になったときだけ反応すればOKです。</span></p>
+          </div>
+          <div class="feature-img">
+            <div class="feature-img-circle"></div>
+            <div class="feature-phone">
+              <img src="images/app-timeline.png" alt="タイムライン画面" loading="lazy">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feature-block">
+        <div class="feature-label-wrap">
+          <span class="feature-label">Point 03</span>
+        </div>
+        <div class="feature-content-row">
+          <div class="feature-text">
+            <h3><span class="nobr">行けそうなときだけ</span><span class="nobr">リアクション</span></h3>
+            <p class="feature-sub">コメント機能で相談もできる！</p>
+            <p><span class="nobr">行けそうなら「行きます！」、</span><span class="nobr">迷ってたら「考え中！」とワンタップ。</span><span class="nobr">コメントで「何時から？」と相談もできるから、</span><span class="nobr">断る気まずさもありません。</span></p>
+          </div>
+          <div class="feature-img">
+            <div class="feature-img-circle"></div>
+            <div class="feature-phone">
+              <img src="images/app-detail.png" alt="予定の詳細・リアクション画面" loading="lazy">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 開発への想い -->
+  <section class="story" id="story">
+    <div class="story-circle story-circle-1"></div>
+    <div class="story-circle story-circle-2"></div>
+    <div class="bg-dots" aria-hidden="true">
+      <span class="bg-dot d-fill-primary" style="width:140px;height:140px;top:8%;left:-50px"></span>
+      <span class="bg-dot d-fill-blue" style="width:160px;height:160px;top:30%;right:-60px"></span>
+      <span class="bg-dot d-fill-pink soft" style="width:200px;height:200px;top:56%;left:-80px"></span>
+      <span class="bg-dot d-fill-primary" style="width:120px;height:120px;bottom:6%;right:-40px"></span>
+    </div>
+    <div class="section-inner">
+      <p class="section-eyebrow">開発への想い</p>
+      <h2 class="text-center"><span class="nobr">「来れたら来て！」くらいの予定って、</span><span class="nobr">どうやって共有していますか？</span></h2>
+
+      <div class="story-illust story-illust-top">
+        <img src="images/car-out.png" alt="家族でお出かけ" loading="lazy">
+      </div>
+
+      <div class="story-body">
+        <p><span class="nobr">たとえば、</span><span class="nobr">子どもを連れて公園に行くとき。</span><span class="nobr">同じく子連れの友達と</span><span class="nobr">一緒に行けたら楽しいけど、</span><span class="nobr">「公園行くだけで</span><span class="nobr">わざわざ連絡するのもな…」と</span><span class="nobr">思ったことはありませんか？</span></p>
+
+        <p><span class="nobr">一人で少しイオンに行く。</span><span class="nobr">ちょっと梅田に行く。</span><span class="nobr">カフェに行く。散歩に行く。</span><span class="nobr">誰か一緒に来れたら嬉しいけど、</span><span class="nobr">わざわざLINEするほどでもない。</span></p>
+
+        <p><span class="nobr">勇気を出して連絡しても、</span><span class="nobr">一度断られると、</span><span class="nobr">次から少し誘いにくくなる。</span><span class="nobr">そんな経験、ありませんか？</span></p>
+
+        <p class="story-lead"><span class="nobr"><strong>LaKiite（ラキーテ）</strong>は、</span><span class="nobr">そんな「わざわざ誘うほどじゃないけど、</span><span class="nobr">誰かと会えたらうれしい」</span><span class="nobr">という予定を、</span><span class="nobr">気軽にシェアできるアプリです。</span></p>
+
+        <p><span class="nobr">予定をシェアしておけば、</span><span class="nobr">友達はそれを見て、</span><span class="nobr">行けそうなら反応できます。</span><span class="nobr">誘う側も、断られる気まずさが少ない。</span><span class="nobr">見る側も、無理に返事しなくていい。</span></p>
+
+        <p><span class="nobr">「今度行こう」ではなく、</span><span class="nobr">「今日ここ行くよ」</span><span class="nobr">「この時間ここにいるよ」</span><span class="nobr">くらいの軽さで</span><span class="nobr">使ってもらえたら嬉しいです。</span></p>
+
+        <div class="story-illust story-illust-mid">
+          <img src="images/family-stroller.png" alt="子育て中のお出かけ" loading="lazy">
+        </div>
+
+        <p><span class="nobr">子育て中のちょっとしたお出かけ。</span><span class="nobr">友達とのゆるい予定共有。</span><span class="nobr">一人時間に誰か合流できたら嬉しい時。</span><span class="nobr">そんな日常の小さな予定を、</span><span class="nobr">もっと気軽につなげる</span><span class="nobr">アプリです。</span></p>
+
+        <p class="story-closing">ぜひ、使ってみてください。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 使い方 -->
+  <section class="how" id="how">
+    <div class="bg-dots" aria-hidden="true">
+      <span class="bg-dot d-fill-pink" style="width:120px;height:120px;top:14%;left:-40px"></span>
+      <span class="bg-dot d-fill-primary soft" style="width:180px;height:180px;top:48%;right:-60px"></span>
+      <span class="bg-dot d-fill-blue" style="width:90px;height:90px;bottom:10%;left:-20px"></span>
+    </div>
+    <div class="section-inner">
+      <h2 class="text-center"><span class="nobr">かんたん3ステップで</span><span class="nobr">すぐに始められます。</span></h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-circle">
+            <span>1</span>
+          </div>
+          <h3>アカウント作成</h3>
+          <p><span class="nobr">メール／Apple／Google認証で、</span><span class="nobr">すぐに登録完了。</span></p>
+        </div>
+        <div class="step-arrow">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffa600" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+        <div class="step">
+          <div class="step-circle">
+            <span>2</span>
+          </div>
+          <h3>友達を招待</h3>
+          <p><span class="nobr">「友人をアプリに招待」から</span><span class="nobr">招待リンクを送るだけ。</span></p>
+        </div>
+        <div class="step-arrow">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffa600" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+        <div class="step">
+          <div class="step-circle">
+            <span>3</span>
+          </div>
+          <h3>予定をシェア</h3>
+          <p><span class="nobr">「お誘い未満」の予定をシェア。</span><span class="nobr">行けそうな友達が反応してくれる。</span><span class="nobr">それだけ。</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq" id="faq">
+    <div class="bg-dots" aria-hidden="true">
+      <span class="bg-dot d-fill-blue" style="width:130px;height:130px;top:18%;right:-50px"></span>
+      <span class="bg-dot d-fill-pink soft" style="width:160px;height:160px;bottom:10%;left:-60px"></span>
+    </div>
+    <div class="section-inner">
+      <h2 class="text-center">よくある質問</h2>
+      <div class="faq-list">
+        <details class="faq-item">
+          <summary>無料で使えますか？</summary>
+          <p>はい。LaKiiteの基本機能はすべて無料でお使いいただけます。</p>
+        </details>
+        <details class="faq-item">
+          <summary>予定を見たら相手に既読がつきますか？</summary>
+          <p>いいえ。LaKiiteは見ても既読がつかない仕組みです。気になる予定だけ「行きます！」「考え中！」で反応すればOK。見るだけでも気楽に使えます。</p>
+        </details>
+        <details class="faq-item">
+          <summary>誰にでも予定が見られてしまいますか？</summary>
+          <p>いいえ。予定を共有する相手は自分で選べます。仲のいい友達だけ、子育て仲間だけなど、見せたい人にだけ届きます。</p>
+        </details>
+        <details class="faq-item">
+          <summary>iOS / Android どちらでも使えますか？</summary>
+          <p>はい。App Store・Google Play の両方で配信しています。</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta" id="download">
+    <div class="section-inner">
+      <div class="cta-inner">
+        <div class="cta-circle cta-circle-1"></div>
+        <div class="cta-circle cta-circle-2"></div>
+        <img src="images/logo-mark.png" alt="LaKiite" class="cta-logo">
+        <h2><span class="nobr">ゆるく、</span><span class="nobr">つながろ。</span></h2>
+        <p><span class="nobr">「お誘い未満」の予定を、もっと気軽に。</span><span class="nobr">LaKiiteは無料でダウンロードできます。</span></p>
+        <div class="cta-buttons">
+          <a href="https://apps.apple.com/jp/app/id6746154277" class="store-link" aria-label="App Storeでダウンロード">
+            <img src="images/appstore-badge.svg" alt="App Storeでダウンロード" class="store-img">
+          </a>
+          <a href="https://play.google.com/store/apps/details?id=com.inoworl.lakiite" class="store-link" aria-label="Google Playで手に入れよう">
+            <img src="images/googleplay-badge.png" alt="Google Playで手に入れよう" class="store-img">
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- フッター -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <span class="footer-logo">LaKiite</span>
+          <p>お誘い未満の予定共有アプリ</p>
+        </div>
+        <div class="footer-links">
+          <a href="privacy-policy.html">プライバシーポリシー</a>
+          <a href="terms-of-service.html">利用規約</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Inoworl. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 固定ダウンロードバー（モバイル） -->
+  <div class="fixed-bar">
+    <a href="#download" class="fixed-bar-btn">無料ダウンロード</a>
+  </div>
+
+  <script>
+    // スクロールでふわっと表示（控えめ）
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var targets = document.querySelectorAll(
+        '.section-label, .section-eyebrow, h2, .problems-row, .problems-answer, ' +
+        '.feature-block, .story-illust, .story-body > p, .step, ' +
+        '.faq-item, .cta-hand, .cta-buttons'
+      );
+      // staggerグループ
+      document.querySelectorAll('.problems-list li, .steps .step').forEach(function (el) {
+        el.classList.add('reveal-stagger');
+      });
+
+      if (reduce || !('IntersectionObserver' in window)) {
+        targets.forEach(function (el) { el.classList.add('is-visible'); });
+        return;
+      }
+
+      targets.forEach(function (el) { el.classList.add('reveal'); });
+
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+
+      targets.forEach(function (el) { io.observe(el); });
+
+      // 背景の丸：スクロールで浮き出る
+      var dots = document.querySelectorAll('.bg-dot');
+      var dotIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            dotIO.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.05, rootMargin: '0px 0px -5% 0px' });
+      dots.forEach(function (el) { dotIO.observe(el); });
+    })();
+  </script>
+
 </body>
 </html>
