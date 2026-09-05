@@ -8,6 +8,7 @@ import 'package:image_picker_android/image_picker_android.dart';
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'app/di/providers.dart';
 import 'application/force_update/force_update_providers.dart';
 import 'config/app_config.dart';
 import 'config/admob_config.dart';
@@ -179,6 +180,9 @@ class MyApp extends ConsumerWidget {
 
     NotificationNavigationService.instance.configureNotificationListBuilder(
       (_) => const NotificationListPage(),
+    );
+    DeepLinkNavigationService.instance.configureGrowthAnalytics(
+      ref.watch(growthAnalyticsProvider),
     );
     DeepLinkNavigationService.instance.configureFriendSearchNavigator(
       (searchId) => router.push<void>(

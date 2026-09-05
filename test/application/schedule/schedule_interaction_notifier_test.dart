@@ -16,11 +16,14 @@ import 'package:lakiite/domain/entity/schedule_comment.dart';
 import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/domain/interfaces/i_notification_repository.dart';
+import 'package:lakiite/domain/interfaces/i_growth_analytics.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_repository.dart';
 import 'package:lakiite/domain/interfaces/i_user_repository.dart';
 import 'package:lakiite/domain/value/user_id.dart';
 import 'package:lakiite/infrastructure/firebase/push_notification_sender.dart';
+
+import '../../mock/analytics/recording_growth_analytics.dart';
 
 class _StubAuthNotifier extends auth.AuthNotifier {
   _StubAuthNotifier(this._state);
@@ -436,12 +439,217 @@ class _FakeScheduleInteractionRepository
   }
 }
 
+class _ReactionFixture {
+  _ReactionFixture({
+    required this.user,
+    required this.schedule,
+    required this.repository,
+    required this.analytics,
+    required this.container,
+    required this.closeSubscription,
+  });
+
+  final UserModel user;
+  final Schedule schedule;
+  final _FakeScheduleInteractionRepository repository;
+  final RecordingGrowthAnalytics analytics;
+  final ProviderContainer container;
+  final void Function() closeSubscription;
+
+  static Future<_ReactionFixture> create({bool userIsOwner = false}) async {
+    final user = UserModel(
+      publicProfile: PublicUserModel(
+        id: 'user-1',
+        displayName: 'User One',
+        searchId: UserId('USRTEST1'),
+        iconUrl: null,
+        shortBio: null,
+      ),
+      privateProfile: PrivateUserModel(
+        id: 'user-1',
+        name: 'User One',
+        friends: const [],
+        groups: const [],
+        lists: const [],
+        createdAt: DateTime(2024, 1, 1),
+      ),
+    );
+    final schedule = Schedule(
+      id: 'schedule-1',
+      title: 'Sample',
+      description: 'Desc',
+      startDateTime: DateTime(2024, 1, 1, 10),
+      endDateTime: DateTime(2024, 1, 1, 12),
+      ownerId: userIsOwner ? user.id : 'owner-1',
+      ownerDisplayName: 'Owner',
+      sharedLists: const [],
+      visibleTo: const [],
+      createdAt: DateTime(2024, 1, 1),
+      updatedAt: DateTime(2024, 1, 1),
+    );
+    final repository = _FakeScheduleInteractionRepository();
+    final analytics = RecordingGrowthAnalytics();
+    final container = ProviderContainer(
+      overrides: [
+        auth.authNotifierProvider.overrideWith(
+          () => _StubAuthNotifier(AuthState.authenticated(user)),
+        ),
+        scheduleInteractionRepositoryProvider.overrideWithValue(repository),
+        scheduleInteractionNotifierProvider.overrideWith((ref, scheduleId) {
+          return ScheduleInteractionNotifier(
+            ref.watch(scheduleInteractionRepositoryProvider),
+            scheduleId,
+            ref,
+            enablePushNotifications: false,
+          );
+        }),
+        scheduleRepositoryProvider.overrideWithValue(
+          _FakeScheduleRepository(schedule),
+        ),
+        userRepositoryProvider.overrideWithValue(_FakeUserRepository(user)),
+        growthAnalyticsProvider.overrideWithValue(analytics),
+        notification.notificationRepositoryProvider.overrideWithValue(
+          _FakeNotificationRepository(),
+        ),
+        notification.pushNotificationSenderProvider.overrideWithValue(
+          PushNotificationSender(
+            cloudFunctionUrl: 'https://example.test/push',
+            tokenResolver: (_) async => const [],
+          ),
+        ),
+        notification.notificationNotifierProvider.overrideWith((ref) {
+          return _FakeNotificationNotifier(ref);
+        }),
+      ],
+    );
+    final provider = scheduleInteractionNotifierProvider(schedule.id);
+    final subscription = container.listen(
+      provider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    await repository.waitForReactionListener();
+
+    return _ReactionFixture(
+      user: user,
+      schedule: schedule,
+      repository: repository,
+      analytics: analytics,
+      container: container,
+      closeSubscription: subscription.close,
+    );
+  }
+
+  Future<void> setReaction(ReactionType type) async {
+    repository.emitReactions([
+      ScheduleReaction(
+        id: 'existing-reaction',
+        userId: user.id,
+        type: type,
+        createdAt: DateTime(2024, 1, 1),
+        userDisplayName: user.displayName,
+      ),
+    ]);
+    await Future<void>.delayed(Duration.zero);
+  }
+
+  Future<void> dispose() async {
+    closeSubscription();
+    container.dispose();
+    repository.dispose();
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ScheduleInteractionNotifier', () {
     setUpAll(() async {
       AppConfig.initialize(Environment.development);
+    });
+
+    test('新規リアクション保存成功後にaddedを1回記録する', () async {
+      final fixture = await _ReactionFixture.create();
+      addTearDown(fixture.dispose);
+
+      await fixture.container
+          .read(
+            scheduleInteractionNotifierProvider(fixture.schedule.id).notifier,
+          )
+          .toggleReaction(fixture.user.id, ReactionType.going);
+
+      final call = fixture.analytics.reactionSentCalls.single;
+      expect(call.reactionType, ReactionType.going);
+      expect(call.changeKind, ReactionChangeKind.added);
+    });
+
+    test('別種リアクション保存成功後にchangedを1回記録する', () async {
+      final fixture = await _ReactionFixture.create();
+      addTearDown(fixture.dispose);
+      await fixture.setReaction(ReactionType.going);
+
+      await fixture.container
+          .read(
+            scheduleInteractionNotifierProvider(fixture.schedule.id).notifier,
+          )
+          .toggleReaction(fixture.user.id, ReactionType.thinking);
+
+      final call = fixture.analytics.reactionSentCalls.single;
+      expect(call.reactionType, ReactionType.thinking);
+      expect(call.changeKind, ReactionChangeKind.changed);
+    });
+
+    test('同じリアクションの削除と予定所有者の操作は記録しない', () async {
+      final removalFixture = await _ReactionFixture.create();
+      addTearDown(removalFixture.dispose);
+      await removalFixture.setReaction(ReactionType.going);
+
+      await removalFixture.container
+          .read(
+            scheduleInteractionNotifierProvider(
+              removalFixture.schedule.id,
+            ).notifier,
+          )
+          .toggleReaction(removalFixture.user.id, ReactionType.going);
+
+      final ownerFixture = await _ReactionFixture.create(userIsOwner: true);
+      addTearDown(ownerFixture.dispose);
+      await ownerFixture.container
+          .read(
+            scheduleInteractionNotifierProvider(
+              ownerFixture.schedule.id,
+            ).notifier,
+          )
+          .toggleReaction(ownerFixture.user.id, ReactionType.thinking);
+
+      expect(removalFixture.analytics.reactionSentCalls, isEmpty);
+      expect(ownerFixture.analytics.reactionSentCalls, isEmpty);
+    });
+
+    test('リアクション保存失敗時は記録しない', () async {
+      final fixture = await _ReactionFixture.create();
+      addTearDown(fixture.dispose);
+      final addReactionCompleter = Completer<String>();
+      fixture.repository.addReactionCompleter = addReactionCompleter;
+
+      final toggleFuture = fixture.container
+          .read(
+            scheduleInteractionNotifierProvider(fixture.schedule.id).notifier,
+          )
+          .toggleReaction(fixture.user.id, ReactionType.going);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(fixture.repository.addReactionCallCount, 1);
+
+      addReactionCompleter.completeError(StateError('reaction save failed'));
+      await toggleFuture;
+
+      expect(fixture.analytics.reactionSentCalls, isEmpty);
+      expect(
+        fixture.container
+            .read(scheduleInteractionNotifierProvider(fixture.schedule.id))
+            .error,
+        contains('reaction save failed'),
+      );
     });
 
     test(

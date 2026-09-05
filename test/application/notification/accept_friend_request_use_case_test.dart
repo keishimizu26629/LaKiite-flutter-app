@@ -2,17 +2,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lakiite/application/notification/accept_friend_request_use_case.dart';
 import 'package:lakiite/domain/entity/notification.dart';
 
+import '../../mock/analytics/recording_growth_analytics.dart';
 import '../../mock/repository/mock_notification_repository.dart';
 
 void main() {
   group('AcceptFriendRequestUseCase', () {
     late MockNotificationRepository notificationRepository;
+    late RecordingGrowthAnalytics analytics;
     late AcceptFriendRequestUseCase useCase;
 
     setUp(() {
       notificationRepository = MockNotificationRepository();
+      analytics = RecordingGrowthAnalytics();
       useCase = AcceptFriendRequestUseCase(
         notificationRepository: notificationRepository,
+        growthAnalytics: analytics,
       );
     });
 
@@ -32,8 +36,38 @@ void main() {
 
       expect(notification?.status, NotificationStatus.accepted);
       expect(notification?.isRead, isTrue);
+      expect(analytics.friendRequestAcceptedCount, 1);
+    });
+
+    test('通知承認に失敗した場合は記録しない', () async {
+      final failingRepository = _FailingAcceptNotificationRepository()
+        ..addTestNotification(
+          _friendRequest(
+            id: 'friend-request-id',
+            sendUserId: 'sender-id',
+            receiveUserId: 'receiver-id',
+          ),
+        );
+      final failingUseCase = AcceptFriendRequestUseCase(
+        notificationRepository: failingRepository,
+        growthAnalytics: analytics,
+      );
+
+      await expectLater(
+        failingUseCase.execute('friend-request-id'),
+        throwsStateError,
+      );
+
+      expect(analytics.friendRequestAcceptedCount, 0);
     });
   });
+}
+
+class _FailingAcceptNotificationRepository extends MockNotificationRepository {
+  @override
+  Future<void> acceptNotification(String notificationId) async {
+    throw StateError('accept failed');
+  }
 }
 
 Notification _friendRequest({

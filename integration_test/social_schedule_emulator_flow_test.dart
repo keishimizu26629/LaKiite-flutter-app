@@ -9,6 +9,7 @@ import 'package:lakiite/config/app_config.dart';
 import 'package:lakiite/domain/entity/notification.dart' as domain;
 import 'package:lakiite/domain/entity/schedule.dart';
 import 'package:lakiite/domain/entity/schedule_reaction.dart';
+import 'package:lakiite/infrastructure/airbridge_growth_analytics.dart';
 import 'package:lakiite/infrastructure/auth_repository.dart';
 import 'package:lakiite/infrastructure/notification_repository.dart';
 import 'package:lakiite/infrastructure/schedule_interaction_repository.dart';
@@ -69,6 +70,7 @@ void main() {
     final requestId = requestSnapshot.docs.single.id;
     await AcceptFriendRequestUseCase(
       notificationRepository: notificationRepository,
+      growthAnalytics: const NoopGrowthAnalytics(),
     ).execute(requestId);
 
     final accepted = await notificationRepository.getNotification(requestId);

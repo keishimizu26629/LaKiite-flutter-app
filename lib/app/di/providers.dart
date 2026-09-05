@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lakiite/domain/interfaces/i_friend_list_repository.dart';
+import 'package:lakiite/domain/interfaces/i_growth_analytics.dart';
 import 'package:lakiite/domain/interfaces/i_display_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_list_repository.dart';
 import 'package:lakiite/domain/interfaces/i_notification_repository.dart';
@@ -15,6 +16,7 @@ import 'package:lakiite/domain/service/list_manager.dart';
 import 'package:lakiite/domain/service/schedule_manager.dart';
 import 'package:lakiite/domain/service/user_manager.dart';
 import 'package:lakiite/infrastructure/friend_list_repository.dart';
+import 'package:lakiite/infrastructure/airbridge_growth_analytics.dart';
 import 'package:lakiite/infrastructure/display_list_repository.dart';
 import 'package:lakiite/infrastructure/encryption/schedule_encryption_service.dart';
 import 'package:lakiite/infrastructure/list_repository.dart';
@@ -26,6 +28,13 @@ import 'package:lakiite/infrastructure/user_repository.dart';
 
 typedef UserRepositoryFactory = IUserRepository Function();
 typedef ScheduleRepositoryFactory = IScheduleRepository Function();
+
+/// ダウンロード成長施策で利用する計測イベントの送信先。
+///
+/// テスト・Firebase Emulator では [NoopGrowthAnalytics] が選ばれる。
+final growthAnalyticsProvider = Provider<IGrowthAnalytics>((ref) {
+  return createGrowthAnalytics();
+});
 
 /// Firebase認証インスタンスを提供するプロバイダー。
 final firebaseAuthProvider = Provider((ref) => FirebaseAuth.instance);

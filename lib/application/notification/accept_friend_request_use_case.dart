@@ -1,12 +1,16 @@
+import '../../domain/interfaces/i_growth_analytics.dart';
 import '../../domain/interfaces/i_notification_repository.dart';
 
 /// 友達申請通知の承認に伴う業務処理を担うUseCase。
 class AcceptFriendRequestUseCase {
   const AcceptFriendRequestUseCase({
     required INotificationRepository notificationRepository,
-  }) : _notificationRepository = notificationRepository;
+    required IGrowthAnalytics growthAnalytics,
+  })  : _notificationRepository = notificationRepository,
+        _growthAnalytics = growthAnalytics;
 
   final INotificationRepository _notificationRepository;
+  final IGrowthAnalytics _growthAnalytics;
 
   /// 友達申請通知を承認する。
   ///
@@ -19,5 +23,6 @@ class AcceptFriendRequestUseCase {
     }
 
     await _notificationRepository.acceptNotification(notificationId);
+    _growthAnalytics.trackFriendRequestAccepted();
   }
 }

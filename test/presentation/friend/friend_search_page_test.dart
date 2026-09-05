@@ -11,11 +11,14 @@ import 'package:lakiite/application/notification/notification_notifier.dart'
 import 'package:lakiite/domain/entity/notification.dart' as domain;
 import 'package:lakiite/domain/entity/user.dart';
 import 'package:lakiite/domain/interfaces/i_friend_invite_link_service.dart';
+import 'package:lakiite/domain/interfaces/i_growth_analytics.dart';
+import 'package:lakiite/infrastructure/friend_invite_link_service.dart';
 import 'package:lakiite/infrastructure/providers.dart' as infrastructure;
 import 'package:lakiite/presentation/friend/friend_search_page.dart';
 
 import '../../mock/repository/mock_notification_repository.dart';
 import '../../mock/repository/mock_user_repository.dart';
+import '../../mock/analytics/recording_growth_analytics.dart';
 
 class _StubAuthNotifier extends auth.AuthNotifier {
   _StubAuthNotifier(this._state);
@@ -46,6 +49,13 @@ class _StubFriendInviteLinkService implements IFriendInviteLinkService {
 
   @override
   Future<Uri> createInviteLink() async => inviteLink;
+}
+
+class _FailingFriendInviteLinkService implements IFriendInviteLinkService {
+  @override
+  Future<Uri> createInviteLink() async {
+    throw const FriendInviteLinkException('link failed');
+  }
 }
 
 void main() {
@@ -81,6 +91,7 @@ void main() {
       final inviteLink = Uri.parse(
         'https://lakiite-dev.inoworl.com/friend_cached',
       );
+      final analytics = RecordingGrowthAnalytics();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -98,6 +109,7 @@ void main() {
             infrastructure.friendInviteLinkServiceProvider.overrideWithValue(
               _StubFriendInviteLinkService(inviteLink),
             ),
+            growthAnalyticsProvider.overrideWithValue(analytics),
           ],
           child: const MaterialApp(home: FriendSearchPage()),
         ),
@@ -118,6 +130,135 @@ void main() {
           findsOneWidget);
       expect(find.text(inviteLink.toString()), findsNothing);
       expect(find.text('@${currentUser.searchId}'), findsNothing);
+      expect(analytics.inviteLinkSurfaces, [FriendInviteSurface.qr]);
+    });
+
+    testWidgets('共有成功時はリンク作成と共有シート表示完了を記録する', (tester) async {
+      final currentUser = UserModel.create(
+        id: 'current-user-id',
+        name: '現在ユーザー',
+        displayName: '現在ユーザー',
+      );
+      final analytics = RecordingGrowthAnalytics();
+      var shareCallCount = 0;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(currentUser)),
+            ),
+            userRepositoryProvider.overrideWithValue(MockUserRepository()),
+            notificationRepositoryProvider.overrideWithValue(
+              MockNotificationRepository(),
+            ),
+            notification.unreadNotificationCountByTypeProvider.overrideWith(
+              (ref, domain.NotificationType type) => Stream.value(0),
+            ),
+            infrastructure.friendInviteLinkServiceProvider.overrideWithValue(
+              _StubFriendInviteLinkService(
+                Uri.parse('https://lakiite.inoworl.com/friend_cached'),
+              ),
+            ),
+            infrastructure.friendInviteShareProvider.overrideWithValue(
+              (params) async {
+                shareCallCount += 1;
+              },
+            ),
+            growthAnalyticsProvider.overrideWithValue(analytics),
+          ],
+          child: const MaterialApp(home: FriendSearchPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('友人をアプリに招待する'));
+      await tester.pumpAndSettle();
+
+      expect(shareCallCount, 1);
+      expect(analytics.inviteLinkSurfaces, [FriendInviteSurface.share]);
+      expect(analytics.inviteShareSheetOpenedCount, 1);
+    });
+
+    testWidgets('リンク生成失敗時は招待イベントを記録しない', (tester) async {
+      final currentUser = UserModel.create(
+        id: 'current-user-id',
+        name: '現在ユーザー',
+        displayName: '現在ユーザー',
+      );
+      final analytics = RecordingGrowthAnalytics();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(currentUser)),
+            ),
+            userRepositoryProvider.overrideWithValue(MockUserRepository()),
+            notificationRepositoryProvider.overrideWithValue(
+              MockNotificationRepository(),
+            ),
+            notification.unreadNotificationCountByTypeProvider.overrideWith(
+              (ref, domain.NotificationType type) => Stream.value(0),
+            ),
+            infrastructure.friendInviteLinkServiceProvider.overrideWithValue(
+              _FailingFriendInviteLinkService(),
+            ),
+            growthAnalyticsProvider.overrideWithValue(analytics),
+          ],
+          child: const MaterialApp(home: FriendSearchPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('自分のQR'));
+      await tester.pumpAndSettle();
+
+      expect(analytics.inviteLinkSurfaces, isEmpty);
+      expect(analytics.inviteShareSheetOpenedCount, 0);
+    });
+
+    testWidgets('共有API失敗時はリンク作成だけを記録する', (tester) async {
+      final currentUser = UserModel.create(
+        id: 'current-user-id',
+        name: '現在ユーザー',
+        displayName: '現在ユーザー',
+      );
+      final analytics = RecordingGrowthAnalytics();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            auth.authNotifierProvider.overrideWith(
+              () => _StubAuthNotifier(AuthState.authenticated(currentUser)),
+            ),
+            userRepositoryProvider.overrideWithValue(MockUserRepository()),
+            notificationRepositoryProvider.overrideWithValue(
+              MockNotificationRepository(),
+            ),
+            notification.unreadNotificationCountByTypeProvider.overrideWith(
+              (ref, domain.NotificationType type) => Stream.value(0),
+            ),
+            infrastructure.friendInviteLinkServiceProvider.overrideWithValue(
+              _StubFriendInviteLinkService(
+                Uri.parse('https://lakiite.inoworl.com/friend_cached'),
+              ),
+            ),
+            infrastructure.friendInviteShareProvider.overrideWithValue(
+              (params) async => throw StateError('share failed'),
+            ),
+            growthAnalyticsProvider.overrideWithValue(analytics),
+          ],
+          child: const MaterialApp(home: FriendSearchPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('友人をアプリに招待する'));
+      await tester.pumpAndSettle();
+
+      expect(analytics.inviteLinkSurfaces, [FriendInviteSurface.share]);
+      expect(analytics.inviteShareSheetOpenedCount, 0);
     });
 
     testWidgets('ログインユーザーの検索IDがある場合は友人をアプリに招待するボタンを表示する', (tester) async {

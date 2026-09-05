@@ -4,7 +4,9 @@ import 'package:gap/gap.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../app/di/providers.dart';
 import '../../application/auth/auth_notifier.dart' as auth;
+import '../../domain/interfaces/i_growth_analytics.dart';
 import '../../infrastructure/friend_invite_link_service.dart';
 import '../../infrastructure/providers.dart';
 import '../widgets/notification_badge.dart';
@@ -69,9 +71,13 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
 
   Future<void> _showSearchIdQr() async {
     Uri inviteUrl;
+    final analytics = ref.read(growthAnalyticsProvider);
     try {
       inviteUrl =
           await ref.read(friendInviteLinkServiceProvider).createInviteLink();
+      analytics.trackFriendInviteLinkCreated(
+        surface: FriendInviteSurface.qr,
+      );
     } on FriendInviteLinkException catch (error) {
       if (!mounted) {
         return;
@@ -169,9 +175,13 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
     setState(() {
       _isSharingInvite = true;
     });
+    final analytics = ref.read(growthAnalyticsProvider);
     try {
       final inviteUrl =
           await ref.read(friendInviteLinkServiceProvider).createInviteLink();
+      analytics.trackFriendInviteLinkCreated(
+        surface: FriendInviteSurface.share,
+      );
       if (!mounted) {
         return;
       }
@@ -185,13 +195,14 @@ class _FriendSearchPageState extends ConsumerState<FriendSearchPage> {
           ? null
           : renderBox.localToGlobal(Offset.zero) & renderBox.size;
 
-      await SharePlus.instance.share(
+      await ref.read(friendInviteShareProvider)(
         ShareParams(
           text: content.message,
           subject: 'LaKiiteに招待',
           sharePositionOrigin: sharePositionOrigin,
         ),
       );
+      analytics.trackFriendInviteShareSheetOpened();
     } on FriendInviteLinkException catch (error) {
       if (!mounted) {
         return;

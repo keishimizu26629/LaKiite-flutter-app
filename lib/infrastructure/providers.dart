@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:share_plus/share_plus.dart';
 
 import '../domain/interfaces/i_friend_invite_link_service.dart';
 import '../domain/interfaces/i_image_cropper_service.dart';
@@ -27,4 +28,12 @@ final friendInviteLinkServiceProvider =
   final httpClient = http.Client();
   ref.onDispose(httpClient.close);
   return FriendInviteLinkService.fromAppConfig(httpClient: httpClient);
+});
+
+typedef FriendInviteShare = Future<void> Function(ShareParams params);
+
+final friendInviteShareProvider = Provider<FriendInviteShare>((ref) {
+  return (params) async {
+    await SharePlus.instance.share(params);
+  };
 });
