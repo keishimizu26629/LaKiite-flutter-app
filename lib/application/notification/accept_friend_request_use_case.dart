@@ -1,5 +1,6 @@
 import '../../domain/interfaces/i_growth_analytics.dart';
 import '../../domain/interfaces/i_notification_repository.dart';
+import '../../domain/entity/notification.dart';
 
 /// 友達申請通知の承認に伴う業務処理を担うUseCase。
 class AcceptFriendRequestUseCase {
@@ -21,8 +22,14 @@ class AcceptFriendRequestUseCase {
     if (notification == null) {
       throw Exception('Notification not found');
     }
+    if (notification.type != NotificationType.friend) {
+      throw StateError('Notification is not a friend request');
+    }
 
-    await _notificationRepository.acceptNotification(notificationId);
-    _growthAnalytics.trackFriendRequestAccepted();
+    final didAccept =
+        await _notificationRepository.acceptNotification(notificationId);
+    if (didAccept) {
+      _growthAnalytics.trackFriendRequestAccepted();
+    }
   }
 }

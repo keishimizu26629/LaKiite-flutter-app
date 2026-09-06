@@ -15,6 +15,7 @@ typedef FriendSearchPageBuilder = Widget Function(
 
 typedef FriendSearchNavigator = Future<void> Function(String searchId);
 typedef GrowthAnalyticsClock = DateTime Function();
+typedef DeepLinkDebugLogger = void Function(String message);
 
 class DeepLinkNavigationService {
   DeepLinkNavigationService({
@@ -24,6 +25,7 @@ class DeepLinkNavigationService {
     DeepLinkInvitePreferences? deepLinkInvitePreferences,
     IGrowthAnalytics? growthAnalytics,
     GrowthAnalyticsClock? now,
+    DeepLinkDebugLogger debugLogger = AppLogger.debug,
   })  : navigatorKey =
             navigatorKey ?? NotificationNavigationService.instance.navigatorKey,
         _friendSearchPageBuilder = friendSearchPageBuilder,
@@ -31,13 +33,15 @@ class DeepLinkNavigationService {
         _deepLinkInvitePreferences =
             deepLinkInvitePreferences ?? const DeepLinkInvitePreferences(),
         _growthAnalytics = growthAnalytics,
-        _now = now ?? DateTime.now;
+        _now = now ?? DateTime.now,
+        _debugLogger = debugLogger;
 
   static final DeepLinkNavigationService instance = DeepLinkNavigationService();
 
   final GlobalKey<NavigatorState> navigatorKey;
   final DeepLinkInvitePreferences _deepLinkInvitePreferences;
   final GrowthAnalyticsClock _now;
+  final DeepLinkDebugLogger _debugLogger;
 
   FriendSearchPageBuilder? _friendSearchPageBuilder;
   FriendSearchNavigator? _friendSearchNavigator;
@@ -69,7 +73,7 @@ class DeepLinkNavigationService {
   Future<bool> handleReceivedDeepLink(String deepLink) async {
     final friendInvite = FriendInviteDeepLink.tryParse(deepLink);
     if (friendInvite == null) {
-      AppLogger.debug('未対応のDeep Linkを受信しました: $deepLink');
+      _debugLogger('未対応のDeep Linkを受信しました');
       return false;
     }
 
@@ -129,7 +133,7 @@ class DeepLinkNavigationService {
 
   Future<bool> openFriendSearch(String searchId) async {
     if (!_isNavigationReady) {
-      AppLogger.debug('Deep Link遷移を保留しました: 認証後の画面が未準備');
+      _debugLogger('Deep Link遷移を保留しました: 認証後の画面が未準備');
       _pendingFriendSearchId = searchId;
       await _deepLinkInvitePreferences.savePendingFriendSearchId(searchId);
       return false;
@@ -146,14 +150,14 @@ class DeepLinkNavigationService {
 
     final navigator = navigatorKey.currentState;
     if (friendSearchNavigator == null && navigator == null) {
-      AppLogger.debug('Deep Link遷移を保留しました: Navigator未準備');
+      _debugLogger('Deep Link遷移を保留しました: Navigator未準備');
       _pendingFriendSearchId = searchId;
       await _deepLinkInvitePreferences.savePendingFriendSearchId(searchId);
       return false;
     }
 
     if (_activeFriendSearchId == searchId) {
-      AppLogger.debug('表示中のDeep Link遷移をスキップしました: $searchId');
+      _debugLogger('表示中のDeep Link遷移をスキップしました');
       await _deepLinkInvitePreferences.clearPendingFriendSearchId();
       return true;
     }

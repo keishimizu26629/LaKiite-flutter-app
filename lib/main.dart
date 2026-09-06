@@ -16,6 +16,7 @@ import 'config/firebase_emulator_config.dart';
 import 'config/router/app_router.dart';
 import 'infrastructure/admob_service.dart';
 import 'infrastructure/airbridge_deep_link_service.dart';
+import 'infrastructure/airbridge_growth_analytics.dart';
 import 'infrastructure/deep_link_navigation_service.dart';
 import 'infrastructure/firebase/push_notification_service.dart';
 import 'infrastructure/notification_navigation_service.dart';
@@ -62,6 +63,9 @@ Future<void> startApp([
 
   // 環境設定の初期化
   AppConfig.initialize(environment);
+
+  // SDKの自動追跡は設定で無効化し、test/emulator以外だけ明示的に開始する。
+  startAirbridgeTrackingIfAllowed();
 
   // AdMob設定の初期化（Firebase初期化の前に行う）
   AdMobConfig.initialize(forceTestMode: skipFirebaseInit);
@@ -194,7 +198,8 @@ class MyApp extends ConsumerWidget {
           'TEST_MODE',
           defaultValue: false,
         ) ||
-        bool.fromEnvironment('FLUTTER_TEST', defaultValue: false);
+        bool.fromEnvironment('FLUTTER_TEST', defaultValue: false) ||
+        bool.fromEnvironment('USE_FIREBASE_EMULATOR', defaultValue: false);
     if (!skipAirbridgeRuntime) {
       AirbridgeDeepLinkService.instance.start();
     }

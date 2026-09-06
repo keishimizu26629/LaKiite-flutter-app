@@ -10,6 +10,7 @@ typedef AirbridgeEventSender = void Function({
   required String category,
   required Map<String, dynamic> customAttributes,
 });
+typedef AirbridgeTrackingStarter = void Function();
 
 class AirbridgeGrowthAnalytics implements IGrowthAnalytics {
   AirbridgeGrowthAnalytics({AirbridgeEventSender? sender})
@@ -168,12 +169,52 @@ IGrowthAnalytics createGrowthAnalytics({
   ),
   AirbridgeEventSender? sender,
 }) {
-  final isFlutterTest =
-      flutterTest ?? Platform.environment['FLUTTER_TEST'] == 'true';
-  if (testMode || isFlutterTest || useFirebaseEmulator) {
+  if (_isTrackingDisabled(
+    testMode: testMode,
+    flutterTest: flutterTest,
+    useFirebaseEmulator: useFirebaseEmulator,
+  )) {
     return const NoopGrowthAnalytics();
   }
   return AirbridgeGrowthAnalytics(sender: sender);
+}
+
+/// SDK設定で停止しているAirbridge追跡を、通常環境だけ開始する。
+void startAirbridgeTrackingIfAllowed({
+  bool testMode = const bool.fromEnvironment(
+    'TEST_MODE',
+    defaultValue: false,
+  ),
+  bool? flutterTest,
+  bool useFirebaseEmulator = const bool.fromEnvironment(
+    'USE_FIREBASE_EMULATOR',
+    defaultValue: false,
+  ),
+  AirbridgeTrackingStarter? starter,
+}) {
+  if (_isTrackingDisabled(
+    testMode: testMode,
+    flutterTest: flutterTest,
+    useFirebaseEmulator: useFirebaseEmulator,
+  )) {
+    return;
+  }
+
+  try {
+    (starter ?? Airbridge.startTracking)();
+  } catch (_) {
+    AppLogger.warning('Airbridge tracking could not be started');
+  }
+}
+
+bool _isTrackingDisabled({
+  required bool testMode,
+  required bool? flutterTest,
+  required bool useFirebaseEmulator,
+}) {
+  final isFlutterTest =
+      flutterTest ?? Platform.environment['FLUTTER_TEST'] == 'true';
+  return testMode || isFlutterTest || useFirebaseEmulator;
 }
 
 String _recipientCountBucket(int count) {

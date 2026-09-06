@@ -201,6 +201,46 @@ void main() {
       expect(events.single.category, 'friend_request_accepted');
     });
   });
+
+  group('startAirbridgeTrackingIfAllowed', () {
+    test('testまたはFirebase EmulatorではSDK追跡を開始しない', () {
+      var startCount = 0;
+
+      startAirbridgeTrackingIfAllowed(
+        testMode: true,
+        flutterTest: false,
+        useFirebaseEmulator: false,
+        starter: () => startCount += 1,
+      );
+      startAirbridgeTrackingIfAllowed(
+        testMode: false,
+        flutterTest: true,
+        useFirebaseEmulator: false,
+        starter: () => startCount += 1,
+      );
+      startAirbridgeTrackingIfAllowed(
+        testMode: false,
+        flutterTest: false,
+        useFirebaseEmulator: true,
+        starter: () => startCount += 1,
+      );
+
+      expect(startCount, 0);
+    });
+
+    test('通常環境ではSDK追跡を1回開始する', () {
+      var startCount = 0;
+
+      startAirbridgeTrackingIfAllowed(
+        testMode: false,
+        flutterTest: false,
+        useFirebaseEmulator: false,
+        starter: () => startCount += 1,
+      );
+
+      expect(startCount, 1);
+    });
+  });
 }
 
 class _RecordedEvent {

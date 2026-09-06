@@ -16,7 +16,20 @@ class MockNotificationRepository implements INotificationRepository {
   }
 
   @override
-  Future<void> acceptNotification(String notificationId) async {}
+  Future<bool> acceptNotification(String notificationId) async {
+    final index = _notifications.indexWhere((n) => n.id == notificationId);
+    if (index < 0 ||
+        _notifications[index].status != NotificationStatus.pending) {
+      return false;
+    }
+
+    _notifications[index] = _notifications[index].copyWith(
+      status: NotificationStatus.accepted,
+      isRead: true,
+      updatedAt: DateTime.now(),
+    );
+    return true;
+  }
 
   @override
   Future<void> createNotification(Notification notification) async {

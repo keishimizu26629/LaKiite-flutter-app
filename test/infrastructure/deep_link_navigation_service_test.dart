@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lakiite/domain/interfaces/i_growth_analytics.dart';
@@ -111,6 +113,36 @@ void main() {
       expect(service.hasPendingFriendSearchOpen, isFalse);
       expect(find.textContaining('friend search:'), findsNothing);
       expect(analytics.inviteOpenTransports, isEmpty);
+    });
+
+    test('Deep Linkログにraw URLやsearchIdを出力しない', () async {
+      final logs = <String>[];
+      final navigationCompleter = Completer<void>();
+      service = DeepLinkNavigationService(
+        navigatorKey: navigatorKey,
+        growthAnalytics: analytics,
+        friendSearchNavigator: (_) => navigationCompleter.future,
+        debugLogger: logs.add,
+      );
+      await service.markNavigationReady();
+
+      const unsupportedDeepLink =
+          'lakiite://settings?searchId=SECRET12&token=private';
+      await service.handleReceivedDeepLink(unsupportedDeepLink);
+      await service.handleReceivedDeepLink(
+        'lakiite://friend/search?searchId=ABCD1234',
+      );
+      await service.handleReceivedDeepLink(
+        'lakiite://friend/search?searchId=ABCD1234',
+      );
+
+      final output = logs.join('\n');
+      expect(output, isNot(contains(unsupportedDeepLink)));
+      expect(output, isNot(contains('ABCD1234')));
+      expect(output, isNot(contains('SECRET12')));
+      expect(output, isNot(contains('private')));
+
+      navigationCompleter.complete();
     });
 
     test('pending保存成功後にlink transportだけを記録する', () async {

@@ -212,7 +212,7 @@ class _FakeNotificationRepository implements INotificationRepository {
       false;
 
   @override
-  Future<void> acceptNotification(String notificationId) =>
+  Future<bool> acceptNotification(String notificationId) =>
       Future.error(UnimplementedError());
 
   @override

@@ -60,12 +60,70 @@ void main() {
 
       expect(analytics.friendRequestAcceptedCount, 0);
     });
+
+    test('同じ友達申請を並行で承認しても成功イベントは1回だけ記録する', () async {
+      notificationRepository.addTestNotification(
+        _friendRequest(
+          id: 'friend-request-id',
+          sendUserId: 'sender-id',
+          receiveUserId: 'receiver-id',
+        ),
+      );
+
+      await Future.wait([
+        useCase.execute('friend-request-id'),
+        useCase.execute('friend-request-id'),
+      ]);
+
+      expect(analytics.friendRequestAcceptedCount, 1);
+    });
+
+    test('承認済みの友達申請は再度記録しない', () async {
+      notificationRepository.addTestNotification(
+        _friendRequest(
+          id: 'friend-request-id',
+          sendUserId: 'sender-id',
+          receiveUserId: 'receiver-id',
+          status: NotificationStatus.accepted,
+        ),
+      );
+
+      await useCase.execute('friend-request-id');
+
+      expect(analytics.friendRequestAcceptedCount, 0);
+    });
+
+    test('友達申請以外の通知は承認イベントとして記録しない', () async {
+      notificationRepository.addTestNotification(
+        Notification(
+          id: 'group-invitation-id',
+          type: NotificationType.groupInvitation,
+          sendUserId: 'sender-id',
+          receiveUserId: 'receiver-id',
+          status: NotificationStatus.pending,
+          createdAt: DateTime(2026, 5, 22),
+          updatedAt: DateTime(2026, 5, 22),
+          groupId: 'group-id',
+        ),
+      );
+
+      await expectLater(
+        useCase.execute('group-invitation-id'),
+        throwsStateError,
+      );
+
+      final notification = await notificationRepository.getNotification(
+        'group-invitation-id',
+      );
+      expect(notification?.status, NotificationStatus.pending);
+      expect(analytics.friendRequestAcceptedCount, 0);
+    });
   });
 }
 
 class _FailingAcceptNotificationRepository extends MockNotificationRepository {
   @override
-  Future<void> acceptNotification(String notificationId) async {
+  Future<bool> acceptNotification(String notificationId) async {
     throw StateError('accept failed');
   }
 }
@@ -74,6 +132,7 @@ Notification _friendRequest({
   required String id,
   required String sendUserId,
   required String receiveUserId,
+  NotificationStatus status = NotificationStatus.pending,
 }) {
   return Notification(
     id: id,
@@ -82,7 +141,7 @@ Notification _friendRequest({
     receiveUserId: receiveUserId,
     sendUserDisplayName: '申請者',
     receiveUserDisplayName: '受信者',
-    status: NotificationStatus.pending,
+    status: status,
     createdAt: DateTime(2026, 5, 22),
     updatedAt: DateTime(2026, 5, 22),
   );
