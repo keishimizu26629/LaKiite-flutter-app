@@ -145,12 +145,14 @@ jobs:
           flutter test --coverage
           --dart-define=TEST_MODE=true --dart-define=FLUTTER_TEST=true
           --exclude-tags=integration
-          test/app/ test/config/ test/domain/ test/utils/
+          test/app/ test/architecture/ test/config/ test/domain/ test/utils/
           test/application/ test/infrastructure/
 
       - name: Run widget tests
         if: matrix.test-type == 'widget'
-        run: flutter test test/presentation/ --dart-define=TEST_MODE=true --dart-define=FLUTTER_TEST=true
+        run: >-
+          flutter test test/presentation/ test/widget_test.dart
+          --dart-define=TEST_MODE=true --dart-define=FLUTTER_TEST=true
 
       - name: Upload coverage
         if: matrix.test-type == 'unit'
