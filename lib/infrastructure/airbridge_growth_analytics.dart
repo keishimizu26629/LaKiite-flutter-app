@@ -157,12 +157,14 @@ class NoopGrowthAnalytics implements IGrowthAnalytics {
   }) {}
 }
 
+/// テスト用のビルド引数と実行時環境変数のいずれかで外部計測を停止する。
 IGrowthAnalytics createGrowthAnalytics({
   bool testMode = const bool.fromEnvironment(
     'TEST_MODE',
     defaultValue: false,
   ),
   bool? flutterTest,
+  bool flutterTestDartDefine = const bool.fromEnvironment('FLUTTER_TEST'),
   bool useFirebaseEmulator = const bool.fromEnvironment(
     'USE_FIREBASE_EMULATOR',
     defaultValue: false,
@@ -172,6 +174,7 @@ IGrowthAnalytics createGrowthAnalytics({
   if (_isTrackingDisabled(
     testMode: testMode,
     flutterTest: flutterTest,
+    flutterTestDartDefine: flutterTestDartDefine,
     useFirebaseEmulator: useFirebaseEmulator,
   )) {
     return const NoopGrowthAnalytics();
@@ -186,6 +189,7 @@ void startAirbridgeTrackingIfAllowed({
     defaultValue: false,
   ),
   bool? flutterTest,
+  bool flutterTestDartDefine = const bool.fromEnvironment('FLUTTER_TEST'),
   bool useFirebaseEmulator = const bool.fromEnvironment(
     'USE_FIREBASE_EMULATOR',
     defaultValue: false,
@@ -195,6 +199,7 @@ void startAirbridgeTrackingIfAllowed({
   if (_isTrackingDisabled(
     testMode: testMode,
     flutterTest: flutterTest,
+    flutterTestDartDefine: flutterTestDartDefine,
     useFirebaseEmulator: useFirebaseEmulator,
   )) {
     return;
@@ -210,11 +215,15 @@ void startAirbridgeTrackingIfAllowed({
 bool _isTrackingDisabled({
   required bool testMode,
   required bool? flutterTest,
+  required bool flutterTestDartDefine,
   required bool useFirebaseEmulator,
 }) {
   final isFlutterTest =
       flutterTest ?? Platform.environment['FLUTTER_TEST'] == 'true';
-  return testMode || isFlutterTest || useFirebaseEmulator;
+  return testMode ||
+      flutterTestDartDefine ||
+      isFlutterTest ||
+      useFirebaseEmulator;
 }
 
 String _recipientCountBucket(int count) {

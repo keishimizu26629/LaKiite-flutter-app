@@ -146,8 +146,24 @@ void main() {
   });
 
   group('createGrowthAnalytics', () {
+    test('FLUTTER_TESTのdart-defineを実行時環境変数とは独立して判定する', () {
+      final analytics = createGrowthAnalytics(
+        testMode: false,
+        flutterTest: false,
+        useFirebaseEmulator: false,
+      );
+
+      expect(
+        analytics,
+        const bool.fromEnvironment('FLUTTER_TEST')
+            ? isA<NoopGrowthAnalytics>()
+            : isA<AirbridgeGrowthAnalytics>(),
+      );
+    });
+
     test('TEST_MODEではNo-opにする', () {
       final analytics = createGrowthAnalytics(
+        flutterTestDartDefine: false,
         testMode: true,
         flutterTest: false,
         useFirebaseEmulator: false,
@@ -158,6 +174,7 @@ void main() {
 
     test('FLUTTER_TESTではNo-opにする', () {
       final analytics = createGrowthAnalytics(
+        flutterTestDartDefine: false,
         testMode: false,
         flutterTest: true,
         useFirebaseEmulator: false,
@@ -168,6 +185,7 @@ void main() {
 
     test('Firebase EmulatorではNo-opにする', () {
       final analytics = createGrowthAnalytics(
+        flutterTestDartDefine: false,
         testMode: false,
         flutterTest: false,
         useFirebaseEmulator: true,
@@ -179,6 +197,7 @@ void main() {
     test('通常環境ではAirbridge transportを使う', () {
       final events = <_RecordedEvent>[];
       final analytics = createGrowthAnalytics(
+        flutterTestDartDefine: false,
         testMode: false,
         flutterTest: false,
         useFirebaseEmulator: false,
@@ -203,22 +222,38 @@ void main() {
   });
 
   group('startAirbridgeTrackingIfAllowed', () {
+    test('FLUTTER_TESTのdart-defineだけでもSDK追跡を停止する', () {
+      var startCount = 0;
+
+      startAirbridgeTrackingIfAllowed(
+        testMode: false,
+        flutterTest: false,
+        useFirebaseEmulator: false,
+        starter: () => startCount++,
+      );
+
+      expect(startCount, const bool.fromEnvironment('FLUTTER_TEST') ? 0 : 1);
+    });
+
     test('testまたはFirebase EmulatorではSDK追跡を開始しない', () {
       var startCount = 0;
 
       startAirbridgeTrackingIfAllowed(
+        flutterTestDartDefine: false,
         testMode: true,
         flutterTest: false,
         useFirebaseEmulator: false,
         starter: () => startCount += 1,
       );
       startAirbridgeTrackingIfAllowed(
+        flutterTestDartDefine: false,
         testMode: false,
         flutterTest: true,
         useFirebaseEmulator: false,
         starter: () => startCount += 1,
       );
       startAirbridgeTrackingIfAllowed(
+        flutterTestDartDefine: false,
         testMode: false,
         flutterTest: false,
         useFirebaseEmulator: true,
@@ -232,6 +267,7 @@ void main() {
       var startCount = 0;
 
       startAirbridgeTrackingIfAllowed(
+        flutterTestDartDefine: false,
         testMode: false,
         flutterTest: false,
         useFirebaseEmulator: false,
