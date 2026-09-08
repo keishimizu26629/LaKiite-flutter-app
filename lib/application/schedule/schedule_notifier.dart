@@ -525,7 +525,15 @@ class ScheduleNotifier extends AutoDisposeAsyncNotifier<ScheduleState> {
       );
 
       AppLogger.debug('ScheduleNotifier: Sending schedule to ScheduleManager');
-      await ref.read(scheduleManagerProvider).createSchedule(schedule);
+      final createdSchedule =
+          await ref.read(scheduleManagerProvider).createSchedule(schedule);
+      final recipientIds = createdSchedule.visibleTo.toSet()
+        ..remove(createdSchedule.ownerId);
+      ref.read(growthAnalyticsProvider).trackScheduleCreated(
+            recipientCount: recipientIds.length,
+            sharedListCount: createdSchedule.sharedLists.toSet().length,
+            isAllDay: createdSchedule.isAllDay,
+          );
       AppLogger.debug('ScheduleNotifier: Schedule creation completed');
 
       // 作成完了後は自動的にストリームが更新を検知するため、

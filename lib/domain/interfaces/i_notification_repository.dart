@@ -38,8 +38,10 @@ abstract class INotificationRepository {
     String groupId,
   );
 
-  /// 通知を承認
-  Future<void> acceptNotification(String notificationId);
+  /// pending の通知を原子的に承認する。
+  ///
+  /// 実際に pending から accepted へ遷移した場合だけ true を返す。
+  Future<bool> acceptNotification(String notificationId);
 
   /// 通知を拒否
   Future<void> rejectNotification(String notificationId);

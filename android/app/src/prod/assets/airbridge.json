@@ -1,4 +1,5 @@
 {
+  "autoStartTrackingEnabled": false,
   "autoDetermineTrackingAuthorizationTimeoutInSecond": 0,
   "trackingLinkCustomDomains": [
     "invite.lakiite.inoworl.com"

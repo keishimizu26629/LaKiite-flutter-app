@@ -228,14 +228,38 @@ class NotificationRepository implements INotificationRepository {
   ///
   /// [notificationId] 承認する通知のID
   @override
-  Future<void> acceptNotification(String notificationId) async {
+  Future<bool> acceptNotification(String notificationId) async {
     AppLogger.debug('Accepting notification: $notificationId');
     try {
-      await _firestore
-          .collection('notifications')
-          .doc(notificationId)
-          .update(NotificationRepositoryUpdateData.accepted());
-      AppLogger.debug('Notification accepted successfully: $notificationId');
+      final document =
+          _firestore.collection('notifications').doc(notificationId);
+      final didAccept =
+          await _firestore.runTransaction<bool>((transaction) async {
+        final snapshot = await transaction.get(document);
+        if (!snapshot.exists) {
+          throw Exception('Notification document not found');
+        }
+
+        final notification = NotificationMapper.fromFirestore(
+          id: snapshot.id,
+          data: snapshot.data()!,
+        );
+        if (notification.status != NotificationStatus.pending) {
+          return false;
+        }
+
+        transaction.update(
+          document,
+          NotificationRepositoryUpdateData.accepted(),
+        );
+        return true;
+      });
+      AppLogger.debug(
+        didAccept
+            ? 'Notification accepted successfully: $notificationId'
+            : 'Notification acceptance skipped because it is not pending: $notificationId',
+      );
+      return didAccept;
     } catch (e) {
       AppLogger.error('Error accepting notification: $e');
       rethrow;

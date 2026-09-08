@@ -163,29 +163,34 @@ class MockNotificationRepository extends BaseMock
   }
 
   @override
-  Future<void> acceptNotification(String notificationId) async {
+  Future<bool> acceptNotification(String notificationId) async {
     await Future.delayed(const Duration(milliseconds: 200));
 
     final index = _notifications.indexWhere((n) => n.id == notificationId);
-    if (index >= 0) {
-      final notification = _notifications[index];
-      _notifications[index] = Notification(
-        id: notification.id,
-        type: notification.type,
-        sendUserId: notification.sendUserId,
-        receiveUserId: notification.receiveUserId,
-        sendUserDisplayName: notification.sendUserDisplayName,
-        receiveUserDisplayName: notification.receiveUserDisplayName,
-        status: NotificationStatus.accepted,
-        createdAt: notification.createdAt,
-        updatedAt: DateTime.now(),
-        rejectionCount: notification.rejectionCount,
-        isRead: true,
-        groupId: notification.groupId,
-        relatedItemId: notification.relatedItemId,
-        interactionId: notification.interactionId,
-      );
+    if (index < 0) {
+      return false;
     }
+    final notification = _notifications[index];
+    if (notification.status != NotificationStatus.pending) {
+      return false;
+    }
+    _notifications[index] = Notification(
+      id: notification.id,
+      type: notification.type,
+      sendUserId: notification.sendUserId,
+      receiveUserId: notification.receiveUserId,
+      sendUserDisplayName: notification.sendUserDisplayName,
+      receiveUserDisplayName: notification.receiveUserDisplayName,
+      status: NotificationStatus.accepted,
+      createdAt: notification.createdAt,
+      updatedAt: DateTime.now(),
+      rejectionCount: notification.rejectionCount,
+      isRead: true,
+      groupId: notification.groupId,
+      relatedItemId: notification.relatedItemId,
+      interactionId: notification.interactionId,
+    );
+    return true;
   }
 
   @override
