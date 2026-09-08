@@ -29,6 +29,7 @@ final acceptFriendRequestUseCaseProvider =
     Provider<AcceptFriendRequestUseCase>((ref) {
   return AcceptFriendRequestUseCase(
     notificationRepository: ref.watch(notificationRepositoryProvider),
+    growthAnalytics: ref.watch(growthAnalyticsProvider),
   );
 });
 

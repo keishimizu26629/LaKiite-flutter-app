@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lakiite/domain/entity/schedule_reaction.dart';
 import 'package:lakiite/domain/entity/schedule_comment.dart';
 import 'package:lakiite/domain/interfaces/i_schedule_interaction_repository.dart';
+import 'package:lakiite/domain/interfaces/i_growth_analytics.dart';
 import 'package:lakiite/app/di/providers.dart';
 import 'package:lakiite/application/auth/auth_notifier.dart';
 import 'package:lakiite/application/schedule/schedule_interaction_state.dart';
@@ -153,6 +154,10 @@ class ScheduleInteractionNotifier
             userId,
             type,
           );
+          _ref.read(growthAnalyticsProvider).trackScheduleReactionSent(
+                reactionType: type,
+                changeKind: ReactionChangeKind.changed,
+              );
 
           final latestReactions = state.reactions
               .where((reaction) => reaction.userId != userId)
@@ -215,6 +220,10 @@ class ScheduleInteractionNotifier
           userId,
           type,
         );
+        _ref.read(growthAnalyticsProvider).trackScheduleReactionSent(
+              reactionType: type,
+              changeKind: ReactionChangeKind.added,
+            );
 
         final newReaction = ScheduleReaction(
           id: reactionId,

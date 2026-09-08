@@ -4,6 +4,7 @@ import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import '../../domain/interfaces/i_auth_repository.dart';
+import '../../domain/interfaces/i_growth_analytics.dart';
 import '../../domain/entity/user.dart';
 import '../../infrastructure/auth_repository.dart';
 import '../../infrastructure/user_fcm_token_service.dart';
@@ -179,6 +180,9 @@ class AuthNotifier extends _$AuthNotifier {
         }
 
         await ref.read(userRepositoryProvider).updateUser(finalUser);
+        ref.read(growthAnalyticsProvider).trackSignUpCompleted(
+              authMethod: GrowthAuthMethod.emailPassword,
+            );
         AppLogger.debugOnly('signUp後プロフィール更新完了: userId=${finalUser.id}');
 
         AppLogger.debug('サインアップ成功: ユーザーID=${finalUser.id}');

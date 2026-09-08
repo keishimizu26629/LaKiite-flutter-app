@@ -1,0 +1,27 @@
+:root { color-scheme: light; font-family: "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif; color: #30271f; background: #f6f3ec; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 1600px; margin: auto; padding: 48px 28px; }
+.intro { max-width: 900px; margin-bottom: 40px; line-height: 1.8; }
+.eyebrow { font-size: .75rem; letter-spacing: .14em; color: #735d43; }
+h1 { font-size: clamp(1.5rem, 3vw, 2.5rem); line-height: 1.5; }
+a { color: #795000; text-underline-offset: .25em; }
+a:focus-visible { outline: 3px solid #795000; outline-offset: 4px; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; align-items: start; }
+.creative { min-width: 0; }
+.artboard { border: 1px solid #e1d4c0; border-radius: 20px; overflow: hidden; background: #fffaf0; display: flex; flex-direction: column; }
+.card-copy { padding: 7% 7% 4%; }
+.brand { font-weight: 700; font-size: clamp(.65rem, 1vw, 1rem); margin: 0 0 10%; color: #745022; }
+.card-number { float: right; font-variant-numeric: tabular-nums; }
+.card-copy h2 { margin: 0; font-size: clamp(1.3rem, 2.5vw, 2.65rem); line-height: 1.5; letter-spacing: -.025em; overflow-wrap: anywhere; }
+.headline-line { display: block; }
+.message { font-size: clamp(.7rem, 1.15vw, 1.15rem); line-height: 1.7; margin: 5% 0 0; }
+.visual { height: clamp(16rem, 34vw, 30rem); flex: none; display: flex; justify-content: center; padding: 0 5%; }
+.visual img { max-width: 100%; height: 100%; object-fit: contain; border: 1px solid #e6d9c3; border-radius: 12px 12px 0 0; }
+.placeholder { margin: 12% 4%; width: 100%; display: grid; place-content: center; text-align: center; border: 2px dashed #ac9370; border-radius: 16px; padding: 16px; color: #70583c; font-size: 1rem; line-height: 1.8; }
+.draft { margin: 0; background: #30271f; color: #fff; padding: 10px 12px; text-align: center; font-size: .7rem; line-height: 1.5; }
+.brief { font-size: .85rem; line-height: 1.8; color: #615648; overflow-wrap: anywhere; }
+.source { font-weight: 700; }
+@media (max-width: 1024px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .card-copy h2 { font-size: clamp(1.25rem, 3.5vw, 2.5rem); } }
+@media (max-width: 600px) { main { padding: 24px 16px; } .cards { grid-template-columns: 1fr; } .card-copy h2 { font-size: clamp(1.4rem, 6vw, 2.3rem); } .brand, .message { font-size: .85rem; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

@@ -7,6 +7,18 @@ env:
   FLUTTER_VERSION: "3.41.5"
 
 jobs:
+  web-contracts:
+    name: Landing and SEO Contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5.0.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+      - name: Validate landing page, store drafts and Hosting artifacts
+        run: node --test scripts/test_web_landing.mjs scripts/test_store_marketing.mjs scripts/test_hosting_seo.mjs
+
   # 静的解析
   analyze:
     name: Static Analysis
@@ -67,7 +79,7 @@ jobs:
           EOF
 
       - name: Analyze project source
-        run: flutter analyze --no-fatal-infos 2>&1 | grep -v "firebase_options" | grep -v "Target of URI doesn't exist" | grep -v "Undefined name.*FirebaseOptions" || echo "Analysis completed"
+        run: flutter analyze
 
       - name: Check formatting
         run: |
@@ -141,11 +153,18 @@ jobs:
 
       - name: Run unit tests
         if: matrix.test-type == 'unit'
-        run: flutter test --coverage --dart-define=FLUTTER_TEST=true --exclude-tags=integration test/domain/ test/utils/ test/application/
+        run: >-
+          flutter test --coverage
+          --dart-define=TEST_MODE=true --dart-define=FLUTTER_TEST=true
+          --exclude-tags=integration
+          test/app/ test/architecture/ test/config/ test/domain/ test/utils/
+          test/application/ test/infrastructure/
 
       - name: Run widget tests
         if: matrix.test-type == 'widget'
-        run: flutter test test/presentation/ --dart-define=FLUTTER_TEST=true
+        run: >-
+          flutter test test/presentation/ test/widget_test.dart
+          --dart-define=TEST_MODE=true --dart-define=FLUTTER_TEST=true
 
       - name: Upload coverage
         if: matrix.test-type == 'unit'
@@ -159,17 +178,18 @@ jobs:
   ci_success:
     name: CI Success
     runs-on: ubuntu-latest
-    needs: [analyze, test]
+    needs: [analyze, test, web-contracts]
     if: always()
 
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.analyze.result }}" == "success" && "${{ needs.test.result }}" == "success" ]]; then
+          if [[ "${{ needs.analyze.result }}" == "success" && "${{ needs.test.result }}" == "success" && "${{ needs.web-contracts.result }}" == "success" ]]; then
             echo "✅ All CI checks passed!"
           else
             echo "❌ CI checks failed"
             echo "Analyze: ${{ needs.analyze.result }}"
             echo "Test: ${{ needs.test.result }}"
+            echo "Web contracts: ${{ needs.web-contracts.result }}"
             exit 1
           fi
