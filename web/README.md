@@ -36,6 +36,18 @@ PR #321のレビュー対応で、ナビの通常／ホバー時の文字コン�
 
 実装計画: `docs/marketing/issue-310-lp-plan.md`。Issue #310は本番公開等の未完了項目が残る間は閉じない。
 
+## 読み仮名と用途の統一（#315）
+
+LPのtitle・OG・Twitterを `LaKiite（ラキーテ）｜友だちと予定を共有するカレンダー` に統一。最初の画面に読み仮名を追加し、h1で用途を説明してから「お誘い未満」の価値を伝える。構造化データは正式名を維持し、`alternateName: ラキーテ` を追加した。ストアURL、法務導線、計測境界は変更しない。
+
+ストアの名前・説明2案と7枚の画像構成案は [日本語ストア素材](../docs/marketing/store/ja-JP/README.md) にある。構成案はHosting対象外で、両OSの再撮影・掲載承認が必要。LPの修正がストア側へ自動反映されるわけではない。
+
+```bash
+node --test scripts/test_web_landing.mjs scripts/test_store_marketing.mjs
+```
+
+上記は合計23件（LP18件、ストア案5件）。ブラウザ描画、公開済みアプリの動作、ダウンロード増加の証明とは区別する。
+
 ## 📄 ファイル一覧
 
 - `index.html` - メインランディングページ

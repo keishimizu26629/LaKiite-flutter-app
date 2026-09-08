@@ -162,11 +162,13 @@ test('canonical and social metadata describe the same production page', () => {
   assert.equal(links.find(link => link.rel === 'canonical')?.href, origin);
   const meta = Object.fromEntries(tags(html, 'meta').map(tag => [tag.property ?? tag.name, tag.content]));
   const title = html.match(/<title>([^<]+)<\/title>/)?.[1];
-  assert.ok(title?.includes('お誘い未満'));
+  assert.equal(title, 'LaKiite（ラキーテ）｜友だちと予定を共有するカレンダー');
   assert.equal(meta['og:title'], title);
   assert.equal(meta['twitter:title'], title);
   assert.equal(meta['og:description'], meta.description);
   assert.equal(meta['twitter:description'], meta.description);
+  assert.match(meta.description, /ラキーテ/);
+  assert.match(meta.description, /友だち.*予定.*カレンダー/);
   assert.equal(meta['og:url'], origin);
   assert.equal(meta['og:type'], 'website');
   assert.equal(meta['og:locale'], 'ja_JP');
@@ -184,11 +186,22 @@ test('structured data is valid JSON and describes the actual app, without invent
   assert.equal(app['@context'], 'https://schema.org');
   assert.equal(app['@type'], 'SoftwareApplication');
   assert.equal(app.name, 'LaKiite');
+  assert.equal(app.alternateName, 'ラキーテ');
+  assert.match(app.description, /予定.*カレンダー/);
   assert.equal(app.url, origin);
   assert.deepEqual(app.downloadUrl, stores.map(([, href]) => href));
   assert.equal(app.operatingSystem, 'iOS, Android');
   assert.equal(app.aggregateRating, undefined);
   assert.equal(app.review, undefined);
+});
+
+test('the hero explains the product and reading without depending on JavaScript', () => {
+  const hero = section('hero');
+  const heading = hero.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1].replace(/<[^>]+>/g, '');
+  assert.match(heading ?? '', /友だちと予定を共有するカレンダー/);
+  assert.match(hero, /class="hero-app-name">LaKiite（ラキーテ）<\/p>/);
+  assert.match(hero, /お誘い未満/);
+  assert.doesNotMatch(heading ?? '', /新感覚/);
 });
 
 test('local linked files, styles, icons and images exist; fragment targets resolve', () => {
