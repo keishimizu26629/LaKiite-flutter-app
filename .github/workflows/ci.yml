@@ -7,6 +7,18 @@ env:
   FLUTTER_VERSION: "3.41.5"
 
 jobs:
+  web-contracts:
+    name: Landing and SEO Contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5.0.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+      - name: Validate landing page, store drafts and Hosting artifacts
+        run: node --test scripts/test_web_landing.mjs scripts/test_store_marketing.mjs scripts/test_hosting_seo.mjs
+
   # 静的解析
   analyze:
     name: Static Analysis

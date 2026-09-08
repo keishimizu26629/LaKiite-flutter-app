@@ -5,7 +5,7 @@ import { test } from 'node:test';
 const web = new URL('../web/', import.meta.url);
 const html = readFileSync(new URL('index.html', web), 'utf8');
 const css = readFileSync(new URL('style.css', web), 'utf8');
-const origin = 'https://lakiite-flutter-app-prod.web.app/';
+const origin = 'https://lakiite.inoworl.com/';
 const stores = [
   ['ios', 'https://apps.apple.com/jp/app/lakiite/id6746154277'],
   ['android', 'https://play.google.com/store/apps/details?id=com.inoworl.lakiite&hl=ja&gl=JP'],

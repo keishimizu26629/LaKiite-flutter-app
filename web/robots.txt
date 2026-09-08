@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://lakiite-flutter-app-prod.web.app/sitemap.xml
+Sitemap: https://lakiite.inoworl.com/sitemap.xml
