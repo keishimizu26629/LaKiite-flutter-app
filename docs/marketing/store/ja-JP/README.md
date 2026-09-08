@@ -1,6 +1,6 @@
 # 日本語ストア文言・7枚の画像構成案
 
-更新日: 2026-09-08 / Refs #315, #310
+更新日: 2026-09-09 / Refs #315, #310
 
 対象読者: ストア素材の制作担当と、掲載判断を行うプロダクトオーナー。
 
@@ -8,9 +8,10 @@
 
 ## 状態とファイル
 
-これは編集・比較用のドラフト。App Store Connect / Play Consoleへの入力、審査提出、公開は行っていない。
+これは編集・比較用のドラフト。Play Consoleには推奨文言を入力済みだが未保存。AIアセット申告の確認が必要。App Store Connectはログイン待ち。審査提出・公開は行っていない。
 
-- [copy.json](copy.json): 両ストアの文言2案とOS別更新説明の下書き。
+- [copy.json](copy.json): 両ストアの文言2案と更新説明の編集元への参照。
+- [更新説明の編集元](../../../../release-notes/ja-JP.json): アプリ差分で確認したOS別更新説明。提出時は対象runに固定された内容を使う。
 - [screenshots.json](screenshots.json): 7枚の順番、見出し、メッセージ、撮影指示、既存画像の制約。
 - [preview.html](preview.html): ブラウザで比較する構成案。各カードに「入稿不可」を表示。
 - [実装計画](../../issue-315-implementation-plan.md) / [検証記録](../../issue-315-verification.md)。
@@ -42,7 +43,7 @@ jq -r '.variants[] | select(.id == "purpose_first") | .apple.description' docs/m
 jq -r '.variants[] | select(.id == "purpose_first") | .googlePlay.shortDescription' docs/marketing/store/ja-JP/copy.json
 ```
 
-更新説明は `verify_against_target_release_before_upload`。対象バージョンの実差分と照合し、含まれていない改善は削除する。Play向けにiOSの修正やAirbridge等の実装用語を転記しない。
+更新説明は `release-notes/ja-JP.json` に一本化した。以前の「友だちを追加しやすく」「表示と安定性を改善」は対象差分で裏付けられず削除。提出時は作業ブランチの最新文面ではなく、対象runの `release-manifest` に固定された文面を使う。詳しくは[リリース整合の運用](../../../release/release-consistency-plan.md)を参照。
 
 ## 検索意図と配置
 

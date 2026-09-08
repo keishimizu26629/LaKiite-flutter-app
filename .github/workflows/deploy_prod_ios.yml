@@ -7,14 +7,14 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
-      version:
-        description: "App version to deploy, for example 2.0.0"
-        required: false
+      release_run_id:
+        description: "Successful main-push Release Drafter run ID (with release-manifest)"
+        required: true
         type: string
 
 permissions:
-  contents: write
-  pull-requests: read
+  contents: read
+  actions: read
 
 jobs:
   build:
@@ -31,9 +31,24 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5.0.1
+
+      - name: Verify release source run
+        id: release_source
+        uses: ./.github/actions/prepare-release-source
+        with:
+          run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.release_run_id }}
+
+      - name: Checkout verified release source
+        uses: actions/checkout@v5.0.1
         with:
           fetch-depth: 0
-          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
+          ref: ${{ steps.release_source.outputs.sha }}
+
+      - name: Resolve release version
+        id: release_version
+        uses: ./.github/actions/resolve-release-version
+        with:
+          run-id: ${{ steps.release_source.outputs.run_id }}
 
       - name: Check Xcode version
         run: |
@@ -109,12 +124,6 @@ jobs:
           TOTAL_COMMITS=$(($TOTAL_COMMITS + 10000))  # オフセットとして一律で 10000 を加算する。
           echo "buildNumber=$TOTAL_COMMITS" >> $GITHUB_OUTPUT
 
-      - name: Resolve release version
-        id: release_version
-        uses: ./.github/actions/resolve-release-version
-        with:
-          version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '' }}
-
       - name: flutter build ipa
         run: |
           flutter build ipa --release \
@@ -125,8 +134,24 @@ jobs:
             --build-name="${{ steps.release_version.outputs.version }}" \
             --build-number="${{ steps.calculate_build_number.outputs.buildNumber }}"
 
-      - name: Get latest 10 commit messages
-        run: echo "LATEST_COMMIT_MESSAGES=$(git log -n 10 --pretty=format:'%s' | tr '\n' '; ')" >> $GITHUB_ENV
+      - name: Verify built release metadata
+        env:
+          RELEASE_RUN_ID: ${{ steps.release_source.outputs.run_id }}
+          EXPECTED_BUILD_NUMBER: ${{ steps.calculate_build_number.outputs.buildNumber }}
+        run: |
+          set -euo pipefail
+          ipa_files=(build/ios/ipa/*.ipa)
+          [ "${#ipa_files[@]}" -eq 1 ] || { echo 'Expected exactly one IPA'; exit 1; }
+          python3 scripts/verify_release_artifact.py "${ipa_files[0]}" > .release/ipa-metadata.json
+          node scripts/release_manifest.mjs verify-build .release/ipa-metadata.json
+
+      - name: Save verified iOS release evidence and App Store notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-ios-release-${{ github.run_attempt }}
+          path: .release/
+          include-hidden-files: true
+          if-no-files-found: error
 
       - name: Setup App Store Connect API Key
         env:
