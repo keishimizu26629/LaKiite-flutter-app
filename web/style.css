@@ -161,6 +161,7 @@ p {
 
 .nav-cta:hover {
   background: var(--primary-dark);
+  color: #fff;
   transform: translateY(-1px);
 }
 
@@ -1260,16 +1261,23 @@ h2 {
 
 .footer-links {
   display: flex;
-  gap: 28px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px 28px;
 }
 
 .footer-links a {
+  max-width: 100%;
   font-size: 0.8rem;
   transition: color 0.3s;
 }
 
 .footer-links a:hover {
   color: #fff;
+}
+
+.footer a:focus-visible {
+  outline-color: var(--primary);
 }
 
 .footer-bottom {
@@ -1395,6 +1403,11 @@ h2 {
     flex-direction: column;
     text-align: center;
     gap: 20px;
+  }
+
+  .footer-links {
+    justify-content: center;
+    gap: 12px 24px;
   }
 
   .cta-inner {

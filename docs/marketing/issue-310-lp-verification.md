@@ -11,7 +11,33 @@
 - PR作成前のローカル検証スナップショット。以後のPR作成・CI・公開状況はIssue #310と関連PRを正とする。
 - 検証時点ではFirebase Hosting dev/prod、ストアには未反映。
 
-## 自動テスト
+## PR #321のレビュー指摘対応（2026-09-08追記）
+
+初稿の自己レビューでは、ホバーと暗い背景のフォーカス枠、フッターのリンク単位の折り返しを見落としていた。後続レビューで再現した3点を修正した。
+
+- ナビのダウンロードボタンは、ホバー時の濃い背景に白文字を明示。実ブラウザの計算済みスタイルによる比率は2.16:1から**5.86:1**に改善。
+- 暗いフッター内のフォーカス枠だけを既存の明るいアクセント色へ変更。比率は2.45:1から**7.32:1**に改善。
+- フッターの5リンクを項目単位で折り返す。769px幅でも圧縮を確認したため、折り返しとラベルの最大幅は共通ルールとし、スマホでは中央寄せにする。十分に広いPCでは横並びを維持。
+
+回帰テスト:
+
+- 指摘3点のテストを先に追加し、**13 passed / 3 failed**を確認。失敗理由はホバー2.16:1、フォーカス2.45:1、スマホの折り返しなし。
+- スマホ以外の幅にも回帰テストを追加し、スマホ限定の修正では**16 passed / 1 failed**になることを確認。
+- 最終的な`node --test scripts/test_web_landing.mjs`: **17 passed / 0 failed**。
+- `node --check scripts/test_web_landing.mjs`、`git diff --check`、`fvm flutter analyze --no-pub`: 成功。
+- CSSの静的検査は、このstylesheetで使う単純な宣言とmedia queryを対象にした契約テスト。CSS cascade全体を再現するものではなく、実際の描画検査の代わりにはしない。外部依存は追加していない。
+
+ブラウザによる再確認:
+
+- Chromiumの320 / 390 / 769 / 1440px、root font 16px / 32pxで、フッターのラベルが1文字幅近くまで圧縮されず、viewport内に収まることを確認。320px・200%では長いラベルだけ通常の2行になる。
+- 実際にナビへマウスを重ね、ホバー状態の計算済み文字色・背景色とコントラストを確認。
+- 320px・200%でフッター先頭へfocus後、Tabで残り4リンクへ順番に移動。5リンクすべてでfocus-visible、枠のコントラスト、固定バーなどに隠れていないことを確認。
+- フッターの200%表示をスクリーンショットでも確認。consoleのerror/warnなし。実機Galaxy / Safari / VoiceOverの検証ではない。
+- 初稿のLighthouse 100点は以下の過去記録。この修正後にLighthouseは再実行しておらず、今回の状態別検証と混同しない。
+
+修正後HEADのGitHub CIはpush後に別途実行し、runの結果はPR本文を正とする。初稿HEADのCI成功で修正後HEADも成功したとは扱わない。merge・Hosting公開・ストア変更は行わない。
+
+## 初稿時点の自動テスト
 
 `node --test scripts/test_web_landing.mjs`: **13 passed / 0 failed**。
 
@@ -21,7 +47,7 @@
 `git diff --check`: 成功。
 外部パッケージ追加なし。Node標準機能のみで実行できる。
 
-## ブラウザ確認
+## 初稿時点のブラウザ確認
 
 Chromiumによるローカル表示・viewportエミュレーション。実機GalaxyやSafariの再検証ではない。
 
@@ -63,7 +89,7 @@ Lighthouse desktop snapshot: Accessibility **100** / Best Practices **100** / SE
 
 なお、基底のPR #316は別途、同日再実行したGitHub CIの4ジョブすべて成功を確認してからdevへマージ済み。本worktreeでの解析失敗を成功扱いする根拠には使わない。
 
-## PR作成直前の最終確認
+## 初稿PR作成直前の最終確認
 
 - 最新`origin/dev`をfetchし、作業ブランチの基底と一致することを確認。
 - 変更はLP、静的検査スクリプト、関連ドキュメントに限定。Flutterコード・Firebase設定・依存lockfile・配信workflowの変更なし。
@@ -75,7 +101,7 @@ Lighthouse desktop snapshot: Accessibility **100** / Best Practices **100** / SE
 ## 検証時点の後続作業と公開条件
 
 - [x] 限定コピーの承認・不足分補完・自動コピー検証・Flutter解析。
-- [ ] commit / push / PR。
+- [x] 初稿のcommit / push / PR #321作成。
 - [ ] レビュー済み成果物を既存のdev専用Hosting経路で確認。
 - [ ] 本番の現行LPとの差分と画像・導線をオーナー確認。
 - [ ] 本番公開の明示承認と公開後の確認。
