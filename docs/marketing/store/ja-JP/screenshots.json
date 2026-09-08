@@ -1,0 +1,84 @@
+{
+  "status": "draft_not_for_submission",
+  "brand": "LaKiite（ラキーテ）",
+  "sourcePolicy": "既存LPのiOS画像は構図検討の参考のみ。両OSとも対象リリースでテストデータを使って再撮影し、画面・文言・個人情報を確認してから入稿する。",
+  "cards": [
+    {
+      "order": 1,
+      "intent": "purpose",
+      "headline": "友だちと予定を共有するカレンダー",
+      "headlineLines": ["友だちと予定を", "共有するカレンダー"],
+      "message": "誘うほどでもない予定も、気軽に。",
+      "iosReference": "../../../../web/images/app-calendar.png",
+      "androidSource": null,
+      "requiresRecapture": true,
+      "captureBrief": "予定が2〜3件見えるカレンダー。誰向けの何のアプリかを1枚で伝える。予定名・人物は承認済み架空データ。"
+    },
+    {
+      "order": 2,
+      "intent": "share",
+      "headline": "予定を作って、友だちにシェア",
+      "headlineLines": ["予定を作って、", "友だちにシェア"],
+      "message": "お出かけの予定が、会うきっかけに。",
+      "iosReference": "../../../../web/images/app-detail.png",
+      "androidSource": null,
+      "requiresRecapture": true,
+      "captureBrief": "キーボードやリアクションメニューを閉じた予定詳細。共有後の内容が読める構図。参考画像は作成フォームではないと明記し、現在のメニュー表示は再撮影時に外す。"
+    },
+    {
+      "order": 3,
+      "intent": "discover",
+      "headline": "友だちの予定から、会うきっかけを",
+      "headlineLines": ["友だちの予定から、", "会うきっかけを"],
+      "message": "みんなの予定を、タイムラインで確認。",
+      "iosReference": "../../../../web/images/app-timeline.png",
+      "androidSource": null,
+      "requiresRecapture": true,
+      "captureBrief": "友だちの予定が2件以上見えるタイムライン。既存参考画像は自分の予定なので訴求の証拠には使わない。撮影時にテスト用フレンドの共有予定へ差し替える。"
+    },
+    {
+      "order": 4,
+      "intent": "audience",
+      "headline": "予定を共有する相手を選べる",
+      "headlineLines": ["予定を共有する", "相手を選べる"],
+      "message": "予定に合わせて、共有先のリストを設定。",
+      "iosReference": null,
+      "androidSource": null,
+      "requiresRecapture": true,
+      "captureBrief": "予定作成の公開範囲とリスト選択。現在の文言を撮影し、誰に見えるかを確認。グループ作成・自動共有・絶対非公開などを示唆しない。"
+    },
+    {
+      "order": 5,
+      "intent": "reaction",
+      "headline": "気になる予定に、気軽に反応",
+      "headlineLines": ["気になる予定に、", "気軽に反応"],
+      "message": "「行きます！」「考え中！」で気持ちを伝える。",
+      "iosReference": "../../../../web/images/app-detail.png",
+      "androidSource": null,
+      "requiresRecapture": true,
+      "captureBrief": "リアクションの選択とコメント導線を表示する。第三者の名前、写真、予定文、場所を含めずテストデータで再撮影する。"
+    },
+    {
+      "order": 6,
+      "intent": "invite",
+      "headline": "友だちを招待して、予定をシェア",
+      "headlineLines": ["友だちを招待して、", "予定をシェア"],
+      "message": "リンクやQRコードで、友だち追加。",
+      "iosReference": null,
+      "androidSource": null,
+      "requiresRecapture": true,
+      "captureBrief": "対象リリースの招待画面。実ユーザーにつながるQR・招待リンク・IDを公開素材へ載せない。無効なデモコードにできなければコード部分を素材化しない。"
+    },
+    {
+      "order": 7,
+      "intent": "positioning",
+      "headline": "「お誘い未満」から、つながろう",
+      "headlineLines": ["「お誘い未満」から、", "つながろう"],
+      "message": "週末の散歩も、ちょっとしたお出かけも。",
+      "iosReference": "../../../../web/images/app-calendar.png",
+      "androidSource": null,
+      "requiresRecapture": true,
+      "captureBrief": "小さな予定が見えるカレンダーを背景に、日常の利用場面を締めに伝える。成果保証、架空の評価や利用者数、ダウンロード命令は載せない。"
+    }
+  ]
+}
