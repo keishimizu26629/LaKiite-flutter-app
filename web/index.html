@@ -5,15 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LaKiite — お誘い未満の予定共有アプリ</title>
   <meta name="description" content="LaKiite（ラキーテ）は「わざわざ誘うほどじゃないけど、誰か来れたら嬉しい」ゆるい予定を気軽に共有できるアプリ。今日のちょっとしたお出かけを、もっと気軽につなげよう。">
+  <link rel="canonical" href="https://lakiite-flutter-app-prod.web.app/">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta property="og:title" content="LaKiite — お誘い未満の予定共有アプリ">
+  <meta property="og:description" content="LaKiite（ラキーテ）は「わざわざ誘うほどじゃないけど、誰か来れたら嬉しい」ゆるい予定を気軽に共有できるアプリ。今日のちょっとしたお出かけを、もっと気軽につなげよう。">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:site_name" content="LaKiite">
+  <meta property="og:url" content="https://lakiite-flutter-app-prod.web.app/">
+  <meta property="og:image" content="https://lakiite-flutter-app-prod.web.app/images/logo.png">
+  <meta property="og:image:width" content="1024">
+  <meta property="og:image:height" content="1024">
+  <meta property="og:image:alt" content="LaKiiteのロゴ">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="LaKiite — お誘い未満の予定共有アプリ">
+  <meta name="twitter:description" content="LaKiite（ラキーテ）は「わざわざ誘うほどじゃないけど、誰か来れたら嬉しい」ゆるい予定を気軽に共有できるアプリ。今日のちょっとしたお出かけを、もっと気軽につなげよう。">
+  <meta name="twitter:image" content="https://lakiite-flutter-app-prod.web.app/images/logo.png">
+  <meta name="twitter:image:alt" content="LaKiiteのロゴ">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "LaKiite",
+      "description": "お誘い未満の予定を友だちと気軽に共有できるアプリ。",
+      "url": "https://lakiite-flutter-app-prod.web.app/",
+      "image": "https://lakiite-flutter-app-prod.web.app/images/logo.png",
+      "operatingSystem": "iOS, Android",
+      "applicationCategory": "SocialNetworkingApplication",
+      "inLanguage": "ja",
+      "downloadUrl": [
+        "https://apps.apple.com/jp/app/lakiite/id6746154277",
+        "https://play.google.com/store/apps/details?id=com.inoworl.lakiite&hl=ja&gl=JP"
+      ]
+    }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">本文へスキップ</a>
 
   <!-- ナビゲーション -->
-  <nav class="nav">
+  <nav class="nav" aria-label="メインナビゲーション">
     <div class="nav-inner">
       <a href="#" class="nav-logo">LaKiite</a>
       <ul class="nav-links">
@@ -28,6 +63,7 @@
     </div>
   </nav>
 
+  <main id="main-content">
   <!-- ヒーロー -->
   <section class="hero">
     <div class="bg-dots" aria-hidden="true">
@@ -46,9 +82,15 @@
         <h1><span class="nobr"><span class="hand">「お誘い未満」</span>の</span><span class="nobr"><span class="text-yellow">新感覚</span>予定共有アプリ</span></h1>
         <p class="hero-desc"><span class="nobr">誘うほどじゃないけど、</span><span class="nobr">誰かと会えたらうれしい。</span><span class="nobr">そんな「お誘い未満」の予定を、</span><span class="nobr">ゆるくシェアできるアプリ、LaKiite（ラキーテ）。</span></p>
         <div class="hero-buttons">
-          <a href="#download" class="btn btn-primary">無料ではじめる</a>
-          <a href="#features" class="btn btn-outline">どんなアプリ？</a>
+          <a href="https://apps.apple.com/jp/app/lakiite/id6746154277" class="store-link" aria-label="App Storeでダウンロード" data-growth-channel="owned_web" data-growth-campaign="jp_install_casual_friends_202609" data-growth-content="hero_oinamiman_a" data-growth-platform="ios">
+            <img src="images/appstore-badge.svg" alt="App Storeでダウンロード" class="store-img" width="109" height="40">
+          </a>
+          <a href="https://play.google.com/store/apps/details?id=com.inoworl.lakiite&amp;hl=ja&amp;gl=JP" class="store-link" aria-label="Google Playで手に入れよう" data-growth-channel="owned_web" data-growth-campaign="jp_install_casual_friends_202609" data-growth-content="hero_oinamiman_a" data-growth-platform="android">
+            <img src="images/googleplay-badge.png" alt="Google Playで手に入れよう" class="store-img" width="478" height="142">
+          </a>
         </div>
+        <p class="download-note">iPhoneはApp Store、AndroidはGoogle Playから。<br>PCでご覧の方も、各ストアの配信情報を確認できます。</p>
+        <a href="#features" class="hero-learn-more">どんなアプリ？ 使い方を見る</a>
       </div>
       <div class="hero-visual">
         <div class="phone-stack">
@@ -107,7 +149,7 @@
         </div>
         <div class="feature-content-row">
           <div class="feature-text">
-            <h3><span class="nobr">自分の予定を</span><span class="nobr">気軽にシェア</span></h3>
+            <h2><span class="nobr">自分の予定を</span><span class="nobr">気軽にシェア</span></h2>
             <p class="feature-sub">公開範囲も自由に設定OK</p>
             <p><span class="nobr">「朝まで飲みたい！」</span><span class="nobr">「子どもと公園行くよ」。</span><span class="nobr">わざわざ誘わなくても、予定を書いておくだけ。</span><span class="nobr">見せる相手は自分で選べるから安心です。</span></p>
           </div>
@@ -126,7 +168,7 @@
         </div>
         <div class="feature-content-row">
           <div class="feature-text">
-            <h3><span class="nobr">みんなの予定を</span><span class="nobr">こそっとチェック</span></h3>
+            <h2><span class="nobr">みんなの予定を</span><span class="nobr">こそっとチェック</span></h2>
             <p class="feature-sub">見ただけで既読はつかないから気楽！</p>
             <p><span class="nobr">友達がシェアした予定を、</span><span class="nobr">タイムラインでゆるく眺める。</span><span class="nobr">見ても既読はつかないから、</span><span class="nobr">気になったときだけ反応すればOKです。</span></p>
           </div>
@@ -145,7 +187,7 @@
         </div>
         <div class="feature-content-row">
           <div class="feature-text">
-            <h3><span class="nobr">行けそうなときだけ</span><span class="nobr">リアクション</span></h3>
+            <h2><span class="nobr">行けそうなときだけ</span><span class="nobr">リアクション</span></h2>
             <p class="feature-sub">コメント機能で相談もできる！</p>
             <p><span class="nobr">行けそうなら「行きます！」、</span><span class="nobr">迷ってたら「考え中！」とワンタップ。</span><span class="nobr">コメントで「何時から？」と相談もできるから、</span><span class="nobr">断る気まずさもありません。</span></p>
           </div>
@@ -218,7 +260,7 @@
             <span>1</span>
           </div>
           <h3>アカウント作成</h3>
-          <p><span class="nobr">メール／Apple／Google認証で、</span><span class="nobr">すぐに登録完了。</span></p>
+          <p><span class="nobr">メールアドレスとパスワードで、</span><span class="nobr">アカウントを作成します。</span></p>
         </div>
         <div class="step-arrow">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffa600" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -283,16 +325,18 @@
         <h2><span class="nobr">ゆるく、</span><span class="nobr">つながろ。</span></h2>
         <p><span class="nobr">「お誘い未満」の予定を、もっと気軽に。</span><span class="nobr">LaKiiteは無料でダウンロードできます。</span></p>
         <div class="cta-buttons">
-          <a href="https://apps.apple.com/jp/app/id6746154277" class="store-link" aria-label="App Storeでダウンロード">
-            <img src="images/appstore-badge.svg" alt="App Storeでダウンロード" class="store-img">
+          <a href="https://apps.apple.com/jp/app/lakiite/id6746154277" class="store-link" aria-label="App Storeでダウンロード" data-growth-channel="owned_web" data-growth-campaign="jp_install_casual_friends_202609" data-growth-content="footer_oinamiman_a" data-growth-platform="ios">
+            <img src="images/appstore-badge.svg" alt="App Storeでダウンロード" class="store-img" width="109" height="40">
           </a>
-          <a href="https://play.google.com/store/apps/details?id=com.inoworl.lakiite" class="store-link" aria-label="Google Playで手に入れよう">
-            <img src="images/googleplay-badge.png" alt="Google Playで手に入れよう" class="store-img">
+          <a href="https://play.google.com/store/apps/details?id=com.inoworl.lakiite&amp;hl=ja&amp;gl=JP" class="store-link" aria-label="Google Playで手に入れよう" data-growth-channel="owned_web" data-growth-campaign="jp_install_casual_friends_202609" data-growth-content="footer_oinamiman_a" data-growth-platform="android">
+            <img src="images/googleplay-badge.png" alt="Google Playで手に入れよう" class="store-img" width="478" height="142">
           </a>
         </div>
       </div>
     </div>
   </section>
+
+  </main>
 
   <!-- フッター -->
   <footer class="footer">
@@ -302,10 +346,13 @@
           <span class="footer-logo">LaKiite</span>
           <p>お誘い未満の予定共有アプリ</p>
         </div>
-        <div class="footer-links">
+        <nav class="footer-links" aria-label="法務とサポート">
           <a href="privacy-policy.html">プライバシーポリシー</a>
           <a href="terms-of-service.html">利用規約</a>
-        </div>
+          <a href="support.html">サポート・お問い合わせ</a>
+          <a href="child-safety-standards.html">子どもの安全基準</a>
+          <a href="account-deletion.html">アカウント削除</a>
+        </nav>
       </div>
       <div class="footer-bottom">
         <p>&copy; 2026 Inoworl. All rights reserved.</p>
