@@ -1,0 +1,30 @@
+name: Prepare release source
+description: Verify the exact upstream Release Drafter run before checking out its source.
+inputs:
+  run-id:
+    description: Successful Release Drafter main-push run ID.
+    required: true
+outputs:
+  sha:
+    description: Verified source commit.
+    value: ${{ steps.source.outputs.sha }}
+  run_id:
+    description: Verified upstream run ID.
+    value: ${{ steps.source.outputs.run_id }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+    - name: Validate upstream run
+      id: source
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        RELEASE_RUN_ID: ${{ inputs.run-id }}
+      run: |
+        set -euo pipefail
+        [[ "$RELEASE_RUN_ID" =~ ^[1-9][0-9]*$ ]] || { echo 'A Release Drafter run ID is required'; exit 1; }
+        gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RELEASE_RUN_ID" > "$RUNNER_TEMP/release-source-run.json"
+        node scripts/release_manifest.mjs source "$RUNNER_TEMP/release-source-run.json"

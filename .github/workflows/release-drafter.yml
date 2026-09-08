@@ -13,6 +13,7 @@ on:
         type: string
 
 permissions:
+  actions: read
   contents: write
   pull-requests: write
 
@@ -23,12 +24,68 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v5.0.1
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Restore frozen release manifest
+        id: frozen
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$RELEASE_RUN_ID/artifacts" --jq '.artifacts[]' | jq -s . > "$RUNNER_TEMP/release-artifacts.json"
+          node scripts/release_manifest.mjs restore-check "$RUNNER_TEMP/release-artifacts.json"
+
+      - name: Load original snapshot on retry
+        if: github.event_name == 'push' && steps.frozen.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN_ID: ${{ github.run_id }}
+        run: |
+          gh run download "$RELEASE_RUN_ID" --name release-manifest --dir .release-input
+          node scripts/release_manifest.mjs load .release-input/release-manifest.json
+
+      - name: Prepare reviewed app release notes
+        id: notes
+        if: github.event_name == 'push' && steps.frozen.outputs.exists == 'false'
+        run: node scripts/release_manifest.mjs header
+
       - name: Update draft release
+        id: draft
+        if: github.event_name != 'push' || steps.frozen.outputs.exists == 'false'
         uses: release-drafter/release-drafter@v7
         with:
           config-name: release-drafter.yml
+          header: ${{ steps.notes.outputs.header }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Freeze release version and notes
+        if: github.event_name == 'push' && steps.frozen.outputs.exists == 'false'
+        env:
+          RELEASE_TAG: ${{ steps.draft.outputs.tag_name }}
+          RELEASE_ID: ${{ steps.draft.outputs.id }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          export RELEASE_VERSION="${RELEASE_TAG#v}"
+          node scripts/release_manifest.mjs create
+
+      - name: Save immutable release manifest
+        if: github.event_name == 'push' && steps.frozen.outputs.exists == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-manifest
+          path: .release/release-manifest.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
 
   autolabel:
     name: Autolabel PR

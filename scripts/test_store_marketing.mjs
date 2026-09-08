@@ -48,12 +48,15 @@ test('recommended store name is the approved kana-inclusive wording', () => {
   }
 });
 
-test('release-note drafts describe user benefits and do not put iOS fixes on Google Play', () => {
+test('marketing copy references the reviewed release notes instead of duplicating speculative improvements', () => {
   const copy = load('copy.json');
-  assert.equal(copy.releaseNotes.status, 'verify_against_target_release_before_upload');
-  assert.match(copy.releaseNotes.apple, /招待/);
-  assert.match(copy.releaseNotes.googlePlay, /招待/);
-  assert.doesNotMatch(copy.releaseNotes.googlePlay, /iOS|iPhone|Airbridge|ディープリンク/);
+  assert.equal(copy.releaseNotes.source, 'release-notes/ja-JP.json');
+  assert.equal(copy.releaseNotes.apple, undefined);
+  assert.equal(copy.releaseNotes.googlePlay, undefined);
+  const notes = JSON.parse(readFileSync(new URL('../release-notes/ja-JP.json', import.meta.url), 'utf8'));
+  assert.match(notes.apple, /友だち申請/);
+  assert.match(notes.googlePlay, /招待/);
+  assert.doesNotMatch(notes.googlePlay, /iOS|iPhone|Airbridge|追加しやすく|表示と安定性/);
 });
 
 test('seven ordered creative briefs explain purpose, sharing and discovery first', () => {

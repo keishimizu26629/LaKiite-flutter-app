@@ -1,7 +1,7 @@
 {
   "locale": "ja-JP",
   "status": "draft_not_uploaded",
-  "updatedAt": "2026-09-08",
+  "updatedAt": "2026-09-09",
   "recommendedVariant": "purpose_first",
   "variants": [
     {
@@ -38,8 +38,8 @@
     }
   ],
   "releaseNotes": {
-    "status": "verify_against_target_release_before_upload",
-    "apple": "・招待リンクやQRコードから、友だちを追加しやすくしました。\n・友だち招待の案内を分かりやすくしました。\n・招待リンクを開いたときの動作を改善しました。\n・一部の表示と安定性を改善しました。",
-    "googlePlay": "・招待リンクやQRコードから、友だちを追加しやすくしました。\n・友だち招待の案内を分かりやすくしました。\n・一部の表示と安定性を改善しました。"
+    "status": "managed_by_release_pipeline",
+    "source": "release-notes/ja-JP.json",
+    "usage": "編集元はrepoルート基準。提出時は対象Release Drafter runのrelease-manifestに固定されたnotesを使う。"
   }
 }

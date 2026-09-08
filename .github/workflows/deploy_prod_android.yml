@@ -7,14 +7,14 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
-      version:
-        description: "App version to deploy, for example 2.0.0"
-        required: false
+      release_run_id:
+        description: "Successful main-push Release Drafter run ID (with release-manifest)"
+        required: true
         type: string
 
 permissions:
-  contents: write
-  pull-requests: read
+  contents: read
+  actions: read
 
 jobs:
   build:
@@ -31,9 +31,24 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5.0.1
+
+      - name: Verify release source run
+        id: release_source
+        uses: ./.github/actions/prepare-release-source
+        with:
+          run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.release_run_id }}
+
+      - name: Checkout verified release source
+        uses: actions/checkout@v5.0.1
         with:
           fetch-depth: 0
-          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
+          ref: ${{ steps.release_source.outputs.sha }}
+
+      - name: Resolve release version
+        id: release_version
+        uses: ./.github/actions/resolve-release-version
+        with:
+          run-id: ${{ steps.release_source.outputs.run_id }}
 
       - name: Setup CI
         uses: ./.github/actions/setup
@@ -150,12 +165,6 @@ jobs:
 
           echo "Prod runtime config validation passed."
 
-      - name: Resolve release version
-        id: release_version
-        uses: ./.github/actions/resolve-release-version
-        with:
-          version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '' }}
-
       - name: Calculate Build Number
         id: calculate_build_number
         run: |
@@ -196,8 +205,27 @@ jobs:
             --build-name="${{ steps.release_version.outputs.version }}" \
             --build-number="${{ steps.calculate_build_number.outputs.buildNumber }}"
 
-      - name: Get latest 10 commit messages
-        run: echo "LATEST_COMMIT_MESSAGES=$(git log -n 10 --pretty=format:'%s' | tr '\n' '; ')" >> $GITHUB_ENV
+      - name: Verify built release metadata
+        env:
+          RELEASE_RUN_ID: ${{ steps.release_source.outputs.run_id }}
+          EXPECTED_BUILD_NUMBER: ${{ steps.calculate_build_number.outputs.buildNumber }}
+        run: |
+          set -euo pipefail
+          bundletool="$RUNNER_TEMP/bundletool.jar"
+          curl --fail --location --retry 3 -o "$bundletool" https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar
+          printf 'a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29  %s\n' "$bundletool" | sha256sum --check -
+          python3 scripts/verify_release_artifact.py build/app/outputs/bundle/prodRelease/app-prod-release.aab --bundletool "$bundletool" > .release/aab-metadata.json
+          node scripts/release_manifest.mjs verify-build .release/aab-metadata.json
+          python3 scripts/verify_release_artifact.py build/app/outputs/flutter-apk/app-prod-release.apk --apkanalyzer "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/apkanalyzer" > .release/apk-metadata.json
+          node scripts/release_manifest.mjs verify-build .release/apk-metadata.json
+
+      - name: Save verified Android release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-android-release-${{ github.run_attempt }}
+          path: .release/
+          include-hidden-files: true
+          if-no-files-found: error
 
       - name: Decode Google Play Console API Service Account Key
         run: echo "${{ secrets.GOOGLE_PLAY_CONSOLE_API_SERVICE_ACCOUNT_KEY_JSON_BASE64 }}" | base64 --decode > /tmp/google_play_console_api_service_account_key.json
@@ -210,6 +238,7 @@ jobs:
           releaseFiles: build/app/outputs/bundle/prodRelease/app-prod-release.aab
           tracks: internal
           status: completed
+          whatsNewDirectory: .release/play
 
       - name: Prepare Firebase App Distribution credentials
         id: firebase_app_distribution_credentials
@@ -247,4 +276,4 @@ jobs:
             --project "$PROD_FIREBASE_PROJECT_ID" \
             --app "$PROD_FIREBASE_ANDROID_APP_ID" \
             --groups internal-testers  \
-            --release-notes "${LATEST_COMMIT_MESSAGES}"
+            --release-notes-file .release/play/ja-JP.txt

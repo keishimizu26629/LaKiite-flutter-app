@@ -1,0 +1,41 @@
+name: Release contracts
+
+on:
+  pull_request:
+    paths:
+      - '.github/actions/prepare-release-source/**'
+      - '.github/actions/resolve-release-version/**'
+      - '.github/workflows/release-*.yml'
+      - '.github/workflows/deploy_prod_*.yml'
+      - 'scripts/*release*'
+      - 'release-notes/**'
+      - 'docs/marketing/store/ja-JP/copy.json'
+      - 'scripts/test_store_marketing.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5.0.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: false
+      - name: Validate release workflow syntax
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          "$(go env GOPATH)/bin/actionlint" -shellcheck= -pyflakes= .github/workflows/release-drafter.yml .github/workflows/deploy_prod_android.yml .github/workflows/deploy_prod_ios.yml .github/workflows/release-contracts.yml
+      - name: Release snapshot and wiring regression tests
+        run: node --test scripts/test_release_pipeline.mjs scripts/test_release_workflows.mjs scripts/test_store_marketing.mjs
+      - name: Built artifact metadata regression tests
+        run: python3 -m unittest discover -s scripts -p test_release_artifact.py
