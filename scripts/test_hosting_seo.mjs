@@ -129,3 +129,10 @@ test('non-deploying PR CI runs the same landing, store and SEO contracts on Node
   assert.match(job, /node --test scripts\/test_web_landing\.mjs scripts\/test_store_marketing\.mjs scripts\/test_hosting_seo\.mjs/);
   assert.doesNotMatch(job, /firebase deploy|secrets\./);
 });
+
+test('the final CI gate includes web-contracts in both dependencies and result checking', async () => {
+  const workflow = await readFile(new URL('.github/workflows/ci.yml', root), 'utf8');
+  const gate = workflow.slice(workflow.indexOf('  ci_success:'));
+  assert.match(gate, /needs: \[analyze, test, web-contracts\]/);
+  assert.match(gate, /&& "\$\{\{ needs\.web-contracts\.result \}\}" == "success"/);
+});

@@ -23,7 +23,7 @@
 2. `web/index.html`, `web/robots.txt`, `web/sitemap.xml`, sitemap掲載HTML6件: URLを統一。説明・法務本文はそのまま。
 3. `scripts/prepare_hosting.mjs`: dev/prod明示必須の成果物生成。devだけnoindex、本番にnoindexを混入させない。出力は専用firebase.jsonのパスのみ。
 4. `.github/workflows/deploy_firebase_hosting.yml`: Node検証→対象環境の生成→生成configでHosting deploy。prodはmainのみ。push/manualの条件を排他的にし、dev ref + target=prodで両環境が動く経路をなくす。
-   `.github/workflows/ci.yml`にも同じNode検証を追加し、Hosting公開なしでPRの最新コミットを確認できるようにする。
+   `.github/workflows/ci.yml`にも同じNode検証を追加し、Hosting公開なしでPRの最新コミットを確認できるようにする。最終結果集約の依存・成功条件にも含める。
 5. `web/README.md`: 新しい配信方法、正式ドメイン、公開境界、Search Consoleの人間確認を記載。古いGitHub Pages手順を現行手順と混同しないよう整理。
 6. 静的テスト、Firebase Hosting Emulatorの実HTTP（dev/prodのheader、robots、sitemap、404）、Flutter解析、コードレビュー。ルートの環境設定ファイル・秘密値は表示しない。
 7. PR #322に検証結果を追記し、#323には取り込み順を記録。main/devへのマージ、実環境へのdeploy、Search Console変更、Store Console反映は行わない。
@@ -37,4 +37,4 @@ Search Consoleでの所有確認・サイトマップ送信・Google選択canoni
 
 ## 実装・ローカル確認の到達点（2026-09-08）
 
-タスク1〜6を実施。33件のNodeテスト、Emulatorのdev/prod実HTTP、workflowの9条件、Flutter解析を確認した。詳細は[SEO検証結果](issue-310-seo-verification.md)。PR更新と最新SHAのCI結果はPR #322に記録する。#323は#322未統合のdevを指すDraftであり、SEOを含むリリース全体の検証完了とは扱わない。
+タスク1〜6を実施。34件のNodeテスト、Emulatorのdev/prod実HTTP、workflowの9条件、Flutter解析を確認した。詳細は[SEO検証結果](issue-310-seo-verification.md)。PR更新と最新SHAのCI結果はPR #322に記録する。#323は#322未統合のdevを指すDraftであり、SEOを含むリリース全体の検証完了とは扱わない。

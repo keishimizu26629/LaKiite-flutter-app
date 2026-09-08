@@ -178,17 +178,18 @@ jobs:
   ci_success:
     name: CI Success
     runs-on: ubuntu-latest
-    needs: [analyze, test]
+    needs: [analyze, test, web-contracts]
     if: always()
 
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.analyze.result }}" == "success" && "${{ needs.test.result }}" == "success" ]]; then
+          if [[ "${{ needs.analyze.result }}" == "success" && "${{ needs.test.result }}" == "success" && "${{ needs.web-contracts.result }}" == "success" ]]; then
             echo "✅ All CI checks passed!"
           else
             echo "❌ CI checks failed"
             echo "Analyze: ${{ needs.analyze.result }}"
             echo "Test: ${{ needs.test.result }}"
+            echo "Web contracts: ${{ needs.web-contracts.result }}"
             exit 1
           fi

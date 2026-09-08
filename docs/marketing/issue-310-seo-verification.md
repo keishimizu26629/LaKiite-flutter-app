@@ -12,7 +12,7 @@
 
 | 検証 | 結果 |
 | --- | --- |
-| `node --test scripts/test_web_landing.mjs scripts/test_store_marketing.mjs scripts/test_hosting_seo.mjs` | 33 passed / 0 failed（LP18、store5、Hosting/SEO10） |
+| `node --test scripts/test_web_landing.mjs scripts/test_store_marketing.mjs scripts/test_hosting_seo.mjs` | 34 passed / 0 failed（LP18、store5、Hosting/SEO11） |
 | `node --check scripts/prepare_hosting.mjs` / `scripts/test_hosting_seo.mjs` | 成功 |
 | CLI `prepare_hosting.mjs --target dev` / `--target prod` | 両環境の新規成果物を生成し、config絶対パスのみ出力 |
 | Firebase Hosting Emulator dev | 87 assertions成功 / 終了コード0 |
@@ -26,7 +26,7 @@
 
 ローカル環境: Node.js v25.9.0、Firebase CLI 15.2.1。CIはNode 20を指定し、公開なしの`ci.yml`に`Landing and SEO Contracts`を追加した。上表のローカルNode結果と、CIでのNode 20結果を混同しない。actionlintは未導入であり、YAML parseと条件確認を完全なGitHub Actions lintの代替とはしない。
 
-TDD: 最初の新仕様テストは24件中10件が期待どおり失敗（旧ドメイン、generator未実装、workflow未対応）。実装後29件成功。その後CLI・symlink rootの回帰テストを追加して32件成功。公開なしCI用の新テストが未実装のjobを理由に失敗したことを確認してjobを追加し、最終33件成功。
+TDD: 最初の新仕様テストは24件中10件が期待どおり失敗（旧ドメイン、generator未実装、workflow未対応）。実装後29件成功。その後CLI・symlink rootの回帰テストを追加して32件成功。公開なしCI用の新テストが未実装のjobを理由に失敗したことを確認してjobを追加し33件成功。最終集約にもSEOの成功を要求する回帰テストの失敗を確認し、依存と成功条件を修正して34件成功。
 
 ## Emulatorで確認したこと
 
@@ -55,7 +55,7 @@ TDD: 最初の新仕様テストは24件中10件が期待どおり失敗（旧�
 | manual | dev / feature（各1ケース） | prod | validationで停止、deployなし |
 | manual | main | prod | prodのみ |
 
-公開用workflowそのものは実行していない。公開なしCIの`web-contracts`は同じ33件を実行し、Firebase認証情報やdeployを必要としない。
+公開用workflowそのものは実行していない。公開なしCIの`web-contracts`は同じ34件を実行し、Firebase認証情報やdeployを必要としない。最終`CI Success`もこのjobの成功を必須とする。
 
 ## セルフレビュー
 
